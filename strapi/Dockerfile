@@ -1,4 +1,4 @@
-FROM node:22-alpine as base
+FROM node:20-alpine as base
 
 WORKDIR /app
 
@@ -13,6 +13,6 @@ ENV NODE_ENV=production
 
 COPY . /app/
 
-RUN yarn build
+RUN npm build
 
 CMD [ "node_modules/.bin/strapi", "start" ]

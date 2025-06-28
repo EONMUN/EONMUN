@@ -11,6 +11,8 @@ NPM:=npm
 
 build: ## Build all services
 	$(DC) build
+	$(DC) run --rm strapi npm i
+	$(DC) run --rm web npm i
 
 up: ## Start all services
 	$(DC) up --detach

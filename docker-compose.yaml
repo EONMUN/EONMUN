@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  backend:
+  strapi:
     env_file:
       - strapi/.env
     command: npm run dev
@@ -10,11 +10,28 @@ services:
     build:
       context: ./strapi
       dockerfile: Dockerfile
+      target: base
     ports:
       - "1337:1337" # Adjust the port as needed
     networks:
       - strapi
 
+  web:
+    env_file:
+      - web/.dev.vars
+    command: npm run dev
+    volumes:
+      - ./web:/app
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      target: base
+    ports:
+      - "3000:3000" # Adjust the port as needed
+    depends_on:
+      - strapi
+    networks:
+      - strapi
 
 volumes:
   db_data:
