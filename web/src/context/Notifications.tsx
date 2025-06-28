@@ -1,13 +1,13 @@
 'use client'
 
 import React, { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react'
-import { toast, ToastContainer } from 'react-toastify'
+// import { toast, ToastContainer } from 'react-toastify'
 import { Notification } from '@/utils/types'
 import { useAccount } from 'wagmi'
 import dayjs from 'dayjs'
 import 'react-toastify/dist/ReactToastify.min.css'
 import '@/assets/notifications.css'
-import { StatusIcon } from '@/components/Alert'
+// import { StatusIcon } from '@/components/Alert'
 
 type NotificationOptions = Partial<Omit<Notification, 'message'>>
 
@@ -55,7 +55,7 @@ export function NotificationProvider(props: PropsWithChildren) {
     }
     localStorage.setItem('notifications', JSON.stringify([...notifications, notification]))
     setNotifications([...notifications, notification])
-    toast(message, { type: notification.type, icon: <StatusIcon type={notification.type} /> })
+    // toast(message, { type: notification.type, icon: <StatusIcon type={notification.type} /> })
   }
 
   function Clear() {
@@ -66,13 +66,13 @@ export function NotificationProvider(props: PropsWithChildren) {
   return (
     <NotificationContext.Provider value={{ Add, Clear, notifications }}>
       {props.children}
-      <ToastContainer
+      {/* <ToastContainer
         limit={5}
         theme='dark'
         position='bottom-center'
         toastClassName={() => 'flex relative bg-base-300 rounded-xl justify-between overflow-hidden p-2 mb-2'}
         bodyClassName={() => 'flex text-sm gap-2 px-4 py-2'}
-      />
+      /> */}
     </NotificationContext.Provider>
   )
 }

@@ -18,9 +18,11 @@ export function Footer() {
         <div className='flex gap-4'>
           <LinkComponent href={`https://github.com/${SOCIAL_GITHUB}`}>
             {/* <FaGithub /> */}
+            Github
           </LinkComponent>
           <LinkComponent href={`https://twitter.com/${SOCIAL_TWITTER}`}>
             {/* <FaXTwitter /> */}
+            Twitter
           </LinkComponent>
         </div>
       </footer>

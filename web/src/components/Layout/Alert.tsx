@@ -1,22 +1,22 @@
 import React from 'react'
-import {
-  ArrowUpRightIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline'
-import { LinkComponent } from './LinkComponent'
+// import {
+//   ArrowUpRightIcon,
+//   CheckCircleIcon,
+//   ExclamationCircleIcon,
+//   ExclamationTriangleIcon,
+//   InformationCircleIcon,
+// } from '@heroicons/react/24/outline'
+import { LinkComponent } from '../LinkComponent'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { TruncateMiddle } from '@/utils/format'
 import { NotificationType } from '@/utils/types'
 dayjs.extend(relativeTime)
 
-interface StatusProps {
-  className?: string
-  type: NotificationType
-}
+// interface StatusProps {
+//   className?: string
+//   type: NotificationType
+// }
 
 interface Props {
   className?: string
@@ -27,28 +27,28 @@ interface Props {
   from?: string
 }
 
-export function StatusIcon(props: StatusProps) {
-  let className = 'h-6 w-6'
-  if (props.className) className += ` ${props.className}`
+// export function StatusIcon(props: StatusProps) {
+//   let className = 'h-6 w-6'
+//   if (props.className) className += ` ${props.className}`
 
-  if (props.type === 'info') {
-    className += ' stroke-info'
-  }
-  if (props.type === 'success') {
-    className += ' stroke-success'
-  }
-  if (props.type === 'warning') {
-    className += ' stroke-warning'
-  }
-  if (props.type === 'error') {
-    className += ' stroke-error'
-  }
-  if (props.type === 'success') return <CheckCircleIcon className={className} />
-  if (props.type === 'warning') return <ExclamationTriangleIcon className={className} />
-  if (props.type === 'error') return <ExclamationCircleIcon className={className} />
+//   if (props.type === 'info') {
+//     className += ' stroke-info'
+//   }
+//   if (props.type === 'success') {
+//     className += ' stroke-success'
+//   }
+//   if (props.type === 'warning') {
+//     className += ' stroke-warning'
+//   }
+//   if (props.type === 'error') {
+//     className += ' stroke-error'
+//   }
+//   if (props.type === 'success') return <CheckCircleIcon className={className} />
+//   if (props.type === 'warning') return <ExclamationTriangleIcon className={className} />
+//   if (props.type === 'error') return <ExclamationCircleIcon className={className} />
 
-  return <InformationCircleIcon className={className} />
-}
+//   return <InformationCircleIcon className={className} />
+// }
 
 export function Alert(props: Props) {
   let className = `alert flex flex-row text-left`
@@ -56,7 +56,7 @@ export function Alert(props: Props) {
   return (
     <div className={className}>
       <div>
-        <StatusIcon type={props.type} />
+        {/* <StatusIcon type={props.type} /> */}
       </div>
 
       <div className='flex flex-col grow'>
@@ -76,7 +76,8 @@ export function Alert(props: Props) {
 
       {props.href && (
         <LinkComponent href={props.href}>
-          <ArrowUpRightIcon className='h-4 w-4' />
+          <div></div>
+          {/* <ArrowUpRightIcon className='h-4 w-4' /> */}
         </LinkComponent>
       )}
     </div>

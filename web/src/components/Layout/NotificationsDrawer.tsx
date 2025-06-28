@@ -1,14 +1,14 @@
 'use client'
 
 import React from 'react'
-import { BellIcon as BellOutline, XCircleIcon } from '@heroicons/react/24/outline'
-import { BellIcon as BellSolid } from '@heroicons/react/24/solid'
+// import { BellIcon as BellOutline, XCircleIcon } from '@heroicons/react/24/outline'
+// import { BellIcon as BellSolid } from '@heroicons/react/24/solid'
 import { useNotifications } from '@/context/Notifications'
 import { Alert } from './Alert'
 
 export function NotificationsDrawer() {
   const { notifications, Clear } = useNotifications()
-  const className = 'shrink-0 h-5 w-5'
+  // const className = 'shrink-0 h-5 w-5'
 
   return (
     <div className='drawer drawer-end'>
@@ -18,8 +18,8 @@ export function NotificationsDrawer() {
           htmlFor='my-drawer'
           role='button'
           className={`btn btn-ghost btn-sm ${notifications.length === 0 ? 'text-gray-600' : ''} drawer-button`}>
-          {notifications.length > 0 && <BellSolid className={className} />}
-          {notifications.length === 0 && <BellOutline className={className} />}
+          {/* {notifications.length > 0 && <BellSolid className={className} />}
+          {notifications.length === 0 && <BellOutline className={className} />} */}
         </label>
       </div>
 
@@ -35,7 +35,8 @@ export function NotificationsDrawer() {
               onClick={() => {
                 document.getElementById('my-drawer')?.click()
               }}>
-              <XCircleIcon className='shrink-0 h-6 w-6 cursor-pointer' />
+              {/* <XCircleIcon className='shrink-0 h-6 w-6 cursor-pointer' /> */}
+              <div>hold</div>
             </span>
           </div>
           {notifications.length > 0 && (
