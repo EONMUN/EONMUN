@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  backend:
+    env_file:
+      - strapi/.env
+    command: npm run dev
+    volumes:
+      - ./strapi:/app
+    build:
+      context: ./strapi
+      dockerfile: Dockerfile
+    ports:
+      - "1337:1337" # Adjust the port as needed
+    networks:
+      - strapi
+
+
+volumes:
+  db_data:
+networks:
+  strapi:
+    driver: bridge
