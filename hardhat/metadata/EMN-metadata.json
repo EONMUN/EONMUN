@@ -1,0 +1,10 @@
+{
+    "name": "EON MUN",
+    "symbol": "EMN",
+    "description": "EON MUN Originals",
+    "image": "ipfs://QmTNgv3jx2HHfBjQX9RnKtxj2xv2xQCtbDXoRi5rJ3a46e",
+    "banner_image": "ipfs://QmdChMVnMSq4U7oVKhud7wUSEZGnwuMuTY5rUQx57Ayp6H",
+    "featured_image": "ipfs://QmS9m6e1E1NfioMM8dy1WMZNN2FRh2WDjeqJFWextqXCT8",
+    "external_link": "https://eonmun.com/",
+    "collaborators": ["0x184bD866ea2600f760D51D888140Fa142195f628", "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976"]
+  }

@@ -41,6 +41,13 @@ contract EMN is
         _setDefaultRoyalty(royaltyReceiver, royaltyFeeNumerator);
     }
 
+    function contractURI() external pure returns (string memory) {
+        // return _contractURI;
+        // or e.g. for onchain:
+        string memory json = '{"name": "EON MUN","description":"Each EMN NFT represenets a unique physical artwork created by EON MUN."}';
+        return string.concat("data:application/json;utf8,", json);
+    }
+
     function mintNft(string memory tokenURI) public {
         uint256 tokenId = s_tokenCounter;
         _safeMint(msg.sender, tokenId);

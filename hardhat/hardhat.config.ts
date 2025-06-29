@@ -1,8 +1,14 @@
 import type { HardhatUserConfig } from "hardhat/config";
 
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
+import hardhatIgnitionPlugin from "@nomicfoundation/hardhat-ignition";
 import { configVariable } from "hardhat/config";
-
+const accounts = {
+  sepolia: {
+    admin: configVariable("SEPOLIA_DEPLOYER_PRIVATE_KEY"),
+    minter: configVariable("SEPOLIA_DEPLOYER_PRIVATE_KEY")
+  }
+}
 const config: HardhatUserConfig = {
   /*
    * In Hardhat 3, plugins are defined as part of the Hardhat config instead of
@@ -11,7 +17,7 @@ const config: HardhatUserConfig = {
    * Note: A `hardhat-toolbox` like plugin for Hardhat 3 hasn't been defined yet,
    * so this list is larger than what you would normally have.
    */
-  plugins: [hardhatToolboxViemPlugin],
+  plugins: [hardhatToolboxViemPlugin, hardhatIgnitionPlugin],
   solidity: {
     /*
      * Hardhat 3 supports different build profiles, allowing you to configure
@@ -43,6 +49,25 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    /*
+     * Hardhat 3 natively supports remappings and makes extensive use of them
+     * internally to fully support npm resolution rules (i.e., it supports
+     * transitive dependencies, multiple versions of the same package,
+     * monorepos, etc.).
+     */
+    remappings: [
+      /*
+       * This remapping is added to the example because most people import
+       * forge-std/Test.sol, not forge-std/src/Test.sol.
+       *
+       * Note: The config currently leaks internal IDs, but this will be fixed
+       * in the future.
+       */
+      "forge-std/=npm/forge-std@1.9.4/src/",
+    ],
+  },
+  etherscan: {
+    apiKey: "9PPC8RZ8E2AUEAP96GBPQZQGJMWSMBT8N8",
   },
   /*
    * The `networks` configuration is mostly compatible with Hardhat 2.
@@ -72,11 +97,19 @@ const config: HardhatUserConfig = {
       type: "edr",
       chainType: "optimism",
     },
+    mainnet: {
+      type: "http",
+      chainType: "l1",
+      url: "https://mainnet.infura.io/v3/4a51a35099fd4fbd8d8e1532eb7ea933",
+      // accounts: [accounts.sepolia.admin, accounts.sepolia.minter],
+    },
     sepolia: {
       type: "http",
       chainType: "l1",
-      url: configVariable("SEPOLIA_RPC_URL"),
-      accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
+      //url: `https://sepolia.infura.io/v3/${configVariable("METAMASK_DEVELOPER_API_KEY")}`,
+      url: "https://sepolia.infura.io/v3/4a51a35099fd4fbd8d8e1532eb7ea933",
+      accounts: [accounts.sepolia.admin, accounts.sepolia.minter],
+      gas: 50_000_000
     },
   },
 };
