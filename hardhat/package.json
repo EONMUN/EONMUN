@@ -2,10 +2,15 @@
   "name": "hardhat",
   "type": "module",
   "version": "1.0.0",
+  "scripts": {
+    "test": "npx hardhat test"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.0-next.20",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0-next.20",
     "@types/node": "^22.15.34",
+    "@openzeppelin/contracts": "^5.3.0",
+    "@openzeppelin/contracts-upgradeable": "^5.3.0",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.0.0-next.20",
     "typescript": "~5.8.0",
