@@ -61,6 +61,12 @@
       "avatar": "sarahbaker@strapi.io.jpg"
     }
   ],
+  "artworks": [
+    {
+      "title": "Soleil et Montagnes",
+      "slug": "soleil-et-montagnes"
+    }
+  ],
   "articles": [
     {
       "title": "The internet's Own boy",

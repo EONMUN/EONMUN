@@ -7,3 +7,9 @@ README.md
 .strapi
 .tmp
 .dist
+
+############################
+# Custom
+############################
+
+data/uploads/artworks/*
