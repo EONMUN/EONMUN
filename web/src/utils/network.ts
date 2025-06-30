@@ -1,7 +1,7 @@
-import { mainnet, arbitrum, base, polygon, optimism } from '@reown/appkit/networks'
-import { sepolia } from '@reown/appkit/networks'
+import { mainnet, arbitrum, base, polygon, optimism, sepolia } from '@reown/appkit/networks'
 
 export const ETH_CHAINS = [mainnet, arbitrum, base, polygon, optimism, sepolia]
+export const ETH_CHAINS_DEV = [sepolia]
 
 export const NETWORK_COLORS = {
   ethereum: {
