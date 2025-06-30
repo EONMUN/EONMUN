@@ -2,7 +2,7 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
-import Arweave from 'arweave';
+import { TokenImageWrapper } from '@/components/TokenImage';
 import { 
   useReadEmnTokenUri,
   useReadEmnOwnerOf,
@@ -10,9 +10,6 @@ import {
   useWriteEmnSetTokenUri,
   useSimulateEmnSetTokenUri
 } from "@/abis";
-
-// Initialize Arweave
-const arweave = Arweave.init({});
 
 interface TokenMetadata {
   name?: string;
@@ -37,10 +34,7 @@ export default function TokenPage({ params }: TokenPageProps) {
   const [newUri, setNewUri] = useState('');
   const [txPending, setTxPending] = useState(false);
   
-  // State for Arweave image and metadata
-  const [imageData, setImageData] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
+  // State for metadata only (image handling moved to TokenImageWrapper)
   const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
 
   // Contract reads
@@ -67,39 +61,9 @@ export default function TokenPage({ params }: TokenPageProps) {
   
   const { writeContract, isPending, error } = useWriteEmnSetTokenUri();
 
-  // Function to extract Arweave transaction ID from various formats
-  const extractArweaveId = (uri: string): string | null => {
+  // Simplified function to parse JSON metadata from tokenURI
+  const parseTokenMetadata = (uri: string): TokenMetadata | null => {
     if (!uri) return null;
-    
-    // Handle different URI formats:
-    // 1. ar:// protocol format
-    if (uri.startsWith('ar://')) {
-      return uri.substring(5); // Remove 'ar://' prefix
-    }
-    
-    // 2. Direct Arweave transaction ID
-    if (uri.match(/^[a-zA-Z0-9_-]{43}$/)) {
-      return uri;
-    }
-    
-    // 3. Full Arweave URL (https://arweave.net/TRANSACTION_ID)
-    const arweaveUrlMatch = uri.match(/https?:\/\/arweave\.net\/([a-zA-Z0-9_-]{43})/);
-    if (arweaveUrlMatch) {
-      return arweaveUrlMatch[1];
-    }
-    
-    // 4. Gateway URL (https://GATEWAY/TRANSACTION_ID)
-    const gatewayMatch = uri.match(/https?:\/\/[^\/]+\/([a-zA-Z0-9_-]{43})/);
-    if (gatewayMatch) {
-      return gatewayMatch[1];
-    }
-    
-    return null;
-  };
-
-  // Function to parse JSON metadata from tokenURI
-  const parseTokenMetadata = (uri: string): { imageUri: string | null, metadata: TokenMetadata | null } => {
-    if (!uri) return { imageUri: null, metadata: null };
     
     try {
       // Handle data URL format: data:application/json;utf8,{...}
@@ -111,60 +75,19 @@ export default function TokenPage({ params }: TokenPageProps) {
       }
       
       const metadata: TokenMetadata = JSON.parse(jsonStr);
-      const imageUri = metadata.image || null;
-      
-      return { imageUri, metadata };
+      return metadata;
     } catch (err) {
       console.error('Failed to parse token metadata:', err);
-      // If it's not JSON, treat the entire URI as the image URI
-      return { imageUri: uri, metadata: null };
+      return null;
     }
   };
 
-  // Function to fetch image from Arweave
-  const fetchArweaveImage = async (transactionId: string) => {
-    console.log('Fetching image from Arweave:', transactionId);
-    try {
-      setImageLoading(true);
-      setImageError(null);
-      
-      // Get the data URL directly from Arweave API
-      const res = await arweave.api.get(transactionId);
-      console.log('Data:', res);
-      
-      // Use the URL directly
-      const imageUrl = res.url;
-      setImageData(imageUrl);
-      
-    } catch (err) {
-      console.error('Failed to fetch Arweave data:', err);
-      setImageError('Failed to load image from Arweave');
-    } finally {
-      setImageLoading(false);
-    }
-  };
-
-  // Effect to parse metadata and fetch image when tokenURI changes
+  // Effect to parse metadata when tokenURI changes
   useEffect(() => {
     if (tokenURI) {
-      const { imageUri, metadata: parsedMetadata } = parseTokenMetadata(tokenURI);
+      const parsedMetadata = parseTokenMetadata(tokenURI);
       setMetadata(parsedMetadata);
-      
-      if (imageUri) {
-        const arweaveId = extractArweaveId(imageUri);
-        if (arweaveId) {
-          fetchArweaveImage(arweaveId);
-        } else {
-          setImageData(null);
-          setImageError('Image URI does not contain a valid Arweave transaction ID');
-        }
-      } else {
-        setImageData(null);
-        setImageError('No image found in metadata');
-      }
     } else {
-      setImageData(null);
-      setImageError(null);
       setMetadata(null);
     }
   }, [tokenURI]);
@@ -219,7 +142,6 @@ export default function TokenPage({ params }: TokenPageProps) {
     );
   }
 
-    console.log('imageData', imageData);
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Navigation */}
@@ -259,46 +181,15 @@ export default function TokenPage({ params }: TokenPageProps) {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Image Section */}
+            {/* Image Section - Now using TokenImageWrapper */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-gray-800">Token Image</h2>
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                {imageLoading ? (
-                  <div className="aspect-square flex items-center justify-center bg-gray-100">
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="loading loading-spinner loading-lg text-blue-600"></div>
-                      <span className="text-sm text-gray-600">Loading image from Arweave...</span>
-                    </div>
-                  </div>
-                ) : imageError ? (
-                  <div className="aspect-square flex items-center justify-center bg-red-50 text-red-600 p-4">
-                    <div className="text-center">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                      <p className="text-sm font-medium">{imageError}</p>
-                    </div>
-                  </div>
-                ) : imageData ? (
-                  <div className="aspect-square">
-                    <img 
-                      src={imageData} 
-                      alt={metadata?.name || `Token ${tokenId}`}
-                      className="w-full h-full object-cover"
-                      onError={() => setImageError('Failed to display image')}
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-square flex items-center justify-center bg-gray-100 text-gray-500">
-                    <div className="text-center">
-                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <p className="text-sm">No image available</p>
-                    </div>
-                  </div>
-                )}
+                <TokenImageWrapper 
+                  imageUrl={metadata?.image} 
+                  alt={metadata?.name || `Token ${tokenId}`}
+                />
               </div>
             </div>
 
@@ -366,7 +257,7 @@ export default function TokenPage({ params }: TokenPageProps) {
                     value={newUri}
                     onChange={(e) => setNewUri(e.target.value)}
                     className="w-full h-24 text-sm font-mono p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
-                    placeholder="Enter new token URI (Arweave transaction ID or URL)..."
+                    placeholder="Enter new token URI (JSON metadata with ar:// image URL)..."
                   />
                   <div className="flex gap-2">
                     <button
@@ -414,9 +305,9 @@ export default function TokenPage({ params }: TokenPageProps) {
                           View Metadata →
                         </a>
                       )}
-                      {extractArweaveId(tokenURI) && (
+                      {metadata?.image && metadata.image.startsWith('ar://') && (
                         <a 
-                          href={`https://arweave.net/${extractArweaveId(tokenURI)}`} 
+                          href={`https://arweave.net/${metadata.image.substring(5)}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="btn btn-sm bg-purple-600 text-white hover:bg-purple-700 border-0"
