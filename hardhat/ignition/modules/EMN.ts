@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-export default buildModule("BasicNftRoyaltiesModule", (m) => {
+export default buildModule("EMNModule", (m) => {
   const addresses = {
     deployer: m.getAccount(0),
     royaltyReceiver: m.getAccount(1),
@@ -12,7 +12,7 @@ export default buildModule("BasicNftRoyaltiesModule", (m) => {
 
   // Step 1: Deploy the implementation contract
   const implementation = m.contract("EMN", [], {
-    id: "BasicNftRoyalties_Implementation"
+    id: "EMN_Implementation"
   });
 
   // Step 2: Encode the initialization data
@@ -43,13 +43,13 @@ export default buildModule("BasicNftRoyaltiesModule", (m) => {
     
     // Mint first NFT to deployer with URI
     m.call(emn, "mintNft", [tokenURI1], {
-      id: "mintInitialNft_0",
+      id: "mint_0",
       from: addresses.deployer
     });
     
     // Mint second NFT to royalty receiver with different URI
     m.call(emn, "mintNftTo", [addresses.royaltyReceiver, tokenURI2], {
-      id: "mintInitialNft_1",
+      id: "mint_1",
       from: addresses.deployer
     });
   }
