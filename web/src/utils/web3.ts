@@ -9,7 +9,7 @@ if (!WALLETCONNECT_PROJECT_ID) {
 
 export const WALLETCONNECT_ADAPTER = new WagmiAdapter({
   projectId: WALLETCONNECT_PROJECT_ID,
-  networks: ETH_CHAINS_DEV,
+  networks: process.env.NODE_ENV === 'development' ? ETH_CHAINS_DEV : ETH_CHAINS,
   ssr: true,
   storage: createStorage({
     storage: cookieStorage,

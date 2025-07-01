@@ -2,7 +2,11 @@
 import { use, Suspense } from 'react';
 import Arweave from 'arweave';
 
-const arweave = Arweave.init({});
+const arweave = Arweave.init({
+    host: 'arweave.net',
+    port: 443,
+    protocol: 'https'
+});
 
 // Cache for promises to prevent infinite re-renders
 const imagePromiseCache = new Map<string, Promise<string>>();
