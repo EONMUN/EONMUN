@@ -17,6 +17,14 @@
 	},
 	"observability": {
 		"enabled": true
+	},
+	"env": {
+		"production": {
+			"vars": {
+				"NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID": "58d01e1f07385c9558411c3cc158d3ad",
+				"NEXT_PUBLIC_INFURA_KEY": "4a51a35099fd4fbd8d8e1532eb7ea933"
+			}
+		}
 	}
 	/**
 	 * Smart Placement
