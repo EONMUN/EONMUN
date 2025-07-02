@@ -1,9 +1,11 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
+import hre from "hardhat";
 
 export default buildModule("EMNModule", (m) => {
   const addresses = {
     deployer: m.getAccount(0),
-    royaltyReceiver: m.getAccount(1),
+    royaltyReceiver: "0x184bD866ea2600f760D51D888140Fa142195f628",
+    ncrmro: "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976"
   };
 
   // Configuration parameters for the BasicNftRoyalties contract
@@ -36,23 +38,15 @@ export default buildModule("EMNModule", (m) => {
   // Optional: Mint some initial NFTs for testing/demo purposes
   const shouldMintInitial = m.getParameter("mintInitialNfts", true);
   
-  if (shouldMintInitial) {
-    // Define example token URIs
-    const tokenURI1 = m.getParameter("tokenURI1", "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/0-PUG.json");
-    const tokenURI2 = m.getParameter("tokenURI2", "https://api.example.com/nft/metadata/1.json");
+  // // Define example token URIs
+  // const tokenURI1 = m.getParameter("tokenURI1", "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/0-PUG.json");
+  // const tokenURI2 = m.getParameter("tokenURI2", "https://api.example.com/nft/metadata/1.json");
+  
+  // m.call(emn, "transferOwnership", [addresses.ncrmro], {
+  //   id: "transferOwnership_0",
+  //   from: addresses.deployer
+  // });
     
-    // Mint first NFT to deployer with URI
-    m.call(emn, "mintNft", [tokenURI1], {
-      id: "mint_0",
-      from: addresses.deployer
-    });
-    
-    // Mint second NFT to royalty receiver with different URI
-    m.call(emn, "mintNftTo", [addresses.royaltyReceiver, tokenURI2], {
-      id: "mint_1",
-      from: addresses.deployer
-    });
-  }
 
   return { 
     implementation,

@@ -3,12 +3,13 @@ import type { HardhatUserConfig } from "hardhat/config";
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
 import hardhatIgnitionPlugin from "@nomicfoundation/hardhat-ignition";
 import { configVariable } from "hardhat/config";
-const accounts = {
+const networks = {
   sepolia: {
     admin: configVariable("SEPOLIA_DEPLOYER_PRIVATE_KEY"),
     minter: configVariable("SEPOLIA_DEPLOYER_PRIVATE_KEY")
   }
 }
+const accounts = [networks.sepolia.admin, networks.sepolia.minter]
 const config: HardhatUserConfig = {
   /*
    * In Hardhat 3, plugins are defined as part of the Hardhat config instead of
@@ -101,14 +102,14 @@ const config: HardhatUserConfig = {
       type: "http",
       chainType: "l1",
       url: "https://mainnet.infura.io/v3/4a51a35099fd4fbd8d8e1532eb7ea933",
-      // accounts: [accounts.sepolia.admin, accounts.sepolia.minter],
+      accounts
     },
     sepolia: {
       type: "http",
       chainType: "l1",
       //url: `https://sepolia.infura.io/v3/${configVariable("METAMASK_DEVELOPER_API_KEY")}`,
       url: "https://sepolia.infura.io/v3/4a51a35099fd4fbd8d8e1532eb7ea933",
-      accounts: [accounts.sepolia.admin, accounts.sepolia.minter],
+      accounts,
       gas: 50_000_000
     },
   },

@@ -30,7 +30,7 @@ contract EMN is
         address royaltyReceiver,
         uint96 royaltyFeeNumerator
     ) public initializer {
-        __ERC721_init("EON MUN Originals", "EMN");
+        __ERC721_init("EON MUN", "EMN");
         __ERC2981_init();
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
