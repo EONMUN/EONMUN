@@ -17,7 +17,7 @@ export default defineConfig({
       deployments: {
         EMN: {
           [chainIds.sepolia]: '0x2E650Bc3C306018bFD3a652D704d07d07A46067a',
-          [chainIds.mainnet]: '0x89849A41a2063B721EC31ba4A3260f93BcF5fEF2',
+          [chainIds.mainnet]: '0x0687470Cb1Af4C776185Fd4dA360501c40f6Ca28',
         },
       },
     })
