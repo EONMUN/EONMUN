@@ -114,13 +114,13 @@ export default function EMNPage() {
       BigInt(defaultRoyaltyFeeNumerator)
     ],
     query: {
-      enabled: showDefaultRoyaltyForm && 
-               defaultRoyaltyReceiver.length === 42 && 
-               defaultRoyaltyReceiver.startsWith('0x') &&
-               defaultRoyaltyPercentage && 
-               !isNaN(parseFloat(defaultRoyaltyPercentage)) &&
-               parseFloat(defaultRoyaltyPercentage) >= 0 &&
-               parseFloat(defaultRoyaltyPercentage) <= 100,
+      enabled: !!(showDefaultRoyaltyForm && 
+                 defaultRoyaltyReceiver.length === 42 && 
+                 defaultRoyaltyReceiver.startsWith('0x') &&
+                 defaultRoyaltyPercentage && 
+                 !isNaN(parseFloat(defaultRoyaltyPercentage)) &&
+                 parseFloat(defaultRoyaltyPercentage) >= 0 &&
+                 parseFloat(defaultRoyaltyPercentage) <= 100),
     },
   });
   
