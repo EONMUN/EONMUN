@@ -14,6 +14,7 @@ import {
   useSimulateEmnDeleteDefaultRoyalty,
   useWriteEmnTransferOwnership,
   useSimulateEmnTransferOwnership,
+  useWriteEmnSetContractUri,
   useReadEmnGetTokenCounter,
   emnAddress
 } from "@/abis";
@@ -39,6 +40,39 @@ export default function ContractAdminPage() {
   const isValidPercentage = (percentage: string) => {
     const pct = parseFloat(percentage);
     return !isNaN(pct) && pct >= 0 && pct <= 100;
+  };
+  
+  const isValidURI = (uri: string) => {
+    try {
+      new URL(uri);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  
+  // Generate contract URI from form data
+  const generateContractURI = () => {
+    if (useRawJSON) {
+      return rawJSONData;
+    }
+    
+    const metadata: Record<string, string | string[]> = {
+      name: contractURIFormData.name,
+    };
+    
+    // Add optional fields only if they have values
+    if (contractURIFormData.symbol) metadata.symbol = contractURIFormData.symbol;
+    if (contractURIFormData.description) metadata.description = contractURIFormData.description;
+    if (contractURIFormData.image) metadata.image = contractURIFormData.image;
+    if (contractURIFormData.banner_image) metadata.banner_image = contractURIFormData.banner_image;
+    if (contractURIFormData.featured_image) metadata.featured_image = contractURIFormData.featured_image;
+    if (contractURIFormData.external_link) metadata.external_link = contractURIFormData.external_link;
+    if (contractURIFormData.collaborators.length > 0) {
+      metadata.collaborators = contractURIFormData.collaborators.filter(c => c.trim() !== '');
+    }
+    
+    return `data:application/json;utf8,${JSON.stringify(metadata)}`;
   };
   
   // Get the effective contract address (custom or default)
@@ -95,7 +129,7 @@ export default function ContractAdminPage() {
   const { data: contractOwner, refetch: refetchOwner } = useReadEmnOwner();
   const { data: contractName } = useReadEmnName();
   const { data: contractSymbol } = useReadEmnSymbol();
-  const { data: contractURI } = useReadEmnContractUri();
+  const { data: contractURI, refetch: refetchContractURI } = useReadEmnContractUri();
   const { data: tokenCounter } = useReadEmnGetTokenCounter();
   
   // Get current default royalty info (using token ID 0 and 10000 as sample sale price)
@@ -105,6 +139,24 @@ export default function ContractAdminPage() {
   
   // Check if current user is the contract owner
   const isOwner = address && contractOwner && address.toLowerCase() === contractOwner.toLowerCase();
+  
+  // Parse contract URI to extract metadata
+  const parseContractMetadata = () => {
+    if (!contractURI) return null;
+    
+    try {
+      let jsonStr = contractURI;
+      if (contractURI.startsWith('data:application/json;utf8,')) {
+        jsonStr = contractURI.substring('data:application/json;utf8,'.length);
+      }
+      return JSON.parse(jsonStr);
+    } catch (err) {
+      console.error('Failed to parse contract metadata:', err);
+      return null;
+    }
+  };
+  
+  const contractMetadata = parseContractMetadata();
   
   // Form states
   const [activeSection, setActiveSection] = useState<'overview' | 'royalty' | 'ownership' | 'metadata'>('overview');
@@ -116,6 +168,22 @@ export default function ContractAdminPage() {
   });
   const [royaltyPending, setRoyaltyPending] = useState(false);
   const [royaltyErrors, setRoyaltyErrors] = useState<Record<string, string>>({});
+  
+  // Contract URI management state
+  const [contractURIFormData, setContractURIFormData] = useState({
+    name: '',
+    symbol: '',
+    description: '',
+    image: '',
+    banner_image: '',
+    featured_image: '',
+    external_link: '',
+    collaborators: [] as string[]
+  });
+  const [contractURIPending, setContractURIPending] = useState(false);
+  const [contractURIErrors, setContractURIErrors] = useState<Record<string, string>>({});
+  const [useRawJSON, setUseRawJSON] = useState(false);
+  const [rawJSONData, setRawJSONData] = useState('');
   
   // Ownership transfer state
   const [ownershipFormData, setOwnershipFormData] = useState({
@@ -199,6 +267,9 @@ export default function ContractAdminPage() {
   const { writeContract: setDefaultRoyalty, isPending: isSetRoyaltyPending, error: setRoyaltyError } = useWriteEmnSetDefaultRoyalty();
   const { writeContract: deleteDefaultRoyalty, isPending: isDeleteRoyaltyPending, error: deleteRoyaltyError } = useWriteEmnDeleteDefaultRoyalty();
   
+  // Contract writes for contract URI management
+  const { writeContract: setContractURI, error: setContractURIError } = useWriteEmnSetContractUri();
+  
   // Contract writes for ownership transfer (with address override)
   const { data: simulateTransferData } = useSimulateEmnTransferOwnership({
     args: [ownershipFormData.newOwner as `0x${string}`],
@@ -221,6 +292,42 @@ export default function ContractAdminPage() {
       });
     }
   }, [royaltyInfo]);
+  
+  // Initialize contract URI form with current settings
+  useEffect(() => {
+    if (contractURI) {
+      try {
+        // Try to parse the contract URI to populate form fields
+        let jsonData;
+        if (contractURI.startsWith('data:application/json;utf8,')) {
+          jsonData = JSON.parse(contractURI.substring('data:application/json;utf8,'.length));
+        } else if (contractURI.startsWith('data:application/json;base64,')) {
+          jsonData = JSON.parse(atob(contractURI.substring('data:application/json;base64,'.length)));
+        } else {
+          // For external URIs, set raw JSON mode
+          setUseRawJSON(true);
+          setRawJSONData(contractURI);
+          return;
+        }
+        
+        // Populate form fields from parsed JSON
+        setContractURIFormData({
+          name: jsonData.name || '',
+          symbol: jsonData.symbol || '',
+          description: jsonData.description || '',
+          image: jsonData.image || '',
+          banner_image: jsonData.banner_image || '',
+          featured_image: jsonData.featured_image || '',
+          external_link: jsonData.external_link || '',
+          collaborators: jsonData.collaborators || []
+        });
+      } catch (error) {
+        console.error('Failed to parse contract URI:', error);
+        setUseRawJSON(true);
+        setRawJSONData(contractURI);
+      }
+    }
+  }, [contractURI]);
   
   // Calculate current royalty info for display
   const currentRoyaltyReceiver = royaltyInfo?.[0] || null;
@@ -249,6 +356,41 @@ export default function ContractAdminPage() {
     return Object.keys(newErrors).length === 0;
   };
   
+  const validateContractURIForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (useRawJSON) {
+      if (!rawJSONData.trim()) {
+        newErrors.rawJSON = 'Contract URI is required';
+      } else if (rawJSONData.trim().length < 10) {
+        newErrors.rawJSON = 'Contract URI must be at least 10 characters long';
+      }
+    } else {
+      if (!contractURIFormData.name.trim()) {
+        newErrors.name = 'Name is required';
+      }
+      
+      // Validate URI formats
+      const uriFields = ['image', 'banner_image', 'featured_image', 'external_link'];
+      uriFields.forEach(field => {
+        const value = contractURIFormData[field as keyof typeof contractURIFormData] as string;
+        if (value && !isValidURI(value)) {
+          newErrors[field] = 'Please enter a valid URI';
+        }
+      });
+      
+      // Validate collaborators (should be valid Ethereum addresses)
+      contractURIFormData.collaborators.forEach((collaborator, index) => {
+        if (collaborator && !isValidAddress(collaborator)) {
+          newErrors[`collaborator_${index}`] = 'Please enter a valid Ethereum address';
+        }
+      });
+    }
+    
+    setContractURIErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
   const validateOwnershipForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -272,10 +414,48 @@ export default function ContractAdminPage() {
     }
   };
   
+  const handleContractURIInputChange = (field: string, value: string) => {
+    if (field === 'rawJSON') {
+      setRawJSONData(value);
+    } else {
+      setContractURIFormData(prev => ({ ...prev, [field]: value }));
+    }
+    if (contractURIErrors[field]) {
+      setContractURIErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+  
   const handleOwnershipInputChange = (field: string, value: string) => {
     setOwnershipFormData(prev => ({ ...prev, [field]: value }));
     if (ownershipErrors[field]) {
       setOwnershipErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+  
+  const handleAddCollaborator = () => {
+    setContractURIFormData(prev => ({
+      ...prev,
+      collaborators: [...prev.collaborators, '']
+    }));
+  };
+  
+  const handleRemoveCollaborator = (index: number) => {
+    setContractURIFormData(prev => ({
+      ...prev,
+      collaborators: prev.collaborators.filter((_, i) => i !== index)
+    }));
+  };
+  
+  const handleCollaboratorChange = (index: number, value: string) => {
+    setContractURIFormData(prev => ({
+      ...prev,
+      collaborators: prev.collaborators.map((collab, i) => i === index ? value : collab)
+    }));
+    
+    // Clear error for this collaborator
+    const errorKey = `collaborator_${index}`;
+    if (contractURIErrors[errorKey]) {
+      setContractURIErrors(prev => ({ ...prev, [errorKey]: '' }));
     }
   };
   
@@ -323,6 +503,34 @@ export default function ContractAdminPage() {
     }
   };
   
+  // Handle contract URI updates
+  const handleSetContractURI = async () => {
+    if (!validateContractURIForm()) return;
+    
+    try {
+      setContractURIPending(true);
+      
+      const newURI = generateContractURI();
+      
+      // We need to manually call the contract function since we're generating the URI dynamically
+      if (!setContractURI) {
+        throw new Error('Contract function not available');
+      }
+      
+      await setContractURI({
+        args: [newURI],
+      });
+      
+      setTimeout(() => {
+        refetchContractURI();
+        setContractURIPending(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to set contract URI:', err);
+      setContractURIPending(false);
+    }
+  };
+  
   // Handle ownership transfer
   const handleTransferOwnership = async () => {
     if (!validateOwnershipForm()) return;
@@ -347,24 +555,6 @@ export default function ContractAdminPage() {
       setOwnershipPending(false);
     }
   };
-  
-  // Parse contract URI to extract metadata
-  const parseContractMetadata = () => {
-    if (!contractURI) return null;
-    
-    try {
-      let jsonStr = contractURI;
-      if (contractURI.startsWith('data:application/json;utf8,')) {
-        jsonStr = contractURI.substring('data:application/json;utf8,'.length);
-      }
-      return JSON.parse(jsonStr);
-    } catch (err) {
-      console.error('Failed to parse contract metadata:', err);
-      return null;
-    }
-  };
-  
-  const contractMetadata = parseContractMetadata();
   
   if (!isConnected) {
     return (
@@ -974,27 +1164,265 @@ export default function ContractAdminPage() {
           <div className="card-body p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Contract Metadata Management</h2>
             
-            {/* Information Banner */}
-            <div className="bg-blue-50 border border-blue-300 rounded-lg p-6 mb-8">
-              <div className="flex items-start">
-                <svg className="w-6 h-6 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Update Contract URI */}
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2">Contract URI Information</h3>
-                  <p className="text-blue-800 text-sm mb-3">
-                    The contract URI is hardcoded in the smart contract and cannot be updated through standard function calls. 
-                    It would require a contract upgrade to modify this data.
-                  </p>
-                  <p className="text-blue-700 text-xs">
-                    This is a security feature that ensures contract metadata remains immutable unless the entire contract is upgraded.
-                  </p>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Update Contract URI</h3>
+                  
+                  <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 mb-4">
+                    <div className="flex items-start">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-800">Contract URI Information</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          The contract URI provides collection-level metadata for this NFT contract, including name, description, and other collection details.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Form Mode Toggle */}
+                  <div className="mb-4">
+                    <div className="flex items-center space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="uriMode"
+                          checked={!useRawJSON}
+                          onChange={() => setUseRawJSON(false)}
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Structured Form</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="uriMode"
+                          checked={useRawJSON}
+                          onChange={() => setUseRawJSON(true)}
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Raw JSON/URI</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {useRawJSON ? (
+                    /* Raw JSON Mode */
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Contract URI <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={rawJSONData}
+                          onChange={(e) => handleContractURIInputChange('rawJSON', e.target.value)}
+                          placeholder="https://api.example.com/contract-metadata.json or data:application/json;utf8,{...}"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-mono text-sm"
+                        />
+                        {contractURIErrors.rawJSON && <p className="text-red-600 text-sm mt-1">{contractURIErrors.rawJSON}</p>}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter a URI pointing to JSON metadata or inline JSON data URI
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Structured Form Mode */
+                    <div className="space-y-4">
+                      {/* Name - Required */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={contractURIFormData.name}
+                          onChange={(e) => handleContractURIInputChange('name', e.target.value)}
+                          placeholder="My NFT Collection"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {contractURIErrors.name && <p className="text-red-600 text-sm mt-1">{contractURIErrors.name}</p>}
+                      </div>
+                      
+                      {/* Symbol */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Symbol
+                        </label>
+                        <input
+                          type="text"
+                          value={contractURIFormData.symbol}
+                          onChange={(e) => handleContractURIInputChange('symbol', e.target.value)}
+                          placeholder="MNC"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {contractURIErrors.symbol && <p className="text-red-600 text-sm mt-1">{contractURIErrors.symbol}</p>}
+                      </div>
+                      
+                      {/* Description */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Description
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={contractURIFormData.description}
+                          onChange={(e) => handleContractURIInputChange('description', e.target.value)}
+                          placeholder="A unique collection of digital artworks..."
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {contractURIErrors.description && <p className="text-red-600 text-sm mt-1">{contractURIErrors.description}</p>}
+                      </div>
+                      
+                      {/* Image */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Profile Image
+                        </label>
+                        <input
+                          type="url"
+                          value={contractURIFormData.image}
+                          onChange={(e) => handleContractURIInputChange('image', e.target.value)}
+                          placeholder="https://example.com/profile-image.jpg"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {contractURIErrors.image && <p className="text-red-600 text-sm mt-1">{contractURIErrors.image}</p>}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Profile picture for the collection
+                        </p>
+                      </div>
+                      
+                      {/* Banner Image */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Banner Image
+                        </label>
+                        <input
+                          type="url"
+                          value={contractURIFormData.banner_image}
+                          onChange={(e) => handleContractURIInputChange('banner_image', e.target.value)}
+                          placeholder="https://example.com/banner.jpg"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {contractURIErrors.banner_image && <p className="text-red-600 text-sm mt-1">{contractURIErrors.banner_image}</p>}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Banner image for the collection
+                        </p>
+                      </div>
+                      
+                      {/* Featured Image */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Featured Image
+                        </label>
+                        <input
+                          type="url"
+                          value={contractURIFormData.featured_image}
+                          onChange={(e) => handleContractURIInputChange('featured_image', e.target.value)}
+                          placeholder="https://example.com/featured.jpg"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {contractURIErrors.featured_image && <p className="text-red-600 text-sm mt-1">{contractURIErrors.featured_image}</p>}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Featured image for highlights
+                        </p>
+                      </div>
+                      
+                      {/* External Link */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          External Link
+                        </label>
+                        <input
+                          type="url"
+                          value={contractURIFormData.external_link}
+                          onChange={(e) => handleContractURIInputChange('external_link', e.target.value)}
+                          placeholder="https://example.com"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {contractURIErrors.external_link && <p className="text-red-600 text-sm mt-1">{contractURIErrors.external_link}</p>}
+                        <p className="text-xs text-gray-500 mt-1">
+                          External website for the collection
+                        </p>
+                      </div>
+                      
+                      {/* Collaborators */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          Collaborators
+                        </label>
+                        <div className="space-y-2">
+                          {contractURIFormData.collaborators.map((collaborator, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                value={collaborator}
+                                onChange={(e) => handleCollaboratorChange(index, e.target.value)}
+                                placeholder="0x..."
+                                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-mono text-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCollaborator(index)}
+                                className="btn bg-red-500 text-white hover:bg-red-600 border-0 px-3 py-2 text-sm"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                          {contractURIFormData.collaborators.some((_, index) => contractURIErrors[`collaborator_${index}`]) && (
+                            <p className="text-red-600 text-sm">
+                              Please check collaborator addresses for errors
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddCollaborator}
+                          className="btn bg-green-500 text-white hover:bg-green-600 border-0 px-4 py-2 text-sm mt-2"
+                        >
+                          Add Collaborator
+                        </button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Ethereum addresses of authorized editors
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Submit Button */}
+                  <div className="pt-4">
+                    <button
+                      onClick={handleSetContractURI}
+                      disabled={contractURIPending || !isOwner}
+                      className="btn bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 border-0 w-full py-3"
+                    >
+                      {contractURIPending ? (
+                        <>
+                          <span className="loading loading-spinner loading-xs"></span>
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Contract URI'
+                      )}
+                    </button>
+                    
+                    {setContractURIError && (
+                      <div className="bg-red-50 border border-red-300 rounded-lg p-4 mt-4">
+                        <p className="text-red-800 text-sm">
+                          Error: {setContractURIError.message}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="grid md:grid-cols-1 gap-8">
-              {/* Current Contract URI */}
+              
+              {/* Current Contract URI Display */}
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Current Contract URI</h3>
@@ -1006,7 +1434,7 @@ export default function ContractAdminPage() {
                       </label>
                       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
                         <div className="text-xs font-mono text-gray-800 break-all">
-                          {contractURI}
+                          {contractURI || 'No contract URI set'}
                         </div>
                       </div>
                       {contractURI && contractURI.startsWith('http') && (
@@ -1072,53 +1500,49 @@ export default function ContractAdminPage() {
                     )}
 
                     {/* JSON View */}
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                        Full JSON Structure
-                      </label>
-                      <div className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs font-mono overflow-auto max-h-64">
-                        <pre>{contractMetadata ? JSON.stringify(contractMetadata, null, 2) : 'No metadata available'}</pre>
+                    {contractMetadata && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          JSON Structure
+                        </label>
+                        <div className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs font-mono overflow-auto max-h-64">
+                          <pre>{JSON.stringify(contractMetadata, null, 2)}</pre>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
-
-              {/* Upgrade Information */}
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">How to Update Contract Metadata</h3>
-                
-                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-semibold text-yellow-800 mb-2">Contract Upgrade Required</h4>
-                      <p className="text-sm text-yellow-700">
-                        To update the contract URI, you would need to:
-                      </p>
-                    </div>
-                    
-                    <ol className="text-sm text-yellow-700 space-y-2 ml-4">
-                      <li className="flex items-start">
-                        <span className="font-semibold mr-2">1.</span>
-                        <span>Deploy a new implementation contract with the updated contractURI() function</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-semibold mr-2">2.</span>
-                        <span>Use the upgradeToAndCall() function to upgrade to the new implementation</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-semibold mr-2">3.</span>
-                        <span>Verify the upgrade was successful and the new URI is returned</span>
-                      </li>
-                    </ol>
-                    
-                    <div className="bg-red-100 border border-red-300 rounded-lg p-3 mt-4">
-                      <p className="text-red-800 text-xs">
-                        <strong>Warning:</strong> Contract upgrades are complex operations that can affect all contract functionality. 
-                        They should only be performed by experienced developers with thorough testing.
-                      </p>
-                    </div>
+            </div>
+            
+            {/* Metadata Format Examples */}
+            <div className="border-t border-gray-200 pt-6 mt-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Metadata Format Examples</h3>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">External JSON URI</h4>
+                  <div className="bg-gray-900 text-green-400 rounded p-3 text-xs font-mono overflow-auto">
+                    <pre>{`https://api.example.com/contract-metadata.json`}</pre>
                   </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Points to external JSON file hosted on your server or IPFS
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Inline JSON Data URI</h4>
+                  <div className="bg-gray-900 text-green-400 rounded p-3 text-xs font-mono overflow-auto">
+                    <pre>{`data:application/json;utf8,{
+  "name": "My NFT Collection",
+  "description": "A unique collection...",
+  "image": "https://...",
+  "external_link": "https://..."
+}`}</pre>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Inline JSON data stored directly in the contract
+                  </p>
                 </div>
               </div>
             </div>

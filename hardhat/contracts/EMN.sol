@@ -18,8 +18,12 @@ contract EMN is
     
     // Mapping from token ID to token URI
     mapping(uint256 => string) private s_tokenURIs;
+    
+    // Contract URI for contract-level metadata
+    string private s_contractURI;
 
     event NftMinted(uint256 indexed tokenId, string tokenURI);
+    event ContractURIUpdated(string newContractURI);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -39,13 +43,19 @@ contract EMN is
         
         // Set default royalty for all tokens
         _setDefaultRoyalty(royaltyReceiver, royaltyFeeNumerator);
+        
+        // Set initial contract URI
+        string memory json = '{"name": "EON MUN","description":"Each EMN NFT represenets a unique physical artwork created by EON MUN."}';
+        s_contractURI = string.concat("data:application/json;utf8,", json);
     }
 
-    function contractURI() external pure returns (string memory) {
-        // return _contractURI;
-        // or e.g. for onchain:
-        string memory json = '{"name": "EON MUN","description":"Each EMN NFT represenets a unique physical artwork created by EON MUN."}';
-        return string.concat("data:application/json;utf8,", json);
+    function contractURI() external view returns (string memory) {
+        return s_contractURI;
+    }
+
+    function setContractURI(string memory newContractURI) public onlyOwner {
+        s_contractURI = newContractURI;
+        emit ContractURIUpdated(newContractURI);
     }
 
     function mintNft(string memory tokenURI) public {
@@ -117,6 +127,6 @@ contract EMN is
 
     // Version function for upgrade tracking
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 }
