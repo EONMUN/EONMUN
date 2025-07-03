@@ -36,7 +36,7 @@ export default buildModule("EMNModule", (m) => {
   });
 
   // Optional: Mint some initial NFTs for testing/demo purposes
-  const shouldMintInitial = m.getParameter("mintInitialNfts", true);
+  // const shouldMintInitial = m.getParameter("mintInitialNfts", true);
   
   // // Define example token URIs
   // const tokenURI1 = m.getParameter("tokenURI1", "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/0-PUG.json");

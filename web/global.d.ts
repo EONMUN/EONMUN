@@ -1,4 +1,4 @@
-import 'react';
+/// <reference types="react" />
 
 declare global {
   namespace JSX {
