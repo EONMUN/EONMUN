@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { 
-  useReadEmnOwner,
+  useReadEmnHasRole,
+  useReadEmnAdminRole,
+  useReadEmnEditorRole,
   useReadEmnName,
   useReadEmnSymbol,
   useReadEmnContractUri,
@@ -12,8 +14,10 @@ import {
   useSimulateEmnSetDefaultRoyalty,
   useWriteEmnDeleteDefaultRoyalty,
   useSimulateEmnDeleteDefaultRoyalty,
-  useWriteEmnTransferOwnership,
-  useSimulateEmnTransferOwnership,
+  useWriteEmnGrantRole,
+  useWriteEmnRevokeRole,
+  useSimulateEmnGrantRole,
+  useSimulateEmnRevokeRole,
   useWriteEmnSetContractUri,
   useReadEmnGetTokenCounter,
   emnAddress
@@ -23,6 +27,22 @@ export default function ContractAdminPage() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const publicClient = usePublicClient();
+  
+  // Get role constants
+  const { data: adminRole } = useReadEmnAdminRole();
+  const { data: editorRole } = useReadEmnEditorRole();
+  
+  // Check if user has admin role
+  const { data: isAdmin, refetch: refetchAdminRole } = useReadEmnHasRole({
+    args: adminRole && address ? [adminRole, address] : undefined,
+    query: { enabled: !!(adminRole && address) }
+  });
+  
+  // Check if user has editor role
+  const { data: isEditor, refetch: refetchEditorRole } = useReadEmnHasRole({
+    args: editorRole && address ? [editorRole, address] : undefined,
+    query: { enabled: !!(editorRole && address) }
+  });
   
   // Contract address override state
   const [customAddress, setCustomAddress] = useState<string>('');
@@ -126,7 +146,6 @@ export default function ContractAdminPage() {
   }, [publicClient, effectiveAddress]);
   
   // Contract reads with optional address override
-  const { data: contractOwner, refetch: refetchOwner } = useReadEmnOwner();
   const { data: contractName } = useReadEmnName();
   const { data: contractSymbol } = useReadEmnSymbol();
   const { data: contractURI, refetch: refetchContractURI } = useReadEmnContractUri();
@@ -136,9 +155,6 @@ export default function ContractAdminPage() {
   const { data: royaltyInfo, isLoading: royaltyLoading, refetch: refetchRoyalty } = useReadEmnRoyaltyInfo({
     args: [BigInt(0), BigInt(10000)],
   });
-  
-  // Check if current user is the contract owner
-  const isOwner = address && contractOwner && address.toLowerCase() === contractOwner.toLowerCase();
   
   // Parse contract URI to extract metadata
   const parseContractMetadata = () => {
@@ -159,7 +175,7 @@ export default function ContractAdminPage() {
   const contractMetadata = parseContractMetadata();
   
   // Form states
-  const [activeSection, setActiveSection] = useState<'overview' | 'royalty' | 'ownership' | 'metadata'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'royalty' | 'roles' | 'metadata'>('overview');
   
   // Royalty management state
   const [royaltyFormData, setRoyaltyFormData] = useState({
@@ -185,13 +201,15 @@ export default function ContractAdminPage() {
   const [useRawJSON, setUseRawJSON] = useState(false);
   const [rawJSONData, setRawJSONData] = useState('');
   
-  // Ownership transfer state
-  const [ownershipFormData, setOwnershipFormData] = useState({
-    newOwner: ''
+  // Role management state
+  const [roleFormData, setRoleFormData] = useState({
+    address: '',
+    role: 'editor' as 'admin' | 'editor'
   });
-  const [ownershipPending, setOwnershipPending] = useState(false);
-  const [ownershipErrors, setOwnershipErrors] = useState<Record<string, string>>({});
-  const [showOwnershipConfirm, setShowOwnershipConfirm] = useState(false);
+  const [rolePending, setRolePending] = useState(false);
+  const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
+  const [roleAction, setRoleAction] = useState<'grant' | 'revoke'>('grant');
+  const [roleSuccess, setRoleSuccess] = useState<string>('');
   
   // Contract address management functions
   const handleAddressChange = (newAddress: string) => {
@@ -254,13 +272,13 @@ export default function ContractAdminPage() {
                  royaltyFormData.percentage && 
                  isValidAddress(royaltyFormData.receiver) &&
                  isValidPercentage(royaltyFormData.percentage) &&
-                 isOwner),
+                 (isAdmin || isEditor)),
     },
   });
   
   const { data: simulateDeleteRoyaltyData } = useSimulateEmnDeleteDefaultRoyalty({
     query: {
-      enabled: !!(isOwner),
+      enabled: !!(isAdmin || isEditor),
     },
   });
   
@@ -270,17 +288,30 @@ export default function ContractAdminPage() {
   // Contract writes for contract URI management
   const { writeContract: setContractURI, error: setContractURIError } = useWriteEmnSetContractUri();
   
-  // Contract writes for ownership transfer (with address override)
-  const { data: simulateTransferData } = useSimulateEmnTransferOwnership({
-    args: [ownershipFormData.newOwner as `0x${string}`],
+  // Role management hooks
+  const targetRole = roleFormData.role === 'admin' ? adminRole : editorRole;
+  const { data: simulateGrantRoleData } = useSimulateEmnGrantRole({
+    args: targetRole && roleFormData.address ? [targetRole, roleFormData.address as `0x${string}`] : undefined,
     query: {
-      enabled: !!(ownershipFormData.newOwner && 
-                 isValidAddress(ownershipFormData.newOwner) &&
-                 isOwner),
+      enabled: !!(roleAction === 'grant' &&
+                 targetRole && 
+                 isValidAddress(roleFormData.address) &&
+                 isAdmin),
     },
   });
   
-  const { writeContract: transferOwnership, isPending: isTransferPending, error: transferError } = useWriteEmnTransferOwnership();
+  const { data: simulateRevokeRoleData } = useSimulateEmnRevokeRole({
+    args: targetRole && roleFormData.address ? [targetRole, roleFormData.address as `0x${string}`] : undefined,
+    query: {
+      enabled: !!(roleAction === 'revoke' &&
+                 targetRole && 
+                 isValidAddress(roleFormData.address) &&
+                 isAdmin),
+    },
+  });
+  
+  const { writeContract: grantRole, error: grantError } = useWriteEmnGrantRole();
+  const { writeContract: revokeRole, error: revokeError } = useWriteEmnRevokeRole();
   
   // Initialize royalty form with current settings
   useEffect(() => {
@@ -391,18 +422,16 @@ export default function ContractAdminPage() {
     return Object.keys(newErrors).length === 0;
   };
   
-  const validateOwnershipForm = () => {
+  const validateRoleForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!ownershipFormData.newOwner.trim()) {
-      newErrors.newOwner = 'New owner address is required';
-    } else if (!isValidAddress(ownershipFormData.newOwner)) {
-      newErrors.newOwner = 'Please enter a valid Ethereum address';
-    } else if (ownershipFormData.newOwner.toLowerCase() === address?.toLowerCase()) {
-      newErrors.newOwner = 'New owner cannot be the same as current owner';
+    if (!roleFormData.address.trim()) {
+      newErrors.address = 'Address is required';
+    } else if (!isValidAddress(roleFormData.address)) {
+      newErrors.address = 'Please enter a valid Ethereum address';
     }
     
-    setOwnershipErrors(newErrors);
+    setRoleErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
   
@@ -422,13 +451,6 @@ export default function ContractAdminPage() {
     }
     if (contractURIErrors[field]) {
       setContractURIErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-  
-  const handleOwnershipInputChange = (field: string, value: string) => {
-    setOwnershipFormData(prev => ({ ...prev, [field]: value }));
-    if (ownershipErrors[field]) {
-      setOwnershipErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
   
@@ -531,28 +553,40 @@ export default function ContractAdminPage() {
     }
   };
   
-  // Handle ownership transfer
-  const handleTransferOwnership = async () => {
-    if (!validateOwnershipForm()) return;
+  // Handle role management
+  const handleRoleManagement = async () => {
+    if (!validateRoleForm()) return;
     
     try {
-      setOwnershipPending(true);
+      setRolePending(true);
+      setRoleSuccess(''); // Clear any previous success messages
       
-      if (!simulateTransferData?.request || !transferOwnership) {
+      const simulateData = roleAction === 'grant' ? simulateGrantRoleData : simulateRevokeRoleData;
+      const roleFunction = roleAction === 'grant' ? grantRole : revokeRole;
+      
+      if (!simulateData?.request || !roleFunction) {
         throw new Error('Unable to simulate transaction');
       }
       
-      await transferOwnership(simulateTransferData.request as Parameters<typeof transferOwnership>[0]);
+      await roleFunction(simulateData.request as Parameters<typeof roleFunction>[0]);
       
       setTimeout(() => {
-        refetchOwner();
-        setOwnershipFormData({ newOwner: '' });
-        setShowOwnershipConfirm(false);
-        setOwnershipPending(false);
+        refetchAdminRole();
+        refetchEditorRole();
+        // Reset form data after successful transaction
+        setRoleFormData({ address: '', role: 'editor' });
+        setRoleAction('grant');
+        setRolePending(false);
+        setRoleSuccess(`Role ${roleAction === 'grant' ? 'granted' : 'revoked'} successfully!`);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setRoleSuccess('');
+        }, 5000);
       }, 2000);
     } catch (err) {
-      console.error('Failed to transfer ownership:', err);
-      setOwnershipPending(false);
+      console.error(`Failed to ${roleAction} role:`, err);
+      setRolePending(false);
     }
   };
   
@@ -561,8 +595,8 @@ export default function ContractAdminPage() {
       <div className="container mx-auto p-6">
         <div className="card bg-white shadow-xl border border-gray-300">
           <div className="card-body p-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Contract Administration</h1>
-            <p className="text-gray-600 mb-6">Please connect your wallet to access contract administration.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Contract Management</h1>
+            <p className="text-gray-600 mb-6">Please connect your wallet to access contract management features.</p>
             <appkit-button />
           </div>
         </div>
@@ -570,7 +604,7 @@ export default function ContractAdminPage() {
     );
   }
   
-  if (!isOwner) {
+  if (!isAdmin && !isEditor) {
     return (
       <div className="container mx-auto p-6">
         <div className="card bg-white shadow-xl border border-gray-300">
@@ -581,7 +615,7 @@ export default function ContractAdminPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
               </svg>
               <h2 className="text-xl font-bold text-red-900 mb-2">Access Denied</h2>
-              <p className="text-red-800">Only the contract owner can access administration functions.</p>
+              <p className="text-red-800">Only users with Admin or Editor role can access administration functions.</p>
             </div>
             <div className="mt-6">
               <Link href="/nfts/emn" className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-6 py-3">
@@ -601,7 +635,7 @@ export default function ContractAdminPage() {
         <ul className="flex items-center space-x-2 text-gray-600">
           <li><Link href="/nfts/emn" className="text-blue-600 hover:text-blue-800">EMN Collection</Link></li>
           <li className="text-gray-400">/</li>
-          <li className="text-gray-900">Contract Administration</li>
+          <li className="text-gray-900">{isAdmin ? 'Contract Administration' : 'Contract Management'}</li>
         </ul>
       </div>
       
@@ -811,18 +845,19 @@ export default function ContractAdminPage() {
       <div className="card bg-white shadow-xl border border-gray-300">
         <div className="card-body p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Contract Administration
+            {isAdmin ? 'Contract Administration' : 'Contract Management'}
             {addressOverride && <span className="text-lg text-blue-600 ml-2">(Custom Contract)</span>}
           </h1>
           <p className="text-gray-600">
             {addressOverride 
               ? `Inspecting custom contract: ${addressOverride}`
-              : 'Manage contract-level settings and configurations'
-            }
+              : isAdmin
+                ? 'Manage contract-level settings, roles, and configurations'
+                : 'Manage contract metadata and royalty settings'}
           </p>
           
           {/* Custom Contract Warning */}
-          {addressOverride && !isOwner && (
+          {addressOverride && !isAdmin && !isEditor && (
             <div className="bg-orange-50 border border-orange-300 rounded-lg p-4 mt-4">
               <div className="flex items-start">
                 <svg className="w-5 h-5 text-orange-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -831,23 +866,27 @@ export default function ContractAdminPage() {
                 <div>
                   <h4 className="text-sm font-semibold text-orange-800">Inspection Mode</h4>
                   <p className="text-sm text-orange-700 mt-1">
-                    You are viewing a custom contract and are not the owner. Write operations will be disabled.
+                    You are viewing a custom contract and do not have the required roles. Write operations will be disabled.
                   </p>
                 </div>
               </div>
             </div>
           )}
           
-          {addressOverride && isOwner && (
+          {addressOverride && (isAdmin || isEditor) && (
             <div className="bg-green-50 border border-green-300 rounded-lg p-4 mt-4">
               <div className="flex items-start">
                 <svg className="w-5 h-5 text-green-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <div>
-                  <h4 className="text-sm font-semibold text-green-800">Owner Access</h4>
+                  <h4 className="text-sm font-semibold text-green-800">
+                    {isAdmin && isEditor ? 'Admin + Editor Access' : 
+                     isAdmin ? 'Admin Access' : 
+                     'Editor Access'}
+                  </h4>
                   <p className="text-sm text-green-700 mt-1">
-                    You are the owner of this custom contract and can perform administrative operations.
+                    You have the required roles to perform administrative operations on this custom contract.
                   </p>
                 </div>
               </div>
@@ -890,16 +929,18 @@ export default function ContractAdminPage() {
             >
               Contract Metadata
             </button>
-            <button
-              onClick={() => setActiveSection('ownership')}
-              className={`btn border-0 px-6 py-3 ${
-                activeSection === 'ownership' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Ownership Transfer
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setActiveSection('roles')}
+                className={`btn border-0 px-6 py-3 ${
+                  activeSection === 'roles' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Role Management
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -927,13 +968,6 @@ export default function ContractAdminPage() {
                   <label className="text-sm font-medium text-gray-600">Total Supply</label>
                   <div className="text-lg font-semibold text-gray-900">
                     {tokenCounter !== undefined ? Number(tokenCounter) : 'Loading...'} tokens
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Contract Owner</label>
-                  <div className="text-sm font-mono text-gray-900 break-all">
-                    {contractOwner || 'Loading...'}
                   </div>
                 </div>
                 
@@ -1398,7 +1432,7 @@ export default function ContractAdminPage() {
                   <div className="pt-4">
                     <button
                       onClick={handleSetContractURI}
-                      disabled={contractURIPending || !isOwner}
+                      disabled={contractURIPending || !(isAdmin || isEditor)}
                       className="btn bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 border-0 w-full py-3"
                     >
                       {contractURIPending ? (
@@ -1550,120 +1584,372 @@ export default function ContractAdminPage() {
         </div>
       )}
       
-      {activeSection === 'ownership' && (
-        <div className="card bg-white shadow-xl border border-gray-300">
-          <div className="card-body p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Ownership Transfer</h2>
-            
-            <div className="max-w-md mx-auto">
-              {!showOwnershipConfirm ? (
-                <div className="space-y-6">
-                  <div className="bg-red-50 border border-red-300 rounded-lg p-4 mb-6">
-                    <div className="flex items-start">
-                      <svg className="w-5 h-5 text-red-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                      </svg>
-                      <div>
-                        <h4 className="text-sm font-semibold text-red-800">Critical Operation</h4>
-                        <p className="text-sm text-red-700 mt-1">
-                          Transferring ownership will give the new owner complete control over this contract. This action cannot be undone.
-                        </p>
-                      </div>
-                    </div>
+      {activeSection === 'roles' && isAdmin && (
+        <div className="space-y-8">
+          {/* Grant Roles Section */}
+          <div className="card bg-white shadow-xl border border-gray-300">
+            <div className="card-body p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Grant Roles</h2>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Grant Editor Role */}
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-green-900 mb-2">Grant Editor Role</h3>
+                    <p className="text-sm text-green-700">
+                      Editors can mint NFTs, edit token metadata, manage contract metadata, and set royalties.
+                    </p>
                   </div>
                   
                   <div>
                     <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                      Current Owner
-                    </label>
-                    <div className="p-3 bg-gray-50 border border-gray-300 rounded-lg text-sm font-mono break-all">
-                      {contractOwner}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                      New Owner Address <span className="text-red-500">*</span>
+                      Address <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      value={ownershipFormData.newOwner}
-                      onChange={(e) => handleOwnershipInputChange('newOwner', e.target.value)}
+                      value={roleFormData.role === 'editor' ? roleFormData.address : ''}
+                      onChange={(e) => {
+                        setRoleFormData(prev => ({ ...prev, address: e.target.value, role: 'editor' }));
+                        setRoleAction('grant');
+                        setRoleSuccess(''); // Clear success message when typing
+                      }}
                       placeholder="0x..."
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white font-mono"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 bg-white font-mono"
                     />
-                    {ownershipErrors.newOwner && <p className="text-red-600 text-sm mt-1">{ownershipErrors.newOwner}</p>}
+                    {roleErrors.address && roleFormData.role === 'editor' && (
+                      <p className="text-red-600 text-sm mt-1">{roleErrors.address}</p>
+                    )}
                   </div>
                   
                   <button
                     onClick={() => {
-                      if (validateOwnershipForm()) {
-                        setShowOwnershipConfirm(true);
-                      }
+                      setRoleAction('grant');
+                      setRoleFormData(prev => ({ ...prev, role: 'editor' }));
+                      handleRoleManagement();
                     }}
-                    disabled={!ownershipFormData.newOwner}
-                    className="btn bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 border-0 w-full py-3"
+                    disabled={rolePending || !roleFormData.address || roleFormData.role !== 'editor'}
+                    className="btn bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400 border-0 w-full py-3"
                   >
-                    Proceed to Confirmation
+                    {rolePending && roleAction === 'grant' && roleFormData.role === 'editor' ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Granting Editor Role...
+                      </>
+                    ) : (
+                      'Grant Editor Role'
+                    )}
                   </button>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-red-900 mb-4">Confirm Ownership Transfer</h3>
-                    
-                    <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-6">
-                      <p className="text-red-800 text-sm mb-4">
-                        You are about to transfer ownership from:
-                      </p>
-                      <div className="space-y-2">
-                        <div>
-                          <strong>Current Owner:</strong>
-                          <div className="font-mono text-xs break-all mt-1">{contractOwner}</div>
-                        </div>
-                        <div>
-                          <strong>New Owner:</strong>
-                          <div className="font-mono text-xs break-all mt-1">{ownershipFormData.newOwner}</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setShowOwnershipConfirm(false)}
-                        disabled={ownershipPending || isTransferPending}
-                        className="btn bg-gray-500 text-white hover:bg-gray-600 border-0 flex-1 py-3"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleTransferOwnership}
-                        disabled={ownershipPending || isTransferPending}
-                        className="btn bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 border-0 flex-1 py-3"
-                      >
-                        {ownershipPending || isTransferPending ? (
-                          <>
-                            <span className="loading loading-spinner loading-xs"></span>
-                            Transferring...
-                          </>
-                        ) : (
-                          'Confirm Transfer'
-                        )}
-                      </button>
-                    </div>
-                    
-                    {transferError && (
-                      <div className="bg-red-50 border border-red-300 rounded-lg p-4 mt-4">
-                        <p className="text-red-800 text-sm">
-                          Error: {transferError.message}
-                        </p>
-                      </div>
+                
+                {/* Grant Admin Role */}
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">Grant Admin Role</h3>
+                    <p className="text-sm text-blue-700">
+                      Admins have full control including role management, contract upgrades, and all editor permissions.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={roleFormData.role === 'admin' ? roleFormData.address : ''}
+                      onChange={(e) => {
+                        setRoleFormData(prev => ({ ...prev, address: e.target.value, role: 'admin' }));
+                        setRoleAction('grant');
+                        setRoleSuccess(''); // Clear success message when typing
+                      }}
+                      placeholder="0x..."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-mono"
+                    />
+                    {roleErrors.address && roleFormData.role === 'admin' && (
+                      <p className="text-red-600 text-sm mt-1">{roleErrors.address}</p>
                     )}
                   </div>
+                  
+                  <button
+                    onClick={() => {
+                      setRoleAction('grant');
+                      setRoleFormData(prev => ({ ...prev, role: 'admin' }));
+                      handleRoleManagement();
+                    }}
+                    disabled={rolePending || !roleFormData.address || roleFormData.role !== 'admin'}
+                    className="btn bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 border-0 w-full py-3"
+                  >
+                    {rolePending && roleAction === 'grant' && roleFormData.role === 'admin' ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Granting Admin Role...
+                      </>
+                    ) : (
+                      'Grant Admin Role'
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Grant Role Errors */}
+              {roleAction === 'grant' && (grantError) && (
+                <div className="bg-red-50 border border-red-300 rounded-lg p-4 mt-6">
+                  <p className="text-red-800 text-sm">
+                    Error granting role: {grantError.message}
+                  </p>
                 </div>
               )}
             </div>
           </div>
+          
+          {/* Revoke Roles Section */}
+          <div className="card bg-white shadow-xl border border-gray-300">
+            <div className="card-body p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Revoke Roles</h2>
+              
+              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                  </svg>
+                  <div>
+                    <h4 className="text-sm font-semibold text-yellow-800">Warning</h4>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Be careful when revoking roles. Users will immediately lose access to restricted functions.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Revoke Editor Role */}
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-red-900 mb-2">Revoke Editor Role</h3>
+                    <p className="text-sm text-red-700">
+                      Remove editor permissions from a user. They will lose access to minting and editing functions.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={roleAction === 'revoke' && roleFormData.role === 'editor' ? roleFormData.address : ''}
+                      onChange={(e) => {
+                        setRoleFormData(prev => ({ ...prev, address: e.target.value, role: 'editor' }));
+                        setRoleAction('revoke');
+                        setRoleSuccess(''); // Clear success message when typing
+                      }}
+                      placeholder="0x..."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white font-mono"
+                    />
+                    {roleErrors.address && roleAction === 'revoke' && roleFormData.role === 'editor' && (
+                      <p className="text-red-600 text-sm mt-1">{roleErrors.address}</p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setRoleAction('revoke');
+                      setRoleFormData(prev => ({ ...prev, role: 'editor' }));
+                      handleRoleManagement();
+                    }}
+                    disabled={rolePending || !roleFormData.address || roleAction !== 'revoke' || roleFormData.role !== 'editor'}
+                    className="btn bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 border-0 w-full py-3"
+                  >
+                    {rolePending && roleAction === 'revoke' && roleFormData.role === 'editor' ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Revoking Editor Role...
+                      </>
+                    ) : (
+                      'Revoke Editor Role'
+                    )}
+                  </button>
+                </div>
+                
+                {/* Revoke Admin Role */}
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-red-900 mb-2">Revoke Admin Role</h3>
+                    <p className="text-sm text-red-700">
+                      Remove admin permissions from a user. They will lose access to role management and admin functions.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={roleAction === 'revoke' && roleFormData.role === 'admin' ? roleFormData.address : ''}
+                      onChange={(e) => {
+                        setRoleFormData(prev => ({ ...prev, address: e.target.value, role: 'admin' }));
+                        setRoleAction('revoke');
+                        setRoleSuccess(''); // Clear success message when typing
+                      }}
+                      placeholder="0x..."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white font-mono"
+                    />
+                    {roleErrors.address && roleAction === 'revoke' && roleFormData.role === 'admin' && (
+                      <p className="text-red-600 text-sm mt-1">{roleErrors.address}</p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setRoleAction('revoke');
+                      setRoleFormData(prev => ({ ...prev, role: 'admin' }));
+                      handleRoleManagement();
+                    }}
+                    disabled={rolePending || !roleFormData.address || roleAction !== 'revoke' || roleFormData.role !== 'admin'}
+                    className="btn bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 border-0 w-full py-3"
+                  >
+                    {rolePending && roleAction === 'revoke' && roleFormData.role === 'admin' ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Revoking Admin Role...
+                      </>
+                    ) : (
+                      'Revoke Admin Role'
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Revoke Role Errors */}
+              {roleAction === 'revoke' && (revokeError) && (
+                <div className="bg-red-50 border border-red-300 rounded-lg p-4 mt-6">
+                  <p className="text-red-800 text-sm">
+                    Error revoking role: {revokeError.message}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Role Information */}
+          <div className="card bg-white shadow-xl border border-gray-300">
+            <div className="card-body p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Role Information</h2>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-green-900 mb-4">Editor Role Permissions</h3>
+                  <ul className="space-y-2 text-sm text-green-800">
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Mint new NFTs
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Edit token metadata
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Manage contract metadata
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Set royalty settings
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                      <span className="text-red-700">Cannot manage roles</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-4">Admin Role Permissions</h3>
+                  <ul className="space-y-2 text-sm text-blue-800">
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      All editor permissions
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Grant/revoke roles
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Contract upgrades
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Full administrative access
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              {/* Current User Status */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Current Roles</h3>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <span className="text-sm text-gray-600">Address:</span>
+                    <span className="text-sm font-mono text-gray-900 ml-2">
+                      {address ? `${address.substring(0, 8)}...${address.substring(address.length - 6)}` : 'Not connected'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {isAdmin && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Admin
+                      </span>
+                    )}
+                    {isEditor && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Editor
+                      </span>
+                    )}
+                    {!isAdmin && !isEditor && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        No Roles
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Success Message */}
+          {roleSuccess && (
+            <div className="card bg-green-50 border border-green-300 shadow-lg">
+              <div className="card-body p-6">
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span className="text-green-800 font-semibold">{roleSuccess}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
       

@@ -1,0 +1,10 @@
+{
+  "EMNModule": {
+    "name": "Test Coin",
+    "symbol": "TCD",
+    "royaltyReceiver": "0x184bD866ea2600f760D51D888140Fa142195f628",
+    "royaltyFeeNumerator": "100",
+    "admin": "0x89849A41a2063B721EC31ba4A3260f93BcF5fEF2",
+    "editor": "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976"
+  }
+} 

@@ -6,7 +6,8 @@ import { TokenImageWrapper } from '@/components/TokenImage';
 import { 
   useReadEmnTokenUri,
   useReadEmnOwnerOf,
-  useReadEmnOwner,
+  useReadEmnHasRole,
+  useReadEmnEditorRole,
   useWriteEmnSetTokenUri,
   useSimulateEmnSetTokenUri,
   useWriteEmnSetTokenRoyalty,
@@ -31,6 +32,13 @@ export default function TokenPage({ params }: TokenPageProps) {
   const { tokenId } = resolvedParams;
   const tokenIdNum = parseInt(tokenId);
   const { address, isConnected } = useAccount();
+  
+  // Get editor role and check if user has it
+  const { data: editorRole } = useReadEmnEditorRole();
+  const { data: isEditor } = useReadEmnHasRole({
+    args: editorRole && address ? [editorRole, address] : undefined,
+    query: { enabled: !!(editorRole && address) }
+  });
   
   // Validation functions
   const isValidAddress = (addr: string) => {
@@ -85,15 +93,10 @@ export default function TokenPage({ params }: TokenPageProps) {
     args: [BigInt(tokenIdNum)],
   });
   
-  const { data: contractOwner } = useReadEmnOwner();
-  
   // Get current token royalty info
   const { data: tokenRoyaltyInfo, isLoading: royaltyLoading } = useReadEmnRoyaltyInfo({
     args: [BigInt(tokenIdNum), BigInt(10000)], // Use 10000 as sample sale price
   });
-  
-  // Check if current user is the contract owner
-  const isContractOwner = address && contractOwner && address.toLowerCase() === contractOwner.toLowerCase();
   
   // Generate metadata URI from form data
   const generateMetadataURI = (): string => {
@@ -119,7 +122,7 @@ export default function TokenPage({ params }: TokenPageProps) {
   const { data: simulateData } = useSimulateEmnSetTokenUri({
     args: [BigInt(tokenIdNum), newTokenURI],
     query: {
-      enabled: isEditing && newTokenURI.length > 0 && isContractOwner && formData.name.trim() !== '',
+      enabled: isEditing && newTokenURI.length > 0 && isEditor && formData.name.trim() !== '',
     },
   });
   
@@ -140,7 +143,7 @@ export default function TokenPage({ params }: TokenPageProps) {
                  formData.useCustomRoyalty && 
                  isValidAddress(formData.royaltyReceiver) &&
                  isValidPercentage(formData.royaltyPercentage) &&
-                 isContractOwner),
+                 isEditor),
     },
   });
   
@@ -345,8 +348,8 @@ export default function TokenPage({ params }: TokenPageProps) {
               )}
             </div>
             
-            {/* Owner Controls */}
-            {isConnected && isContractOwner && (
+            {/* Editor Controls */}
+            {isConnected && isEditor && (
               <div className="flex gap-2">
                 {!isEditing ? (
                   <button 
@@ -746,20 +749,6 @@ export default function TokenPage({ params }: TokenPageProps) {
                         <div className="text-xs text-gray-500 break-all mt-1">{tokenOwner}</div>
                       )}
                     </div>
-
-                    {contractOwner && (
-                      <div className="p-4">
-                        <div className="text-sm text-gray-600 font-medium">Contract Owner</div>
-                        <div className="text-sm font-mono text-gray-900">
-                          {`${contractOwner.substring(0, 8)}...${contractOwner.substring(contractOwner.length - 6)}`}
-                        </div>
-                        {isContractOwner && (
-                          <div className="text-xs text-green-600 font-medium mt-1">
-                            ✓ You own this contract and can edit this token
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

@@ -5,13 +5,17 @@ import { useAccount } from 'wagmi';
 import { 
   useReadEmnBalanceOf, 
   useReadEmnGetTokenCounter,
-  useReadEmnOwner,
+  useReadEmnHasRole,
+  useReadEmnAdminRole,
+  useReadEmnEditorRole,
   useReadEmnTokenUri,
   useReadEmnOwnerOf,
   useReadEmnContractUri,
   useReadEmnRoyaltyInfo,
-  useWriteEmnTransferOwnership,
-  useSimulateEmnTransferOwnership,
+  useWriteEmnGrantRole,
+  useWriteEmnRevokeRole,
+  useSimulateEmnGrantRole,
+  useSimulateEmnRevokeRole,
   useWriteEmnSetDefaultRoyalty,
   useSimulateEmnSetDefaultRoyalty
 } from "@/abis";
@@ -81,18 +85,33 @@ export default function EMNPage() {
   const { address, isConnected } = useAccount();
   const { data: balanceOf } = useReadEmnBalanceOf();
   const { data: tokenCounter, isLoading: counterLoading } = useReadEmnGetTokenCounter();
-  const { data: contractOwner, refetch: refetchOwner } = useReadEmnOwner();
   const { data: contractURI } = useReadEmnContractUri();
+  
+  // Get role constants
+  const { data: adminRole } = useReadEmnAdminRole();
+  const { data: editorRole } = useReadEmnEditorRole();
+  
+  // Check user roles
+  const { data: isAdmin, refetch: refetchAdminRole } = useReadEmnHasRole({
+    args: adminRole && address ? [adminRole, address] : undefined,
+    query: { enabled: !!(adminRole && address) }
+  });
+  
+  const { data: isEditor, refetch: refetchEditorRole } = useReadEmnHasRole({
+    args: editorRole && address ? [editorRole, address] : undefined,
+    query: { enabled: !!(editorRole && address) }
+  });
   
   // Get current royalty info (using token ID 0 and 10000 as sample sale price to get percentage)
   const { data: royaltyInfo, isLoading: royaltyLoading } = useReadEmnRoyaltyInfo({
     args: [BigInt(0), BigInt(10000)], // tokenId: 0, salePrice: 10000 (to calculate percentage)
   });
   
-  // State for ownership transfer
-  const [showTransferForm, setShowTransferForm] = useState(false);
-  const [newOwnerAddress, setNewOwnerAddress] = useState('');
-  const [transferPending, setTransferPending] = useState(false);
+  // State for role management
+  const [showRoleForm, setShowRoleForm] = useState(false);
+  const [newEditorAddress, setNewEditorAddress] = useState('');
+  const [roleAction, setRoleAction] = useState<'grant' | 'revoke'>('grant');
+  const [rolePending, setRolePending] = useState(false);
   
   // State for default royalty management
   const [showDefaultRoyaltyForm, setShowDefaultRoyaltyForm] = useState(false);
@@ -100,18 +119,33 @@ export default function EMNPage() {
   const [defaultRoyaltyPercentage, setDefaultRoyaltyPercentage] = useState('');
   const [defaultRoyaltyPending, setDefaultRoyaltyPending] = useState(false);
   
-  // Check if current user is the contract owner
-  const isOwner = address && contractOwner && address.toLowerCase() === contractOwner.toLowerCase();
-  
-  // Ownership transfer hooks
-  const { data: simulateTransferData } = useSimulateEmnTransferOwnership({
-    args: [newOwnerAddress as `0x${string}`],
+  // Role management hooks
+  const { data: simulateGrantRoleData } = useSimulateEmnGrantRole({
+    args: editorRole && newEditorAddress ? [editorRole, newEditorAddress as `0x${string}`] : undefined,
     query: {
-      enabled: showTransferForm && newOwnerAddress.length === 42 && newOwnerAddress.startsWith('0x'),
+      enabled: !!(showRoleForm && 
+                 roleAction === 'grant' &&
+                 editorRole && 
+                 newEditorAddress.length === 42 && 
+                 newEditorAddress.startsWith('0x') && 
+                 isAdmin),
     },
   });
   
-  const { writeContract: transferOwnership, isPending: isTransferPending, error: transferError } = useWriteEmnTransferOwnership();
+  const { data: simulateRevokeRoleData } = useSimulateEmnRevokeRole({
+    args: editorRole && newEditorAddress ? [editorRole, newEditorAddress as `0x${string}`] : undefined,
+    query: {
+      enabled: !!(showRoleForm && 
+                 roleAction === 'revoke' &&
+                 editorRole && 
+                 newEditorAddress.length === 42 && 
+                 newEditorAddress.startsWith('0x') && 
+                 isAdmin),
+    },
+  });
+  
+  const { writeContract: grantRole, isPending: isGrantPending, error: grantError } = useWriteEmnGrantRole();
+  const { writeContract: revokeRole, isPending: isRevokePending, error: revokeError } = useWriteEmnRevokeRole();
   
   // Default royalty hooks
   const defaultRoyaltyFeeNumerator = defaultRoyaltyPercentage ? Math.floor(parseFloat(defaultRoyaltyPercentage) * 100) : 0; // Convert percentage to basis points
@@ -127,7 +161,8 @@ export default function EMNPage() {
                  defaultRoyaltyPercentage && 
                  !isNaN(parseFloat(defaultRoyaltyPercentage)) &&
                  parseFloat(defaultRoyaltyPercentage) >= 0 &&
-                 parseFloat(defaultRoyaltyPercentage) <= 100),
+                 parseFloat(defaultRoyaltyPercentage) <= 100 &&
+                 isEditor),
     },
   });
   
@@ -142,33 +177,38 @@ export default function EMNPage() {
   const currentRoyaltyPercentage = currentRoyaltyAmount ? 
     ((Number(currentRoyaltyAmount) / 10000) * 100).toFixed(2) : null;
 
-  const handleStartTransfer = () => {
-    setShowTransferForm(true);
-    setNewOwnerAddress('');
+  const handleStartRoleManagement = (action: 'grant' | 'revoke') => {
+    setShowRoleForm(true);
+    setRoleAction(action);
+    setNewEditorAddress('');
   };
 
-  const handleCancelTransfer = () => {
-    setShowTransferForm(false);
-    setNewOwnerAddress('');
+  const handleCancelRole = () => {
+    setShowRoleForm(false);
+    setNewEditorAddress('');
   };
 
-  const handleTransferOwnership = async () => {
-    if (!simulateTransferData?.request || !transferOwnership) return;
+  const handleRoleManagement = async () => {
+    const simulateData = roleAction === 'grant' ? simulateGrantRoleData : simulateRevokeRoleData;
+    const roleFunction = roleAction === 'grant' ? grantRole : revokeRole;
+    
+    if (!simulateData?.request || !roleFunction) return;
     
     try {
-      setTransferPending(true);
-      await transferOwnership(simulateTransferData.request);
+      setRolePending(true);
+      await roleFunction(simulateData.request);
       
-      // Wait a moment then refetch owner data
+      // Wait a moment then refetch role data
       setTimeout(() => {
-        refetchOwner();
-        setShowTransferForm(false);
-        setNewOwnerAddress('');
-        setTransferPending(false);
+        refetchAdminRole();
+        refetchEditorRole();
+        setShowRoleForm(false);
+        setNewEditorAddress('');
+        setRolePending(false);
       }, 2000);
     } catch (err) {
-      console.error('Failed to transfer ownership:', err);
-      setTransferPending(false);
+      console.error(`Failed to ${roleAction} role:`, err);
+      setRolePending(false);
     }
   };
 
@@ -231,14 +271,15 @@ export default function EMNPage() {
                 <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide">Your Balance</div>
                 <div className="text-3xl font-bold text-gray-900 mt-2">{balanceOf?.toString() || '0'}</div>
               </div>
-              {contractOwner && (
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide">Contract Owner</div>
-                  <div className="text-lg font-bold text-gray-900 mt-2">
-                    {`${contractOwner.substring(0, 8)}...${contractOwner.substring(contractOwner.length - 6)}`}
-                  </div>
+              <div className="text-center">
+                <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide">Your Roles</div>
+                <div className="text-lg font-bold text-gray-900 mt-2">
+                  {isAdmin && isEditor ? 'Admin + Editor' : 
+                   isAdmin ? 'Admin' : 
+                   isEditor ? 'Editor' : 
+                   'No Roles'}
                 </div>
-              )}
+              </div>
             </div>
           </div>
           
@@ -329,197 +370,215 @@ export default function EMNPage() {
         </div>
       </div>
 
-      {/* Owner Controls */}
-      {isConnected && isOwner && (
+      {/* Role-Based Controls */}
+      {isConnected && (isAdmin || isEditor) && (
         <div className="card bg-gradient-to-r from-green-600 to-green-700 text-white shadow-xl">
           <div className="card-body p-8">
-            <h2 className="text-2xl font-bold mb-2">Owner Controls</h2>
-            <p className="text-green-100 text-lg mb-6">You are the contract owner and can mint new tokens and transfer ownership.</p>
+            <h2 className="text-2xl font-bold mb-2">Role-Based Controls</h2>
+            <p className="text-green-100 text-lg mb-6">
+              {isAdmin && isEditor ? 'You have both Admin and Editor roles.' :
+               isAdmin ? 'You have Admin role - you can manage roles and access all admin functions.' :
+               'You have Editor role - you can mint tokens and manage metadata.'}
+            </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Minting Section */}
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Minting</h3>
-                <div className="space-y-3">
-                  <p className="text-green-100 text-sm">Create new NFTs in the collection.</p>
-                  <Link href="/nfts/emn/mint" className="btn bg-white text-green-700 hover:bg-gray-100 border-0 px-6 py-3 font-semibold w-full">
-                    Mint New Token
-                  </Link>
-                </div>
-              </div>
-
-              {/* Contract Administration Section */}
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Contract Administration</h3>
-                <div className="space-y-3">
-                  <p className="text-green-100 text-sm">Manage contract settings, royalties, and ownership.</p>
-                  <Link href="/nfts/emn/admin" className="btn bg-orange-600 text-white hover:bg-orange-700 border-0 px-6 py-3 font-semibold w-full">
-                    Contract Admin
-                  </Link>
-                </div>
-              </div>
-
-              {/* Default Royalty Section */}
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Quick Royalty</h3>
-                {!showDefaultRoyaltyForm ? (
+              {/* Minting Section - Available to Editors */}
+              {isEditor && (
+                <div className="bg-white/10 backdrop-blur rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">Minting</h3>
                   <div className="space-y-3">
-                    <p className="text-green-100 text-sm">Set default royalty for all tokens.</p>
-                    <button
-                      onClick={handleStartDefaultRoyalty}
-                      className="btn bg-purple-600 text-white hover:bg-purple-700 border-0 px-6 py-3 font-semibold"
-                    >
-                      Set Default Royalty
-                    </button>
+                    <p className="text-green-100 text-sm">Create new NFTs in the collection.</p>
+                    <Link href="/nfts/emn/mint" className="btn bg-white text-green-700 hover:bg-gray-100 border-0 px-6 py-3 font-semibold w-full">
+                      Mint New Token
+                    </Link>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-white text-sm font-semibold mb-2 block">Royalty Receiver Address</label>
-                      <input
-                        type="text"
-                        value={defaultRoyaltyReceiver}
-                        onChange={(e) => setDefaultRoyaltyReceiver(e.target.value)}
-                        placeholder="0x..."
-                        className="w-full text-sm font-mono p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
-                      />
-                      {defaultRoyaltyReceiver && !isValidAddress(defaultRoyaltyReceiver) && (
-                        <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a valid Ethereum address</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="text-white text-sm font-semibold mb-2 block">Default Royalty Percentage (%)</label>
-                      <input
-                        type="number"
-                        value={defaultRoyaltyPercentage}
-                        onChange={(e) => setDefaultRoyaltyPercentage(e.target.value)}
-                        placeholder="2.5"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        className="w-full text-sm p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
-                      />
-                      {defaultRoyaltyPercentage && !isValidPercentage(defaultRoyaltyPercentage) && (
-                        <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a percentage between 0 and 100</p>
-                      )}
-                      <p className="text-green-100 text-sm mt-2">Applies to all tokens without specific royalty set</p>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleSetDefaultRoyalty}
-                        disabled={
-                          defaultRoyaltyPending || 
-                          isDefaultRoyaltyPending || 
-                          !isValidAddress(defaultRoyaltyReceiver) ||
-                          !isValidPercentage(defaultRoyaltyPercentage)
-                        }
-                        className="btn bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:text-gray-200 border-0 px-4 py-2"
-                      >
-                        {defaultRoyaltyPending || isDefaultRoyaltyPending ? (
-                          <>
-                            <span className="loading loading-spinner loading-xs"></span>
-                            Setting...
-                          </>
-                        ) : (
-                          'Set Default Royalty'
-                        )}
-                      </button>
-                      <button
-                        onClick={handleCancelDefaultRoyalty}
-                        disabled={defaultRoyaltyPending || isDefaultRoyaltyPending}
-                        className="btn bg-gray-500 text-white hover:bg-gray-600 disabled:bg-gray-300 border-0 px-4 py-2"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    
-                    {defaultRoyaltyError && (
-                      <div className="bg-red-100 border border-red-400 text-red-800 rounded-lg p-3">
-                        <span className="text-sm">Error: {defaultRoyaltyError.message}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Ownership Transfer Section */}
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Ownership Transfer</h3>
-                {!showTransferForm ? (
+              {/* Admin Functions - Available to Admins and Editors */}
+              {(isAdmin || isEditor) && (
+                <div className="bg-white/10 backdrop-blur rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">
+                    {isAdmin ? 'Admin Functions' : 'Contract Management'}
+                  </h3>
                   <div className="space-y-3">
-                    <p className="text-green-100 text-sm">Transfer contract ownership to another address.</p>
-                    <button
-                      onClick={handleStartTransfer}
-                      className="btn bg-yellow-600 text-white hover:bg-yellow-700 border-0 px-6 py-3 font-semibold"
-                    >
-                      Transfer Ownership
-                    </button>
+                    <p className="text-green-100 text-sm">
+                      {isAdmin 
+                        ? 'Manage contract settings, roles, and advanced features.' 
+                        : 'Manage contract metadata and royalty settings.'}
+                    </p>
+                    <Link href="/nfts/emn/admin" className="btn bg-orange-600 text-white hover:bg-orange-700 border-0 px-6 py-3 font-semibold w-full">
+                      {isAdmin ? 'Contract Admin' : 'Contract Settings'}
+                    </Link>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-white text-sm font-semibold mb-2 block">New Owner Address</label>
-                      <input
-                        type="text"
-                        value={newOwnerAddress}
-                        onChange={(e) => setNewOwnerAddress(e.target.value)}
-                        placeholder="0x..."
-                        className="w-full text-sm font-mono p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-900 bg-white"
-                      />
-                      {newOwnerAddress && !isValidAddress(newOwnerAddress) && (
-                        <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a valid Ethereum address</p>
+                </div>
+              )}
+
+              {/* Role Management - Available to Admins */}
+              {isAdmin && (
+                <div className="bg-white/10 backdrop-blur rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">Role Management</h3>
+                  {!showRoleForm ? (
+                    <div className="space-y-3">
+                      <p className="text-green-100 text-sm">Grant or revoke editor roles.</p>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => handleStartRoleManagement('grant')}
+                          className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-4 py-2 text-sm w-full"
+                        >
+                          Grant Editor Role
+                        </button>
+                        <button
+                          onClick={() => handleStartRoleManagement('revoke')}
+                          className="btn bg-red-600 text-white hover:bg-red-700 border-0 px-4 py-2 text-sm w-full"
+                        >
+                          Revoke Editor Role
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-white text-sm font-semibold mb-2 block">
+                          {roleAction === 'grant' ? 'Grant Editor Role To' : 'Revoke Editor Role From'}
+                        </label>
+                        <input
+                          type="text"
+                          value={newEditorAddress}
+                          onChange={(e) => setNewEditorAddress(e.target.value)}
+                          placeholder="0x..."
+                          className="w-full text-sm font-mono p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        />
+                        {newEditorAddress && !isValidAddress(newEditorAddress) && (
+                          <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a valid Ethereum address</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleRoleManagement}
+                          disabled={
+                            rolePending || 
+                            isGrantPending ||
+                            isRevokePending ||
+                            !isValidAddress(newEditorAddress)
+                          }
+                          className={`btn ${roleAction === 'grant' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white disabled:bg-gray-400 disabled:text-gray-200 border-0 px-4 py-2 text-sm`}
+                        >
+                          {rolePending || isGrantPending || isRevokePending ? (
+                            <>
+                              <span className="loading loading-spinner loading-xs"></span>
+                              {roleAction === 'grant' ? 'Granting...' : 'Revoking...'}
+                            </>
+                          ) : (
+                            `${roleAction === 'grant' ? 'Grant' : 'Revoke'} Role`
+                          )}
+                        </button>
+                        <button
+                          onClick={handleCancelRole}
+                          disabled={rolePending || isGrantPending || isRevokePending}
+                          className="btn bg-gray-500 text-white hover:bg-gray-600 disabled:bg-gray-300 border-0 px-4 py-2 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      
+                      {(grantError || revokeError) && (
+                        <div className="bg-red-100 border border-red-400 text-red-800 rounded-lg p-3">
+                          <span className="text-sm">Error: {grantError?.message || revokeError?.message}</span>
+                        </div>
                       )}
                     </div>
-                    
-                    <div className="flex gap-3">
+                  )}
+                </div>
+              )}
+
+              {/* Default Royalty - Available to Editors */}
+              {isEditor && (
+                <div className="bg-white/10 backdrop-blur rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">Quick Royalty</h3>
+                  {!showDefaultRoyaltyForm ? (
+                    <div className="space-y-3">
+                      <p className="text-green-100 text-sm">Set default royalty for all tokens.</p>
                       <button
-                        onClick={handleTransferOwnership}
-                        disabled={
-                          transferPending || 
-                          isTransferPending || 
-                          !isValidAddress(newOwnerAddress) ||
-                          newOwnerAddress.toLowerCase() === address?.toLowerCase()
-                        }
-                        className="btn bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 disabled:text-gray-200 border-0 px-4 py-2"
+                        onClick={handleStartDefaultRoyalty}
+                        className="btn bg-purple-600 text-white hover:bg-purple-700 border-0 px-6 py-3 font-semibold"
                       >
-                        {transferPending || isTransferPending ? (
-                          <>
-                            <span className="loading loading-spinner loading-xs"></span>
-                            Transferring...
-                          </>
-                        ) : (
-                          'Confirm Transfer'
+                        Set Default Royalty
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-white text-sm font-semibold mb-2 block">Royalty Receiver Address</label>
+                        <input
+                          type="text"
+                          value={defaultRoyaltyReceiver}
+                          onChange={(e) => setDefaultRoyaltyReceiver(e.target.value)}
+                          placeholder="0x..."
+                          className="w-full text-sm font-mono p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
+                        />
+                        {defaultRoyaltyReceiver && !isValidAddress(defaultRoyaltyReceiver) && (
+                          <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a valid Ethereum address</p>
                         )}
-                      </button>
-                      <button
-                        onClick={handleCancelTransfer}
-                        disabled={transferPending || isTransferPending}
-                        className="btn bg-gray-500 text-white hover:bg-gray-600 disabled:bg-gray-300 border-0 px-4 py-2"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    
-                    {newOwnerAddress.toLowerCase() === address?.toLowerCase() && (
-                      <p className="text-yellow-200 text-sm bg-yellow-500/20 px-3 py-2 rounded">Cannot transfer to the same address</p>
-                    )}
-                    
-                    {transferError && (
-                      <div className="bg-red-100 border border-red-400 text-red-800 rounded-lg p-3">
-                        <span className="text-sm">Error: {transferError.message}</span>
                       </div>
-                    )}
-                    
-                    <div className="bg-red-100 border border-red-400 text-red-800 rounded-lg p-3">
-                      <p className="text-sm">
-                        ⚠️ <strong>Warning:</strong> This action is irreversible. You will permanently lose control of this contract.
-                      </p>
+                      
+                      <div>
+                        <label className="text-white text-sm font-semibold mb-2 block">Default Royalty Percentage (%)</label>
+                        <input
+                          type="number"
+                          value={defaultRoyaltyPercentage}
+                          onChange={(e) => setDefaultRoyaltyPercentage(e.target.value)}
+                          placeholder="2.5"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          className="w-full text-sm p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
+                        />
+                        {defaultRoyaltyPercentage && !isValidPercentage(defaultRoyaltyPercentage) && (
+                          <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a percentage between 0 and 100</p>
+                        )}
+                        <p className="text-green-100 text-sm mt-2">Applies to all tokens without specific royalty set</p>
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleSetDefaultRoyalty}
+                          disabled={
+                            defaultRoyaltyPending || 
+                            isDefaultRoyaltyPending || 
+                            !isValidAddress(defaultRoyaltyReceiver) ||
+                            !isValidPercentage(defaultRoyaltyPercentage)
+                          }
+                          className="btn bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:text-gray-200 border-0 px-4 py-2"
+                        >
+                          {defaultRoyaltyPending || isDefaultRoyaltyPending ? (
+                            <>
+                              <span className="loading loading-spinner loading-xs"></span>
+                              Setting...
+                            </>
+                          ) : (
+                            'Set Default Royalty'
+                          )}
+                        </button>
+                        <button
+                          onClick={handleCancelDefaultRoyalty}
+                          disabled={defaultRoyaltyPending || isDefaultRoyaltyPending}
+                          className="btn bg-gray-500 text-white hover:bg-gray-600 disabled:bg-gray-300 border-0 px-4 py-2"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      
+                      {defaultRoyaltyError && (
+                        <div className="bg-red-100 border border-red-400 text-red-800 rounded-lg p-3">
+                          <span className="text-sm">Error: {defaultRoyaltyError.message}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -542,7 +601,7 @@ export default function EMNPage() {
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-blue-500 shrink-0 w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               <div className="flex-1">
                 <span className="text-blue-900 text-lg font-semibold">No tokens have been minted yet.</span>
-                {isOwner && (
+                {isAdmin && (
                   <div className="mt-3">
                     <Link href="/nfts/emn/mint" className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-6 py-3 font-semibold">
                       Mint First Token

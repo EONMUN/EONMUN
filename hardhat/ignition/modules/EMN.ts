@@ -1,27 +1,30 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import hre from "hardhat";
 
 export default buildModule("EMNModule", (m) => {
-  const addresses = {
-    deployer: m.getAccount(0),
-    royaltyReceiver: "0x184bD866ea2600f760D51D888140Fa142195f628",
-    ncrmro: "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976"
-  };
 
-  // Configuration parameters for the BasicNftRoyalties contract
-  const royaltyReceiver = m.getParameter("royaltyReceiver", addresses.royaltyReceiver);
+  // Configuration parameters for the EMN contract
+  const name = m.getParameter("name");
+  const symbol = m.getParameter("symbol");
+  const royaltyReceiver = m.getParameter("royaltyReceiver");
   const royaltyFeeNumerator = m.getParameter("royaltyFeeNumerator", 500n); // 5% default royalty (500 basis points)
+  const admin = m.getParameter("admin");
+  const editor = m.getParameter("editor");
+  
+  // Optional parameters for initial NFT minting
+  const shouldMintInitial = m.getParameter("mintInitialNfts", false);
+  const tokenURI1 = m.getParameter("tokenURI1", "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/0-PUG.json");
+  const tokenURI2 = m.getParameter("tokenURI2", "https://api.example.com/nft/metadata/1.json");
 
   // Step 1: Deploy the implementation contract
   const implementation = m.contract("EMN", [], {
     id: "EMN_Implementation"
   });
 
-  // Step 2: Encode the initialization data
+  // Step 2: Encode the initialization data with all 6 required parameters
   const initializeCalldata = m.encodeFunctionCall(
     implementation,
     "initialize",
-    [royaltyReceiver, royaltyFeeNumerator],
+    [name, symbol, royaltyReceiver, royaltyFeeNumerator, admin, editor],
     { id: "encodeInitialize" }
   );
 
@@ -30,27 +33,25 @@ export default buildModule("EMNModule", (m) => {
     id: "EMN_Proxy"
   });
 
-  // Step 4: Get the contract instance at proxy address for interactions
-  const emn = m.contractAt("EMN", proxy, {
-    id: "EMN_Proxied"
-  });
 
-  // Optional: Mint some initial NFTs for testing/demo purposes
-  // const shouldMintInitial = m.getParameter("mintInitialNfts", true);
-  
-  // // Define example token URIs
-  // const tokenURI1 = m.getParameter("tokenURI1", "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/0-PUG.json");
-  // const tokenURI2 = m.getParameter("tokenURI2", "https://api.example.com/nft/metadata/1.json");
-  
-  // m.call(emn, "transferOwnership", [addresses.ncrmro], {
-  //   id: "transferOwnership_0",
-  //   from: addresses.deployer
-  // });
-    
+  // Step 5: Conditionally mint initial NFTs if requested
+  // Note: Minting must be done by an account with EDITOR_ROLE (ncrmro address)
+  // if (shouldMintInitial) {
+  //   // Mint first NFT to the admin address
+  //   m.call(emn, "mintNftTo", [admin, tokenURI1], {
+  //     id: "mintInitialNFT_1",
+  //     from: addresses.ncrmro
+  //   });
+
+  //   // Mint second NFT to the admin address
+  //   m.call(emn, "mintNftTo", [admin, tokenURI2], {
+  //     id: "mintInitialNFT_2",
+  //     from: addresses.ncrmro
+  //   });
+  // }
 
   return { 
     implementation,
-    proxy, 
-    emn
+    proxy
   };
 });

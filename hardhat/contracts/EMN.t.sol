@@ -5,12 +5,15 @@ import { EMN } from "./EMN.sol";
 import { Test } from "forge-std/Test.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 contract EMNTest is Test, IERC721Receiver {
     EMN public emn;
     
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
+    address admin = makeAddr("admin");
+    address editor = makeAddr("editor");
     address royaltyReceiver = makeAddr("royaltyReceiver");
     uint96 constant ROYALTY_FEE = 500; // 5% (500 basis points)
     
@@ -36,7 +39,7 @@ contract EMNTest is Test, IERC721Receiver {
     function test_ContractDeployment() public view {
         // Test that the contract deploys successfully
         require(address(emn) != address(0), "Contract should be deployed");
-        require(keccak256(abi.encodePacked(emn.version())) == keccak256(abi.encodePacked("1.0.0")), "Version should be 1.0.0");
+        require(keccak256(abi.encodePacked(emn.version())) == keccak256(abi.encodePacked("1.1.0")), "Version should be 1.1.0");
     }
     
     function test_SupportsInterfaces() public view {
@@ -44,8 +47,19 @@ contract EMNTest is Test, IERC721Receiver {
         require(emn.supportsInterface(0x80ac58cd), "Should support ERC721 interface");
         // ERC2981 interface ID (royalties)
         require(emn.supportsInterface(0x2a55205a), "Should support ERC2981 interface");
+        // AccessControl interface ID
+        require(emn.supportsInterface(0x7965db0b), "Should support AccessControl interface");
         // ERC165 interface ID  
         require(emn.supportsInterface(0x01ffc9a7), "Should support ERC165 interface");
+    }
+    
+    function test_RoleConstants() public view {
+        // Test that role constants are properly defined
+        bytes32 adminRole = emn.ADMIN_ROLE();
+        bytes32 editorRole = emn.EDITOR_ROLE();
+        
+        require(adminRole == keccak256("ADMIN_ROLE"), "ADMIN_ROLE should be correct");
+        require(editorRole == keccak256("EDITOR_ROLE"), "EDITOR_ROLE should be correct");
     }
     
     // Note: Most functionality tests would require proper proxy deployment and initialization
@@ -55,8 +69,12 @@ contract EMNTest is Test, IERC721Receiver {
         // Test that direct initialization is blocked (as expected for upgradeable contracts)
         vm.expectRevert();
         emn.initialize(
+            "EON MUN",
+            "EMN",
             royaltyReceiver,
-            ROYALTY_FEE
+            ROYALTY_FEE,
+            admin,
+            editor
         );
     }
 }

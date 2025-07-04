@@ -1,0 +1,10 @@
+{
+  "EMNModule": {
+    "name": "EON MUN Testnet",
+    "symbol": "EMN-TEST",
+    "royaltyReceiver": "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976",
+    "royaltyFeeNumerator": "250",
+    "admin": "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976",
+    "editor": "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976"
+  }
+} 

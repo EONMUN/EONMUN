@@ -3,7 +3,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { 
-  useReadEmnOwner,
+  useReadEmnHasRole,
+  useReadEmnEditorRole,
   useReadEmnGetTokenCounter,
   useWriteEmnMintNft,
   useWriteEmnMintNftTo,
@@ -30,11 +31,15 @@ interface NFTMetadata {
 
 export default function MintPage() {
   const { address, isConnected } = useAccount();
-  const { data: contractOwner } = useReadEmnOwner();
-  const { data: tokenCounter, refetch: refetchTokenCounter } = useReadEmnGetTokenCounter();
   
-  // Check if current user is the contract owner
-  const isOwner = address && contractOwner && address.toLowerCase() === contractOwner.toLowerCase();
+  // Get editor role and check if user has it
+  const { data: editorRole } = useReadEmnEditorRole();
+  const { data: isEditor } = useReadEmnHasRole({
+    args: editorRole && address ? [editorRole, address] : undefined,
+    query: { enabled: !!(editorRole && address) }
+  });
+  
+  const { data: tokenCounter, refetch: refetchTokenCounter } = useReadEmnGetTokenCounter();
   
   // Validation functions (moved to top)
   const isValidAddress = (addr: string) => {
@@ -113,14 +118,14 @@ export default function MintPage() {
   const { data: simulateMintData } = useSimulateEmnMintNft({
     args: [tokenURI],
     query: {
-      enabled: !!(tokenURI && formData.mintTo === 'self' && isConnected),
+      enabled: !!(tokenURI && formData.mintTo === 'self' && isConnected && isEditor),
     },
   });
   
   const { data: simulateMintToData } = useSimulateEmnMintNftTo({
     args: [mintRecipient, tokenURI],
     query: {
-      enabled: !!(tokenURI && useCustomRecipient && isConnected),
+      enabled: !!(tokenURI && useCustomRecipient && isConnected && isEditor),
     },
   });
   
@@ -143,7 +148,8 @@ export default function MintPage() {
       enabled: !!(formData.useCustomRoyalty && 
                  isValidAddress(formData.royaltyReceiver) &&
                  isValidPercentage(formData.royaltyPercentage) &&
-                 isConnected),
+                 isConnected &&
+                 isEditor),
     },
   });
   
@@ -277,7 +283,7 @@ export default function MintPage() {
   //   );
   // }
   
-  if (!isOwner) {
+  if (!isEditor) {
     return (
       <div className="container mx-auto p-6">
         <div className="card bg-white shadow-xl border border-gray-300">
@@ -288,7 +294,7 @@ export default function MintPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
               </svg>
               <h2 className="text-xl font-bold text-red-900 mb-2">Access Denied</h2>
-              <p className="text-red-800">Only the contract owner can mint new NFTs.</p>
+              <p className="text-red-800">Only users with Editor role can mint new NFTs.</p>
             </div>
             <div className="mt-6">
               <Link href="/nfts/emn" className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-6 py-3">

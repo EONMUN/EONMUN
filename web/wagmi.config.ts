@@ -16,8 +16,8 @@ export default defineConfig({
       project: '../hardhat',
       deployments: {
         EMN: {
-          [chainIds.sepolia]: '0x6e3547adECFC090188b3E16d796fC380a3074Aa1',
-          [chainIds.mainnet]: '0x0687470Cb1Af4C776185Fd4dA360501c40f6Ca28',
+          [chainIds.sepolia]: '0xDA2fe88fDdaa300570cA823F834a2638C16Fc30c',
+          [chainIds.mainnet]: '0xF5521D34Bd29f942523a7c125FFe0e06b6D41836',
         },
       },
     })

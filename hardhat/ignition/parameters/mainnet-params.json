@@ -1,0 +1,10 @@
+{
+  "EMNModule": {
+    "name": "EON MUN",
+    "symbol": "EMN",
+    "royaltyReceiver": "0x184bD866ea2600f760D51D888140Fa142195f628",
+    "royaltyFeeNumerator": "500",
+    "admin": "0xb382ae3736d0f774145D6cB2B261BC7347aa2a33",
+    "editor": "0xDf095CA41Af452ED9ED390D8fAC260Fbdad20976"
+  }
+} 
