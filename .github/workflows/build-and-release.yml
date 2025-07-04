@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: sudo apt install wireguard
-      - run: echo "${{ secrets.MERCURY_WG_CONFIG }}" > /etc/wireguard/wg0.conf
+      - run: sudo bash -c "echo '${{ secrets.MERCURY_WG_CONFIG }}' > /etc/wireguard/wg0.conf"
       - run: sudo wg-quick up wg0
       - run: sudo apt install wireguard-tools
       - run: sudo wg show
