@@ -21,7 +21,10 @@ jobs:
       
     strategy:
       matrix:
-        service: [web, strapi]
+        service:
+          - strapi
+          # Web won't build as its configured for cloudflare worker deployment
+          # - web
         
     steps:
     - name: Checkout repository
