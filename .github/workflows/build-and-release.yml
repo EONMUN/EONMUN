@@ -87,6 +87,9 @@ jobs:
       # only required for workflows in private repositories
       actions: read
       contents: read
+      # needed for trivy to read the image from the registry
+      packages: read
+
 
     strategy:
       matrix:
