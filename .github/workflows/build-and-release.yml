@@ -2,11 +2,11 @@ name: Build and Release Docker Images
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  release:
-    types: [ published ]
+    branches: [ master ]
+  # pull_request:
+  #   branches: [ main ]
+  # release:
+  #   types: [ published ]
 
 env:
   REGISTRY: ghcr.io
