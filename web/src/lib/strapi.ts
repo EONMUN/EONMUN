@@ -14,6 +14,16 @@ export interface Artwork {
   slug: string;
   description?: string;
   year?: number;
+  default_image?: {
+    id: string;
+    name: string;
+    url: string;
+    alternativeText?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    formats?: any;
+  };
   images?: {
     id: string;
     name: string;
