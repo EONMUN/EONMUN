@@ -25,6 +25,19 @@
       "required": true,
       "unique": false
     },
+    "default_image": {
+      "type": "media",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "multiple": false,
+      "required": true,
+      "allowedTypes": [
+        "images"
+      ]
+    },
     "slug": {
       "type": "uid",
       "pluginOptions": {
