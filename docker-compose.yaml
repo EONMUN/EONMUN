@@ -1,35 +1,70 @@
 version: "3.8"
 
 services:
-  strapi:
-    env_file:
-      - strapi/.env
-    command: npm run dev
+  db:
+    image: postgres:alpine
+    environment:
+      POSTGRES_DB: strapi
+      POSTGRES_USER: strapi
+      POSTGRES_PASSWORD: strapi
+    ports:
+      - "5432:5432"
     volumes:
-      - ./strapi:/app
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U strapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - strapi
+
+  strapi-init:
     build:
       context: ./strapi
       dockerfile: Dockerfile
       target: base
+    volumes:
+      - ./strapi:/app
+    command: npm install
+
+  strapi:
+    extends:
+      service: strapi-init
+    env_file:
+      - strapi/.env
+    command: npm run dev
     ports:
       - "1337:1337" # Adjust the port as needed
+    depends_on:
+      strapi-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
     networks:
       - strapi
-
-  web:
-    env_file:
-      - web/.dev.vars
-    command: npm run dev
-    volumes:
-      - ./web:/app
+  web-init:
     build:
       context: ./web
       dockerfile: Dockerfile
       target: base
+    volumes:
+      - ./web:/app
+    command: npm install
+
+  web:
+    extends:
+      service: web-init
+    env_file:
+      - web/.env
+    command: npm run dev
     ports:
       - "3000:3000" # Adjust the port as needed
     depends_on:
-      - strapi
+      web-init:
+        condition: service_completed_successfully
+      strapi:
+        condition: service_started
     networks:
       - strapi
 

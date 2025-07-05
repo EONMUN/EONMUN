@@ -6,23 +6,18 @@ ifeq ($(which podman),)
 	DC:=podman compose $(DC_ARGS)
 endif
 
-NPX:=npx
-NPM:=npm
-
 build: ## Build all services
 	$(DC) build
-	$(DC) run --rm strapi npm i
-	$(DC) run --rm web npm i
 
 up: ## Start all services
-	$(DC) up --detach
+	$(DC) up
 
 down: ## Stop all services
 	$(DC) down --remove-orphans
 
 seed: ## Seed the database
-	$(NPX) strapi admin:create-user --firstname=John --lastname=Doe --email=username@test.com --password=1Password || true
-	$(NPM) run seed:example
+	$(DC) exec strapi npx strapi admin:create-user --firstname=John --lastname=Doe --email=username@test.com --password=1Password || true
+	$(DC) exec strapi npm run seed:example
 
 destroy: ## Clean all services
 	$(DC) down --remove-orphans --volumes
