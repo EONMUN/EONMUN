@@ -13,6 +13,6 @@ ENV NODE_ENV=production
 
 COPY . /app/
 
-RUN npm build
+RUN npm run build
 
 CMD [ "node_modules/.bin/strapi", "start" ]
