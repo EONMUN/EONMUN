@@ -1,7 +1,5 @@
 import strapi from "@/utils/strapi";
 import Image from "@/components/Image";
-import { Artwork } from "@/lib/strapi";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Carousel,
   CarouselContent,
@@ -10,31 +8,45 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
+// Define the Slide interface based on the shared.slide component
+interface Slide {
+  id: string;
+  text: string;
+  link: string;
+  image: {
+    id: string;
+    name: string;
+    url: string;
+    alternativeText?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    formats?: Record<string, unknown>;
+  };
+}
+
+function ArtworkCarousel({ artworks }: { artworks: Slide[] }) {
   return (
-    <Carousel className="w-full h-screen">
-      <CarouselContent className="h-full">
-        {artworks.map((artwork) => (
-          <CarouselItem key={artwork.id} className="h-full">
-            <div className="p-1 h-full">
-              <Card className="h-full">
-                <CardContent className="flex items-center justify-center p-0 h-full">
-                  <div className="w-full h-full">
-                      <Image 
-                        src={artwork.image.url}
-                        className="w-full h-full object-cover"
-                      />
-                    ) 
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-      <CarouselPrevious className="left-4" />
-      <CarouselNext className="right-4" />
-    </Carousel>
+    <div className="fixed inset-0 z-0">
+      <Carousel className="w-full h-full">
+        <CarouselContent className="h-full -ml-0">
+          {artworks.map((artwork) => (
+            <CarouselItem key={artwork.id} className="h-full pl-0">
+              <div className="h-full">
+                <div className="h-full">
+                  <Image 
+                    src={artwork.image.url}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="left-4 z-10" />
+        <CarouselNext className="right-4 z-10" />
+      </Carousel>
+    </div>
   );
 }
 
@@ -48,10 +60,8 @@ export default async function Home() {
   })
   console.log(data)
   return (
-    <div className="h-screen">
-      <main className="h-full">
-        <ArtworkCarousel artworks={data.slides as Artwork[]} />
-      </main>
-    </div>
+    <>
+      <ArtworkCarousel artworks={data.slides as Slide[]} />
+    </>
   );
 }
