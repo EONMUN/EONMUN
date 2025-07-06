@@ -21,8 +21,7 @@ function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
                 <CardContent className="flex items-center justify-center p-0 h-full">
                   <div className="w-full h-full">
                       <Image 
-                        src={artwork.default_image.url} 
-                        alt={artwork.default_image.alternativeText || artwork.title}
+                        src={artwork.image.url}
                         className="w-full h-full object-cover"
                       />
                     ) 
@@ -40,18 +39,18 @@ function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
 }
 
 export default async function Home() {
-  const {data} = await strapi.collection('artworks').find({
+  const {data} = await strapi.single('home').find({
     populate: {
-      default_image: {
+      slides: {
         populate: '*'
-      },
+      }
     }
   })
   console.log(data)
   return (
     <div className="h-screen">
       <main className="h-full">
-        <ArtworkCarousel artworks={data as Artwork[]} />
+        <ArtworkCarousel artworks={data.slides as Artwork[]} />
       </main>
     </div>
   );

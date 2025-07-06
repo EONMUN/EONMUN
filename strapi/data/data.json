@@ -27,6 +27,16 @@
       }
     ]
   },
+  "home": {
+    "slides": [
+      {
+        "__component": "shared.slide",
+        "text": "Slide 1",
+        "link": "Slide 1",
+        "image": "artworks/quiescent-citadel/quiescent-citadel.jpeg"
+      }
+    ]
+  },
   "categories": [
     {
       "name": "news",
