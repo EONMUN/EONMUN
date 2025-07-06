@@ -1,7 +1,7 @@
 ---
-description: 
+description: Documents outlining library used for interacting with smart contracts from the frontend.
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 MDC
 # :jigsaw: Reown AppKit: Overview
