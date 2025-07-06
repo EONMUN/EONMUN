@@ -32,13 +32,11 @@ function ArtworkCarousel({ artworks }: { artworks: Slide[] }) {
         <CarouselContent className="h-full -ml-0">
           {artworks.map((artwork) => (
             <CarouselItem key={artwork.id} className="h-full pl-0">
-              <div className="h-full">
-                <div className="h-full">
-                  <Image 
-                    src={artwork.image.url}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              <div className="relative h-screen w-full overflow-hidden">
+                <Image 
+                  src={artwork.image.url}
+                  className="absolute inset-0 w-full h-screen object-cover object-center"
+                />
               </div>
             </CarouselItem>
           ))}
