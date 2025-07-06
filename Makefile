@@ -6,6 +6,12 @@ ifeq ($(which podman),)
 	DC:=podman compose $(DC_ARGS)
 endif
 
+init: ## Initialize the project
+	[ -f strapi/.env ] || cp strapi/.env.example strapi/.env
+	[ -f web/.env ] || cp web/.env.example web/.env
+	$(DC) run  --rm strapi npx strapi admin:create-user --firstname=John --lastname=Doe --email=username@test.com --password=1Password || true
+	make up
+
 build: ## Build all services
 	$(DC) build
 
@@ -16,8 +22,7 @@ down: ## Stop all services
 	$(DC) down --remove-orphans
 
 seed: ## Seed the database
-	$(DC) exec strapi npx strapi admin:create-user --firstname=John --lastname=Doe --email=username@test.com --password=1Password || true
-	$(DC) exec strapi npm run seed:example
+	$(DC) exec strapi node scripts/seed.js
 
 destroy: ## Clean all services
 	$(DC) down --remove-orphans --volumes
