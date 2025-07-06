@@ -6,7 +6,7 @@ import { Connect } from './Connect'
 
 export function Header() {
   return (
-    <header className='navbar flex justify-between p-4 pt-0'>
+    <header className='fixed top-0 left-0 right-0 navbar flex justify-between p-4 pt-0 z-50'>
       <LinkComponent href='/'>
         <h1 className='text-xl font-bold'>{SITE_EMOJI}</h1>
       </LinkComponent>
