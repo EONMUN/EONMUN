@@ -28,14 +28,16 @@ services:
       - ./strapi:/app
     command: npm install
 
-  strapi:
-    extends:
-      service: strapi-init
+  strapi-seed:
+    build:
+      context: ./strapi
+      dockerfile: Dockerfile
+      target: base
+    volumes:
+      - ./strapi:/app
     env_file:
       - strapi/.env
-    command: npm run dev
-    ports:
-      - "1337:1337" # Adjust the port as needed
+    command: npm run seed:example
     depends_on:
       strapi-init:
         condition: service_completed_successfully
@@ -43,6 +45,14 @@ services:
         condition: service_healthy
     networks:
       - strapi
+
+  strapi:
+    extends:
+      service: strapi-seed
+    command: npm run dev
+    ports:
+      - "1337:1337" # Adjust the port as needed
+
   web-init:
     build:
       context: ./web

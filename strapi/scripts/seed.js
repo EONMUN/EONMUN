@@ -3,7 +3,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const mime = require('mime-types');
-const { categories, authors, articles, global, about, artworks } = require('../data/data.json');
+const { categories, authors, articles, global, about, artworks, home } = require('../data/data.json');
 
 async function seedExampleApp() {
   try {
@@ -79,18 +79,66 @@ function getFileData(fileName) {
   };
 }
 
-async function uploadFile(file, name) {
-  // For artwork files, create a more descriptive name
-  let displayName = name;
-  if (name.includes('/')) {
+// Helper function to generate consistent file names
+function generateFileName(fileName) {
+  let displayName = fileName;
+  if (fileName.includes('/')) {
     // Extract meaningful parts from nested path like "artworks/slug/filename"
-    const pathParts = name.split('/');
+    const pathParts = fileName.split('/');
     if (pathParts[0] === 'artworks' && pathParts.length >= 3) {
       const artworkSlug = pathParts[1];
       const filename = pathParts[2].replace(/\.[^/.]+$/, ''); // Remove extension
       displayName = `${artworkSlug}-${filename}`;
     }
+  } else {
+    // Remove extension for simple filenames
+    displayName = fileName.replace(/\.[^/.]+$/, '');
   }
+  return displayName;
+}
+
+async function checkFileExistsBeforeUpload(files) {
+  const existingFiles = [];
+  const uploadedFiles = [];
+  const filesCopy = [...files];
+
+  for (const fileName of filesCopy) {
+    // Generate the name that would be used for this file using the same logic as uploadFile
+    const searchName = generateFileName(fileName);
+    
+    console.log(`Checking for existing file: ${searchName} (from path: ${fileName})`);
+    
+    // Check if the file already exists in Strapi
+    const fileWhereName = await strapi.query('plugin::upload.file').findOne({
+      where: {
+        name: searchName,
+      },
+    });
+
+    if (fileWhereName) {
+      // File exists, don't upload it
+      existingFiles.push(fileWhereName);
+      console.log(`✓ File already exists: ${searchName} (ID: ${fileWhereName.id})`);
+    } else {
+      // File doesn't exist, upload it
+      try {
+        const fileData = getFileData(fileName);
+        const [file] = await uploadFile(fileData, fileName);
+        uploadedFiles.push(file);
+        console.log(`✓ Uploaded new file: ${searchName} (ID: ${file.id})`);
+      } catch (error) {
+        console.error(`Error uploading file ${fileName}:`, error);
+      }
+    }
+  }
+  const allFiles = [...existingFiles, ...uploadedFiles];
+  // If only one file then return only that file
+  return allFiles.length === 1 ? allFiles[0] : allFiles;
+}
+
+async function uploadFile(file, name) {
+  // Use the same name generation logic as the check function
+  const displayName = generateFileName(name);
   
   return strapi
     .plugin('upload')
@@ -179,52 +227,6 @@ function getUniqueFieldForModel(model, entry) {
   return null;
 }
 
-async function checkFileExistsBeforeUpload(files) {
-  const existingFiles = [];
-  const uploadedFiles = [];
-  const filesCopy = [...files];
-
-  for (const fileName of filesCopy) {
-    // Generate the name that would be used for this file
-    let searchName = fileName.replace(/\..*$/, ''); // Remove extension
-    if (fileName.includes('/')) {
-      // Handle nested paths like "artworks/slug/filename.ext"
-      const pathParts = fileName.split('/');
-      if (pathParts[0] === 'artworks' && pathParts.length >= 3) {
-        const artworkSlug = pathParts[1];
-        const filename = pathParts[2].replace(/\.[^/.]+$/, ''); // Remove extension
-        searchName = `${artworkSlug}-${filename}`;
-      }
-    }
-    
-    // Check if the file already exists in Strapi
-    const fileWhereName = await strapi.query('plugin::upload.file').findOne({
-      where: {
-        name: searchName,
-      },
-    });
-
-    if (fileWhereName) {
-      // File exists, don't upload it
-      existingFiles.push(fileWhereName);
-      console.log(`File already exists: ${searchName}`);
-    } else {
-      // File doesn't exist, upload it
-      try {
-        const fileData = getFileData(fileName);
-        const [file] = await uploadFile(fileData, fileName);
-        uploadedFiles.push(file);
-        console.log(`Uploaded new file: ${searchName}`);
-      } catch (error) {
-        console.error(`Error uploading file ${fileName}:`, error);
-      }
-    }
-  }
-  const allFiles = [...existingFiles, ...uploadedFiles];
-  // If only one file then return only that file
-  return allFiles.length === 1 ? allFiles[0] : allFiles;
-}
-
 async function updateBlocks(blocks) {
   const updatedBlocks = [];
   for (const block of blocks) {
@@ -242,6 +244,15 @@ async function updateBlocks(blocks) {
       const blockCopy = { ...block };
       // Replace the file names on the block with the actual files
       blockCopy.files = existingAndUploadedFiles;
+      // Push the updated block
+      updatedBlocks.push(blockCopy);
+    } else if (block.__component === 'shared.slide') {
+      // Handle slide image upload
+      const uploadedImage = await checkFileExistsBeforeUpload([block.image]);
+      // Copy the block to not mutate directly
+      const blockCopy = { ...block };
+      // Replace the image name on the block with the actual file
+      blockCopy.image = uploadedImage;
       // Push the updated block
       updatedBlocks.push(blockCopy);
     } else {
@@ -369,6 +380,21 @@ async function importArtworks() {
   }
 }
 
+async function importHome() {
+  // Process slides using the same updateBlocks function for consistency
+  const updatedSlides = await updateBlocks(home.slides);
+
+  await createEntry({
+    model: 'home',
+    entry: {
+      ...home,
+      slides: updatedSlides,
+      // Make sure it's not a draft
+      publishedAt: Date.now(),
+    },
+  });
+}
+
 async function importSeedData() {
   // Allow read of application content types
   await setPublicPermissions({
@@ -377,6 +403,7 @@ async function importSeedData() {
     author: ['find', 'findOne'],
     global: ['find', 'findOne'],
     about: ['find', 'findOne'],
+    home: ['find', 'findOne'],
   });
 
   // Create all entries
@@ -385,6 +412,7 @@ async function importSeedData() {
   await importArticles();
   await importGlobal();
   await importAbout();
+  await importHome();
   await importArtworks();
 }
 
