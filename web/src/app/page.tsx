@@ -1,5 +1,6 @@
 import strapi from "@/utils/strapi";
 import Image from "@/components/Image";
+
 import {
   Carousel,
   CarouselContent,
