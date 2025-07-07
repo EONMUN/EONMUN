@@ -6,6 +6,63 @@ export const strapiClient = strapi({
   auth: process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '',
 });
 
+// Image format interface for different sizes
+export interface ImageFormat {
+  name: string;
+  hash: string;
+  ext: string;
+  mime: string;
+  path?: string;
+  width: number;
+  height: number;
+  size: number;
+  url: string;
+}
+
+// Image formats collection interface
+export interface ImageFormats {
+  thumbnail?: ImageFormat;
+  small?: ImageFormat;
+  medium?: ImageFormat;
+  large?: ImageFormat;
+}
+
+// Strapi image interface
+export interface StrapiImage {
+  id: string;
+  name: string;
+  url: string;
+  alternativeText?: string;
+  caption?: string;
+  width?: number;
+  height?: number;
+  formats?: ImageFormats;
+}
+
+// Upload file interface for creating/updating
+export interface UploadFileInput {
+  id?: string;
+  name?: string;
+  alternativeText?: string;
+  caption?: string;
+}
+
+// Query parameters interface
+export interface QueryParams {
+  populate?: string[] | Record<string, unknown>;
+  filters?: Record<string, unknown>;
+  sort?: string | string[];
+  pagination?: {
+    page?: number;
+    pageSize?: number;
+    start?: number;
+    limit?: number;
+  };
+  fields?: string[];
+  locale?: string;
+  publicationState?: 'live' | 'preview';
+}
+
 // Artwork interface based on the Strapi schema
 export interface Artwork {
   id: string;
@@ -14,26 +71,8 @@ export interface Artwork {
   slug: string;
   description?: string;
   year?: number;
-  default_image?: {
-    id: string;
-    name: string;
-    url: string;
-    alternativeText?: string;
-    caption?: string;
-    width?: number;
-    height?: number;
-    formats?: any;
-  };
-  images?: {
-    id: string;
-    name: string;
-    url: string;
-    alternativeText?: string;
-    caption?: string;
-    width?: number;
-    height?: number;
-    formats?: any;
-  }[];
+  default_image?: StrapiImage;
+  images?: StrapiImage[];
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
@@ -45,7 +84,7 @@ export interface CreateArtworkData {
   title: string;
   description?: string;
   year?: number;
-  images?: any[];
+  images?: UploadFileInput[];
 }
 
 // Update artwork data interface
@@ -53,13 +92,13 @@ export interface UpdateArtworkData {
   title?: string;
   description?: string;
   year?: number;
-  images?: any[];
+  images?: UploadFileInput[];
 }
 
 // API functions for artwork CRUD operations
 export const artworkAPI = {
   // Get all artworks
-  async getAll(params?: any) {
+  async getAll(params?: QueryParams) {
     try {
       const response = await strapiClient.collection('artworks').find({
         populate: ['images'],
