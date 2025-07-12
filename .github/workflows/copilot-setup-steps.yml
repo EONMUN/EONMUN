@@ -41,4 +41,5 @@ jobs:
             web/package-lock.json
 
       - name: Install JavaScript dependencies
+        working-directory: web
         run: npm ci
