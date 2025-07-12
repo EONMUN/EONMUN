@@ -10,12 +10,16 @@ const getImageUrl = (url: string): string => {
     return url;
   }
   
-  // For local development, prefix with Strapi URL
+  // For uploads, use the proxy endpoint
+  if (url.startsWith('/uploads/')) {
+    return url; // The proxy will handle this
+  }
+  
+  // For other paths, use the original logic
   if (process.env.NODE_ENV === 'development') {
     return `http://localhost:1337${url}`;
   }
   
-  // For production, use the URL as provided by Strapi
   return url;
 };
 
