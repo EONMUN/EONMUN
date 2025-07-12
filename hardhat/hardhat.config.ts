@@ -2,6 +2,9 @@ import type { HardhatUserConfig } from "hardhat/config";
 
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
 import hardhatIgnitionPlugin from "@nomicfoundation/hardhat-ignition";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
+
+
 import { configVariable } from "hardhat/config";
 const networks = {
   sepolia: {
@@ -18,7 +21,7 @@ const config: HardhatUserConfig = {
    * Note: A `hardhat-toolbox` like plugin for Hardhat 3 hasn't been defined yet,
    * so this list is larger than what you would normally have.
    */
-  plugins: [hardhatToolboxViemPlugin, hardhatIgnitionPlugin],
+  plugins: [hardhatToolboxViemPlugin, hardhatIgnitionPlugin, hardhatVerify],
   solidity: {
     /*
      * Hardhat 3 supports different build profiles, allowing you to configure
@@ -68,7 +71,12 @@ const config: HardhatUserConfig = {
     ],
   },
   etherscan: {
-    apiKey: "9PPC8RZ8E2AUEAP96GBPQZQGJMWSMBT8N8",
+    apiKey: configVariable("ETHERSCAN_API_KEY"),
+  },
+  verify: {
+    etherscan: {
+      apiKey: configVariable("ETHERSCAN_API_KEY"),
+    },
   },
   /*
    * The `networks` configuration is mostly compatible with Hardhat 2.
