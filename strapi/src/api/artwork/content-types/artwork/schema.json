@@ -80,6 +80,11 @@
       },
       "min": 0,
       "max": 2050
+    },
+    "collection": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::collection.collection"
     }
   }
 }
