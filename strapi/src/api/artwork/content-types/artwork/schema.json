@@ -81,10 +81,11 @@
       "min": 0,
       "max": 2050
     },
-    "collection": {
+    "collections": {
       "type": "relation",
-      "relation": "oneToOne",
-      "target": "api::collection.collection"
+      "relation": "manyToMany",
+      "target": "api::collection.collection",
+      "inversedBy": "artworks"
     }
   }
 }

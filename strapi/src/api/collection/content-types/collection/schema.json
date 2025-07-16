@@ -20,6 +20,12 @@
       "type": "uid",
       "targetField": "name",
       "required": true
+    },
+    "artworks": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::artwork.artwork",
+      "mappedBy": "collections"
     }
   }
 }

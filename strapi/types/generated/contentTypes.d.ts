@@ -458,8 +458,8 @@ export interface ApiArtworkArtwork extends Struct.CollectionTypeSchema {
     };
   };
   attributes: {
-    collection: Schema.Attribute.Relation<
-      'oneToOne',
+    collections: Schema.Attribute.Relation<
+      'manyToMany',
       'api::collection.collection'
     >;
     createdAt: Schema.Attribute.DateTime;
@@ -601,6 +601,7 @@ export interface ApiCollectionCollection extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
+    artworks: Schema.Attribute.Relation<'manyToMany', 'api::artwork.artwork'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
