@@ -10,6 +10,16 @@ import {
 } from "@/components/ui/carousel";
 import { Artwork } from "@/lib/strapi";
 
+function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
+  
+  return (
+    <CarouselItem key={artwork.id} className="h-full pl-0">
+      <div className="relative h-screen w-full overflow-hidden">
+        <Image src={artwork.default_image.url} alt={artwork.default_image.alternativeText} className="absolute inset-0 w-full h-screen object-cover object-center" />
+      </div>
+    </CarouselItem>
+  );
+}
 
 function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
   return (
@@ -17,15 +27,7 @@ function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
       <Carousel className="w-full h-full">
         <CarouselContent className="h-full -ml-0">
           {artworks.map((artwork) => (
-            <CarouselItem key={artwork.id} className="h-full pl-0">
-              <div className="relative h-screen w-full overflow-hidden">
-                <Image 
-                  src={artwork.default_image.url}
-                  alt={artwork.default_image.alternativeText}
-                  className="absolute inset-0 w-full h-screen object-cover object-center"
-                />
-              </div>
-            </CarouselItem>
+            <ArtworkCarouselItem key={artwork.id} artwork={artwork} />
           ))}
         </CarouselContent>
         <CarouselPrevious className="left-4 z-10" />
@@ -47,8 +49,6 @@ export default async function Home() {
   })
   console.log(data)
   return (
-    <>
-      <ArtworkCarousel artworks={data.slides as Artwork[]} />
-    </>
+    <ArtworkCarousel artworks={data.slides as Artwork[]} />
   );
 }
