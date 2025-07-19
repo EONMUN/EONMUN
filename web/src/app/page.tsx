@@ -40,14 +40,14 @@ function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
 export default async function Home() {
   const {data} = await strapi.single('home').find({
     populate: {
-        slides:{
-          populate: {
-            default_image: true
-          }
-        }
+      slides: {
+        populate: {
+          default_image: true,
+          collections: true,
+        },
+      },
     }
   })
-  console.log(data)
   return (
     <ArtworkCarousel artworks={data.slides as Artwork[]} />
   );
