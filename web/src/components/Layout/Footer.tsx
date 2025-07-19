@@ -1,5 +1,5 @@
 import React from 'react'
-import { SITE_EMOJI, SITE_INFO, SOCIAL_GITHUB, SOCIAL_TWITTER } from '@/utils/site'
+import { SITE_INFO, SOCIAL_GITHUB, SOCIAL_TWITTER } from '@/utils/site'
 // import { FaGithub, FaXTwitter } from 'react-icons/fa6'
 // import { NetworkStatus } from './NetworkStatus'
 import { LinkComponent } from '../LinkComponent'
@@ -17,7 +17,7 @@ export function Footer() {
           <FrostedGlass variant='dark' className='p-4 rounded-lg'>
             <div className='flex flex-col gap-2'>
               <p className='text-white'>
-                {SITE_EMOJI} {SITE_INFO}
+                {SITE_INFO}
               </p>
             </div>
           </FrostedGlass>
