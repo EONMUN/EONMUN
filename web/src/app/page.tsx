@@ -8,25 +8,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Artwork } from "@/lib/strapi";
 
-// Define the Slide interface based on the shared.slide component
-interface Slide {
-  id: string;
-  text: string;
-  link: string;
-  image: {
-    id: string;
-    name: string;
-    url: string;
-    alternativeText?: string;
-    caption?: string;
-    width?: number;
-    height?: number;
-    formats?: Record<string, unknown>;
-  };
-}
 
-function ArtworkCarousel({ artworks }: { artworks: Slide[] }) {
+function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
   return (
     <div className="fixed inset-0 z-0">
       <Carousel className="w-full h-full">
@@ -35,7 +20,8 @@ function ArtworkCarousel({ artworks }: { artworks: Slide[] }) {
             <CarouselItem key={artwork.id} className="h-full pl-0">
               <div className="relative h-screen w-full overflow-hidden">
                 <Image 
-                  src={artwork.image.url}
+                  src={artwork.default_image.url}
+                  alt={artwork.default_image.alternativeText}
                   className="absolute inset-0 w-full h-screen object-cover object-center"
                 />
               </div>
@@ -52,15 +38,17 @@ function ArtworkCarousel({ artworks }: { artworks: Slide[] }) {
 export default async function Home() {
   const {data} = await strapi.single('home').find({
     populate: {
-      slides: {
-        populate: '*'
-      }
+        slides:{
+          populate: {
+            default_image: true
+          }
+        }
     }
   })
   console.log(data)
   return (
     <>
-      <ArtworkCarousel artworks={data.slides as Slide[]} />
+      <ArtworkCarousel artworks={data.slides as Artwork[]} />
     </>
   );
 }

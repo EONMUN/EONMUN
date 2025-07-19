@@ -71,7 +71,7 @@ export interface Artwork {
   slug: string;
   description?: string;
   year?: number;
-  default_image?: StrapiImage;
+  default_image: StrapiImage;
   images?: StrapiImage[];
   createdAt: string;
   updatedAt: string;
