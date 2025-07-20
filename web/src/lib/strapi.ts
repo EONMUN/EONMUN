@@ -71,19 +71,12 @@ export interface Artwork {
   slug: string;
   description?: string;
   year?: number;
-  default_image: StrapiImage;
+  default_image?: StrapiImage;
   images?: StrapiImage[];
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
   locale: string;
-  collections: Collection[];
-}
-
-export interface Collection {
-  id: string;
-  name: string;
-  slug: string;
 }
 
 // Create artwork data interface
@@ -193,6 +186,127 @@ export const artworkAPI = {
       return response?.data?.[0] || null;
     } catch (error) {
       console.error('Error fetching artwork by slug:', error);
+      throw error;
+    }
+  },
+};
+
+// Collection interface based on the Strapi schema
+export interface Collection {
+  id: string;
+  documentId: string;
+  name: string;
+  slug: string;
+  artworks?: Artwork[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+  locale: string;
+}
+
+// Create collection data interface
+export interface CreateCollectionData {
+  name: string;
+  artworks?: string[]; // Array of artwork documentIds
+}
+
+// Update collection data interface
+export interface UpdateCollectionData {
+  name?: string;
+  artworks?: string[]; // Array of artwork documentIds
+}
+
+// API functions for collection CRUD operations
+export const collectionAPI = {
+  // Get all collections
+  async getAll(params?: QueryParams) {
+    try {
+      const response = await strapiClient.collection('collections').find({
+        populate: ['artworks', 'artworks.default_image'],
+        ...params,
+      });
+      return {
+        data: response.data as Collection[],
+        meta: response.meta,
+      };
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+      throw error;
+    }
+  },
+
+  // Get single collection by documentId
+  async getById(documentId: string) {
+    try {
+      const response = await strapiClient.collection('collections').findOne(documentId, {
+        populate: ['artworks', 'artworks.default_image'],
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching collection:', error);
+      throw error;
+    }
+  },
+
+  // Create new collection
+  async create(data: CreateCollectionData) {
+    try {
+      const response = await strapiClient.collection('collections').create({
+        data,
+        populate: ['artworks', 'artworks.default_image'],
+      });
+      return {
+        data: response.data as Collection,
+        meta: response.meta,
+      };
+    } catch (error) {
+      console.error('Error creating collection:', error);
+      throw error;
+    }
+  },
+
+  // Update collection
+  async update(documentId: string, data: UpdateCollectionData) {
+    try {
+      const response = await strapiClient.collection('collections').update(documentId, {
+        data,
+        populate: ['artworks', 'artworks.default_image'],
+      });
+      return {
+        data: response.data as Collection,
+        meta: response.meta,
+      };
+    } catch (error) {
+      console.error('Error updating collection:', error);
+      throw error;
+    }
+  },
+
+  // Delete collection
+  async delete(documentId: string) {
+    try {
+      const response = await strapiClient.collection('collections').delete(documentId);
+      return response;
+    } catch (error) {
+      console.error('Error deleting collection:', error);
+      throw error;
+    }
+  },
+
+  // Get collection by slug
+  async getBySlug(slug: string) {
+    try {
+      const response = await strapiClient.collection('collections').find({
+        filters: {
+          slug: {
+            $eq: slug,
+          },
+        },
+        populate: ['artworks', 'artworks.default_image'],
+      });
+      return response?.data?.[0] || null;
+    } catch (error) {
+      console.error('Error fetching collection by slug:', error);
       throw error;
     }
   },
