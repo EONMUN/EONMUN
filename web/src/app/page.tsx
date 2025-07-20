@@ -18,13 +18,13 @@ function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
     <CarouselItem key={artwork.id} className="h-full pl-0">
       <div className="relative h-screen w-full overflow-hidden">
         <Image
-          src={artwork.default_image.url}
-          alt={artwork.default_image.alternativeText}
+          src={artwork.default_image!.url}
+          alt={artwork.default_image?.alternativeText}
           className="absolute inset-0 w-full h-screen object-cover object-center"
         />
 
         {/* Collection display in bottom left */}
-        {artwork.collections && artwork.collections.length > 0 && (
+        {artwork?.collections && artwork?.collections?.length > 0 && (
           <div className="absolute bottom-20 left-4 z-[5]">
             <FrostedGlass variant="dark" className="p-3 rounded-lg">
               <div className="flex flex-col gap-1">
@@ -36,9 +36,9 @@ function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
                 </div>
 
                 <div className="text-gray-300 uppercase tracking-wide font-medium text-sm">
-                  Collection{artwork.collections.length > 1 ? "s" : ""}
+                  Collection{artwork?.collections?.length > 1 ? "s" : ""}
                 </div>
-                {artwork.collections.map((collection) => (
+                {artwork?.collections?.map((collection) => (
                   <Link
                     href={`/collections/${collection.slug}`}
                     key={collection.id}

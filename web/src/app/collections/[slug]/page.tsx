@@ -1,14 +1,13 @@
-import strapi from "@/utils/strapi";
 import Image from "@/components/Image";
 import Link from "next/link";
-import { Collection, Artwork } from "@/lib/strapi";
+import { Artwork, collectionAPI } from "@/lib/strapi";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
 
 interface CollectionPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 function ArtworkCard({ artwork }: { artwork: Artwork }) {
@@ -46,23 +45,9 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
   );
 }
 
-export default async function CollectionPage(props: { params: Promise<{ slug: string }> }) {
+export default async function CollectionPage(props: CollectionPageProps) {
   const { slug } = await props.params;
-  console.log(slug);
-  const { data } = await strapi.collection("collections").find({
-    filters: {
-      slug
-    },
-    populate: {
-      artworks: {
-        populate: {
-          default_image: true,
-        },
-      },
-    },
-  });
-
-  const collection = data?.[0] as Collection;
+  const collection = await collectionAPI.getBySlug(slug);
 
   if (!collection) {
     notFound();
@@ -92,7 +77,7 @@ export default async function CollectionPage(props: { params: Promise<{ slug: st
       {/* Artworks Grid */}
       {collection.artworks && collection.artworks.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {collection.artworks.map((artwork) => (
+          {collection.artworks.map((artwork: Artwork) => (
             <ArtworkCard key={artwork.id} artwork={artwork} />
           ))}
         </div>
@@ -113,15 +98,8 @@ export default async function CollectionPage(props: { params: Promise<{ slug: st
 
 // Generate metadata for the page
 export async function generateMetadata({ params }: CollectionPageProps) {
-  const { data } = await strapi.collection("collections").find({
-    filters: {
-      slug: {
-        $eq: params.slug,
-      },
-    },
-  });
-
-  const collection = data?.[0] as Collection;
+  const { slug } = await params;
+  const collection = await collectionAPI.getBySlug(slug);
 
   if (!collection) {
     return {

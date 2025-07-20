@@ -77,6 +77,7 @@ export interface Artwork {
   updatedAt: string;
   publishedAt: string;
   locale: string;
+  collections?: Collection[];
 }
 
 // Create artwork data interface
