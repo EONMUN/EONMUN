@@ -1,4 +1,4 @@
-import strapi from "@/utils/strapi";
+import { strapiClient } from "@/lib/strapi";
 import Image from "@/components/Image";
 
 import {
@@ -73,7 +73,7 @@ function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
 }
 
 export default async function Home() {
-  const { data } = await strapi.single("home").find({
+  const { data } = await strapiClient.single("home").find({
     populate: {
       slides: {
         populate: {

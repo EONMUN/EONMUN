@@ -2,7 +2,7 @@ import { strapi } from '@strapi/client';
 
 // Initialize Strapi client
 export const strapiClient = strapi({
-  baseURL: process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337/api',
+  baseURL: (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api',
   auth: process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '',
 });
 

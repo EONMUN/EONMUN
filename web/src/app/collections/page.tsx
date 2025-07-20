@@ -1,4 +1,4 @@
-import strapi from "@/utils/strapi";
+import { collectionAPI } from "@/lib/strapi";
 import Image from "@/components/Image";
 import Link from "next/link";
 import { Collection } from "@/lib/strapi";
@@ -43,7 +43,7 @@ function CollectionCard({ collection }: { collection: Collection }) {
 }
 
 export default async function CollectionsPage() {
-  const { data } = await strapi.collection("collections").find({
+  const { data } = await collectionAPI.getAll({
     populate: {
       artworks: {
         populate: {
