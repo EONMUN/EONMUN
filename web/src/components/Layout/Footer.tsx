@@ -15,24 +15,17 @@ export function Footer() {
       <footer className='sticky top-[100vh] p-4 '>
         <div className='footer flex justify-between items-center gap-4'>
           <FrostedGlass variant='dark' className='p-4 rounded-lg'>
-            <div className='flex flex-col gap-2'>
+            <div className='flex  gap-2'>
               <p className='text-white'>
                 {SITE_INFO}
               </p>
-            </div>
-          </FrostedGlass>
-          
-          <FrostedGlass variant='dark' className='p-4 rounded-lg'>
-            <div className='flex gap-4'>
               <LinkComponent href={`https://github.com/${SOCIAL_GITHUB}`}>
                 <span className='text-white hover:text-gray-300'>
-                  {/* <FaGithub /> */}
                   Github
                 </span>
               </LinkComponent>
               <LinkComponent href={`https://x.com/${SOCIAL_TWITTER}`}>
                 <span className='text-white hover:text-gray-300'>
-                  {/* <FaXTwitter /> */}
                   Twitter
                 </span>
               </LinkComponent>

@@ -1,5 +1,6 @@
 import { strapiClient } from "@/lib/strapi";
 import Image from "@/components/Image";
+import { ArtworkInfo } from "@/components/ArtworkInfo";
 
 import {
   Carousel,
@@ -9,8 +10,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Artwork } from "@/lib/strapi";
-import { FrostedGlass } from "@/components/ui/FrostedGlass";
-import Link from "next/link";
 
 function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
   console.log(artwork);
@@ -23,33 +22,9 @@ function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
           className="absolute inset-0 w-full h-screen object-cover object-center"
         />
 
-        {/* Collection display in bottom left */}
+        {/* Collection display in bottom right */}
         {artwork?.collections && artwork?.collections?.length > 0 && (
-          <div className="absolute bottom-20 left-4 z-[5]">
-            <FrostedGlass variant="dark" className="p-3 rounded-lg">
-              <div className="flex flex-col gap-1">
-                <div className=" tracking-wide">
-                  <div className="text-sm text-white  font-medium uppercase">
-                    Name
-                  </div>
-                  <div className="text-xs text-white ">{artwork.title}</div>
-                </div>
-
-                <div className="text-gray-300 uppercase tracking-wide font-medium text-sm">
-                  Collection{artwork?.collections?.length > 1 ? "s" : ""}
-                </div>
-                {artwork?.collections?.map((collection) => (
-                  <Link
-                    href={`/collections/${collection.slug}`}
-                    key={collection.id}
-                    className="text-xs text-white"
-                  >
-                    {collection.name}
-                  </Link>
-                ))}
-              </div>
-            </FrostedGlass>
-          </div>
+          <ArtworkInfo artwork={artwork} />
         )}
       </div>
     </CarouselItem>

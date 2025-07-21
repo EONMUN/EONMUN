@@ -6,4 +6,5 @@ export const SITE_DESCRIPTION =
 export const SITE_URL = 'https://nft.eonmun.com'
 
 export const SOCIAL_TWITTER = 'E0NMUN'
+export const SOCIAL_INSTAGRAM = 'eon.mun/'
 export const SOCIAL_GITHUB = 'EONMUN/EONMUN'

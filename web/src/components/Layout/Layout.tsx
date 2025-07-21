@@ -1,6 +1,5 @@
 import React, { PropsWithChildren } from 'react'
 import { Header } from './Header'
-import { Footer } from './Footer'
 
 export function Layout(props: PropsWithChildren) {
   return (
@@ -9,7 +8,7 @@ export function Layout(props: PropsWithChildren) {
 
       <main className='grow px-4 container max-w-3xl mx-auto'>{props.children}</main>
 
-      <Footer />
+      {/* <Footer /> */}
     </div>
   )
 }

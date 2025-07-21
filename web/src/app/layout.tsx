@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Abel   } from "next/font/google";
 import "./globals.css";
 import { Layout } from "@/components/Layout/Layout";
 import { headers } from "next/headers";
 import { Providers } from "@/context";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+
+const abel = Abel ({
+  variable: "--font-abel",
   subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +28,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${abel.className} antialiased`}
       >
         <Providers cookies={cookies}>
           <Layout>{children}</Layout>
