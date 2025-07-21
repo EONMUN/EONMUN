@@ -20,7 +20,7 @@ function CollectionCard({ collection }: { collection: Collection }) {
         href={`/collections/${collection.slug}`}
         className="block h-full flex flex-col"
       >
-        <div className="flex-1 overflow-hidden rounded-lg bg-gray-100 mb-6">
+        <div className="aspect-[4/5] overflow-hidden rounded-lg bg-gray-100 mb-6">
           {thumbnailImage ? (
             <Image
               src={thumbnailImage.url}
