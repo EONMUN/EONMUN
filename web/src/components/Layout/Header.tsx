@@ -14,9 +14,9 @@ export function Header({ homepage = false }: HeaderProps) {
   
   const NavigationContent = () => (
     <>
-      <LinkComponent href="/collections" className={textColor}>Collections</LinkComponent>
-      <LinkComponent href="/" className={textColor}>About</LinkComponent>
-      <LinkComponent href="/" className={textColor}>Store</LinkComponent>
+      <LinkComponent href="/collections" className={`${textColor} text-xs sm:text-sm`}>Collections</LinkComponent>
+      <LinkComponent href="/" className={`${textColor} text-xs sm:text-sm`}>About</LinkComponent>
+      <LinkComponent href="/" className={`${textColor} text-xs sm:text-sm`}>Store</LinkComponent>
       <LinkComponent
         href={`https://x.com/${SOCIAL_TWITTER}`}
         className={`flex items-center justify-center ${textColor}`}
@@ -33,22 +33,22 @@ export function Header({ homepage = false }: HeaderProps) {
   );
 
   return (
-    <header className="z-50 p-4 flex justify-between ">
+    <header className="z-50 p-2 sm:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
       <LinkComponent href="/" className="flex items-center">
-        <h1 className={`tracking-[0.363636em] text-3xl font-bold ${textColor}`}>
+        <h1 className={`tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold ${textColor}`}>
           {SITE_NAME}
         </h1>
       </LinkComponent>
 
       {homepage ? (
         <FrostedGlass
-          className="navbar flex gap-4 uppercase justify-between p-4 rounded-lg font-bold tracking-widest"
+          className="navbar flex flex-wrap gap-2 sm:gap-4 uppercase justify-between p-2 sm:p-4 rounded-lg font-bold tracking-wider sm:tracking-widest w-full sm:w-auto"
           variant="dark"
         >
           <NavigationContent />
         </FrostedGlass>
       ) : (
-        <nav className="flex gap-4 uppercase justify-between p-4 font-bold tracking-widest">
+        <nav className="flex flex-wrap gap-2 sm:gap-4 uppercase justify-between p-2 sm:p-4 font-bold tracking-wider sm:tracking-widest w-full sm:w-auto">
           <NavigationContent />
         </nav>
       )}

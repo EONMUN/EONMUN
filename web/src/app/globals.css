@@ -115,7 +115,21 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html {
+    overflow-x: hidden;
+  }
+  
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+  
+  /* Prevent any element from causing horizontal overflow */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
