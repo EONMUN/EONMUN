@@ -13,6 +13,9 @@ export function Header() {
         </LinkComponent>
 
       <FrostedGlass className='navbar flex gap-4 uppercase justify-between p-4 text-white rounded-lg font-bold tracking-widest' variant='dark'>
+      <LinkComponent href='/collections'>
+                Collections
+      </LinkComponent>
       <LinkComponent href='/'>
           About
         </LinkComponent>
