@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Artwork } from "@/lib/strapi";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
