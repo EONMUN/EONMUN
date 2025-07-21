@@ -118,6 +118,9 @@
   
   html {
     overflow-x: hidden;
+    /* Prevent mobile viewport height changes from causing scroll */
+    height: 100%;
+    height: 100dvh; /* Use dynamic viewport height when supported */
   }
   
   body {
@@ -125,11 +128,63 @@
     overflow-x: hidden;
     width: 100%;
     position: relative;
+    height: 100%;
+    height: 100dvh; /* Use dynamic viewport height when supported */
   }
   
   /* Prevent any element from causing horizontal overflow */
   * {
     max-width: 100%;
     box-sizing: border-box;
+  }
+}
+
+/* Mobile viewport height utilities */
+@layer utilities {
+  .h-mobile-screen {
+    height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height when supported */
+  }
+  
+  .min-h-mobile-screen {
+    min-height: 100vh;
+    min-height: 100dvh; /* Use dynamic viewport height when supported */
+  }
+  
+  .max-h-mobile-screen {
+    max-height: 100vh;
+    max-height: 100dvh; /* Use dynamic viewport height when supported */
+  }
+}
+
+/* Ensure carousel container doesn't allow scroll on mobile */
+@layer components {
+  .mobile-fullscreen-carousel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height when supported */
+    overflow: hidden;
+    z-index: 0;
+  }
+  
+  .mobile-fullscreen-carousel-item {
+    height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height when supported */
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .mobile-fullscreen-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height when supported */
+    object-fit: cover;
+    object-position: center;
   }
 }

@@ -15,11 +15,11 @@ function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
   console.log(artwork);
   return (
     <CarouselItem key={artwork.id} className="h-full pl-0">
-      <div className="relative h-screen w-full overflow-hidden">
+      <div className="mobile-fullscreen-carousel-item relative">
         <Image
           src={artwork.default_image!.url}
           alt={artwork.default_image?.alternativeText}
-          className="absolute inset-0 w-full h-screen object-cover object-center"
+          className="mobile-fullscreen-image"
         />
 
         {/* Collection display in bottom right */}
@@ -33,7 +33,7 @@ function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
 
 function ArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
   return (
-    <div className="fixed inset-0 z-0">
+    <div className="mobile-fullscreen-carousel">
       <Carousel className="w-full h-full">
         <CarouselContent className="h-full -ml-0">
           {artworks.map((artwork) => (
