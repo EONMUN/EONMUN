@@ -5,40 +5,53 @@ import { FrostedGlass } from "../ui/FrostedGlass";
 import { Twitter, Instagram } from "lucide-react";
 // import { NotificationsDrawer } from './NotificationsDrawer'
 
-export function Header() {
+interface HeaderProps {
+  homepage?: boolean;
+}
+
+export function Header({ homepage = false }: HeaderProps) {
+  const textColor = homepage ? "text-white" : "text-black";
+  
+  const NavigationContent = () => (
+    <>
+      <LinkComponent href="/collections" className={textColor}>Collections</LinkComponent>
+      <LinkComponent href="/" className={textColor}>About</LinkComponent>
+      <LinkComponent href="/" className={textColor}>Store</LinkComponent>
+      <LinkComponent
+        href={`https://x.com/${SOCIAL_TWITTER}`}
+        className={`flex items-center justify-center ${textColor}`}
+      >
+        <Twitter className="w-3 h-3" />
+      </LinkComponent>
+      <LinkComponent
+        href={`https://instagram.com/${SOCIAL_INSTAGRAM}`}
+        className={`flex items-center justify-center ${textColor}`}
+      >
+        <Instagram className="w-3 h-3" />
+      </LinkComponent>
+    </>
+  );
+
   return (
     <header className="z-50 p-4 flex justify-between ">
-      {/* <FrostedGlass
-        className="navbar flex gap-4 uppercase justify-between p-4 text-white rounded-lg font-bold tracking-widest"
-        variant="dark"
-      > */}
-        <LinkComponent href="/" className="flex items-center">
-          <h1 className="text-white tracking-[0.363636em] text-3xl font-bold">
-            {SITE_NAME}
-          </h1>
-        </LinkComponent>
-      {/* </FrostedGlass> */}
+      <LinkComponent href="/" className="flex items-center">
+        <h1 className={`tracking-[0.363636em] text-3xl font-bold ${textColor}`}>
+          {SITE_NAME}
+        </h1>
+      </LinkComponent>
 
-      <FrostedGlass
-        className="navbar flex gap-4 uppercase justify-between p-4 text-white rounded-lg font-bold tracking-widest"
-        variant="dark"
-      >
-        <LinkComponent href="/collections">Collections</LinkComponent>
-        <LinkComponent href="/">About</LinkComponent>
-        <LinkComponent href="/">Store</LinkComponent>
-        <LinkComponent
-          href={`https://x.com/${SOCIAL_TWITTER}`}
-          className="flex items-center justify-center"
+      {homepage ? (
+        <FrostedGlass
+          className="navbar flex gap-4 uppercase justify-between p-4 rounded-lg font-bold tracking-widest"
+          variant="dark"
         >
-          <Twitter className="w-3 h-3" />
-        </LinkComponent>
-        <LinkComponent
-          href={`https://instagram.com/${SOCIAL_INSTAGRAM}`}
-          className="flex items-center justify-center"
-        >
-          <Instagram className="w-3 h-3" />
-        </LinkComponent>
-      </FrostedGlass>
+          <NavigationContent />
+        </FrostedGlass>
+      ) : (
+        <nav className="flex gap-4 uppercase justify-between p-4 font-bold tracking-widest">
+          <NavigationContent />
+        </nav>
+      )}
     </header>
   );
 }

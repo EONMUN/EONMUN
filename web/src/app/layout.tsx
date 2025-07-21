@@ -5,8 +5,6 @@ import { Layout } from "@/components/Layout/Layout";
 import { headers } from "next/headers";
 import { Providers } from "@/context";
 
-
-
 const abel = Abel ({
   variable: "--font-abel",
   subsets: ["latin"],
@@ -25,6 +23,7 @@ export default async function RootLayout({
 }>) {
   const headersList = await headers()
   const cookies = headersList.get('cookie')
+  
   return (
     <html lang="en">
       <body

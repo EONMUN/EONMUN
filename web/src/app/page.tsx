@@ -58,5 +58,6 @@ export default async function Home() {
       },
     },
   });
+  
   return <ArtworkCarousel artworks={data.slides as Artwork[]} />;
 }

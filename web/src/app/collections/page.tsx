@@ -63,7 +63,7 @@ export default async function CollectionsPage() {
   const collections = data as Collection[];
 
   return (
-    <div className="min-h-screen flex flex-col px-4 py-8">
+    <div className="flex flex-col">
       <div className="mb-8 flex-shrink-0">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Collections</h1>
         <p className="text-gray-600">
