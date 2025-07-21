@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react";
 // import {
 //   ArrowUpRightIcon,
 //   CheckCircleIcon,
@@ -6,12 +6,12 @@ import React from 'react'
 //   ExclamationTriangleIcon,
 //   InformationCircleIcon,
 // } from '@heroicons/react/24/outline'
-import { LinkComponent } from '../LinkComponent'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import { TruncateMiddle } from '@/utils/format'
-import { NotificationType } from '@/utils/types'
-dayjs.extend(relativeTime)
+import { LinkComponent } from "../LinkComponent";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { TruncateMiddle } from "@/utils/format";
+import { NotificationType } from "@/utils/types";
+dayjs.extend(relativeTime);
 
 // interface StatusProps {
 //   className?: string
@@ -19,12 +19,12 @@ dayjs.extend(relativeTime)
 // }
 
 interface Props {
-  className?: string
-  type: NotificationType
-  message: string
-  href?: string
-  timestamp?: number
-  from?: string
+  className?: string;
+  type: NotificationType;
+  message: string;
+  href?: string;
+  timestamp?: number;
+  from?: string;
 }
 
 // export function StatusIcon(props: StatusProps) {
@@ -51,23 +51,23 @@ interface Props {
 // }
 
 export function Alert(props: Props) {
-  let className = `alert flex flex-row text-left`
-  if (props.className) className += ` ${props.className}`
+  let className = `alert flex flex-row text-left`;
+  if (props.className) className += ` ${props.className}`;
   return (
     <div className={className}>
-      <div>
-        {/* <StatusIcon type={props.type} /> */}
-      </div>
+      <div>{/* <StatusIcon type={props.type} /> */}</div>
 
-      <div className='flex flex-col grow'>
-        <h3 className='font-bold'>{props.message}</h3>
-        <div className='flex flex-row gap-2'>
-          <span className='text-xs'>{dayjs(props.timestamp).fromNow()}</span>
+      <div className="flex flex-col grow">
+        <h3 className="font-bold">{props.message}</h3>
+        <div className="flex flex-row gap-2">
+          <span className="text-xs">{dayjs(props.timestamp).fromNow()}</span>
           {props.from && (
             <>
-              <span className='text-xs'> · </span>
-              <span className='text-xs text-secondary'>
-                {props.from.startsWith('0x') ? TruncateMiddle(props.from) : props.from}
+              <span className="text-xs"> · </span>
+              <span className="text-xs text-secondary">
+                {props.from.startsWith("0x")
+                  ? TruncateMiddle(props.from)
+                  : props.from}
               </span>
             </>
           )}
@@ -81,5 +81,5 @@ export function Alert(props: Props) {
         </LinkComponent>
       )}
     </div>
-  )
+  );
 }
