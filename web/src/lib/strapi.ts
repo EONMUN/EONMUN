@@ -187,7 +187,7 @@ export const artworkAPI = {
             $eq: slug,
           },
         },
-        populate: ['images'],
+        populate: ['default_image', 'images', 'collections'],
       });
       return response?.data?.[0] || null;
     } catch (error) {

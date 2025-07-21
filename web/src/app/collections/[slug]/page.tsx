@@ -12,36 +12,38 @@ interface CollectionPageProps {
 
 function ArtworkCard({ artwork }: { artwork: Artwork }) {
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-      {artwork.default_image ? (
-        <Image
-          src={artwork.default_image.url}
-          alt={artwork.default_image.alternativeText || artwork.title}
-          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-        />
-      ) : (
-        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-          <span className="text-gray-400">No Image</span>
-        </div>
-      )}
-      
-      {/* Artwork info overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="absolute bottom-4 left-4 right-4">
-          <FrostedGlass variant="dark" className="p-3 rounded-lg">
-            <h3 className="text-white font-medium text-lg">{artwork.title}</h3>
-            {artwork.year && (
-              <p className="text-gray-300 text-sm">{artwork.year}</p>
-            )}
-            {artwork.description && (
-              <p className="text-gray-300 text-sm mt-2 line-clamp-2">
-                {artwork.description}
-              </p>
-            )}
-          </FrostedGlass>
+    <Link href={`/artworks/${artwork.slug}`} className="block">
+      <div className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+        {artwork.default_image ? (
+          <Image
+            src={artwork.default_image.url}
+            alt={artwork.default_image.alternativeText || artwork.title}
+            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <span className="text-gray-400">No Image</span>
+          </div>
+        )}
+        
+        {/* Artwork info overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-4 left-4 right-4">
+            <FrostedGlass variant="dark" className="p-3 rounded-lg">
+              <h3 className="text-white font-medium text-lg">{artwork.title}</h3>
+              {artwork.year && (
+                <p className="text-gray-300 text-sm">{artwork.year}</p>
+              )}
+              {artwork.description && (
+                <p className="text-gray-300 text-sm mt-2 line-clamp-2">
+                  {artwork.description}
+                </p>
+              )}
+            </FrostedGlass>
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
