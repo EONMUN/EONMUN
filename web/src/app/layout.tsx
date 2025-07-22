@@ -32,6 +32,23 @@ export default async function RootLayout({
   
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const storedColorScheme = localStorage.getItem('color-scheme');
+                if (storedColorScheme) {
+                  document.documentElement.classList.add(storedColorScheme);
+                } else {
+                  const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  document.documentElement.classList.add(systemPreference);
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${abel.className} antialiased`}
       >

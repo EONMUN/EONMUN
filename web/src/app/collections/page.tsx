@@ -20,7 +20,7 @@ function CollectionCard({ collection }: { collection: Collection }) {
         href={`/collections/${collection.slug}`}
         className="block h-full flex flex-col"
       >
-        <div className="aspect-[4/5] overflow-hidden rounded-lg bg-gray-100 mb-6">
+        <div className="aspect-[4/5] overflow-hidden rounded-lg bg-surface border border-outline mb-6">
           {thumbnailImage ? (
             <Image
               src={thumbnailImage.url}
@@ -28,18 +28,18 @@ function CollectionCard({ collection }: { collection: Collection }) {
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400">No Image</span>
+            <div className="w-full h-full bg-surface flex items-center justify-center">
+              <span className="text-on-surface-variant">No Image</span>
             </div>
           )}
         </div>
         
         <div className="text-center pb-4">
-          <h3 className="text-2xl font-medium text-gray-900 group-hover:text-gray-700 transition-colors mb-2">
+          <h3 className="text-2xl font-medium text-on-background group-hover:text-primary transition-colors mb-2">
             {collection.name}
           </h3>
           {collection.artworks && (
-            <p className="text-lg text-gray-500">
+            <p className="text-lg text-on-surface-variant">
               {collection.artworks.length} artwork{collection.artworks.length !== 1 ? 's' : ''}
             </p>
           )}
@@ -65,8 +65,8 @@ export default async function CollectionsPage() {
   return (
     <div className="flex flex-col">
       <div className="mb-8 flex-shrink-0">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Collections</h1>
-        <p className="text-gray-600">
+        <h1 className="text-4xl font-bold text-on-background mb-2">Collections</h1>
+        <p className="text-on-surface-variant">
           Explore our curated collections of artworks
         </p>
       </div>
@@ -97,7 +97,7 @@ export default async function CollectionsPage() {
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-gray-500 text-lg">No collections found.</p>
+            <p className="text-on-surface-variant text-lg">No collections found.</p>
           </div>
         </div>
       )}

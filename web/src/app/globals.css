@@ -1,143 +1,139 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-
-
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  color-scheme: light dark;
 }
 
+.light {
+  /* forces light color-scheme */
+  color-scheme: light;
+}
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* forces dark color-scheme */
+  color-scheme: dark;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  
-  html {
-    overflow-x: hidden;
-    /* Prevent mobile viewport height changes from causing scroll */
-    height: 100%;
-    height: 100dvh; /* Use dynamic viewport height when supported */
-  }
-  
-  body {
-    @apply bg-background text-foreground;
-    overflow-x: hidden;
-    width: 100%;
-    position: relative;
-    height: 100%;
-    height: 100dvh; /* Use dynamic viewport height when supported */
-  }
-  
-  /* Prevent any element from causing horizontal overflow */
-  * {
-    max-width: 100%;
-    box-sizing: border-box;
-  }
+body {
+  background: light-dark(var(--color-gray-200), var(--color-gray-950));
+  font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 
+  Material Design-Inspired Theme System
+  
+  This theme uses semantic color tokens rather than numerical shade scales:
+  
+  - primary: Main brand color (buttons, important UI elements)
+  - on-primary: Text/icons that appear on primary color backgrounds
+  - primary-container: Secondary/softer brand color for containers
+  - on-primary-container: Text/icons on primary-container backgrounds
+  
+  - secondary: Secondary accent color
+  - on-secondary: Text/icons that appear on secondary color backgrounds
+  - secondary-container: Secondary accent for containers
+  - on-secondary-container: Text/icons on secondary-container backgrounds
+  
+  - surface: Background color for cards, dialogs, etc.
+  - on-surface: Primary text on surface backgrounds
+  - on-surface-variant: Secondary text, hints, icons on surface
+  
+  - outline: Border colors, dividers
+  - background: Main background color
+  - on-background: Text on main background
+*/
+
+@theme {
+  --color-primary: light-dark(
+    oklch(0.55 0.14 264.665),
+    var(--color-indigo-500)
+  ); /* blue-300, blue-500 */
+  --color-on-primary: light-dark(white, white); /* white */
+  --color-primary-container: light-dark(
+    rgb(219 234 254),
+    rgb(30 64 175)
+  ); /* blue-100, blue-800 */
+  --color-on-primary-container: light-dark(
+    rgb(30 58 138),
+    rgb(191 219 254)
+  ); /* blue-900, blue-200 */
+
+  --color-secondary: light-dark(
+    rgb(217 119 6),
+    rgb(251 191 36)
+  ); /* amber-600, amber-400 */
+  --color-on-secondary: light-dark(white, rgb(0 0 0)); /* white, black */
+  --color-secondary-container: light-dark(
+    rgb(251 191 36),
+    rgb(146 64 14)
+  ); /* amber-400, amber-800 */
+  --color-on-secondary-container: light-dark(
+    rgb(120 53 15),
+    rgb(254 243 199)
+  ); /* amber-900, amber-100 */
+
+  --color-surface: light-dark(
+    rgb(249 250 251),
+    var(--color-gray-900)
+  ); /* gray-50, gray-900 */
+  --color-on-surface: light-dark(
+    rgb(31 41 55),
+    rgb(243 244 246)
+  ); /* gray-800, gray-100 */
+  --color-on-surface-variant: light-dark(
+    rgb(75 85 99),
+    rgb(156 163 175)
+  ); /* gray-600, gray-400 */
+
+  --color-outline: light-dark(
+    rgb(209 213 219),
+    rgb(75 85 99)
+  ); /* gray-300, gray-600 */
+  --color-background: light-dark(
+    var(--color-gray-200),
+    var(--color-gray-950)
+  ); /* white, gray-900 */
+  --color-on-background: light-dark(
+    rgb(17 24 39),
+    rgb(243 244 246)
+  ); /* gray-900, gray-100 */
+}
+
+/* 
+  THEME USAGE GUIDE:
+  
+  Here's how to use this theme system in your application:
+  
+  1. BUTTONS:
+     - Primary action button: <Button variant="default">
+     - Secondary action button: <Button variant="secondary">
+     - Outline button: <Button variant="outline">
+     - Text button: <Button variant="ghost">
+     - Danger button: <Button variant="destructive">
+     - Container-styled button: <Button variant="container">
+  
+  2. CARDS:
+     - Card container: bg-surface border border-outline rounded-lg
+     - Card title: text-on-surface font-medium
+     - Card subtitle/metadata: text-on-surface-variant
+  
+  3. TEXT:
+     - Primary text: text-on-background (on main app background)
+     - Primary text on cards: text-on-surface
+     - Secondary text on cards: text-on-surface-variant
+     - Text on primary elements: text-on-primary
+  
+  4. CONTAINERS:
+     - Primary branded container: bg-primary-container text-on-primary-container
+     - Secondary branded container: bg-secondary-container text-on-secondary-container
+     - Main content area: bg-background text-on-background
+  
+  5. FORMS:
+     - Input borders: border-outline focus:border-primary
+     - Input text: text-on-surface
+     - Input background: bg-surface
+     - Labels: text-on-surface-variant
+     - Validation/errors: Use destructive colors for errors
+*/
 
 /* Mobile viewport height utilities */
 @layer utilities {

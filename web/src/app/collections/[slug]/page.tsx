@@ -13,7 +13,7 @@ interface CollectionPageProps {
 function ArtworkCard({ artwork }: { artwork: Artwork }) {
   return (
     <Link href={`/artworks/${artwork.slug}`} className="block">
-      <div className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+      <div className="group relative aspect-square overflow-hidden rounded-lg bg-surface border border-outline">
         {artwork.default_image ? (
           <Image
             src={artwork.default_image.url}
@@ -21,8 +21,8 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
             className="w-full h-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-400">No Image</span>
+          <div className="w-full h-full bg-surface flex items-center justify-center">
+            <span className="text-on-surface-variant">No Image</span>
           </div>
         )}
         
@@ -59,18 +59,18 @@ export default async function CollectionPage(props: CollectionPageProps) {
     <div className="container mx-auto px-4 py-8">
       {/* Collection Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-          <Link href="/collections" className="hover:text-gray-700">
+        <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-4">
+          <Link href="/collections" className="hover:text-primary transition-colors">
             Collections
           </Link>
           <span>/</span>
           <span>{collection.name}</span>
         </div>
         
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">{collection.name}</h1>
+        <h1 className="text-4xl font-bold text-on-background mb-4">{collection.name}</h1>
         
         {collection.artworks && (
-          <p className="text-gray-600">
+          <p className="text-on-surface-variant">
             {collection.artworks.length} artwork{collection.artworks.length !== 1 ? 's' : ''} in this collection
           </p>
         )}
@@ -85,10 +85,10 @@ export default async function CollectionPage(props: CollectionPageProps) {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No artworks found in this collection.</p>
+          <p className="text-on-surface-variant text-lg">No artworks found in this collection.</p>
           <Link 
             href="/collections" 
-            className="mt-4 inline-block text-blue-600 hover:text-blue-800"
+            className="mt-4 inline-block text-primary hover:text-primary/80 transition-colors"
           >
             Browse all collections
           </Link>

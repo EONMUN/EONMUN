@@ -10,7 +10,7 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
         href={`/artworks/${artwork.slug}`}
         className="block"
       >
-        <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 mb-4">
+        <div className="aspect-square overflow-hidden rounded-lg bg-surface border border-outline mb-4">
           {artwork.default_image ? (
             <Image
               src={artwork.default_image.url}
@@ -18,21 +18,21 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400">No Image</span>
+            <div className="w-full h-full bg-surface flex items-center justify-center">
+              <span className="text-on-surface-variant">No Image</span>
             </div>
           )}
         </div>
         
         <div className="text-center">
-          <h3 className="text-lg font-medium text-gray-900 group-hover:text-gray-700 transition-colors mb-1">
+          <h3 className="text-lg font-medium text-on-background group-hover:text-primary transition-colors mb-1">
             {artwork.title}
           </h3>
           {artwork.year && (
-            <p className="text-sm text-gray-500">{artwork.year}</p>
+            <p className="text-sm text-on-surface-variant">{artwork.year}</p>
           )}
           {artwork.collections && artwork.collections.length > 0 && (
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-on-surface-variant mt-1">
               {artwork.collections.length} collection{artwork.collections.length !== 1 ? 's' : ''}
             </p>
           )}
@@ -56,12 +56,12 @@ export default async function ArtworksPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Artworks</h1>
-        <p className="text-gray-600">
+        <h1 className="text-4xl font-bold text-on-background mb-2">Artworks</h1>
+        <p className="text-on-surface-variant">
           Explore our complete collection of artworks
         </p>
         {artworks.length > 0 && (
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-on-surface-variant mt-2">
             {artworks.length} artwork{artworks.length !== 1 ? 's' : ''} available
           </p>
         )}
@@ -75,10 +75,10 @@ export default async function ArtworksPage() {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No artworks found.</p>
+          <p className="text-on-surface-variant text-lg">No artworks found.</p>
           <Link 
             href="/collections" 
-            className="mt-4 inline-block text-blue-600 hover:text-blue-800"
+            className="mt-4 inline-block text-primary hover:text-primary/80 transition-colors"
           >
             Browse collections instead
           </Link>
