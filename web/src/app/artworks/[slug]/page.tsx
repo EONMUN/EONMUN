@@ -1,6 +1,6 @@
 import Image from "@/components/Image";
 import Link from "next/link";
-import { Artwork, artworkAPI } from "@/lib/strapi";
+import { Artwork, artworkAPI, Collection } from "@/lib/strapi";
 import { notFound } from "next/navigation";
 
 interface ArtworkPageProps {
@@ -9,7 +9,7 @@ interface ArtworkPageProps {
   }>;
 }
 
-function CollectionTag({ collection }: { collection: any }) {
+function CollectionTag({ collection }: { collection: Collection }) {
   return (
     <Link 
       href={`/collections/${collection.slug}`}
@@ -88,7 +88,7 @@ function ImageGallery({ artwork }: { artwork: Artwork }) {
 
 export default async function ArtworkPage(props: ArtworkPageProps) {
   const { slug } = await props.params;
-  const artwork = await artworkAPI.getBySlug(slug);
+  const artwork = await artworkAPI.getBySlug(slug) as Artwork;
 
   if (!artwork) {
     notFound();
