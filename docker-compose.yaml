@@ -69,7 +69,7 @@ services:
       - web/.env
     command: npm run dev
     ports:
-      - "3000:3000" # Adjust the port as needed
+      - "3001:3000" # Adjust the port as needed
     depends_on:
       web-init:
         condition: service_completed_successfully
