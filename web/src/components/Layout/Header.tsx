@@ -24,7 +24,7 @@ export function Header({ homepage = false }: HeaderProps) {
         Collections
       </LinkComponent>
       <LinkComponent 
-        href="/" 
+        href="/about" 
         className={`${textColor} ${linkHoverColor} text-xs sm:text-sm transition-colors`}
       >
         About

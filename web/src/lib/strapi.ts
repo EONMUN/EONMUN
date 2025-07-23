@@ -317,3 +317,43 @@ export const collectionAPI = {
     }
   },
 };
+
+// Dynamic zone block interface
+export interface DynamicZoneBlock {
+  __component: string;
+  id: number;
+  // Media component fields
+  file?: StrapiImage;
+  files?: StrapiImage[];
+  // Quote component fields
+  title?: string;
+  body?: string;
+}
+
+// About interface based on the Strapi schema
+export interface About {
+  id: string;
+  documentId: string;
+  title: string;
+  blocks?: DynamicZoneBlock[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+  locale: string;
+}
+
+// API functions for about operations
+export const aboutAPI = {
+  // Get about content (single type)
+  async get() {
+    try {
+      const response = await strapiClient.single('about').find({
+        populate: "*",
+      });
+      return response.data as About;
+    } catch (error) {
+      console.error('Error fetching about content:', error);
+      throw error;
+    }
+  },
+};
