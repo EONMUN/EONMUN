@@ -52,7 +52,7 @@ export function Header() {
 
   return (
     <nav className="sticky top-0 z-50 p-2 flex justify-between items-center gap-2 bg-transparent">
-      <LinkComponent href="/" className="flex items-center group tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold transition-colors">
+      <LinkComponent href="/" className="pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold transition-colors">
           {SITE_NAME}
       </LinkComponent>
 
