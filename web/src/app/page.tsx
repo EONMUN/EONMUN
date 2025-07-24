@@ -14,5 +14,9 @@ export default async function Home() {
     },
   });
   
-  return <HomePageArtworkCarousel artworks={data.slides as Artwork[]} />;
+  return (
+    <div className="absolute inset-0 w-full h-screen">
+      <HomePageArtworkCarousel artworks={data.slides as Artwork[]} />
+    </div>
+  );
 }

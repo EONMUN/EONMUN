@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Abel   } from "next/font/google";
+import { Abel  } from "next/font/google";
 import "./globals.css";
-import { Layout } from "@/components/Layout/Layout";
-import { headers } from "next/headers";
-import { Providers } from "@/context";
+import { Header } from "@/components/Layout/Header";
 
 const abel = Abel ({
   variable: "--font-abel",
@@ -27,35 +25,18 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const headersList = await headers()
-  const cookies = headersList.get('cookie')
-  
+
   return (
     <html lang="en">
       <head>
         <link rel="manifest" href="manifest.json" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const storedColorScheme = localStorage.getItem('color-scheme');
-                if (storedColorScheme) {
-                  document.documentElement.classList.add(storedColorScheme);
-                } else {
-                  const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  document.documentElement.classList.add(systemPreference);
-                }
-              })();
-            `,
-          }}
-        />
+        
       </head>
       <body
         className={`${abel.className} antialiased`}
       >
-        <Providers cookies={cookies}>
-          <Layout>{children}</Layout>
-        </Providers>
+          <Header />
+          <main >{children}</main>
       </body>
     </html>
   );

@@ -15,11 +15,11 @@ import Fade from "embla-carousel-fade";
 function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
   return (
     <CarouselItem key={artwork.id} className="h-full pl-0">
-      <div className="mobile-fullscreen-carousel-item relative">
+      <div className="relative h-screen w-full">
         <Image
           src={artwork.default_image!.url}
           alt={artwork.default_image?.alternativeText}
-          className="mobile-fullscreen-image"
+          className="w-full h-full object-cover"
         />
 
         {/* Collection display in bottom right */}
@@ -33,7 +33,6 @@ function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
 
 export default function HomePageArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
   return (
-    <div className="mobile-fullscreen-carousel">
       <Carousel 
         className="w-full h-full"
         plugins={[
@@ -54,6 +53,5 @@ export default function HomePageArtworkCarousel({ artworks }: { artworks: Artwor
         <CarouselPrevious className="left-4 z-10" />
         <CarouselNext className="right-4 z-10" />
       </Carousel>
-    </div>
   );
 } 
