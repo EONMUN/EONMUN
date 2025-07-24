@@ -64,36 +64,40 @@ export default async function CollectionsPage() {
 
   return (
     <div className="flex flex-col">
-      <div className="mb-8 flex-shrink-0">
-        <h1 className="text-4xl font-bold text-on-background mb-2">Collections</h1>
-        <p className="text-on-surface-variant">
-          Explore our curated collections of artworks
-        </p>
-      </div>
 
       {collections.length > 0 ? (
-        <div className="flex-1 flex items-center">
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full max-w-7xl mx-auto h-[calc(100vh-12rem)]"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4 h-full">
-              {collections.map((collection) => (
-                <CarouselItem 
-                  key={collection.id} 
-                  className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 h-full"
-                >
-                  <CollectionCard collection={collection} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
-        </div>
+        <>
+          {/* Mobile: Column layout */}
+          <div className="block md:hidden space-y-6">
+            {collections.map((collection) => (
+              <CollectionCard key={collection.id} collection={collection} />
+            ))}
+          </div>
+
+          {/* Desktop: Carousel layout */}
+          <div className="hidden md:flex flex-1 items-center">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full max-w-7xl mx-auto h-[calc(100vh-12rem)]"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4 h-full">
+                {collections.map((collection) => (
+                  <CarouselItem 
+                    key={collection.id} 
+                    className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 h-full"
+                  >
+                    <CollectionCard collection={collection} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </div>
+        </>
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
