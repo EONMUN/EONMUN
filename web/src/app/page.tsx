@@ -1,22 +1,13 @@
-import { strapiClient } from "@/lib/strapi";
-import HomePageArtworkCarousel from "@/components/HomePageArtworkCarousel";
-import { Artwork } from "@/lib/strapi";
-
-export default async function Home() {
-  const { data } = await strapiClient.single("home").find({
-    populate: {
-      slides: {
-        populate: {
-          default_image: true,
-          collections: true,
-        },
-      },
-    },
-  });
-  
+// Temporary simplified home page for testing navbar
+export default function Home() {
   return (
-    <div className="absolute inset-0 w-full h-screen">
-      <HomePageArtworkCarousel artworks={data.slides as Artwork[]} />
+    <div className="absolute inset-0 w-full h-screen bg-gradient-to-br from-purple-800 via-blue-800 to-indigo-900">
+      <div className="flex items-center justify-center h-full">
+        <div className="text-white text-center">
+          <h1 className="text-6xl font-bold mb-4">EONMUN</h1>
+          <p className="text-xl">Homepage - Testing Navbar Colors</p>
+        </div>
+      </div>
     </div>
   );
 }
