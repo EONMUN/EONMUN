@@ -2,6 +2,7 @@ import { artworkAPI } from "@/lib/strapi";
 import Image from "@/components/Image";
 import Link from "next/link";
 import { Artwork } from "@/lib/strapi";
+import { ARTWORK_PRICE } from "@/lib/stripe";
 
 function ArtworkCard({ artwork }: { artwork: Artwork }) {
   return (
@@ -36,6 +37,12 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
               {artwork.collections.length} collection{artwork.collections.length !== 1 ? 's' : ''}
             </p>
           )}
+          {/* Price Display */}
+          <div className="mt-2 pt-2 border-t border-outline">
+            <p className="text-lg font-bold text-primary">
+              ${ARTWORK_PRICE.toLocaleString()}
+            </p>
+          </div>
         </div>
       </Link>
     </div>
