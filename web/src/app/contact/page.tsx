@@ -48,14 +48,14 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
+    <div className="min-h-screen bg-background text-on-background">
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-wide">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-wide text-on-background">
               CONTACT
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+            <p className="text-lg text-on-surface-variant">
               Get in touch with us. We&apos;d love to hear from you.
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function ContactPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-gray-400" />
+                <User className="h-5 w-5 text-on-surface-variant" />
               </div>
               <input
                 type="text"
@@ -72,13 +72,13 @@ export default function ContactPage() {
                 onChange={handleChange}
                 required
                 placeholder="Your Name"
-                className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition-colors"
+                className="w-full pl-10 pr-3 py-3 border border-outline rounded-lg bg-surface text-on-surface placeholder-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
               />
             </div>
 
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-gray-400" />
+                <Mail className="h-5 w-5 text-on-surface-variant" />
               </div>
               <input
                 type="email"
@@ -87,13 +87,13 @@ export default function ContactPage() {
                 onChange={handleChange}
                 required
                 placeholder="your@email.com"
-                className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition-colors"
+                className="w-full pl-10 pr-3 py-3 border border-outline rounded-lg bg-surface text-on-surface placeholder-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
               />
             </div>
 
             <div className="relative">
               <div className="absolute top-3 left-0 pl-3 pointer-events-none">
-                <MessageSquare className="h-5 w-5 text-gray-400" />
+                <MessageSquare className="h-5 w-5 text-on-surface-variant" />
               </div>
               <textarea
                 name="message"
@@ -102,14 +102,14 @@ export default function ContactPage() {
                 required
                 rows={6}
                 placeholder="Your message..."
-                className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition-colors resize-none"
+                className="w-full pl-10 pr-3 py-3 border border-outline rounded-lg bg-surface text-on-surface placeholder-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-6 bg-black dark:bg-white text-white dark:text-black font-bold tracking-wide rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-6 bg-primary text-on-primary font-bold tracking-wide rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "SENDING..." : "SEND MESSAGE"}
             </button>
@@ -128,11 +128,11 @@ export default function ContactPage() {
           </form>
 
           <div className="mt-12 text-center">
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-on-surface-variant">
               Or email us directly at{" "}
               <a
                 href="mailto:contacts@eonmun.com"
-                className="text-black dark:text-white font-medium hover:underline"
+                className="text-on-background font-medium hover:underline"
               >
                 contacts@eonmun.com
               </a>
