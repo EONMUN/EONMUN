@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Abel  } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Layout/Header";
+
+const abel = Abel ({
+  variable: "--font-abel",
+  subsets: ["latin"],
+  weight: ["400"],
+});
 
 export const metadata: Metadata = {
   title: "EONMUN",
@@ -26,7 +33,7 @@ export default async function RootLayout({
         
       </head>
       <body
-        className="font-sans antialiased"
+        className={`${abel.className} antialiased`}
       >
           <Header />
           <main >{children}</main>
