@@ -6,7 +6,8 @@ const mailgun = new Mailgun(formData);
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, message } = await request.json();
+    const body = await request.json() as { name: string; email: string; message: string };
+    const { name, email, message } = body;
 
     // Validate required fields
     if (!name || !email || !message) {
