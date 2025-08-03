@@ -1,51 +1,12 @@
-"use client"
-
-import { useState } from "react";
 import { Mail, User, MessageSquare } from "lucide-react";
+import { submitContactForm } from "@/actions/contact";
 
-export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    message: ""
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus("idle");
-
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setSubmitStatus("success");
-        setFormData({ name: "", email: "", message: "" });
-      } else {
-        setSubmitStatus("error");
-      }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      setSubmitStatus("error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const params = await searchParams;
 
   return (
     <div className="min-h-screen bg-background text-on-background">
@@ -60,7 +21,7 @@ export default function ContactPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form action={submitContactForm} className="space-y-6">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-on-surface-variant" />
@@ -68,8 +29,6 @@ export default function ContactPage() {
               <input
                 type="text"
                 name="name"
-                value={formData.name}
-                onChange={handleChange}
                 required
                 placeholder="Your Name"
                 className="w-full pl-10 pr-3 py-3 border border-outline rounded-lg bg-surface text-on-surface placeholder-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
@@ -83,8 +42,6 @@ export default function ContactPage() {
               <input
                 type="email"
                 name="email"
-                value={formData.email}
-                onChange={handleChange}
                 required
                 placeholder="your@email.com"
                 className="w-full pl-10 pr-3 py-3 border border-outline rounded-lg bg-surface text-on-surface placeholder-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
@@ -97,8 +54,6 @@ export default function ContactPage() {
               </div>
               <textarea
                 name="message"
-                value={formData.message}
-                onChange={handleChange}
                 required
                 rows={6}
                 placeholder="Your message..."
@@ -108,21 +63,20 @@ export default function ContactPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 px-6 bg-primary text-on-primary font-bold tracking-wide rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-6 bg-primary text-on-primary font-bold tracking-wide rounded-lg hover:opacity-90 transition-opacity"
             >
-              {isSubmitting ? "SENDING..." : "SEND MESSAGE"}
+              SEND MESSAGE
             </button>
 
-            {submitStatus === "success" && (
+            {params?.success === "true" && (
               <div className="text-center text-green-600 dark:text-green-400 font-medium">
                 Thank you! Your message has been sent successfully.
               </div>
             )}
 
-            {submitStatus === "error" && (
+            {params?.error && (
               <div className="text-center text-red-600 dark:text-red-400 font-medium">
-                Sorry, there was an error sending your message. Please try again.
+                {params.error}
               </div>
             )}
           </form>
