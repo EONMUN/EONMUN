@@ -1,8 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import Mailgun from "mailgun.js";
-import formData from "form-data";
+import { createTransport } from "nodemailer";
 
 export async function submitContactForm(data: FormData) {
   const name = data.get("name") as string;
@@ -20,21 +19,28 @@ export async function submitContactForm(data: FormData) {
     redirect("/contact?error=Invalid email format");
   }
 
-  // Get Mailgun configuration from environment variables
-  const mailgunApiKey = process.env.MAILGUN_API_KEY;
-  const mailgunDomain = process.env.MAILGUN_DOMAIN;
+  // Get SMTP configuration from environment variables
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpFrom = process.env.SMTP_FROM;
 
-  if (!mailgunApiKey || !mailgunDomain) {
-    console.error("Mailgun configuration missing");
+  if (!smtpHost || !smtpUser || !smtpPass || !smtpFrom) {
+    console.error("SMTP configuration missing");
     redirect("/contact?error=Email service configuration error");
   }
 
   try {
-    // Initialize Mailgun client
-    const mailgun = new Mailgun(formData);
-    const mg = mailgun.client({
-      username: "api",
-      key: mailgunApiKey,
+    // Create SMTP transporter
+    const transporter = createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465, // true for 465, false for other ports
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
     });
 
     // Prepare email content
@@ -71,17 +77,17 @@ This message was sent from the EONMUN contact form.
 </div>
     `.trim();
 
-    // Send email using Mailgun
-    const emailData = {
-      from: `EONMUN Contact Form <noreply@${mailgunDomain}>`,
+    // Send email using SMTP
+    const emailOptions = {
+      from: smtpFrom,
       to: "contacts@eonmun.com",
-      "reply-to": email,
+      replyTo: email,
       subject: emailSubject,
       text: emailText,
       html: emailHtml,
     };
 
-    await mg.messages.create(mailgunDomain, emailData);
+    await transporter.sendMail(emailOptions);
 
     // Redirect to success page
     redirect("/contact?success=true");
