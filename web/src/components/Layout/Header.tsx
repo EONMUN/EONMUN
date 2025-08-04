@@ -29,6 +29,12 @@ export function Header() {
         About
       </LinkComponent>
       <LinkComponent 
+        href="/contact" 
+        className={`text-xs sm:text-sm transition-colors`}
+      >
+        Contact
+      </LinkComponent>
+      <LinkComponent 
         href="/" 
         className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
       >
