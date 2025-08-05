@@ -31,6 +31,9 @@ export async function submitContactForm(data: FormData) {
     redirect("/contact?error=Email service configuration error");
   }
 
+  let emailSent = false;
+  let errorMessage = "";
+
   try {
     // Create SMTP transporter
     const transporter = createTransport({
@@ -88,11 +91,16 @@ This message was sent from the EONMUN contact form.
     };
 
     await transporter.sendMail(emailOptions);
-
-    // Redirect to success page
-    redirect("/contact?success=true");
+    emailSent = true;
   } catch (error) {
     console.error("Error sending email:", error);
-    redirect("/contact?error=Failed to send email");
+    errorMessage = "Failed to send email";
+  }
+
+  // Handle redirects outside of try/catch block
+  if (emailSent) {
+    redirect("/contact?success=true");
+  } else {
+    redirect(`/contact?error=${errorMessage}`);
   }
 }
