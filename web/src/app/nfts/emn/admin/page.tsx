@@ -632,10 +632,10 @@ export default function ContractAdminPage() {
     <div className="container mx-auto p-6 space-y-8">
       {/* Navigation */}
       <div className="text-sm">
-        <ul className="flex items-center space-x-2 text-gray-600">
-          <li><Link href="/nfts/emn" className="text-blue-600 hover:text-blue-800">EMN Collection</Link></li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-900">{isAdmin ? 'Contract Administration' : 'Contract Management'}</li>
+        <ul className="flex items-center space-x-2 text-on-surface-variant">
+          <li><Link href="/nfts/emn" className="text-primary hover:text-primary">EMN Collection</Link></li>
+          <li className="text-on-surface-variant">/</li>
+          <li className="text-on-surface">{isAdmin ? 'Contract Administration' : 'Contract Management'}</li>
         </ul>
       </div>
       
@@ -842,13 +842,13 @@ export default function ContractAdminPage() {
       </div>
       
       {/* Header */}
-      <div className="card bg-white shadow-xl border border-gray-300">
+      <div className="card bg-surface shadow-xl border border-outline">
         <div className="card-body p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-on-surface mb-2">
             {isAdmin ? 'Contract Administration' : 'Contract Management'}
-            {addressOverride && <span className="text-lg text-blue-600 ml-2">(Custom Contract)</span>}
+            {addressOverride && <span className="text-lg text-primary ml-2">(Custom Contract)</span>}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-on-surface-variant">
             {addressOverride 
               ? `Inspecting custom contract: ${addressOverride}`
               : isAdmin
@@ -896,15 +896,15 @@ export default function ContractAdminPage() {
       </div>
       
       {/* Section Navigation */}
-      <div className="card bg-white shadow-lg border border-gray-300">
+      <div className="card bg-surface shadow-lg border border-outline">
         <div className="card-body p-6">
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setActiveSection('overview')}
               className={`btn border-0 px-6 py-3 ${
                 activeSection === 'overview' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-on-primary' 
+                  : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
               }`}
             >
               Overview
@@ -913,8 +913,8 @@ export default function ContractAdminPage() {
               onClick={() => setActiveSection('royalty')}
               className={`btn border-0 px-6 py-3 ${
                 activeSection === 'royalty' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-on-primary' 
+                  : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
               }`}
             >
               Royalty Settings
@@ -923,8 +923,8 @@ export default function ContractAdminPage() {
               onClick={() => setActiveSection('metadata')}
               className={`btn border-0 px-6 py-3 ${
                 activeSection === 'metadata' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-on-primary' 
+                  : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
               }`}
             >
               Contract Metadata
@@ -934,8 +934,8 @@ export default function ContractAdminPage() {
                 onClick={() => setActiveSection('roles')}
                 className={`btn border-0 px-6 py-3 ${
                   activeSection === 'roles' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-primary text-on-primary' 
+                    : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
                 }`}
               >
                 Role Management
