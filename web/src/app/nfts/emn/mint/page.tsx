@@ -286,9 +286,9 @@ export default function MintPage() {
   if (!isEditor) {
     return (
       <div className="container mx-auto p-6">
-        <div className="card bg-white shadow-xl border border-gray-300">
+        <div className="card bg-surface shadow-xl border border-outline">
           <div className="card-body p-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Mint New NFT</h1>
+            <h1 className="text-3xl font-bold text-on-surface mb-4">Mint New NFT</h1>
             <div className="bg-red-50 border border-red-300 rounded-xl p-6">
               <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
@@ -311,25 +311,25 @@ export default function MintPage() {
     <div className="container mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="text-sm">
-        <ul className="flex items-center space-x-2 text-gray-600">
-          <li><Link href="/nfts/emn" className="text-blue-600 hover:text-blue-800">EMN Collection</Link></li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-900">Mint NFT</li>
+        <ul className="flex items-center space-x-2 text-on-surface-variant">
+          <li><Link href="/nfts/emn" className="text-primary hover:text-primary">EMN Collection</Link></li>
+          <li className="text-on-surface-variant">/</li>
+          <li className="text-on-surface">Mint NFT</li>
         </ul>
       </div>
       
-      <div className="card bg-white shadow-xl border border-gray-300">
+      <div className="card bg-surface shadow-xl border border-outline">
         <div className="card-body p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Mint New NFT</h1>
+          <h1 className="text-3xl font-bold text-on-surface mb-6">Mint New NFT</h1>
           
           <form onSubmit={(e) => { e.preventDefault(); handleMint(); }} className="space-y-6">
             {/* Basic Information */}
-            <div className="bg-gray-50 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
+            <div className="bg-primary-container rounded-xl p-6">
+              <h2 className="text-xl font-bold text-on-primary-container mb-4">Basic Information</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -337,13 +337,13 @@ export default function MintPage() {
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="My Awesome NFT"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                    className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                   />
                   {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
                 </div>
                 
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                     External URL
                   </label>
                   <input
@@ -351,14 +351,14 @@ export default function MintPage() {
                     value={formData.external_url}
                     onChange={(e) => handleInputChange('external_url', e.target.value)}
                     placeholder="https://example.com"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                    className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                   />
                   {errors.external_url && <p className="text-red-600 text-sm mt-1">{errors.external_url}</p>}
                 </div>
               </div>
               
               <div className="mt-4">
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                   Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -366,13 +366,13 @@ export default function MintPage() {
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Describe your NFT..."
                   rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                 />
                 {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
               </div>
               
               <div className="mt-4">
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                   Image URL <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -380,7 +380,7 @@ export default function MintPage() {
                   value={formData.image}
                   onChange={(e) => handleInputChange('image', e.target.value)}
                   placeholder="https://example.com/image.jpg"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                 />
                 {errors.image && <p className="text-red-600 text-sm mt-1">{errors.image}</p>}
                 {formData.image && isValidURL(formData.image) && (
@@ -388,7 +388,7 @@ export default function MintPage() {
                     <img
                       src={formData.image}
                       alt="NFT Preview"
-                      className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                      className="w-32 h-32 object-cover rounded-lg border border-outline"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
@@ -399,8 +399,8 @@ export default function MintPage() {
             </div>
             
             {/* Attributes */}
-            <div className="bg-gray-50 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Attributes</h2>
+            <div className="bg-primary-container rounded-xl p-6">
+              <h2 className="text-xl font-bold text-on-primary-container mb-4">Attributes</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <input
@@ -408,14 +408,14 @@ export default function MintPage() {
                   value={newAttribute.trait_type}
                   onChange={(e) => setNewAttribute(prev => ({ ...prev, trait_type: e.target.value }))}
                   placeholder="Trait Type (e.g., Color)"
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  className="p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                 />
                 <input
                   type="text"
                   value={newAttribute.value}
                   onChange={(e) => setNewAttribute(prev => ({ ...prev, value: e.target.value }))}
                   placeholder="Value (e.g., Blue)"
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  className="p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                 />
                 <button
                   type="button"
@@ -429,8 +429,8 @@ export default function MintPage() {
               {attributes.length > 0 && (
                 <div className="space-y-2">
                   {attributes.map((attr, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg border">
-                      <span className="text-sm">
+                    <div key={index} className="flex items-center justify-between bg-surface p-3 rounded-lg border border-outline">
+                      <span className="text-sm text-on-surface">
                         <strong>{attr.trait_type}:</strong> {attr.value}
                       </span>
                       <button
@@ -447,8 +447,8 @@ export default function MintPage() {
             </div>
             
             {/* Recipient */}
-            <div className="bg-gray-50 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Mint Recipient</h2>
+            <div className="bg-primary-container rounded-xl p-6">
+              <h2 className="text-xl font-bold text-on-primary-container mb-4">Mint Recipient</h2>
               
               <div className="space-y-4">
                 <div>
@@ -460,7 +460,7 @@ export default function MintPage() {
                       onChange={(e) => handleInputChange('mintTo', e.target.value)}
                       className="mr-2"
                     />
-                    <span className="text-gray-900">Mint to myself ({address})</span>
+                    <span className="text-on-primary-container">Mint to myself ({address})</span>
                   </label>
                 </div>
                 
@@ -473,7 +473,7 @@ export default function MintPage() {
                       onChange={(e) => handleInputChange('mintTo', e.target.value)}
                       className="mr-2"
                     />
-                    <span className="text-gray-900">Mint to custom address</span>
+                    <span className="text-on-primary-container">Mint to custom address</span>
                   </label>
                 </div>
                 
@@ -484,7 +484,7 @@ export default function MintPage() {
                       value={formData.customRecipient}
                       onChange={(e) => handleInputChange('customRecipient', e.target.value)}
                       placeholder="0x..."
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-mono"
+                      className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface font-mono"
                     />
                     {errors.customRecipient && <p className="text-red-600 text-sm mt-1">{errors.customRecipient}</p>}
                   </div>
@@ -493,11 +493,11 @@ export default function MintPage() {
             </div>
             
             {/* Advanced Options */}
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-primary-container rounded-xl p-6">
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center text-xl font-bold text-gray-900 mb-4"
+                className="flex items-center text-xl font-bold text-on-primary-container mb-4"
               >
                 Advanced Options
                 <svg
@@ -520,14 +520,14 @@ export default function MintPage() {
                         onChange={(e) => setFormData(prev => ({ ...prev, useCustomRoyalty: e.target.checked }))}
                         className="mr-2"
                       />
-                      <span className="text-gray-900">Set custom royalty for this token</span>
+                      <span className="text-on-primary-container">Set custom royalty for this token</span>
                     </label>
                   </div>
                   
                   {formData.useCustomRoyalty && (
                     <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                        <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                           Royalty Receiver Address
                         </label>
                         <input
@@ -535,13 +535,13 @@ export default function MintPage() {
                           value={formData.royaltyReceiver}
                           onChange={(e) => handleInputChange('royaltyReceiver', e.target.value)}
                           placeholder="0x..."
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-mono"
+                          className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface font-mono"
                         />
                         {errors.royaltyReceiver && <p className="text-red-600 text-sm mt-1">{errors.royaltyReceiver}</p>}
                       </div>
                       
                       <div>
-                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                        <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                           Royalty Percentage (%)
                         </label>
                         <input
@@ -552,7 +552,7 @@ export default function MintPage() {
                           min="0"
                           max="100"
                           step="0.01"
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                          className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                         />
                         {errors.royaltyPercentage && <p className="text-red-600 text-sm mt-1">{errors.royaltyPercentage}</p>}
                       </div>
@@ -565,8 +565,8 @@ export default function MintPage() {
             {/* Metadata Preview */}
             {formData.name && (
               <div className="bg-blue-50 rounded-xl p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Metadata Preview</h2>
-                <pre className="bg-white p-4 rounded-lg border text-sm overflow-x-auto">
+                <h2 className="text-xl font-bold text-on-surface mb-4">Metadata Preview</h2>
+                <pre className="bg-surface p-4 rounded-lg border border-outline text-sm overflow-x-auto text-on-surface">
                   {JSON.stringify(JSON.parse(generateMetadataURI().replace('data:application/json;utf8,', '')), null, 2)}
                 </pre>
               </div>

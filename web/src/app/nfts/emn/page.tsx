@@ -33,11 +33,11 @@ function TokenCard({ tokenId }: { tokenId: number }) {
   if (uriLoading) {
     return (
       <Link href={`/nfts/emn/${tokenId}`}>
-        <div className="card bg-white shadow-lg border border-gray-300 hover:shadow-xl transition-all duration-200 cursor-pointer">
+        <div className="card bg-surface shadow-lg border border-outline hover:shadow-xl transition-all duration-200 cursor-pointer">
           <div className="card-body p-6 animate-pulse">
-            <div className="h-6 bg-gray-300 rounded mb-4"></div>
-            <div className="h-4 bg-gray-300 rounded w-3/4 mb-3"></div>
-            <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+            <div className="h-6 bg-outline rounded mb-4"></div>
+            <div className="h-4 bg-outline rounded w-3/4 mb-3"></div>
+            <div className="h-4 bg-outline rounded w-1/2"></div>
           </div>
         </div>
       </Link>
@@ -46,14 +46,14 @@ function TokenCard({ tokenId }: { tokenId: number }) {
 
   return (
     <Link href={`/nfts/emn/${tokenId}`}>
-      <div className="card bg-white shadow-lg border border-gray-300 hover:shadow-xl hover:border-blue-300 transition-all duration-200 cursor-pointer">
+      <div className="card bg-surface shadow-lg border border-outline hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer">
         <div className="card-body p-6">
-          <h3 className="card-title text-xl font-bold text-gray-900 mb-4">Token #{tokenId}</h3>
+          <h3 className="card-title text-xl font-bold text-on-surface mb-4">Token #{tokenId}</h3>
           
           <div className="space-y-4">
             <div>
-              <span className="font-semibold text-sm text-gray-700 uppercase tracking-wide">URI:</span>
-              <div className="bg-gray-100 p-4 rounded-lg text-sm break-all font-mono text-gray-800 mt-2 border">
+              <span className="font-semibold text-sm text-on-surface-variant uppercase tracking-wide">URI:</span>
+              <div className="bg-primary-container p-4 rounded-lg text-sm break-all font-mono text-on-primary-container mt-2 border border-outline">
                 {tokenURI ? (
                   tokenURI.length > 60 ? `${tokenURI.substring(0, 60)}...` : tokenURI
                 ) : (
@@ -64,8 +64,8 @@ function TokenCard({ tokenId }: { tokenId: number }) {
             
             {owner && (
               <div>
-                <span className="font-semibold text-sm text-gray-700 uppercase tracking-wide">Owner:</span>
-                <div className="bg-gray-100 p-4 rounded-lg text-sm break-all font-mono text-gray-800 mt-2 border">
+                <span className="font-semibold text-sm text-on-surface-variant uppercase tracking-wide">Owner:</span>
+                <div className="bg-primary-container p-4 rounded-lg text-sm break-all font-mono text-on-primary-container mt-2 border border-outline">
                   {`${owner.substring(0, 8)}...${owner.substring(owner.length - 6)}`}
                 </div>
               </div>
@@ -73,7 +73,7 @@ function TokenCard({ tokenId }: { tokenId: number }) {
           </div>
           
           <div className="card-actions justify-end mt-6">
-            <span className="text-sm font-medium text-blue-600 hover:text-blue-800">Click to view details →</span>
+            <span className="text-sm font-medium text-primary hover:text-primary">Click to view details →</span>
           </div>
         </div>
       </div>
@@ -259,21 +259,21 @@ export default function EMNPage() {
       <div className="card bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-xl">
         <div className="card-body p-8">
           <h1 className="text-4xl font-bold mb-6">EMN NFT Collection</h1>
-          <div className="bg-white/95 backdrop-blur rounded-xl p-6 mt-6">
+          <div className="bg-surface/95 backdrop-blur rounded-xl p-6 mt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide">Total Tokens</div>
-                <div className="text-3xl font-bold text-gray-900 mt-2">
+                <div className="text-sm text-on-surface-variant font-semibold uppercase tracking-wide">Total Tokens</div>
+                <div className="text-3xl font-bold text-on-surface mt-2">
                   {counterLoading ? '...' : tokenCounter?.toString() || '0'}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide">Your Balance</div>
-                <div className="text-3xl font-bold text-gray-900 mt-2">{balanceOf?.toString() || '0'}</div>
+                <div className="text-sm text-on-surface-variant font-semibold uppercase tracking-wide">Your Balance</div>
+                <div className="text-3xl font-bold text-on-surface mt-2">{balanceOf?.toString() || '0'}</div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide">Your Roles</div>
-                <div className="text-lg font-bold text-gray-900 mt-2">
+                <div className="text-sm text-on-surface-variant font-semibold uppercase tracking-wide">Your Roles</div>
+                <div className="text-lg font-bold text-on-surface mt-2">
                   {isAdmin && isEditor ? 'Admin + Editor' : 
                    isAdmin ? 'Admin' : 
                    isEditor ? 'Editor' : 
@@ -284,48 +284,48 @@ export default function EMNPage() {
           </div>
           
           {/* Current Royalty Information */}
-          <div className="bg-white/95 backdrop-blur rounded-xl p-6 mt-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Current Royalty Settings</h3>
+          <div className="bg-surface/95 backdrop-blur rounded-xl p-6 mt-6">
+            <h3 className="text-xl font-bold text-on-surface mb-4">Current Royalty Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide mb-2">Royalty Receiver</div>
+                <div className="text-sm text-on-surface-variant font-semibold uppercase tracking-wide mb-2">Royalty Receiver</div>
                 {royaltyLoading ? (
-                  <div className="bg-gray-100 p-3 rounded-lg animate-pulse">
-                    <div className="h-4 bg-gray-300 rounded"></div>
+                  <div className="bg-primary-container p-3 rounded-lg animate-pulse">
+                    <div className="h-4 bg-outline rounded"></div>
                   </div>
                 ) : currentRoyaltyReceiver && currentRoyaltyReceiver !== '0x0000000000000000000000000000000000000000' ? (
-                  <div className="bg-gray-100 border border-gray-300 p-3 rounded-lg">
-                    <div className="text-sm font-mono text-gray-800 break-all">
+                  <div className="bg-primary-container border border-outline p-3 rounded-lg">
+                    <div className="text-sm font-mono text-on-primary-container break-all">
                       {currentRoyaltyReceiver}
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">
+                    <div className="text-xs text-on-surface-variant mt-1">
                       {`${currentRoyaltyReceiver.substring(0, 8)}...${currentRoyaltyReceiver.substring(currentRoyaltyReceiver.length - 6)}`}
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg text-yellow-800 text-sm">
+                  <div className="bg-secondary-container border border-outline p-3 rounded-lg text-on-secondary-container text-sm">
                     No royalty receiver set
                   </div>
                 )}
               </div>
               
               <div>
-                <div className="text-sm text-gray-600 font-semibold uppercase tracking-wide mb-2">Royalty Percentage</div>
+                <div className="text-sm text-on-surface-variant font-semibold uppercase tracking-wide mb-2">Royalty Percentage</div>
                 {royaltyLoading ? (
-                  <div className="bg-gray-100 p-3 rounded-lg animate-pulse">
-                    <div className="h-4 bg-gray-300 rounded w-16"></div>
+                  <div className="bg-primary-container p-3 rounded-lg animate-pulse">
+                    <div className="h-4 bg-outline rounded w-16"></div>
                   </div>
                 ) : currentRoyaltyPercentage !== null ? (
-                  <div className="bg-gray-100 border border-gray-300 p-3 rounded-lg">
-                    <div className="text-lg font-bold text-gray-900">
+                  <div className="bg-primary-container border border-outline p-3 rounded-lg">
+                    <div className="text-lg font-bold text-on-primary-container">
                       {currentRoyaltyPercentage}%
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-on-surface-variant">
                       {currentRoyaltyAmount?.toString()} basis points
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg text-yellow-800 text-sm">
+                  <div className="bg-secondary-container border border-outline p-3 rounded-lg text-on-secondary-container text-sm">
                     No royalty percentage set
                   </div>
                 )}
@@ -348,9 +348,9 @@ export default function EMNPage() {
 
           {/* Contract URI Section */}
           {contractURI && (
-            <div className="bg-white/95 backdrop-blur rounded-xl p-6 mt-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Contract URI</h3>
-              <div className="bg-gray-100 border border-gray-300 p-4 rounded-lg text-sm font-mono text-gray-800 break-all">
+            <div className="bg-surface/95 backdrop-blur rounded-xl p-6 mt-6">
+              <h3 className="text-xl font-bold text-on-surface mb-4">Contract URI</h3>
+              <div className="bg-primary-container border border-outline p-4 rounded-lg text-sm font-mono text-on-primary-container break-all">
                 {contractURI}
               </div>
               {contractURI.startsWith('http') && (
@@ -447,7 +447,7 @@ export default function EMNPage() {
                           value={newEditorAddress}
                           onChange={(e) => setNewEditorAddress(e.target.value)}
                           placeholder="0x..."
-                          className="w-full text-sm font-mono p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                          className="w-full text-sm font-mono p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                         />
                         {newEditorAddress && !isValidAddress(newEditorAddress) && (
                           <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a valid Ethereum address</p>
@@ -516,7 +516,7 @@ export default function EMNPage() {
                           value={defaultRoyaltyReceiver}
                           onChange={(e) => setDefaultRoyaltyReceiver(e.target.value)}
                           placeholder="0x..."
-                          className="w-full text-sm font-mono p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
+                          className="w-full text-sm font-mono p-3 border border-outline rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-on-surface bg-surface"
                         />
                         {defaultRoyaltyReceiver && !isValidAddress(defaultRoyaltyReceiver) && (
                           <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a valid Ethereum address</p>
@@ -533,7 +533,7 @@ export default function EMNPage() {
                           min="0"
                           max="100"
                           step="0.01"
-                          className="w-full text-sm p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
+                          className="w-full text-sm p-3 border border-outline rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-on-surface bg-surface"
                         />
                         {defaultRoyaltyPercentage && !isValidPercentage(defaultRoyaltyPercentage) && (
                           <p className="text-red-200 text-sm mt-2 bg-red-500/20 px-3 py-2 rounded">Please enter a percentage between 0 and 100</p>
@@ -585,14 +585,14 @@ export default function EMNPage() {
       )}
 
       {/* Token Collection */}
-      <div className="card bg-white shadow-xl border border-gray-300">
+      <div className="card bg-surface shadow-xl border border-outline">
         <div className="card-body p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Token Collection</h2>
+          <h2 className="text-2xl font-bold text-on-surface mb-6">Token Collection</h2>
           
           {counterLoading && (
             <div className="flex justify-center items-center py-12">
               <span className="loading loading-spinner loading-lg"></span>
-              <span className="ml-3 text-gray-700 text-lg">Loading tokens...</span>
+              <span className="ml-3 text-on-surface-variant text-lg">Loading tokens...</span>
             </div>
           )}
           
@@ -615,7 +615,7 @@ export default function EMNPage() {
           {tokenIds.length > 0 && (
             <>
               <div className="mb-6">
-                <p className="text-gray-600 text-lg">
+                <p className="text-on-surface-variant text-lg">
                   Showing {tokenIds.length} token{tokenIds.length !== 1 ? 's' : ''} in the collection. Click on any token to view details.
                 </p>
               </div>
