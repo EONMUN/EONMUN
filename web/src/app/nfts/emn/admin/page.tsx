@@ -640,13 +640,13 @@ export default function ContractAdminPage() {
       </div>
       
       {/* Contract Address Inspector */}
-      <div className="card bg-white shadow-lg border border-gray-300">
+      <div className="card bg-surface shadow-lg border border-outline">
         <div className="card-body p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Contract Address Inspector</h2>
+            <h2 className="text-lg font-bold text-on-surface">Contract Address Inspector</h2>
             <button
               onClick={() => setShowAddressForm(!showAddressForm)}
-              className="btn bg-gray-600 text-white hover:bg-gray-700 border-0 px-4 py-2 text-sm"
+              className="btn bg-primary text-on-primary hover:bg-primary/80 border-0 px-4 py-2 text-sm"
             >
               {showAddressForm ? 'Cancel' : 'Override Address'}
             </button>
@@ -654,17 +654,17 @@ export default function ContractAdminPage() {
           
           {/* Current Address Info */}
           <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Network</label>
-              <div className="text-sm font-semibold text-gray-900 mt-1">
+            <div className="bg-primary-container border border-outline rounded-lg p-4">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Network</label>
+              <div className="text-sm font-semibold text-on-primary-container mt-1">
                 {chainId ? getNetworkName(chainId) : 'Unknown'}
               </div>
-              <div className="text-xs text-gray-600">Chain ID: {chainId || 'N/A'}</div>
+              <div className="text-xs text-on-surface-variant">Chain ID: {chainId || 'N/A'}</div>
             </div>
             
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Default Address</label>
-              <div className="text-xs font-mono text-gray-900 mt-1 break-all">
+            <div className="bg-primary-container border border-outline rounded-lg p-4">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Default Address</label>
+              <div className="text-xs font-mono text-on-primary-container mt-1 break-all">
                 {chainId && emnAddress[chainId as keyof typeof emnAddress] 
                   ? emnAddress[chainId as keyof typeof emnAddress]
                   : 'No default for this network'
