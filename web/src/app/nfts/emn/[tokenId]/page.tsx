@@ -325,26 +325,26 @@ export default function TokenPage({ params }: TokenPageProps) {
     <div className="container mx-auto p-6 space-y-8">
       {/* Navigation */}
       <div className="text-sm">
-        <ul className="flex items-center space-x-2 text-gray-600">
-          <li><Link href="/nfts/emn" className="text-blue-600 hover:text-blue-800">EMN Collection</Link></li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-900">Token #{tokenId}</li>
+        <ul className="flex items-center space-x-2 text-on-surface-variant">
+          <li><Link href="/nfts/emn" className="text-primary hover:text-primary">EMN Collection</Link></li>
+          <li className="text-on-surface-variant">/</li>
+          <li className="text-on-surface">Token #{tokenId}</li>
         </ul>
       </div>
 
       {/* Token Details / Edit Form */}
-      <div className="card bg-white shadow-xl border border-gray-300">
+      <div className="card bg-surface shadow-xl border border-outline">
         <div className="card-body p-8">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-on-surface">
                 {metadata?.name || `Token #${tokenId}`}
               </h1>
               {metadata?.name && (
-                <p className="text-lg text-gray-600 mt-1">Token #{tokenId}</p>
+                <p className="text-lg text-on-surface-variant mt-1">Token #{tokenId}</p>
               )}
               {!isEditing && metadata?.description && (
-                <p className="text-gray-700 mt-2 max-w-2xl">{metadata.description}</p>
+                <p className="text-on-surface mt-2 max-w-2xl">{metadata.description}</p>
               )}
             </div>
             
@@ -391,12 +391,12 @@ export default function TokenPage({ params }: TokenPageProps) {
             /* EDIT MODE - Rich Form */
             <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-6">
               {/* Basic Information */}
-              <div className="bg-gray-50 rounded-xl p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Token Information</h2>
+              <div className="bg-primary-container rounded-xl p-6">
+                <h2 className="text-xl font-bold text-on-primary-container mb-4">Edit Token Information</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                       Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -404,13 +404,13 @@ export default function TokenPage({ params }: TokenPageProps) {
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder="Token name"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                      className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                     />
                     {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
                   </div>
                   
                   <div>
-                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                       External URL
                     </label>
                     <input
@@ -418,14 +418,14 @@ export default function TokenPage({ params }: TokenPageProps) {
                       value={formData.external_url}
                       onChange={(e) => handleInputChange('external_url', e.target.value)}
                       placeholder="https://example.com"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                      className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                     />
                     {errors.external_url && <p className="text-red-600 text-sm mt-1">{errors.external_url}</p>}
                   </div>
                 </div>
                 
                 <div className="mt-4">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                     Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
@@ -433,13 +433,13 @@ export default function TokenPage({ params }: TokenPageProps) {
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     placeholder="Describe your NFT..."
                     rows={4}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                    className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                   />
                   {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
                 </div>
                 
                 <div className="mt-4">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <label className="text-sm font-semibold text-on-surface-variant mb-2 block">
                     Image URL <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -447,7 +447,7 @@ export default function TokenPage({ params }: TokenPageProps) {
                     value={formData.image}
                     onChange={(e) => handleInputChange('image', e.target.value)}
                     placeholder="https://example.com/image.jpg"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                    className="w-full p-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-on-surface bg-surface"
                   />
                   {errors.image && <p className="text-red-600 text-sm mt-1">{errors.image}</p>}
                   {formData.image && isValidURL(formData.image) && (
@@ -759,17 +759,17 @@ export default function TokenPage({ params }: TokenPageProps) {
 
       {/* Actions */}
       <div className="flex gap-2">
-        <Link href="/nfts/emn" className="btn bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 px-6 py-3">
+        <Link href="/nfts/emn" className="btn bg-surface text-on-surface hover:bg-primary-container border border-outline px-6 py-3">
           ← Back to Collection
         </Link>
         
         {tokenIdNum > 0 && (
-          <Link href={`/nfts/emn/${tokenIdNum - 1}`} className="btn bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 px-6 py-3">
+          <Link href={`/nfts/emn/${tokenIdNum - 1}`} className="btn bg-surface text-on-surface hover:bg-primary-container border border-outline px-6 py-3">
             ← Previous Token
           </Link>
         )}
         
-        <Link href={`/nfts/emn/${tokenIdNum + 1}`} className="btn bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 px-6 py-3">
+        <Link href={`/nfts/emn/${tokenIdNum + 1}`} className="btn bg-surface text-on-surface hover:bg-primary-container border border-outline px-6 py-3">
           Next Token →
         </Link>
       </div>

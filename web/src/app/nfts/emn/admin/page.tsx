@@ -632,21 +632,21 @@ export default function ContractAdminPage() {
     <div className="container mx-auto p-6 space-y-8">
       {/* Navigation */}
       <div className="text-sm">
-        <ul className="flex items-center space-x-2 text-gray-600">
-          <li><Link href="/nfts/emn" className="text-blue-600 hover:text-blue-800">EMN Collection</Link></li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-900">{isAdmin ? 'Contract Administration' : 'Contract Management'}</li>
+        <ul className="flex items-center space-x-2 text-on-surface-variant">
+          <li><Link href="/nfts/emn" className="text-primary hover:text-primary">EMN Collection</Link></li>
+          <li className="text-on-surface-variant">/</li>
+          <li className="text-on-surface">{isAdmin ? 'Contract Administration' : 'Contract Management'}</li>
         </ul>
       </div>
       
       {/* Contract Address Inspector */}
-      <div className="card bg-white shadow-lg border border-gray-300">
+      <div className="card bg-surface shadow-lg border border-outline">
         <div className="card-body p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Contract Address Inspector</h2>
+            <h2 className="text-lg font-bold text-on-surface">Contract Address Inspector</h2>
             <button
               onClick={() => setShowAddressForm(!showAddressForm)}
-              className="btn bg-gray-600 text-white hover:bg-gray-700 border-0 px-4 py-2 text-sm"
+              className="btn bg-primary text-on-primary hover:bg-primary/80 border-0 px-4 py-2 text-sm"
             >
               {showAddressForm ? 'Cancel' : 'Override Address'}
             </button>
@@ -654,17 +654,17 @@ export default function ContractAdminPage() {
           
           {/* Current Address Info */}
           <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Network</label>
-              <div className="text-sm font-semibold text-gray-900 mt-1">
+            <div className="bg-primary-container border border-outline rounded-lg p-4">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Network</label>
+              <div className="text-sm font-semibold text-on-primary-container mt-1">
                 {chainId ? getNetworkName(chainId) : 'Unknown'}
               </div>
-              <div className="text-xs text-gray-600">Chain ID: {chainId || 'N/A'}</div>
+              <div className="text-xs text-on-surface-variant">Chain ID: {chainId || 'N/A'}</div>
             </div>
             
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Default Address</label>
-              <div className="text-xs font-mono text-gray-900 mt-1 break-all">
+            <div className="bg-primary-container border border-outline rounded-lg p-4">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Default Address</label>
+              <div className="text-xs font-mono text-on-primary-container mt-1 break-all">
                 {chainId && emnAddress[chainId as keyof typeof emnAddress] 
                   ? emnAddress[chainId as keyof typeof emnAddress]
                   : 'No default for this network'
@@ -842,13 +842,13 @@ export default function ContractAdminPage() {
       </div>
       
       {/* Header */}
-      <div className="card bg-white shadow-xl border border-gray-300">
+      <div className="card bg-surface shadow-xl border border-outline">
         <div className="card-body p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-on-surface mb-2">
             {isAdmin ? 'Contract Administration' : 'Contract Management'}
-            {addressOverride && <span className="text-lg text-blue-600 ml-2">(Custom Contract)</span>}
+            {addressOverride && <span className="text-lg text-primary ml-2">(Custom Contract)</span>}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-on-surface-variant">
             {addressOverride 
               ? `Inspecting custom contract: ${addressOverride}`
               : isAdmin
@@ -896,15 +896,15 @@ export default function ContractAdminPage() {
       </div>
       
       {/* Section Navigation */}
-      <div className="card bg-white shadow-lg border border-gray-300">
+      <div className="card bg-surface shadow-lg border border-outline">
         <div className="card-body p-6">
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setActiveSection('overview')}
               className={`btn border-0 px-6 py-3 ${
                 activeSection === 'overview' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-on-primary' 
+                  : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
               }`}
             >
               Overview
@@ -913,8 +913,8 @@ export default function ContractAdminPage() {
               onClick={() => setActiveSection('royalty')}
               className={`btn border-0 px-6 py-3 ${
                 activeSection === 'royalty' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-on-primary' 
+                  : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
               }`}
             >
               Royalty Settings
@@ -923,8 +923,8 @@ export default function ContractAdminPage() {
               onClick={() => setActiveSection('metadata')}
               className={`btn border-0 px-6 py-3 ${
                 activeSection === 'metadata' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-on-primary' 
+                  : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
               }`}
             >
               Contract Metadata
@@ -934,8 +934,8 @@ export default function ContractAdminPage() {
                 onClick={() => setActiveSection('roles')}
                 className={`btn border-0 px-6 py-3 ${
                   activeSection === 'roles' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-primary text-on-primary' 
+                    : 'bg-primary-container text-on-primary-container hover:bg-primary-container/80'
                 }`}
               >
                 Role Management

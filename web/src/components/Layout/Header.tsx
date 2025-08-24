@@ -18,31 +18,37 @@ export function Header() {
     <>
       <LinkComponent 
         href="/collections" 
-        className={`text-xs sm:text-sm transition-colors`}
+        className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
       >
         Collections
       </LinkComponent>
       <LinkComponent 
         href="/about" 
-        className={`text-xs sm:text-sm transition-colors`}
+        className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
       >
         About
       </LinkComponent>
       <LinkComponent 
-        href="/" 
+        href="/contact" 
         className={`text-xs sm:text-sm transition-colors`}
+      >
+        Contact
+      </LinkComponent>
+      <LinkComponent 
+        href="/" 
+        className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
       >
         Store
       </LinkComponent>
       <LinkComponent
         href={`https://x.com/${SOCIAL_TWITTER}`}
-        className={`flex items-center justify-center transition-colors`}
+        className={`flex items-center justify-center transition-colors ${isHome ? 'text-white' : ''}`}
       >
         <Twitter className="w-3 h-3" />
       </LinkComponent>
       <LinkComponent
         href={`https://instagram.com/${SOCIAL_INSTAGRAM}`}
-        className={`flex items-center justify-center transition-colors`}
+        className={`flex items-center justify-center transition-colors ${isHome ? 'text-white' : ''}`}
       >
         <Instagram className="w-3 h-3" />
       </LinkComponent>
@@ -52,7 +58,7 @@ export function Header() {
 
   return (
     <nav className="sticky top-0 z-50 p-2 flex justify-between items-center gap-2 bg-transparent">
-      <LinkComponent href="/" className="pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold transition-colors">
+      <LinkComponent href="/" className={`pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold transition-colors ${isHome ? 'text-white' : ''}`}>
           {SITE_NAME}
       </LinkComponent>
 
