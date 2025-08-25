@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-// Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
-});
-
 interface CheckoutRequestBody {
   artworkId: string;
   artworkTitle: string;
@@ -15,6 +10,19 @@ interface CheckoutRequestBody {
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Stripe with secret key (moved inside function to avoid build-time initialization)
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return NextResponse.json(
+        { error: 'Stripe configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-06-30.basil',
+    });
+
     const { artworkId, artworkTitle, artworkSlug, price }: CheckoutRequestBody = await request.json();
 
     if (!artworkId || !artworkTitle || !price) {
