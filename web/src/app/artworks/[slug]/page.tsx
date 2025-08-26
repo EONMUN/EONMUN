@@ -2,6 +2,7 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import { Artwork, artworkAPI, Collection } from "@/lib/strapi";
 import { notFound } from "next/navigation";
+import { PurchaseButton } from "@/components/PurchaseButton";
 
 interface ArtworkPageProps {
   params: Promise<{
@@ -122,6 +123,11 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
             {artwork.year && (
               <p className="text-xl text-on-surface-variant">{artwork.year}</p>
             )}
+          </div>
+
+          {/* Purchase Section */}
+          <div className="border-t border-b border-outline py-6">
+            <PurchaseButton artwork={artwork} />
           </div>
 
           {artwork.description && (
