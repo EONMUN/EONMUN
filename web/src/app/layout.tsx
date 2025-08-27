@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
+import { Abel  } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Layout/Header";
 
-// Use system fonts for now to avoid network issues
-const abel = {
-  className: "font-sans",
+const abel = Abel ({
   variable: "--font-abel",
-};
+  subsets: ["latin"],
+  weight: ["400"],
+});
 
 export const metadata: Metadata = {
   title: "EONMUN",
