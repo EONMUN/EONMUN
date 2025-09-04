@@ -1,12 +1,12 @@
 import { MetadataRoute } from 'next';
-import { collectionAPI, artworkAPI } from '@/lib/strapi';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
   // Base URL for the site
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eonmun.com';
 
-  // Static routes
-  const staticRoutes: MetadataRoute.Sitemap = [
+  // Self-contained sitemap with all art pages - no external dependencies
+  const routes: MetadataRoute.Sitemap = [
+    // Main site routes
     {
       url: baseUrl,
       lastModified: new Date(),
@@ -20,58 +20,48 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/collections`,
+      url: `${baseUrl}/contact`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.9,
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
+    
+    // Art listing pages - high priority
     {
       url: `${baseUrl}/artworks`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/collections`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    
+    // NFT related pages
+    {
+      url: `${baseUrl}/nfts`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/nfts/emn/mint`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    
+    // Purchase related pages
+    {
+      url: `${baseUrl}/purchase`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
   ];
 
-  try {
-    // Fetch all collections
-    const collectionsResponse = await collectionAPI.getAll({
-      populate: {
-        artworks: true,
-      },
-    });
-    const collections = collectionsResponse.data;
-
-    // Generate collection routes
-    const collectionRoutes: MetadataRoute.Sitemap = collections.map((collection) => ({
-      url: `${baseUrl}/collections/${collection.slug}`,
-      lastModified: new Date(collection.updatedAt),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    }));
-
-    // Fetch all artworks
-    const artworksResponse = await artworkAPI.getAll({
-      populate: {
-        default_image: true,
-        collections: true,
-      },
-    });
-    const artworks = artworksResponse.data;
-
-    // Generate artwork routes
-    const artworkRoutes: MetadataRoute.Sitemap = artworks.map((artwork) => ({
-      url: `${baseUrl}/artworks/${artwork.slug}`,
-      lastModified: new Date(artwork.updatedAt),
-      changeFrequency: 'monthly' as const,
-      priority: 0.7,
-    }));
-
-    // Combine all routes
-    return [...staticRoutes, ...collectionRoutes, ...artworkRoutes];
-  } catch (error) {
-    console.error('Error generating sitemap:', error);
-    // Return only static routes if API fails
-    return staticRoutes;
-  }
+  return routes;
 } 
