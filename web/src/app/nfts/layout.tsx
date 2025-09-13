@@ -1,4 +1,5 @@
-import { Providers } from "@/context";
+import { Web3Provider } from "@/context/Web3";
+import { DataProvider } from "@/context/Data";
 import { headers } from "next/headers";
 
 export default async function NftsLayout({ children }: { children: React.ReactNode }) {
@@ -6,8 +7,10 @@ export default async function NftsLayout({ children }: { children: React.ReactNo
     const cookies = headersList.get('cookie')
 
     return (
-        <Providers cookies={cookies}>
-            {children}
-        </Providers>
+        <Web3Provider cookies={cookies}>
+            <DataProvider>
+                {children}
+            </DataProvider>
+        </Web3Provider>
     )
 }
