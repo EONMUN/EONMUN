@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:alpine
@@ -69,7 +67,7 @@ services:
       - web/.env
     command: npm run dev
     ports:
-      - "3001:3000" # Adjust the port as needed
+      - "3002:3000" # Adjust the port as needed
     depends_on:
       web-init:
         condition: service_completed_successfully
