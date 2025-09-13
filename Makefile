@@ -1,10 +1,6 @@
 # DC normally is docker compose, but podman compose is used if available
-DC:=docker compose $(DC_ARGS)
+DC:=docker-compose $(DC_ARGS)
 
-# If podman is available, use it
-ifeq ($(which podman),)
-	DC:=podman compose $(DC_ARGS)
-endif
 
 init: ## Initialize the project
 	[ -f strapi/.env ] || cp strapi/.env.example strapi/.env
