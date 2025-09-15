@@ -14,6 +14,7 @@ interface Props extends PropsWithChildren {
 
 interface Web3ContextType {
   // Add web3-specific context values here if needed
+  initialized?: boolean
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined)
