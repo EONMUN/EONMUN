@@ -25,3 +25,15 @@ destroy: ## Clean all services
 
 dbshell: ## Open a shell to the database
 	$(DC) exec db psql -U strapi
+
+install-web: ## Install web dependencies
+	$(DC) run --rm --no-deps web npm install
+
+build-web: ## Build web application
+	$(DC) run --rm --no-deps web npm run build
+
+build-strapi: ## Build Strapi application
+	$(DC) run --rm --no-deps strapi npm run build
+
+test-hardhat: ## Run Hardhat tests
+	$(DC) run --rm --no-deps hardhat npm test
