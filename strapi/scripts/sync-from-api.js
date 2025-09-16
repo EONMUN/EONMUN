@@ -190,22 +190,15 @@ async function exportFromProduction() {
   // Save media mapping
   exportData.media = Array.from(mediaMap.values());
 
-  // Write export file
-  const exportFile = path.join(config.dataDir, `export-${Date.now()}.json`);
-  await fs.writeJson(exportFile, exportData, { spaces: 2 });
-  
-  // Create symlink to latest
-  const latestLink = path.join(config.dataDir, 'latest.json');
-  if (await fs.pathExists(latestLink)) {
-    await fs.unlink(latestLink);
-  }
-  await fs.symlink(path.basename(exportFile), latestLink);
+  // Write directly to latest.json
+  const latestFile = path.join(config.dataDir, 'latest.json');
+  await fs.writeJson(latestFile, exportData, { spaces: 2 });
 
-  console.log(`\n✓ Export completed: ${exportFile}`);
+  console.log(`\n✓ Export completed: ${latestFile}`);
   console.log(`  - Content types: ${Object.keys(exportData.contentTypes).length}`);
   console.log(`  - Media files: ${exportData.media.length}`);
 
-  return exportFile;
+  return latestFile;
 }
 
 // Import data to local Strapi

@@ -1,6 +1,13 @@
 # DC normally is docker compose, but podman compose is used if available
 DC:=docker-compose $(DC_ARGS)
 
+.DEFAULT_GOAL := help
+
+help: ## Show this help message
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 init: ## Initialize the project
 	[ -f strapi/.env ] || cp strapi/.env.example strapi/.env
@@ -28,7 +35,7 @@ sync-export: ## Export production data (run once manually to get latest producti
 sync-update: sync-export ## Update the committed export with latest production data
 
 sync-import: ## Import production data to local (uses existing export)
-	$(DC) exec strapi node scripts/import-from-api.js
+	$(DC) run --rm --no-deps strapi node scripts/import-from-api.js
 
 enable-public: ## Enable public permissions for local development
 	$(DC) exec strapi node scripts/enable-public-permissions.js
