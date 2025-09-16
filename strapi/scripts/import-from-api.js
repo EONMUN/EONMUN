@@ -11,7 +11,13 @@ async function importToLocal() {
   const latestExport = path.join(__dirname, '../data/api-sync/latest.json');
   
   if (!await fs.pathExists(latestExport)) {
-    throw new Error('No export found. Run the export first: node scripts/sync-from-api.js');
+    console.error('\n❌ No production data export found!\n');
+    console.error('The production data export should be committed to the repository.');
+    console.error('If you need to create or update it:');
+    console.error('  1. Ensure you have PROD_STRAPI_URL and PROD_STRAPI_API_TOKEN in strapi/.env');
+    console.error('  2. Run: make sync-update');
+    console.error('  3. Commit the updated export files\n');
+    throw new Error('No export found at data/api-sync/latest.json');
   }
 
   const data = await fs.readJson(latestExport);

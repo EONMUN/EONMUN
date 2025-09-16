@@ -22,10 +22,12 @@ down: ## Stop all services
 seed: ## Seed the database
 	$(DC) exec strapi node scripts/seed.js
 
-sync-export: ## Export production data
+sync-export: ## Export production data (run once manually to get latest production data)
 	$(DC) run --rm --no-deps strapi node scripts/sync-from-api.js
 
-sync-import: ## Import production data to local
+sync-update: sync-export ## Update the committed export with latest production data
+
+sync-import: ## Import production data to local (uses existing export)
 	$(DC) exec strapi node scripts/import-from-api.js
 
 enable-public: ## Enable public permissions for local development
@@ -43,9 +45,9 @@ sync-clean: ## Clear local database before sync
 	$(DC) exec db psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE strapi TO strapi;"
 	$(DC) up -d
 
-sync: sync-export sync-import enable-public ## Full production sync (export then import)
+sync: sync-import enable-public ## Import existing production data export
 
-sync-fresh: sync-export sync-clean sync-import enable-public ## Fresh sync (clear DB, export, import)
+sync-fresh: sync-clean sync-import enable-public ## Fresh sync (clear DB, then import)
 
 destroy: ## Clean all services
 	$(DC) down --remove-orphans --volumes
