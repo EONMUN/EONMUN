@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Abel  } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Layout/Header";
+import { CartProvider } from "@/context/CartContext";
+import { ShoppingCart } from "@/components/Store/ShoppingCart";
 
 const abel = Abel ({
   variable: "--font-abel",
@@ -35,8 +37,11 @@ export default async function RootLayout({
       <body
         className={`${abel.className} antialiased`}
       >
+        <CartProvider>
           <Header />
           <main >{children}</main>
+          <ShoppingCart />
+        </CartProvider>
       </body>
     </html>
   );

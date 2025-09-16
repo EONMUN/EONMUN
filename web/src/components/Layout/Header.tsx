@@ -35,7 +35,7 @@ export function Header() {
         Contact
       </LinkComponent>
       <LinkComponent 
-        href="/" 
+        href="/store" 
         className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
       >
         Store

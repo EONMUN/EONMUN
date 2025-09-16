@@ -6,7 +6,9 @@ init: ## Initialize the project
 	[ -f strapi/.env ] || cp strapi/.env.example strapi/.env
 	[ -f web/.env ] || cp web/.env.example web/.env
 	$(DC) run  --rm strapi npx strapi admin:create-user --firstname=John --lastname=Doe --email=username@test.com --password=1Password || true
-	make up
+	$(DC) up --detach
+	make enable-public
+	make sync
 
 build: ## Build all services
 	$(DC) build
@@ -19,6 +21,31 @@ down: ## Stop all services
 
 seed: ## Seed the database
 	$(DC) exec strapi node scripts/seed.js
+
+sync-export: ## Export production data
+	$(DC) run --rm --no-deps strapi node scripts/sync-from-api.js
+
+sync-import: ## Import production data to local
+	$(DC) exec strapi node scripts/import-from-api.js
+
+enable-public: ## Enable public permissions for local development
+	$(DC) exec strapi node scripts/enable-public-permissions.js
+
+create-token: ## Create API token for frontend (for production use)
+	$(DC) exec strapi node scripts/create-api-token.js
+
+sync-clean: ## Clear local database before sync
+	$(DC) down
+	$(DC) up -d db
+	sleep 5
+	$(DC) exec db psql -U postgres -c "DROP DATABASE IF EXISTS strapi;"
+	$(DC) exec db psql -U postgres -c "CREATE DATABASE strapi;"
+	$(DC) exec db psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE strapi TO strapi;"
+	$(DC) up -d
+
+sync: sync-export sync-import enable-public ## Full production sync (export then import)
+
+sync-fresh: sync-export sync-clean sync-import enable-public ## Fresh sync (clear DB, export, import)
 
 destroy: ## Clean all services
 	$(DC) down --remove-orphans --volumes
