@@ -1,12 +1,22 @@
 import { strapi } from '@strapi/client';
 
+const baseURL = (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api';
+const isLocalDevelopment = baseURL.includes('localhost') || baseURL.includes('127.0.0.1');
+const apiToken = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
+// Only use auth token if not in local development AND we have a valid token
+const authConfig = (!isLocalDevelopment && apiToken) ? { auth: apiToken } : {};
+
 console.log({
-  baseURL: (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api',
+  baseURL,
+  isLocalDevelopment,
+  hasAuth: !isLocalDevelopment && !!process.env.NEXT_PUBLIC_STRAPI_API_TOKEN,
 })
 
 // Initialize Strapi client
 export const strapiClient = strapi({
-  baseURL: (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api',
+  baseURL,
+  ...authConfig,
 });
 
 // Image format interface for different sizes
