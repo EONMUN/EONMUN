@@ -47,6 +47,9 @@ services:
   strapi:
     extends:
       service: strapi-seed
+    environment:
+      - HOST=0.0.0.0
+      - PORT=1337
     command: npm run dev
     ports:
       - "1337:1337" # Adjust the port as needed
@@ -64,6 +67,7 @@ services:
     extends:
       service: web-init
     env_file:
+      - strapi/.env
       - web/.env
     command: npm run dev
     ports:
