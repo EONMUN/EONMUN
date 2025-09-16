@@ -258,6 +258,63 @@ async function importToLocal() {
     console.log(`✓ Imported ${imported}/${entries.length} ${contentType}`);
   }
 
+  // Ensure home content exists and has valid slides
+  console.log('\nEnsuring home content is valid...');
+  try {
+    const existingHome = await strapi.documents('api::home.home').findFirst();
+    
+    if (!existingHome) {
+      // No home content exists, create one with artworks as slides
+      const artworks = await strapi.query('api::artwork.artwork').findMany({
+        limit: 5,
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      const slideArtworks = artworks.length > 0 
+        ? artworks.map(artwork => ({ id: artwork.id })) 
+        : [];
+      
+      const newHome = await strapi.documents('api::home.home').create({
+        data: {
+          slides: slideArtworks
+        }
+      });
+      
+      await strapi.documents('api::home.home').publish({
+        documentId: newHome.documentId
+      });
+      
+      console.log('  ✓ Created home content with artwork slides');
+    } else if (!existingHome.slides || existingHome.slides.length === 0) {
+      // Home exists but has no slides, add some artworks
+      const artworks = await strapi.query('api::artwork.artwork').findMany({
+        limit: 5,
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      const slideArtworks = artworks.length > 0 
+        ? artworks.map(artwork => ({ id: artwork.id })) 
+        : [];
+      
+      const updatedHome = await strapi.documents('api::home.home').update({
+        documentId: existingHome.documentId,
+        data: {
+          slides: slideArtworks
+        }
+      });
+      
+      await strapi.documents('api::home.home').publish({
+        documentId: updatedHome.documentId
+      });
+      
+      console.log('  ✓ Updated home content with artwork slides');
+    } else {
+      console.log('  ✓ Home content already has slides');
+    }
+  } catch (error) {
+    console.error('  ✗ Failed to ensure home content:', error.message);
+  }
+
   console.log('\n🎉 Import completed successfully!');
   console.log('Your local Strapi now has the production data.');
 }

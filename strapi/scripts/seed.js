@@ -381,14 +381,19 @@ async function importArtworks() {
 }
 
 async function importHome() {
-  // Process slides using the same updateBlocks function for consistency
-  const updatedSlides = await updateBlocks(home.slides);
+  // Home slides should be relations to artworks, not slide components
+  // Find artworks to use as slides
+  const existingArtworks = await strapi.query('api::artwork.artwork').findMany({
+    limit: 5, // Get up to 5 artworks for slides
+  });
+
+  // Use existing artworks as slides, or create empty if no artworks exist
+  const slideArtworks = existingArtworks.length > 0 ? existingArtworks.map(artwork => ({ id: artwork.id })) : [];
 
   await createEntry({
     model: 'home',
     entry: {
-      ...home,
-      slides: updatedSlides,
+      slides: slideArtworks,
       // Make sure it's not a draft
       publishedAt: Date.now(),
     },
@@ -412,8 +417,8 @@ async function importSeedData() {
   await importArticles();
   await importGlobal();
   await importAbout();
-  await importHome();
   await importArtworks();
+  await importHome();
 }
 
 async function main() {
