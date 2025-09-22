@@ -1,6 +1,10 @@
 # DC normally is docker compose, but podman compose is used if available
 DC:=docker-compose $(DC_ARGS)
 
+# Port checking and auto-increment functions
+check_port = $(shell lsof -ti:$(1) > /dev/null 2>&1 && echo "1" || echo "0")
+find_available_port = $(shell port=$(1); while [ "$$(lsof -ti:$$port > /dev/null 2>&1 && echo 1 || echo 0)" = "1" ]; do port=$$((port + 1)); done; echo $$port)
+
 .DEFAULT_GOAL := help
 
 help: ## Show this help message
@@ -9,7 +13,15 @@ help: ## Show this help message
 	@echo 'Targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-init: ## Initialize the project
+check-ports: ## Check and set available ports
+	@echo "Checking port availability..."
+	@WEB_PORT=$$(call find_available_port,3002); \
+	STRAPI_PORT=$$(call find_available_port,1337); \
+	DB_PORT=$$(call find_available_port,5432); \
+	echo "Available ports: WEB=$$WEB_PORT STRAPI=$$STRAPI_PORT DB=$$DB_PORT"; \
+	export WEB_PORT=$$WEB_PORT STRAPI_PORT=$$STRAPI_PORT DB_PORT=$$DB_PORT
+
+init: check-ports ## Initialize the project
 	[ -f strapi/.env ] || cp strapi/.env.example strapi/.env
 	[ -f web/.env ] || cp web/.env.example web/.env
 	$(DC) run  --rm strapi npx strapi admin:create-user --firstname=John --lastname=Doe --email=username@test.com --password=1Password || true
@@ -20,7 +32,7 @@ init: ## Initialize the project
 build: ## Build all services
 	$(DC) build
 
-up: ## Start all services
+up: check-ports ## Start all services
 	$(DC) up
 
 down: ## Stop all services
@@ -73,3 +85,6 @@ build-strapi: ## Build Strapi application
 
 test-hardhat: ## Run Hardhat tests
 	$(DC) run --rm --no-deps hardhat npm test
+
+e2e: ## Run Playwright e2e tests
+	cd web && npx playwright test

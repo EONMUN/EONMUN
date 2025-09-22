@@ -5,8 +5,8 @@ services:
       POSTGRES_DB: strapi
       POSTGRES_USER: strapi
       POSTGRES_PASSWORD: strapi
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -49,10 +49,10 @@ services:
       service: strapi-seed
     environment:
       - HOST=0.0.0.0
-      - PORT=1337
+      - PORT=${STRAPI_INTERNAL_PORT:-1337}
     command: npm run dev
     ports:
-      - "1337:1337" # Adjust the port as needed
+      - "${STRAPI_PORT:-1337}:${STRAPI_INTERNAL_PORT:-1337}"
 
   web-init:
     build:
@@ -66,12 +66,14 @@ services:
   web:
     extends:
       service: web-init
+    environment:
+      - PORT=${WEB_INTERNAL_PORT:-3000}
     env_file:
       - strapi/.env
       - web/.env
     command: npm run dev
     ports:
-      - "3002:3000" # Adjust the port as needed
+      - "${WEB_PORT:-3002}:${WEB_INTERNAL_PORT:-3000}"
     depends_on:
       web-init:
         condition: service_completed_successfully
