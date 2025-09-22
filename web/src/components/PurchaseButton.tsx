@@ -1,20 +1,39 @@
 'use client';
 
 import { useState } from 'react';
-import { Artwork } from '@/lib/strapi';
+import { Artwork, Product } from '@/lib/strapi';
 import { getStripe, ARTWORK_PRICE } from '@/lib/stripe';
 
 interface PurchaseButtonProps {
+  item: Artwork | Product;
+  type: 'artwork' | 'product';
+  className?: string;
+}
+
+// Legacy interface for backward compatibility
+interface LegacyPurchaseButtonProps {
   artwork: Artwork;
   className?: string;
 }
 
-export function PurchaseButton({ artwork, className = '' }: PurchaseButtonProps) {
+export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButtonProps) {
+  // Handle legacy props
+  const isLegacy = 'artwork' in props;
+  const item = isLegacy ? props.artwork : props.item;
+  const type = isLegacy ? 'artwork' : props.type;
+  const className = props.className || '';
+  
   const [loading, setLoading] = useState(false);
 
   const handlePurchase = async () => {
     try {
       setLoading(true);
+      
+      // Determine price and item details
+      const price = type === 'product' ? (item as Product).price : ARTWORK_PRICE;
+      const itemId = item.documentId;
+      const itemTitle = item.title;
+      const itemSlug = item.slug;
       
       // Create checkout session
       const response = await fetch('/api/checkout', {
@@ -23,10 +42,11 @@ export function PurchaseButton({ artwork, className = '' }: PurchaseButtonProps)
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          artworkId: artwork.documentId,
-          artworkTitle: artwork.title,
-          artworkSlug: artwork.slug,
-          price: ARTWORK_PRICE,
+          artworkId: itemId, // Keep artworkId for backward compatibility
+          artworkTitle: itemTitle,
+          artworkSlug: itemSlug,
+          price: price,
+          itemType: type,
         }),
       });
 
@@ -61,17 +81,21 @@ export function PurchaseButton({ artwork, className = '' }: PurchaseButtonProps)
   return (
     <div className={className}>
       <div className="mb-4">
-        <div className="text-3xl font-bold text-on-background mb-2">
-          ${ARTWORK_PRICE.toLocaleString()}
+        <div className="text-3xl font-bold text-on-background mb-2" data-testid="product-price">
+          ${(type === 'product' ? (item as Product).price : ARTWORK_PRICE).toLocaleString()}
         </div>
         <p className="text-sm text-on-surface-variant">
-          Digital artwork with certificate of authenticity
+          {type === 'product' 
+            ? (item as Product).description || 'Product with secure delivery'
+            : 'Digital artwork with certificate of authenticity'
+          }
         </p>
       </div>
       
       <button
         onClick={handlePurchase}
         disabled={loading}
+        data-testid="purchase-button"
         className={`
           w-full px-6 py-3 rounded-lg font-semibold text-white transition-all
           ${loading 
