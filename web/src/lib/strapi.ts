@@ -1,14 +1,22 @@
 import { strapi } from '@strapi/client';
 
+const baseURL = (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api';
+const isLocalDevelopment = baseURL.includes('localhost') || baseURL.includes('127.0.0.1');
+const apiToken = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
+// Only use auth token if not in local development AND we have a valid token
+const authConfig = (!isLocalDevelopment && apiToken) ? { auth: apiToken } : {};
+
 console.log({
-  baseURL: (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api',
-  auth: process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '',
+  baseURL,
+  isLocalDevelopment,
+  hasAuth: !isLocalDevelopment && !!apiToken,
 })
 
 // Initialize Strapi client
 export const strapiClient = strapi({
-  baseURL: (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api',
-  auth: process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '',
+  baseURL,
+  ...authConfig,
 });
 
 // Image format interface for different sizes
@@ -198,12 +206,41 @@ export const artworkAPI = {
 };
 
 // Collection interface based on the Strapi schema
+// Product interface based on the Strapi schema
+export interface Product {
+  id: string;
+  documentId: string;
+  title: string;
+  description?: string;
+  price: number;
+  currency: 'USD' | 'EUR' | 'GBP';
+  slug: string;
+  images?: StrapiImage[];
+  artwork?: Artwork;
+  product_type: 'artwork' | 'print' | 'merchandise' | 'digital' | 'book' | 'other';
+  is_digital: boolean;
+  is_available: boolean;
+  stock_quantity: number;
+  stripe_product_id?: string;
+  sku?: string;
+  weight?: number;
+  dimensions?: Record<string, unknown>;
+  shipping_required: boolean;
+  featured: boolean;
+  collections?: Collection[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+  locale: string;
+}
+
 export interface Collection {
   id: string;
   documentId: string;
   name: string;
   slug: string;
   artworks?: Artwork[];
+  products?: Product[];
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
@@ -313,6 +350,142 @@ export const collectionAPI = {
       return response?.data?.[0] || null;
     } catch (error) {
       console.error('Error fetching collection by slug:', error);
+      throw error;
+    }
+  },
+};
+
+// Create product data interface
+export interface CreateProductData {
+  title: string;
+  description?: string;
+  price: number;
+  currency?: 'USD' | 'EUR' | 'GBP';
+  product_type?: 'artwork' | 'print' | 'merchandise' | 'digital' | 'book' | 'other';
+  is_digital?: boolean;
+  is_available?: boolean;
+  stock_quantity?: number;
+  sku?: string;
+  weight?: number;
+  dimensions?: Record<string, unknown>;
+  shipping_required?: boolean;
+  featured?: boolean;
+  artwork?: string; // Artwork documentId
+  images?: UploadFileInput[];
+  collections?: string[]; // Array of collection documentIds
+}
+
+// Update product data interface
+export interface UpdateProductData {
+  title?: string;
+  description?: string;
+  price?: number;
+  currency?: 'USD' | 'EUR' | 'GBP';
+  product_type?: 'artwork' | 'print' | 'merchandise' | 'digital' | 'book' | 'other';
+  is_digital?: boolean;
+  is_available?: boolean;
+  stock_quantity?: number;
+  sku?: string;
+  weight?: number;
+  dimensions?: Record<string, unknown>;
+  shipping_required?: boolean;
+  featured?: boolean;
+  artwork?: string; // Artwork documentId
+  images?: UploadFileInput[];
+  collections?: string[]; // Array of collection documentIds
+}
+
+// API functions for product CRUD operations
+export const productAPI = {
+  // Get all products
+  async getAll(params?: QueryParams) {
+    try {
+      const response = await strapiClient.collection('products').find({
+        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+        ...params,
+      });
+      return {
+        data: response.data as Product[],
+        meta: response.meta,
+      };
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw error;
+    }
+  },
+
+  // Get single product by documentId
+  async getById(documentId: string) {
+    try {
+      const response = await strapiClient.collection('products').findOne(documentId, {
+        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      throw error;
+    }
+  },
+
+  // Create new product
+  async create(data: CreateProductData) {
+    try {
+      const response = await strapiClient.collection('products').create({
+        data,
+        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+      });
+      return {
+        data: response.data as Product,
+        meta: response.meta,
+      };
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  },
+
+  // Update product
+  async update(documentId: string, data: UpdateProductData) {
+    try {
+      const response = await strapiClient.collection('products').update(documentId, {
+        data,
+        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+      });
+      return {
+        data: response.data as Product,
+        meta: response.meta,
+      };
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+  },
+
+  // Delete product
+  async delete(documentId: string) {
+    try {
+      const response = await strapiClient.collection('products').delete(documentId);
+      return response;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  },
+
+  // Get product by slug
+  async getBySlug(slug: string) {
+    try {
+      const response = await strapiClient.collection('products').find({
+        filters: {
+          slug: {
+            $eq: slug,
+          },
+        },
+        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+      });
+      return (response?.data?.[0] as Product) || null;
+    } catch (error) {
+      console.error('Error fetching product by slug:', error);
       throw error;
     }
   },

@@ -23,9 +23,11 @@ async function enablePublicPermissions() {
       'api::article.article', 
       'api::author.author',
       'api::category.category',
+      'api::collection.collection',
       'api::global.global',
       'api::about.about',
-      'api::home.home'
+      'api::home.home',
+      'api::product.product'
     ];
 
     const permissions = ['find', 'findOne'];

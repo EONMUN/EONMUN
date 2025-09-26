@@ -321,6 +321,97 @@ async function importToLocal() {
     console.error('  ✗ Failed to ensure home content:', error.message);
   }
 
+  // Create sample products for testing
+  console.log('\nCreating sample products...');
+  try {
+    const sampleProducts = [
+      {
+        title: 'Limited Edition Print',
+        slug: 'limited-edition-print',
+        description: 'High-quality giclee print on museum-grade paper',
+        price: 150,
+        currency: 'USD',
+        product_type: 'print',
+        is_digital: false,
+        is_available: true,
+        stock_quantity: 25,
+        shipping_required: true,
+        featured: true,
+        sku: 'PRINT-001'
+      },
+      {
+        title: 'Digital Artwork Collection',
+        slug: 'digital-artwork-collection',
+        description: 'High-resolution digital files for personal use',
+        price: 50,
+        currency: 'USD',
+        product_type: 'digital',
+        is_digital: true,
+        is_available: true,
+        stock_quantity: 999,
+        shipping_required: false,
+        featured: false,
+        sku: 'DIGITAL-001'
+      },
+      {
+        title: 'Artist Merchandise Bundle',
+        slug: 'artist-merchandise-bundle',
+        description: 'Exclusive t-shirt and sticker pack',
+        price: 75,
+        currency: 'USD',
+        product_type: 'merchandise',
+        is_digital: false,
+        is_available: true,
+        stock_quantity: 50,
+        shipping_required: true,
+        featured: true,
+        sku: 'MERCH-001'
+      },
+      {
+        title: 'Art Book: Contemporary Collection',
+        slug: 'art-book-contemporary-collection',
+        description: 'Beautiful hardcover book featuring latest works',
+        price: 120,
+        currency: 'USD',
+        product_type: 'book',
+        is_digital: false,
+        is_available: true,
+        stock_quantity: 100,
+        shipping_required: true,
+        featured: false,
+        sku: 'BOOK-001'
+      }
+    ];
+
+    for (const productData of sampleProducts) {
+      // Check if product already exists by SKU
+      const existingProduct = await strapi.query('api::product.product').findOne({
+        where: { sku: productData.sku }
+      });
+
+      if (existingProduct) {
+        console.log(`  ✓ Product already exists: ${productData.title}`);
+        continue;
+      }
+
+      // Create the product
+      const newProduct = await strapi.documents('api::product.product').create({
+        data: productData
+      });
+
+      // Publish the product
+      await strapi.documents('api::product.product').publish({
+        documentId: newProduct.documentId
+      });
+
+      console.log(`  ✓ Created and published product: ${productData.title}`);
+    }
+
+    console.log(`✓ Sample products created successfully`);
+  } catch (error) {
+    console.error('  ✗ Failed to create sample products:', error.message);
+  }
+
   console.log('\n🎉 Import completed successfully!');
   console.log('Your local Strapi now has the production data.');
 }
