@@ -1,5 +1,8 @@
+import { StrapiImage } from '@/lib/strapi';
+
 interface ImageProps {
-  src: string;
+  src?: string;
+  image?: StrapiImage;
   className?: string;
   alt?: string;
 }
@@ -23,16 +26,23 @@ const getImageUrl = (url: string): string => {
   return url;
 };
 
-export default function Image({ src, className = "" }: ImageProps) {
-  console.log(src);
-  // Handle URL resolution for different environments
+export default function Image({ src, image, className = "", alt }: ImageProps) {
+  // Determine the source URL - either from src prop or image prop
+  const sourceUrl = src || image?.url;
   
+  if (!sourceUrl) {
+    return null;
+  }
 
-  const imageUrl = getImageUrl(src);
+  console.log(sourceUrl);
+  
+  const imageUrl = getImageUrl(sourceUrl);
+  const altText = alt || image?.alternativeText || "";
 
   return (
     <img
       src={imageUrl}
+      alt={altText}
       className={className}
     />
   );

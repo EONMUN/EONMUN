@@ -483,7 +483,7 @@ export const productAPI = {
         },
         populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
       });
-      return response?.data?.[0] || null;
+      return (response?.data?.[0] as Product) || null;
     } catch (error) {
       console.error('Error fetching product by slug:', error);
       throw error;
