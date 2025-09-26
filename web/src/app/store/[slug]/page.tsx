@@ -6,11 +6,12 @@ import { PurchaseButton } from '@/components/PurchaseButton';
 import Image from '@/components/Image';
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const product = await getProduct(params.slug);
+  const { slug } = await params;
+  const product = await getProduct(slug);
   
   if (!product) {
     return {
@@ -35,7 +36,8 @@ async function getProduct(slug: string): Promise<Product | null> {
 }
 
 export default async function ProductPage({ params }: PageProps) {
-  const product = await getProduct(params.slug);
+  const { slug } = await params;
+  const product = await getProduct(slug);
 
   if (!product) {
     notFound();
