@@ -102,7 +102,7 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
           export KUBECONFIG=~/.kube/config
-          kubectl set image deployment/eonmun-strapi-deployment strapi=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/strapi@${{ needs.build-and-push.outputs.digest }} -n default
+          kubectl set image deployment/eonmun-strapi-deployment strapi=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/strapi@${{ needs.build-and-push.outputs.digest }} -n eonmun-eonmun-prod
 
   security-scan:
     runs-on: ubuntu-latest
