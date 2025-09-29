@@ -97,17 +97,12 @@ jobs:
           args: --login-server https://mercury.ncrmro.com
           tags: tag:github-actions
 
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: "latest"
-
-      - name: Deploy with Helm
+      - name: Deploy with kubectl
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
           export KUBECONFIG=~/.kube/config
-          helm upgrade --install eonmun-strapi ./chart --values chart/values.production.yaml --set image.tag="${{ needs.build-and-push.outputs.digest }}"
+          kubectl set image deployment/eonmun-strapi-deployment strapi=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/strapi@${{ needs.build-and-push.outputs.digest }} -n default
 
   security-scan:
     runs-on: ubuntu-latest
