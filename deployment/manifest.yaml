@@ -1,0 +1,182 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eonmun-strapi-config
+  namespace: eonmun-eonmun-prod
+data:
+  NODE_ENV: "production"
+  HOST: "0.0.0.0"
+  PORT: "1337"
+  FLAG_NPS: "true"
+  FLAG_PROMOTE_EE: "true"
+  DATABASE_CLIENT: "sqlite"
+  DATABASE_FILENAME: "/app/database/database.sqlite"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eonmun-strapi-deployment
+  namespace: eonmun-eonmun-prod
+  labels:
+    app: strapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: strapi
+  template:
+    metadata:
+      labels:
+        app: strapi
+    spec:
+      imagePullSecrets:
+        - name: ghcr-regcred
+      containers:
+        - name: strapi
+          image: ghcr.io/eonmun/eonmun/strapi:latest
+          ports:
+            - containerPort: 1337
+          envFrom:
+            - configMapRef:
+                name: eonmun-strapi-config
+            - secretRef:
+                name: eonmun-strapi-secrets
+          env:
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /admin
+              port: 1337
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /admin
+              port: 1337
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/public
+            - name: database
+              mountPath: /app/database
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: strapi-uploads-pvc
+        - name: database
+          persistentVolumeClaim:
+            claimName: strapi-database-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eonmun-strapi
+  namespace: eonmun-eonmun-prod
+spec:
+  selector:
+    app: strapi
+  ports:
+    - protocol: TCP
+      port: 1337
+      targetPort: 1337
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: strapi-uploads-pvc
+  namespace: eonmun-eonmun-prod
+spec:
+  storageClassName: ceph-filesystem
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: strapi-database-pvc
+  namespace: eonmun-eonmun-prod
+spec:
+  storageClassName: ceph-filesystem
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    # Reference the Origin CA Issuer you created above, which must be in the same namespace.
+    cert-manager.io/issuer: letsencrypt-dns-cloudflare
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-group: cert-manager.io
+  name: eonmun-strapi
+  namespace: eonmun-eonmun-prod
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: strapi.eonmun.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: eonmun-strapi
+                port:
+                  number: 1337
+  tls:
+    # specifying a host in the TLS section will tell cert-manager what
+    # DNS SANs should be on the created certificate.
+    - hosts:
+        - strapi.eonmun.com
+      # cert-manager will create this secret
+      secretName: strapi-tls
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/issuer: letsencrypt-dns-cloudflare
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-group: cert-manager.io
+  name: eonmun-admin
+  namespace: eonmun-eonmun-prod
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: admin.eonmun.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: eonmun-strapi
+                port:
+                  number: 1337
+  tls:
+    - hosts:
+        - admin.eonmun.com
+      secretName: admin-tls

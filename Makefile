@@ -33,6 +33,12 @@ build: ## Build all services
 	$(DC) build
 
 up: check-ports ## Start all services
+	@echo "Starting services..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "📍 Web server:    http://localhost:3002"
+	@echo "📍 Strapi admin:  http://localhost:1337/admin"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
 	$(DC) up
 
 down: ## Stop all services
