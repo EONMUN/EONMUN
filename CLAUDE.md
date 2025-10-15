@@ -68,6 +68,9 @@ npm test           # Run Hardhat tests
 ### Database
 ```bash
 make seed          # Seed Strapi database
+make sync          # Sync data from production using strapi transfer
+make sync-fresh    # Fresh sync (clear DB first, then sync from production)
+make sync-remote   # Direct transfer from production to local
 make dbshell       # Open PostgreSQL shell
 ```
 
@@ -108,13 +111,17 @@ Required environment files:
 - `web/.env` - Frontend configuration (copy from `.env.example`)
 - `strapi/.env` - Backend configuration (copy from `.env.example`)
 
+For production data sync, add to `strapi/.env`:
+- `PROD_STRAPI_URL` - Production Strapi URL
+- `STRAPI_TRANSFER_TOKEN` - Transfer token for data sync
+
 ## Development Workflow
 
 1. Run `make init` for first-time setup
 2. Use `make up` to start all services
 3. Frontend available at `http://localhost:3002`
 4. Strapi admin at `http://localhost:1337/admin`
-5. Use `make seed` to populate with example content
+5. Use `make sync` to sync production data or `make seed` for example content
 
 ## Testing
 

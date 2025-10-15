@@ -47,13 +47,25 @@ down: ## Stop all services
 seed: ## Seed the database
 	$(DC) exec strapi node scripts/seed.js
 
-sync-export: ## Export production data (run once manually to get latest production data)
-	$(DC) run --rm --no-deps strapi node scripts/sync-from-api.js
-
-sync-update: sync-export ## Update the committed export with latest production data
-
-sync-import: ## Import production data to local (uses existing export)
-	$(DC) run --rm --no-deps strapi node scripts/import-from-api.js
+sync-remote: ## Sync data from remote Strapi using transfer command
+	@if [ -z "$$PROD_STRAPI_URL" ]; then \
+		echo "❌ PROD_STRAPI_URL environment variable is required"; \
+		echo "Add it to strapi/.env"; \
+		exit 1; \
+	fi; \
+	if [ -z "$$STRAPI_TRANSFER_TOKEN" ]; then \
+		echo "❌ STRAPI_TRANSFER_TOKEN environment variable is required"; \
+		echo "Create a transfer token in Strapi admin (Settings → Transfer Tokens)"; \
+		echo "Add it to strapi/.env"; \
+		exit 1; \
+	fi; \
+	echo "🔄 Syncing data from $$PROD_STRAPI_URL to local..."; \
+	$(DC) exec strapi npx strapi transfer \
+		--from $$PROD_STRAPI_URL \
+		--to http://localhost:1337 \
+		--from-token $$STRAPI_TRANSFER_TOKEN \
+		--to-token $$STRAPI_TRANSFER_TOKEN \
+		--force
 
 enable-public: ## Enable public permissions for local development
 	$(DC) exec strapi node scripts/enable-public-permissions.js
@@ -70,9 +82,9 @@ sync-clean: ## Clear local database before sync
 	$(DC) exec db psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE strapi TO strapi;"
 	$(DC) up -d
 
-sync: sync-import enable-public ## Import existing production data export
+sync: sync-remote enable-public ## Sync data from production and enable public access
 
-sync-fresh: sync-clean sync-import enable-public ## Fresh sync (clear DB, then import)
+sync-fresh: sync-clean sync-remote enable-public ## Fresh sync (clear DB, sync from remote, enable public access)
 
 destroy: ## Clean all services
 	$(DC) down --remove-orphans --volumes

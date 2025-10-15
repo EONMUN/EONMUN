@@ -10,7 +10,7 @@
     "dev": "strapi develop",
     "develop": "strapi develop",
     "seed:example": "node ./scripts/seed.js",
-    "import:api": "node ./scripts/import-from-api.js",
+
     "create:token": "node ./scripts/create-api-token.js",
     "enable:public": "node ./scripts/enable-public-permissions.js",
     "start": "strapi start",
