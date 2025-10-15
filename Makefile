@@ -48,7 +48,12 @@ seed: ## Seed the database
 	$(DC) exec strapi node scripts/seed.js
 
 sync-remote: ## Sync data from remote Strapi using transfer command
-	@if [ -z "$$PROD_STRAPI_URL" ]; then \
+	@if [ ! -f strapi/.env ]; then \
+		echo "❌ strapi/.env file not found"; \
+		echo "Copy strapi/.env.example to strapi/.env and configure production settings"; \
+		exit 1; \
+	fi; \
+	if [ -z "$$PROD_STRAPI_URL" ]; then \
 		echo "❌ PROD_STRAPI_URL environment variable is required"; \
 		echo "Add it to strapi/.env"; \
 		exit 1; \
