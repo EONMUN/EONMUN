@@ -56,6 +56,8 @@ strapi transfer \
   --force
 ```
 
+**Note:** The same transfer token is used for both source and destination as required by Strapi's transfer system. The token acts as a shared secret that authorizes the transfer operation between instances.
+
 This transfers:
 - All content types and entries
 - Media files and assets
@@ -65,9 +67,10 @@ This transfers:
 ## Important Notes
 
 - The `--force` flag overwrites existing data in the destination
-- Both source and destination must use the same transfer token
-- Transfer tokens are different from API tokens and have special permissions
+- Both source and destination must use the same transfer token (required by Strapi's transfer system)
+- Transfer tokens are different from API tokens and have special permissions for data transfer
 - The local Strapi instance must be running for the transfer to work
+- **Security:** Transfer tokens should be treated as sensitive credentials and stored securely
 
 ## Migration from Old Sync
 
