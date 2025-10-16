@@ -17,9 +17,8 @@ check-ports: ## Check and set available ports
 	@echo "Checking port availability..."
 	@WEB_PORT=$$(call find_available_port,3002); \
 	STRAPI_PORT=$$(call find_available_port,1337); \
-	DB_PORT=$$(call find_available_port,5432); \
-	echo "Available ports: WEB=$$WEB_PORT STRAPI=$$STRAPI_PORT DB=$$DB_PORT"; \
-	export WEB_PORT=$$WEB_PORT STRAPI_PORT=$$STRAPI_PORT DB_PORT=$$DB_PORT
+	echo "Available ports: WEB=$$WEB_PORT STRAPI=$$STRAPI_PORT"; \
+	export WEB_PORT=$$WEB_PORT STRAPI_PORT=$$STRAPI_PORT
 
 init: check-ports ## Initialize the project
 	[ -f strapi/.env ] || cp strapi/.env.example strapi/.env
@@ -47,13 +46,28 @@ down: ## Stop all services
 seed: ## Seed the database
 	$(DC) exec strapi node scripts/seed.js
 
-sync-export: ## Export production data (run once manually to get latest production data)
-	$(DC) run --rm --no-deps strapi node scripts/sync-from-api.js
-
-sync-update: sync-export ## Update the committed export with latest production data
-
-sync-import: ## Import production data to local (uses existing export)
-	$(DC) run --rm --no-deps strapi node scripts/import-from-api.js
+sync-remote: ## Sync data from remote Strapi using transfer command
+	@if [ ! -f strapi/.env ]; then \
+		echo "❌ strapi/.env file not found"; \
+		echo "Copy strapi/.env.example to strapi/.env and configure production settings"; \
+		exit 1; \
+	fi
+	$(DC) run --rm  strapi sh -c '\
+		if [ -z "$$PROD_STRAPI_URL" ]; then \
+			echo "❌ PROD_STRAPI_URL is not set"; \
+			echo "   Set PROD_STRAPI_URL in strapi/.env"; \
+			exit 1; \
+		fi; \
+		if [ -z "$$PROD_STRAPI_TRANSFER_TOKEN" ]; then \
+			echo "❌ PROD_STRAPI_TRANSFER_TOKEN is not set"; \
+			echo "   Create a transfer token in Strapi admin (Settings → Transfer Tokens)"; \
+			echo "   Set PROD_STRAPI_TRANSFER_TOKEN in strapi/.env"; \
+			exit 1; \
+		fi; \
+		export STRAPI_TRANSFER_URL=$$PROD_STRAPI_URL; \
+		export STRAPI_TRANSFER_TOKEN=$$PROD_STRAPI_TRANSFER_TOKEN; \
+		echo "🔄 Syncing data from $$PROD_STRAPI_URL to local..."; \
+		npx strapi transfer --force --from $${STRAPI_TRANSFER_URL}/admin --from-token $$STRAPI_TRANSFER_TOKEN'
 
 enable-public: ## Enable public permissions for local development
 	$(DC) exec strapi node scripts/enable-public-permissions.js
@@ -61,24 +75,10 @@ enable-public: ## Enable public permissions for local development
 create-token: ## Create API token for frontend (for production use)
 	$(DC) exec strapi node scripts/create-api-token.js
 
-sync-clean: ## Clear local database before sync
-	$(DC) down
-	$(DC) up -d db
-	sleep 5
-	$(DC) exec db psql -U postgres -c "DROP DATABASE IF EXISTS strapi;"
-	$(DC) exec db psql -U postgres -c "CREATE DATABASE strapi;"
-	$(DC) exec db psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE strapi TO strapi;"
-	$(DC) up -d
-
-sync: sync-import enable-public ## Import existing production data export
-
-sync-fresh: sync-clean sync-import enable-public ## Fresh sync (clear DB, then import)
+sync: sync-remote enable-public ## Sync data from production and enable public access
 
 destroy: ## Clean all services
 	$(DC) down --remove-orphans --volumes
-
-dbshell: ## Open a shell to the database
-	$(DC) exec db psql -U strapi
 
 install-web: ## Install web dependencies
 	$(DC) run --rm --no-deps web npm install

@@ -14,13 +14,13 @@ EONMUN is a full-stack Web3 application for an art NFT platform featuring:
 
 ### Multi-Service Architecture
 - `web/` - Next.js frontend (port 3002 in dev)
-- `strapi/` - Strapi CMS backend (port 1337 in dev) 
+- `strapi/` - Strapi CMS backend (port 1337 in dev)
 - `hardhat/` - Ethereum smart contracts and tooling
-- `docker-compose.yaml` - Orchestrates PostgreSQL database and services
+- `docker-compose.yaml` - Orchestrates services
 
 ### Key Technologies
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS, Wagmi (Web3), PostHog analytics
-- **Backend**: Strapi 5, PostgreSQL, Node.js
+- **Backend**: Strapi 5, SQLite, Node.js
 - **Blockchain**: Hardhat, OpenZeppelin upgradeable contracts, Viem
 - **Deployment**: Cloudflare (OpenNext), Docker
 
@@ -67,8 +67,9 @@ npm test           # Run Hardhat tests
 
 ### Database
 ```bash
-make seed          # Seed Strapi database
-make dbshell       # Open PostgreSQL shell
+make seed          # Seed Strapi database with example data
+make sync          # Sync data from production using strapi transfer
+make sync-remote   # Direct transfer from production to local
 ```
 
 ## Smart Contract Architecture
@@ -108,13 +109,17 @@ Required environment files:
 - `web/.env` - Frontend configuration (copy from `.env.example`)
 - `strapi/.env` - Backend configuration (copy from `.env.example`)
 
+For production data sync, add to `strapi/.env`:
+- `PROD_STRAPI_URL` - Production Strapi URL
+- `PROD_STRAPI_TRANSFER_TOKEN` - Transfer token for data sync
+
 ## Development Workflow
 
 1. Run `make init` for first-time setup
 2. Use `make up` to start all services
 3. Frontend available at `http://localhost:3002`
 4. Strapi admin at `http://localhost:1337/admin`
-5. Use `make seed` to populate with example content
+5. Use `make sync` to sync production data or `make seed` for example content
 
 ## Testing
 

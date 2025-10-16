@@ -5,7 +5,7 @@ const isLocalDevelopment = baseURL.includes('localhost') || baseURL.includes('12
 const apiToken = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 // Only use auth token if not in local development AND we have a valid token
-const authConfig = (!isLocalDevelopment && apiToken) ? { auth: apiToken } : {};
+const authConfig = { auth: apiToken };
 
 console.log({
   baseURL,
