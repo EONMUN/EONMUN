@@ -1,22 +1,4 @@
 services:
-  db:
-    image: postgres:alpine
-    environment:
-      POSTGRES_DB: strapi
-      POSTGRES_USER: strapi
-      POSTGRES_PASSWORD: strapi
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U strapi"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - strapi
-
   strapi-init:
     build:
       context: ./strapi
@@ -39,8 +21,6 @@ services:
     depends_on:
       strapi-init:
         condition: service_completed_successfully
-      db:
-        condition: service_healthy
     networks:
       - strapi
 
@@ -73,7 +53,7 @@ services:
       - web/.env
     command: npm run dev
     ports:
-      - "${WEB_PORT:-3002}:${WEB_INTERNAL_PORT:-3000}"
+      - "${WEB_INTERNAL_PORT:-3000}:${WEB_INTERNAL_PORT:-3000}"
     depends_on:
       web-init:
         condition: service_completed_successfully
@@ -82,8 +62,6 @@ services:
     networks:
       - strapi
 
-volumes:
-  db_data:
 networks:
   strapi:
     driver: bridge

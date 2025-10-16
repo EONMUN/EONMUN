@@ -22,12 +22,12 @@ As of this update, EONMUN uses Strapi's built-in `strapi transfer` command for d
 1. **Transfer Token**: Create a transfer token in your production Strapi admin:
    - Go to Settings → Transfer Tokens
    - Create a new token with appropriate permissions
-   - Add it to your `strapi/.env` as `STRAPI_TRANSFER_TOKEN`
+   - Add it to your `strapi/.env` as `PROD_STRAPI_TRANSFER_TOKEN`
 
 2. **Production URL**: Add your production Strapi URL to `strapi/.env`:
    ```
    PROD_STRAPI_URL=https://your-production-strapi.com
-   STRAPI_TRANSFER_TOKEN=your-transfer-token
+   PROD_STRAPI_TRANSFER_TOKEN=your-transfer-token
    ```
 
 ### Sync Commands
@@ -45,18 +45,17 @@ make sync-remote
 
 ### How It Works
 
-The `strapi transfer` command performs a direct transfer from production to local:
+The `strapi transfer` command uses environment variables for configuration:
 
 ```bash
-strapi transfer \
-  --from $PROD_STRAPI_URL \
-  --to http://localhost:1337 \
-  --from-token $STRAPI_TRANSFER_TOKEN \
-  --to-token $STRAPI_TRANSFER_TOKEN \
-  --force
+# Strapi automatically uses these environment variables:
+# STRAPI_TRANSFER_URL (set from PROD_STRAPI_URL)
+# STRAPI_TRANSFER_TOKEN (set from PROD_STRAPI_TRANSFER_TOKEN)
+
+strapi transfer --force
 ```
 
-**Note:** The same transfer token is used for both source and destination as required by Strapi's transfer system. The token acts as a shared secret that authorizes the transfer operation between instances.
+**Note:** The Makefile maps `PROD_STRAPI_URL` → `STRAPI_TRANSFER_URL` and `PROD_STRAPI_TRANSFER_TOKEN` → `STRAPI_TRANSFER_TOKEN` using Docker's `-e` flag. This allows Strapi to automatically detect the transfer source without requiring command-line flags, making future runs faster.
 
 This transfers:
 - All content types and entries
@@ -67,9 +66,9 @@ This transfers:
 ## Important Notes
 
 - The `--force` flag overwrites existing data in the destination
-- Both source and destination must use the same transfer token (required by Strapi's transfer system)
 - Transfer tokens are different from API tokens and have special permissions for data transfer
-- The local Strapi instance must be running for the transfer to work
+- Strapi automatically uses `STRAPI_TRANSFER_URL` and `STRAPI_TRANSFER_TOKEN` environment variables when set
+- The command must be run from inside the local Strapi container where the destination is implied
 - **Security:** Transfer tokens should be treated as sensitive credentials and stored securely
 
 ## Migration from Old Sync
