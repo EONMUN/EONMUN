@@ -86,6 +86,10 @@ install-web: ## Install web dependencies
 build-web: ## Build web application
 	$(DC) run --rm --no-deps web npm run build
 
+lint: ## Run linting and type checking
+	$(DC) run --rm --no-deps web npm run lint
+	$(DC) run --rm --no-deps web npm run typecheck
+
 build-strapi: ## Build Strapi application
 	$(DC) run --rm --no-deps strapi npm run build
 
