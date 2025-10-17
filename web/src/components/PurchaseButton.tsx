@@ -51,7 +51,7 @@ export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButton
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json() as { details?: string; error?: string };
         console.error('Checkout API error:', errorData);
         throw new Error(errorData.details || errorData.error || 'Failed to create checkout session');
       }
