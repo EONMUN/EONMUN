@@ -51,7 +51,9 @@ export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButton
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+        const errorData = await response.json();
+        console.error('Checkout API error:', errorData);
+        throw new Error(errorData.details || errorData.error || 'Failed to create checkout session');
       }
 
       const { sessionId }: { sessionId: string } = await response.json();
@@ -72,7 +74,8 @@ export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButton
       }
     } catch (error) {
       console.error('Purchase error:', error);
-      alert('Failed to start purchase. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start purchase. Please try again.';
+      alert(`Payment error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

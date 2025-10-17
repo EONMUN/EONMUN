@@ -10,13 +10,62 @@ interface CheckoutRequestBody {
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Stripe with secret key (moved inside function to avoid build-time initialization)
+    // Validate Stripe configuration
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
     if (!stripeSecretKey) {
+      console.error('Missing STRIPE_SECRET_KEY environment variable');
       return NextResponse.json(
-        { error: 'Stripe configuration error' },
+        {
+          error: 'Stripe configuration error',
+          details: 'STRIPE_SECRET_KEY is not configured. Add it to your .env file.',
+          setup: 'Get your key from https://dashboard.stripe.com/apikeys'
+        },
         { status: 500 }
       );
+    }
+
+    if (!stripePublishableKey) {
+      console.error('Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable');
+      return NextResponse.json(
+        {
+          error: 'Stripe configuration error',
+          details: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not configured. Add it to your .env file.',
+          setup: 'Get your key from https://dashboard.stripe.com/apikeys'
+        },
+        { status: 500 }
+      );
+    }
+
+    // Validate key formats
+    if (!stripeSecretKey.startsWith('sk_test_') && !stripeSecretKey.startsWith('sk_live_')) {
+      console.error('Invalid STRIPE_SECRET_KEY format');
+      return NextResponse.json(
+        {
+          error: 'Stripe configuration error',
+          details: 'STRIPE_SECRET_KEY has invalid format. It should start with sk_test_ or sk_live_'
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!stripePublishableKey.startsWith('pk_test_') && !stripePublishableKey.startsWith('pk_live_')) {
+      console.error('Invalid NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY format');
+      return NextResponse.json(
+        {
+          error: 'Stripe configuration error',
+          details: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY has invalid format. It should start with pk_test_ or pk_live_'
+        },
+        { status: 500 }
+      );
+    }
+
+    // Warn if mixing test and live keys
+    const isSecretTest = stripeSecretKey.startsWith('sk_test_');
+    const isPublishableTest = stripePublishableKey.startsWith('pk_test_');
+    if (isSecretTest !== isPublishableTest) {
+      console.warn('Warning: Mixing test and live Stripe keys - secret key and publishable key should both be test or both be live');
     }
 
     const stripe = new Stripe(stripeSecretKey, {
@@ -63,8 +112,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ sessionId: session.id });
   } catch (error) {
     console.error('Checkout session creation failed:', error);
+
+    // Enhanced error logging
+    if (error instanceof Stripe.errors.StripeError) {
+      console.error('Stripe Error Details:', {
+        type: error.type,
+        code: error.code,
+        message: error.message,
+        statusCode: error.statusCode,
+        requestId: error.requestId,
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Checkout session creation failed',
+          details: error.message,
+          type: error.type,
+        },
+        { status: error.statusCode || 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
