@@ -57,7 +57,7 @@ export default async function ProductPage({ params }: PageProps) {
   return (
     <main className="container mx-auto px-4 py-8">
       <nav className="mb-6">
-        <Link href="/store" className="text-blue-600 hover:underline">
+        <Link href="/store" className="text-primary hover:underline">
           ← Back to Store
         </Link>
       </nav>
@@ -67,7 +67,7 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="space-y-4">
           {displayImages.length > 0 ? (
             <>
-              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+              <div className="aspect-square bg-surface rounded-lg overflow-hidden">
                 <Image
                   image={displayImages[0]}
                   alt={product.title}
@@ -77,7 +77,7 @@ export default async function ProductPage({ params }: PageProps) {
               {displayImages.length > 1 && (
                 <div className="grid grid-cols-4 gap-2">
                   {displayImages.slice(1, 5).map((image, index) => (
-                    <div key={index} className="aspect-square bg-gray-100 rounded overflow-hidden">
+                    <div key={index} className="aspect-square bg-surface rounded overflow-hidden">
                       <Image
                         image={image}
                         alt={`${product.title} ${index + 2}`}
@@ -89,8 +89,8 @@ export default async function ProductPage({ params }: PageProps) {
               )}
             </>
           ) : (
-            <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-gray-400">No Image Available</span>
+            <div className="aspect-square bg-surface rounded-lg flex items-center justify-center">
+              <span className="text-on-surface-variant">No Image Available</span>
             </div>
           )}
         </div>
@@ -99,45 +99,45 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="space-y-6">
           <div>
             <div className="mb-2">
-              <span className="text-sm text-gray-500 uppercase tracking-wide">
+              <span className="text-sm text-on-surface-variant uppercase tracking-wide">
                 {productTypeLabels[product.product_type]}
               </span>
               {product.featured && (
-                <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                <span className="ml-2 bg-primary-container text-on-primary-container text-xs px-2 py-1 rounded">
                   Featured
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+            <h1 className="text-3xl font-bold text-on-background mb-2">{product.title}</h1>
             {product.sku && (
-              <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+              <p className="text-sm text-on-surface-variant">SKU: {product.sku}</p>
             )}
           </div>
 
           {product.description && (
             <div>
-              <h2 className="text-lg font-semibold mb-2">Description</h2>
-              <p className="text-gray-700 leading-relaxed">{product.description}</p>
+              <h2 className="text-lg font-semibold mb-2 text-on-surface">Description</h2>
+              <p className="text-on-surface leading-relaxed">{product.description}</p>
             </div>
           )}
 
           {/* Product Features */}
           <div className="space-y-2">
             {product.is_digital && (
-              <div className="flex items-center text-sm text-green-600">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              <div className="flex items-center text-sm text-secondary">
+                <span className="w-2 h-2 bg-secondary rounded-full mr-2"></span>
                 Digital download
               </div>
             )}
             {product.shipping_required && (
-              <div className="flex items-center text-sm text-blue-600">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+              <div className="flex items-center text-sm text-primary">
+                <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
                 Physical shipping required
               </div>
             )}
             {product.stock_quantity > 0 && !product.is_digital && (
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+              <div className="flex items-center text-sm text-on-surface-variant">
+                <span className="w-2 h-2 bg-on-surface-variant rounded-full mr-2"></span>
                 {product.stock_quantity} in stock
               </div>
             )}
@@ -146,13 +146,13 @@ export default async function ProductPage({ params }: PageProps) {
           {/* Related Artwork */}
           {product.artwork && (
             <div className="border-t pt-4">
-              <h3 className="text-lg font-semibold mb-2">Related Artwork</h3>
-              <Link 
+              <h3 className="text-lg font-semibold mb-2 text-on-surface">Related Artwork</h3>
+              <Link
                 href={`/artworks/${product.artwork.slug}`}
-                className="flex items-center space-x-3 text-blue-600 hover:underline"
+                className="flex items-center space-x-3 text-primary hover:underline"
               >
                 {product.artwork.default_image && (
-                  <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
+                  <div className="w-12 h-12 bg-surface rounded overflow-hidden">
                     <Image
                       image={product.artwork.default_image}
                       alt={product.artwork.title}
@@ -175,10 +175,10 @@ export default async function ProductPage({ params }: PageProps) {
               />
             ) : (
               <div className="w-full max-w-sm">
-                <div className="text-3xl font-bold text-gray-900 mb-2">
+                <div className="text-3xl font-bold text-on-background mb-2">
                   ${product.price.toLocaleString()}
                 </div>
-                <div className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg text-center">
+                <div className="bg-surface text-on-surface px-6 py-3 rounded-lg text-center border border-outline">
                   Currently Unavailable
                 </div>
               </div>
@@ -186,7 +186,7 @@ export default async function ProductPage({ params }: PageProps) {
           </div>
 
           {/* Additional Info */}
-          <div className="text-sm text-gray-500 space-y-1">
+          <div className="text-sm text-on-surface-variant space-y-1">
             <p>Currency: {product.currency}</p>
             <p>Secure payment powered by Stripe</p>
             {product.is_digital && (

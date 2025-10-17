@@ -97,10 +97,10 @@ export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButton
         disabled={loading}
         data-testid="purchase-button"
         className={`
-          w-full px-6 py-3 rounded-lg font-semibold text-white transition-all
-          ${loading 
-            ? 'bg-gray-400 cursor-not-allowed' 
-            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+          w-full px-6 py-3 rounded-lg font-semibold transition-all
+          ${loading
+            ? 'bg-on-surface-variant/30 text-on-surface-variant cursor-not-allowed'
+            : 'bg-primary text-on-primary hover:opacity-90 active:opacity-80'
           }
         `}
       >

@@ -30,10 +30,10 @@ export default async function StorePage() {
   if (!products || products.length === 0) {
     return (
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Store</h1>
+        <h1 className="text-4xl font-bold mb-8 text-on-background">Store</h1>
         <div className="text-center py-12">
-          <p className="text-lg text-gray-600">No products available at the moment.</p>
-          <Link href="/" className="text-blue-600 hover:underline mt-4 inline-block">
+          <p className="text-lg text-on-surface-variant">No products available at the moment.</p>
+          <Link href="/" className="text-primary hover:underline mt-4 inline-block">
             Return to Home
           </Link>
         </div>
@@ -44,8 +44,8 @@ export default async function StorePage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <header className="mb-8">
-        <h1 className="text-4xl font-bold mb-4">Store</h1>
-        <p className="text-lg text-gray-600">
+        <h1 className="text-4xl font-bold mb-4 text-on-background">Store</h1>
+        <p className="text-lg text-on-surface-variant">
           Discover our collection of artworks, prints, digital downloads, and exclusive merchandise.
         </p>
       </header>
@@ -71,9 +71,9 @@ function ProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <article className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-testid="product-card">
+    <article className="bg-surface rounded-lg border border-outline overflow-hidden hover:shadow-lg transition-shadow" data-testid="product-card">
       <Link href={`/store/${product.slug}`}>
-        <div className="aspect-square relative bg-gray-100">
+        <div className="aspect-square relative bg-surface">
           {displayImage ? (
             <Image
               image={displayImage}
@@ -81,17 +81,17 @@ function ProductCard({ product }: { product: Product }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
+            <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
               No Image
             </div>
           )}
           {product.featured && (
-            <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 text-xs rounded">
+            <div className="absolute top-2 left-2 bg-primary text-on-primary px-2 py-1 text-xs rounded">
               Featured
             </div>
           )}
           {product.is_digital && (
-            <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 text-xs rounded">
+            <div className="absolute top-2 right-2 bg-secondary text-on-secondary px-2 py-1 text-xs rounded">
               Digital
             </div>
           )}
@@ -100,29 +100,29 @@ function ProductCard({ product }: { product: Product }) {
       
       <div className="p-4">
         <div className="mb-2">
-          <span className="text-xs text-gray-500 uppercase tracking-wide">
+          <span className="text-xs text-on-surface-variant uppercase tracking-wide">
             {productTypeLabels[product.product_type]}
           </span>
         </div>
-        
+
         <h3 className="text-lg font-semibold mb-2 line-clamp-2">
-          <Link href={`/store/${product.slug}`} className="hover:text-blue-600">
+          <Link href={`/store/${product.slug}`} className="text-on-surface hover:text-primary transition-colors">
             {product.title}
           </Link>
         </h3>
-        
+
         {product.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          <p className="text-sm text-on-surface-variant mb-3 line-clamp-2">
             {product.description}
           </p>
         )}
-        
+
         <div className="flex items-center justify-between mb-3">
-          <span className="text-2xl font-bold text-gray-900" data-testid="product-price">
+          <span className="text-2xl font-bold text-on-surface" data-testid="product-price">
             ${product.price.toLocaleString()}
           </span>
           {!product.is_available && (
-            <span className="text-red-600 text-sm font-medium">Out of Stock</span>
+            <span className="text-red-600 dark:text-red-400 text-sm font-medium">Out of Stock</span>
           )}
         </div>
         
