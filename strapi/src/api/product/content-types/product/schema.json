@@ -37,14 +37,18 @@
     "price": {
       "type": "decimal",
       "required": true,
-      "min": 0,
-      "default": 0
+      "default": 0,
+      "min": 0
     },
     "currency": {
       "type": "enumeration",
-      "enum": ["USD", "EUR", "GBP"],
+      "required": true,
       "default": "USD",
-      "required": true
+      "enum": [
+        "USD",
+        "EUR",
+        "GBP"
+      ]
     },
     "slug": {
       "type": "uid",
@@ -75,9 +79,16 @@
     },
     "product_type": {
       "type": "enumeration",
-      "enum": ["artwork", "print", "merchandise", "digital", "book", "other"],
+      "required": true,
       "default": "other",
-      "required": true
+      "enum": [
+        "artwork",
+        "print",
+        "merchandise",
+        "digital",
+        "book",
+        "other"
+      ]
     },
     "is_digital": {
       "type": "boolean",
@@ -89,15 +100,8 @@
     },
     "stock_quantity": {
       "type": "integer",
-      "min": 0,
-      "default": 1
-    },
-    "stripe_product_id": {
-      "type": "string"
-    },
-    "sku": {
-      "type": "string",
-      "unique": true
+      "default": 1,
+      "min": 0
     },
     "weight": {
       "type": "decimal",
@@ -113,12 +117,6 @@
     "featured": {
       "type": "boolean",
       "default": false
-    },
-    "collections": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::collection.collection",
-      "inversedBy": "products"
     }
   }
 }

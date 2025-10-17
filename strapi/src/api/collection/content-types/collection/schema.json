@@ -26,12 +26,6 @@
       "relation": "manyToMany",
       "target": "api::artwork.artwork",
       "mappedBy": "collections"
-    },
-    "products": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::product.product",
-      "mappedBy": "collections"
     }
   }
 }
