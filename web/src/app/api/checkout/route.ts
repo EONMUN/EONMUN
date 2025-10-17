@@ -70,6 +70,8 @@ export async function POST(request: NextRequest) {
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2025-06-30.basil',
+      // This is required because cloudflare workers are not running node
+      httpClient: Stripe.createFetchHttpClient()
     });
 
     const { artworkId, artworkTitle, artworkSlug, price }: CheckoutRequestBody = await request.json();
