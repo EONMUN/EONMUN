@@ -4,6 +4,8 @@ import { productAPI, Product } from '@/lib/strapi';
 import { PurchaseButton } from '@/components/PurchaseButton';
 import Image from '@/components/Image';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Store | EONMUN',
   description: 'Shop our collection of artworks, prints, digital downloads, and merchandise.',
