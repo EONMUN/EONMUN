@@ -4,7 +4,7 @@ import { artworkAPI, Artwork, QueryParams } from '@/lib/strapi';
 
 export async function getArtworkBySlug(slug: string): Promise<Artwork | null> {
   const artwork = await artworkAPI.getBySlug(slug);
-  return artwork;
+  return artwork as Artwork | null;
 }
 
 export async function getAllArtworks(params?: QueryParams) {
@@ -14,5 +14,5 @@ export async function getAllArtworks(params?: QueryParams) {
 
 export async function getArtworkById(documentId: string) {
   const artwork = await artworkAPI.getById(documentId);
-  return artwork;
+  return artwork as unknown as Artwork;
 }

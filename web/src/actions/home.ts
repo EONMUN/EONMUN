@@ -18,5 +18,5 @@ export async function getHomePageData(): Promise<HomePageData> {
     },
   });
 
-  return data as HomePageData;
+  return data as unknown as HomePageData;
 }

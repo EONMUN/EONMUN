@@ -4,7 +4,7 @@ import { collectionAPI, Collection, QueryParams } from '@/lib/strapi';
 
 export async function getCollectionBySlug(slug: string): Promise<Collection | null> {
   const collection = await collectionAPI.getBySlug(slug);
-  return collection;
+  return collection as Collection | null;
 }
 
 export async function getAllCollections(params?: QueryParams) {
@@ -14,5 +14,5 @@ export async function getAllCollections(params?: QueryParams) {
 
 export async function getCollectionById(documentId: string) {
   const collection = await collectionAPI.getById(documentId);
-  return collection;
+  return collection as unknown as Collection;
 }

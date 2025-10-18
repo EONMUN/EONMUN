@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Product } from '@/lib/strapi';
 import { getProductBySlug } from '@/actions/product';
 import { PurchaseButton } from '@/components/PurchaseButton';
 import Image from '@/components/Image';
