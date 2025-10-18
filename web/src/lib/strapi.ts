@@ -1,3 +1,32 @@
+/**
+ * Strapi API Client Library
+ *
+ * IMPORTANT: This library should ONLY be used in server-side code (Server Actions).
+ *
+ * ⚠️ DO NOT import this directly in:
+ * - Client Components
+ * - Pages (use Server Actions instead)
+ * - Any code that runs in the browser
+ *
+ * ✅ Correct usage:
+ * - Import this in /actions/*.ts files only
+ * - Use the exported Server Actions from /actions in your pages/components
+ *
+ * Why?
+ * - Keeps API tokens and secrets secure on the server
+ * - Prevents exposing Strapi backend directly to clients
+ * - Centralizes data fetching logic in one place
+ *
+ * Example:
+ * ```typescript
+ * // ❌ WRONG - Don't do this in a page or client component
+ * import { productAPI } from '@/lib/strapi';
+ *
+ * // ✅ CORRECT - Use server actions instead
+ * import { getProductBySlug } from '@/actions/product';
+ * ```
+ */
+
 import { strapi } from '@strapi/client';
 
 const baseURL = (process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337') + '/api';
@@ -401,7 +430,12 @@ export const productAPI = {
   async getAll(params?: QueryParams) {
     try {
       const response = await strapiClient.collection('products').find({
-        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+        populate: {
+          images: true,
+          artwork: {
+            populate: ['default_image']
+          }
+        },
         ...params,
       });
       return {
@@ -418,7 +452,12 @@ export const productAPI = {
   async getById(documentId: string) {
     try {
       const response = await strapiClient.collection('products').findOne(documentId, {
-        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+        populate: {
+          images: true,
+          artwork: {
+            populate: ['default_image']
+          }
+        },
       });
       return response;
     } catch (error) {
@@ -432,7 +471,12 @@ export const productAPI = {
     try {
       const response = await strapiClient.collection('products').create({
         data,
-        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+        populate: {
+          images: true,
+          artwork: {
+            populate: ['default_image']
+          }
+        },
       });
       return {
         data: response.data as Product,
@@ -449,7 +493,12 @@ export const productAPI = {
     try {
       const response = await strapiClient.collection('products').update(documentId, {
         data,
-        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+        populate: {
+          images: true,
+          artwork: {
+            populate: ['default_image']
+          }
+        },
       });
       return {
         data: response.data as Product,
@@ -481,7 +530,12 @@ export const productAPI = {
             $eq: slug,
           },
         },
-        populate: ['images', 'artwork', 'artwork.default_image', 'collections'],
+        populate: {
+          images: true,
+          artwork: {
+            populate: ['default_image']
+          }
+        },
       });
       return (response?.data?.[0] as Product) || null;
     } catch (error) {

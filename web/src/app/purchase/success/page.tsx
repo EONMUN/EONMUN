@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { artworkAPI } from '@/lib/strapi';
+import { getArtworkBySlug } from '@/actions/artwork';
 import Image from '@/components/Image';
 
 interface SuccessPageProps {
@@ -15,11 +15,7 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
   // Fetch artwork details if slug is provided
   let artwork = null;
   if (artwork_slug) {
-    try {
-      artwork = await artworkAPI.getBySlug(artwork_slug);
-    } catch (error) {
-      console.error('Error fetching artwork:', error);
-    }
+    artwork = await getArtworkBySlug(artwork_slug);
   }
 
   return (

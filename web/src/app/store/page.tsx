@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { productAPI, Product } from '@/lib/strapi';
+import { Product } from '@/lib/strapi';
+import { getAllProducts } from '@/actions/product';
 import { PurchaseButton } from '@/components/PurchaseButton';
 import Image from '@/components/Image';
 
@@ -12,16 +13,10 @@ export const metadata: Metadata = {
 };
 
 async function getProducts() {
-  try {
-    const { data: products } = await productAPI.getAll({
-      populate: ['images', 'artwork', 'artwork.default_image'],
-      sort: ['featured:desc', 'createdAt:desc'],
-    });
-    return products;
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return [];
-  }
+  const { data: products } = await getAllProducts({
+    sort: ['featured:desc', 'createdAt:desc'],
+  });
+  return products;
 }
 
 export default async function StorePage() {

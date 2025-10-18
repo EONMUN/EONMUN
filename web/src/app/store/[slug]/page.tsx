@@ -1,9 +1,12 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { productAPI, Product } from '@/lib/strapi';
+import { Product } from '@/lib/strapi';
+import { getProductBySlug } from '@/actions/product';
 import { PurchaseButton } from '@/components/PurchaseButton';
 import Image from '@/components/Image';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -11,8 +14,8 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProduct(slug);
-  
+  const product = await getProductBySlug(slug);
+
   if (!product) {
     return {
       title: 'Product Not Found | EONMUN',
@@ -25,19 +28,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-async function getProduct(slug: string): Promise<Product | null> {
-  try {
-    const product = await productAPI.getBySlug(slug);
-    return product;
-  } catch (error) {
-    console.error('Error fetching product:', error);
-    return null;
-  }
-}
-
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     notFound();

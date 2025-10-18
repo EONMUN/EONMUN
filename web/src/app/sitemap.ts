@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
-import { collectionAPI, artworkAPI } from '@/lib/strapi';
+import { getAllCollections } from '@/actions/collection';
+import { getAllArtworks } from '@/actions/artwork';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Base URL for the site
@@ -35,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Fetch all collections
-    const collectionsResponse = await collectionAPI.getAll({
+    const collectionsResponse = await getAllCollections({
       populate: {
         artworks: true,
       },
@@ -51,7 +52,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // Fetch all artworks
-    const artworksResponse = await artworkAPI.getAll({
+    const artworksResponse = await getAllArtworks({
       populate: {
         default_image: true,
         collections: true,
