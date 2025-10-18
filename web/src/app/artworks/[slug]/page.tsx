@@ -1,6 +1,7 @@
 import Image from "@/components/Image";
 import Link from "next/link";
-import { Artwork, artworkAPI, Collection } from "@/lib/strapi";
+import { Artwork, Collection } from "@/lib/strapi";
+import { getArtworkBySlug } from "@/actions/artwork";
 import { notFound } from "next/navigation";
 import { PurchaseButton } from "@/components/PurchaseButton";
 
@@ -89,7 +90,7 @@ function ImageGallery({ artwork }: { artwork: Artwork }) {
 
 export default async function ArtworkPage(props: ArtworkPageProps) {
   const { slug } = await props.params;
-  const artwork = await artworkAPI.getBySlug(slug) as Artwork;
+  const artwork = await getArtworkBySlug(slug);
 
   if (!artwork) {
     notFound();
@@ -194,7 +195,7 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
 // Generate metadata for the page
 export async function generateMetadata({ params }: ArtworkPageProps) {
   const { slug } = await params;
-  const artwork = await artworkAPI.getBySlug(slug);
+  const artwork = await getArtworkBySlug(slug);
 
   if (!artwork) {
     return {

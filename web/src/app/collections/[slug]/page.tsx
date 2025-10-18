@@ -1,6 +1,7 @@
 import Image from "@/components/Image";
 import Link from "next/link";
-import { Artwork, collectionAPI } from "@/lib/strapi";
+import { Artwork } from "@/lib/strapi";
+import { getCollectionBySlug } from "@/actions/collection";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
 
@@ -49,7 +50,7 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
 
 export default async function CollectionPage(props: CollectionPageProps) {
   const { slug } = await props.params;
-  const collection = await collectionAPI.getBySlug(slug);
+  const collection = await getCollectionBySlug(slug);
 
   if (!collection) {
     notFound();
@@ -101,7 +102,7 @@ export default async function CollectionPage(props: CollectionPageProps) {
 // Generate metadata for the page
 export async function generateMetadata({ params }: CollectionPageProps) {
   const { slug } = await params;
-  const collection = await collectionAPI.getBySlug(slug);
+  const collection = await getCollectionBySlug(slug);
 
   if (!collection) {
     return {

@@ -1,9 +1,9 @@
-import { aboutAPI } from "@/lib/strapi";
+import { getAboutPage } from "@/actions/about";
 import { DynamicZone } from "@/components/DynamicZone";
 import { notFound } from "next/navigation";
 
 export default async function AboutPage() {
-  const about = await aboutAPI.get();
+  const about = await getAboutPage();
 
   if (!about) {
     notFound();

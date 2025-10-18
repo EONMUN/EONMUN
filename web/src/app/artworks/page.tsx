@@ -1,4 +1,4 @@
-import { artworkAPI } from "@/lib/strapi";
+import { getAllArtworks } from "@/actions/artwork";
 import Image from "@/components/Image";
 import Link from "next/link";
 import { Artwork } from "@/lib/strapi";
@@ -50,7 +50,7 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
 }
 
 export default async function ArtworksPage() {
-  const { data } = await artworkAPI.getAll({
+  const { data } = await getAllArtworks({
     populate: {
       default_image: true,
       collections: true,
@@ -97,7 +97,7 @@ export default async function ArtworksPage() {
 
 // Generate metadata for the page
 export async function generateMetadata() {
-  const { data } = await artworkAPI.getAll();
+  const { data } = await getAllArtworks();
   const artworkCount = data.length;
 
   return {
