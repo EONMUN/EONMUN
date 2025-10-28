@@ -1,0 +1,69 @@
+name: Integration Tests
+
+# Run integration tests on specific branches or when integration test files change
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - copilot/refactor-remove-strapi
+    paths:
+      - 'web/tests/**'
+      - 'web/src/database/**'
+      - 'web/drizzle/**'
+      - 'web/package.json'
+      - 'web/vitest.config.ts'
+      - '.github/workflows/integration-tests.yml'
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - 'web/tests/**'
+      - 'web/src/database/**'
+      - 'web/drizzle/**'
+      - 'web/package.json'
+      - 'web/vitest.config.ts'
+      - '.github/workflows/integration-tests.yml'
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+      
+      - name: Check if tests exist
+        id: check-tests
+        working-directory: web
+        run: |
+          if [ -d "tests" ] && [ -f "vitest.config.ts" ]; then
+            echo "tests_exist=true" >> $GITHUB_OUTPUT
+            echo "Integration tests found"
+          else
+            echo "tests_exist=false" >> $GITHUB_OUTPUT
+            echo "No integration tests found in this branch"
+          fi
+      
+      - name: Run integration tests
+        if: steps.check-tests.outputs.tests_exist == 'true'
+        working-directory: web
+        run: npm run test:run
+      
+      - name: Skip tests
+        if: steps.check-tests.outputs.tests_exist != 'true'
+        run: echo "Skipping integration tests - not configured in this branch"

@@ -43,3 +43,20 @@ jobs:
       - name: Install JavaScript dependencies
         working-directory: web
         run: npm ci
+
+      - name: Check if integration tests exist
+        id: check-tests
+        working-directory: web
+        run: |
+          if [ -d "tests" ] && [ -f "vitest.config.ts" ]; then
+            echo "tests_exist=true" >> $GITHUB_OUTPUT
+            echo "Integration tests found - they will be available for validation"
+          else
+            echo "tests_exist=false" >> $GITHUB_OUTPUT
+            echo "No integration tests in this branch"
+          fi
+
+      - name: Run integration tests
+        if: steps.check-tests.outputs.tests_exist == 'true'
+        working-directory: web
+        run: npm run test:run
