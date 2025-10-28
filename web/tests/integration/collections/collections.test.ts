@@ -102,12 +102,14 @@ describe('Collections Model Integration Tests', () => {
         description: 'Original description',
       }).returning().get();
 
-      // Wait a bit to ensure different timestamp
-      await new Promise(resolve => setTimeout(resolve, 10));
+      const createdTime = created.updatedAt.getTime();
 
+      // Use a specific future date for the update to ensure timestamp changes
+      const futureDate = new Date(createdTime + 1000);
+      
       const updated = testDb
         .update(collections)
-        .set({ name: 'Updated Name', description: 'Updated description', updatedAt: new Date() })
+        .set({ name: 'Updated Name', description: 'Updated description', updatedAt: futureDate })
         .where(eq(collections.id, created.id))
         .returning()
         .get();
@@ -115,7 +117,7 @@ describe('Collections Model Integration Tests', () => {
       expect(updated).toBeDefined();
       expect(updated?.name).toBe('Updated Name');
       expect(updated?.description).toBe('Updated description');
-      expect(updated?.updatedAt.getTime()).toBeGreaterThanOrEqual(created.updatedAt.getTime());
+      expect(updated?.updatedAt.getTime()).toBeGreaterThan(createdTime);
     });
 
     it('should delete a collection', async () => {
