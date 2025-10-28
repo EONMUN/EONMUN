@@ -4,7 +4,41 @@ This repository contains GitHub Actions workflows for building and releasing Doc
 
 ## Available Workflows
 
-### 1. Build and Release (`build-and-release.yml`)
+### 1. Integration Tests (`integration-tests.yml`)
+
+**Triggers:**
+- Push to `copilot/refactor-remove-strapi` branch
+- Pull requests to `main` or `master` branches
+- Changes to test files, database schema, or related files
+- Manual trigger via workflow_dispatch
+
+**Features:**
+- Runs integration tests using Vitest
+- Conditionally executes based on test presence
+- Uses in-memory SQLite database for testing
+- Validates database models and operations
+
+**Test Detection:**
+The workflow automatically detects if integration tests exist by checking for:
+- `web/tests/` directory
+- `web/vitest.config.ts` file
+
+If tests are not present, the workflow gracefully skips test execution.
+
+### 2. Copilot Setup Steps (`copilot-setup-steps.yml`)
+
+**Triggers:**
+- Manual trigger via workflow_dispatch
+- Push to workflow file
+- Pull request to workflow file
+
+**Features:**
+- Sets up environment for GitHub Copilot
+- Installs Node.js and dependencies
+- Runs integration tests when available
+- Provides test validation before Copilot operations
+
+### 3. Build and Release (`build-and-release.yml`)
 
 **Triggers:**
 - Push to `main` branch
@@ -25,7 +59,7 @@ This repository contains GitHub Actions workflows for building and releasing Doc
 - `<tag-name>` - Release tags
 - `<branch>-<sha>` - Commit-specific builds
 
-### 2. Simple Docker Build (`build-simple.yml`)
+### 4. Simple Docker Build (`build-simple.yml`)
 
 **Triggers:**
 - Manual trigger via GitHub Actions UI
