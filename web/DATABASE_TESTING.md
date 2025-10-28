@@ -1,17 +1,22 @@
 # Database and Testing Setup
 
-This project uses Drizzle ORM for database management and Vitest for testing.
+This project uses Drizzle ORM with SQLite for database management and Vitest for testing.
 
 ## Database
 
 ### Schema
-The database schema is defined in `src/db/schema.ts` and includes:
+The database schema is defined in `src/database/schema.ts` and includes:
 - **Collections**: Store collections of artworks
 - **Artworks**: Store individual artworks with references to collections
 
+### Migrations
+- Migrations are stored in the `drizzle/` directory
+- Generated from schema using `npm run db:generate`
+- Applied to database using `npm run db:migrate` or `npm run db:push`
+
 ### Database Location
-- Development: `data/eonmun.db`
-- Tests: In-memory SQLite database
+- Development: `data/eonmun.db` (SQLite)
+- Tests: In-memory SQLite database with migrations applied
 
 ### Available Commands
 ```bash
@@ -45,7 +50,8 @@ npm run test:run
 ### Test Structure
 - Integration tests are located in `tests/integration/`
 - Tests use in-memory SQLite databases for isolation
-- Each test suite creates fresh database instances
+- Each test suite creates fresh database instances with migrations applied
+- No manual SQL table creation needed - migrations are automatically applied
 
 ## Models
 

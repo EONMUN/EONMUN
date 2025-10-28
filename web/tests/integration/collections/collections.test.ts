@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { eq } from 'drizzle-orm';
-import { collections, artworks, collectionsRelations, artworksRelations } from '@/db/schema';
+import { collections, artworks, collectionsRelations, artworksRelations } from '@/database/schema';
+import path from 'path';
 
 // Use an in-memory database for tests
 const TEST_DB_PATH = ':memory:';
@@ -23,30 +25,8 @@ describe('Collections Model Integration Tests', () => {
       } 
     });
 
-    // Create tables
-    sqlite.exec(`
-      CREATE TABLE collections (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        description TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `);
-
-    sqlite.exec(`
-      CREATE TABLE artworks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        artist TEXT,
-        price INTEGER,
-        collection_id INTEGER,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (collection_id) REFERENCES collections(id)
-      )
-    `);
+    // Run migrations
+    migrate(testDb, { migrationsFolder: path.join(process.cwd(), 'drizzle') });
   });
 
   afterEach(() => {
