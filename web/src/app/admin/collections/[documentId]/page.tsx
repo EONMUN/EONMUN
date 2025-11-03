@@ -5,9 +5,10 @@ import { notFound } from 'next/navigation';
 export default async function EditCollectionPage({
   params,
 }: {
-  params: { documentId: string };
+  params: Promise<{ documentId: string }>;
 }) {
-  const collection = await getCollectionById(params.documentId);
+  const { documentId } = await params;
+  const collection = await getCollectionById(documentId);
 
   if (!collection) {
     notFound();

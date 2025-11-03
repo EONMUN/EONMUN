@@ -5,9 +5,10 @@ import { notFound } from 'next/navigation';
 export default async function EditArtworkPage({
   params,
 }: {
-  params: { documentId: string };
+  params: Promise<{ documentId: string }>;
 }) {
-  const artwork = await getArtworkById(params.documentId);
+  const { documentId } = await params;
+  const artwork = await getArtworkById(documentId);
 
   if (!artwork) {
     notFound();
