@@ -45,3 +45,9 @@ next-env.d.ts
 .dev.vars*
 
 .env
+
+# database files
+/data
+*.db
+*.db-shm
+*.db-wal
