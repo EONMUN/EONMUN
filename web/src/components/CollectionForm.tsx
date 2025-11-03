@@ -96,12 +96,18 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
   };
 
   const toggleArtwork = (documentId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      artworks: prev.artworks.includes(documentId)
-        ? prev.artworks.filter((id) => id !== documentId)
-        : [...prev.artworks, documentId],
-    }));
+    setFormData((prev) => {
+      const artworkSet = new Set(prev.artworks);
+      if (artworkSet.has(documentId)) {
+        artworkSet.delete(documentId);
+      } else {
+        artworkSet.add(documentId);
+      }
+      return {
+        ...prev,
+        artworks: Array.from(artworkSet),
+      };
+    });
   };
 
   return (
