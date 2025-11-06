@@ -2,6 +2,8 @@ import { getCollectionByIdAdmin } from '@/actions/admin/collection';
 import CollectionForm from '@/components/CollectionForm';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export default async function EditCollectionPage({
   params,
 }: {

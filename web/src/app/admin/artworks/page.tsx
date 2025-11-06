@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getAllArtworksAdmin } from '@/actions/admin/artwork';
 import { getCollectionByIdAdmin } from '@/actions/admin/collection';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ArtworksAdminPage() {
   const { data: artworks } = await getAllArtworksAdmin();
 

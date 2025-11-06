@@ -2,6 +2,8 @@ import { getArtworkByIdAdmin } from '@/actions/admin/artwork';
 import ArtworkForm from '@/components/ArtworkForm';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export default async function EditArtworkPage({
   params,
 }: {
