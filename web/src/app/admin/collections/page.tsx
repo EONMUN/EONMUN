@@ -1,11 +1,19 @@
 import Link from 'next/link';
-import { getAllCollections } from '@/actions/collection';
+import { getAllCollectionsAdmin, getCollectionWithArtworksAdmin } from '@/actions/admin/collection';
 
 export default async function CollectionsAdminPage() {
-  const { data: collections } = await getAllCollections({
-    populate: ['artworks'],
-    sort: ['createdAt:desc'],
-  });
+  const { data: collections } = await getAllCollectionsAdmin();
+
+  // Get artwork counts for each collection
+  const collectionsWithCounts = await Promise.all(
+    collections.map(async (collection) => {
+      const collectionWithArtworks = await getCollectionWithArtworksAdmin(collection.id);
+      return {
+        ...collection,
+        artworkCount: collectionWithArtworks?.artworks?.length || 0,
+      };
+    })
+  );
 
   return (
     <div>
@@ -52,10 +60,10 @@ export default async function CollectionsAdminPage() {
                   Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Artworks
+                  Description
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Artworks
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -63,39 +71,27 @@ export default async function CollectionsAdminPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {collections.map((collection) => (
+              {collectionsWithCounts.map((collection) => (
                 <tr key={collection.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-900">{collection.name}</div>
-                    <div className="text-sm text-gray-500">{collection.slug}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {collection.artworks?.length || 0} artwork{collection.artworks?.length !== 1 ? 's' : ''}
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-500 truncate max-w-sm">
+                      {collection.description || '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      collection.publishedAt 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {collection.publishedAt ? 'Published' : 'Draft'}
-                    </span>
+                    <div className="text-sm text-gray-900">
+                      {collection.artworkCount} artwork{collection.artworkCount !== 1 ? 's' : ''}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
-                      href={`/admin/collections/${collection.documentId}`}
+                      href={`/admin/collections/${collection.id}`}
                       className="text-blue-600 hover:text-blue-900 mr-4"
                     >
                       Edit
-                    </Link>
-                    <Link
-                      href={`/collections/${collection.slug}`}
-                      className="text-gray-600 hover:text-gray-900"
-                      target="_blank"
-                    >
-                      View
                     </Link>
                   </td>
                 </tr>

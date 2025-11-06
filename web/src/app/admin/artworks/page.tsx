@@ -1,11 +1,20 @@
 import Link from 'next/link';
-import { getAllArtworks } from '@/actions/artwork';
+import { getAllArtworksAdmin } from '@/actions/admin/artwork';
+import { getCollectionByIdAdmin } from '@/actions/admin/collection';
 
 export default async function ArtworksAdminPage() {
-  const { data: artworks } = await getAllArtworks({
-    populate: ['default_image'],
-    sort: ['createdAt:desc'],
-  });
+  const { data: artworks } = await getAllArtworksAdmin();
+
+  // Get collection names for each artwork
+  const artworksWithCollections = await Promise.all(
+    artworks.map(async (artwork) => {
+      if (artwork.collectionId) {
+        const collection = await getCollectionByIdAdmin(artwork.collectionId);
+        return { ...artwork, collection };
+      }
+      return { ...artwork, collection: null };
+    })
+  );
 
   return (
     <div>
@@ -49,16 +58,16 @@ export default async function ArtworksAdminPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Artwork
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Title
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Year
+                  Artist
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Price
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Collection
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -66,62 +75,33 @@ export default async function ArtworksAdminPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {artworks.map((artwork) => (
+              {artworksWithCollections.map((artwork) => (
                 <tr key={artwork.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {artwork.default_image ? (
-                      <img
-                        src={artwork.default_image.url}
-                        alt={artwork.title}
-                        className="h-12 w-12 rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded bg-gray-200 flex items-center justify-center">
-                        <svg
-                          className="w-6 h-6 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-900">{artwork.title}</div>
-                    <div className="text-sm text-gray-500">{artwork.slug}</div>
+                    {artwork.description && (
+                      <div className="text-sm text-gray-500 truncate max-w-xs">{artwork.description}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{artwork.year || '-'}</div>
+                    <div className="text-sm text-gray-900">{artwork.artist || '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      artwork.publishedAt 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {artwork.publishedAt ? 'Published' : 'Draft'}
-                    </span>
+                    <div className="text-sm text-gray-900">
+                      {artwork.price ? `$${(artwork.price / 100).toFixed(2)}` : '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {artwork.collection ? artwork.collection.name : '-'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
-                      href={`/admin/artworks/${artwork.documentId}`}
+                      href={`/admin/artworks/${artwork.id}`}
                       className="text-blue-600 hover:text-blue-900 mr-4"
                     >
                       Edit
-                    </Link>
-                    <Link
-                      href={`/artworks/${artwork.slug}`}
-                      className="text-gray-600 hover:text-gray-900"
-                      target="_blank"
-                    >
-                      View
                     </Link>
                   </td>
                 </tr>

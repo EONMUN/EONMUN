@@ -1,4 +1,4 @@
-import { getCollectionById } from '@/actions/collection';
+import { getCollectionByIdAdmin } from '@/actions/admin/collection';
 import CollectionForm from '@/components/CollectionForm';
 import { notFound } from 'next/navigation';
 
@@ -8,7 +8,13 @@ export default async function EditCollectionPage({
   params: Promise<{ documentId: string }>;
 }) {
   const { documentId } = await params;
-  const collection = await getCollectionById(documentId);
+  const id = parseInt(documentId);
+  
+  if (isNaN(id)) {
+    notFound();
+  }
+  
+  const collection = await getCollectionByIdAdmin(id);
 
   if (!collection) {
     notFound();

@@ -1,4 +1,4 @@
-import { getArtworkById } from '@/actions/artwork';
+import { getArtworkByIdAdmin } from '@/actions/admin/artwork';
 import ArtworkForm from '@/components/ArtworkForm';
 import { notFound } from 'next/navigation';
 
@@ -8,7 +8,13 @@ export default async function EditArtworkPage({
   params: Promise<{ documentId: string }>;
 }) {
   const { documentId } = await params;
-  const artwork = await getArtworkById(documentId);
+  const id = parseInt(documentId);
+  
+  if (isNaN(id)) {
+    notFound();
+  }
+  
+  const artwork = await getArtworkByIdAdmin(id);
 
   if (!artwork) {
     notFound();

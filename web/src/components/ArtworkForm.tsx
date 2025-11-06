@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createArtwork, updateArtwork, deleteArtwork } from '@/actions/artwork';
-import type { Artwork } from '@/lib/strapi';
+import { createArtworkAdmin, updateArtworkAdmin, deleteArtworkAdmin, type Artwork } from '@/actions/admin/artwork';
+import { getAllCollectionsAdmin, type Collection } from '@/actions/admin/collection';
 
 interface ArtworkFormProps {
   artwork?: Artwork;
@@ -13,11 +13,26 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [formData, setFormData] = useState({
     title: artwork?.title || '',
     description: artwork?.description || '',
-    year: artwork?.year?.toString() || '',
+    artist: artwork?.artist || '',
+    price: artwork?.price?.toString() || '',
+    collectionId: artwork?.collectionId?.toString() || '',
   });
+
+  useEffect(() => {
+    const loadCollections = async () => {
+      try {
+        const { data } = await getAllCollectionsAdmin();
+        setCollections(data);
+      } catch (err) {
+        console.error('Failed to load collections:', err);
+      }
+    };
+    loadCollections();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,14 +43,16 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
       const data = {
         title: formData.title,
         description: formData.description || undefined,
-        year: formData.year ? parseInt(formData.year) : undefined,
+        artist: formData.artist || undefined,
+        price: formData.price ? parseInt(formData.price) : undefined,
+        collectionId: formData.collectionId ? parseInt(formData.collectionId) : undefined,
       };
 
       let result;
       if (artwork) {
-        result = await updateArtwork(artwork.documentId, data);
+        result = await updateArtworkAdmin(artwork.id, data);
       } else {
-        result = await createArtwork(data);
+        result = await createArtworkAdmin(data);
       }
 
       if (result.success) {
@@ -63,7 +80,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
     setError(null);
 
     try {
-      const result = await deleteArtwork(artwork.documentId);
+      const result = await deleteArtworkAdmin(artwork.id);
       if (result.success) {
         router.push('/admin/artworks');
         router.refresh();
@@ -102,6 +119,20 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
       </div>
 
       <div>
+        <label htmlFor="artist" className="block text-sm font-medium text-gray-700 mb-2">
+          Artist
+        </label>
+        <input
+          type="text"
+          id="artist"
+          value={formData.artist}
+          onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Enter artist name"
+        />
+      </div>
+
+      <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
           Description
         </label>
@@ -116,19 +147,42 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
       </div>
 
       <div>
-        <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
-          Year
+        <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+          Price (in cents)
         </label>
         <input
           type="number"
-          id="year"
+          id="price"
           min="0"
-          max="2050"
-          value={formData.year}
-          onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+          value={formData.price}
+          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="e.g., 2024"
+          placeholder="e.g., 10000 for $100.00"
         />
+        {formData.price && (
+          <p className="text-sm text-gray-500 mt-1">
+            ${(parseInt(formData.price) / 100).toFixed(2)}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="collectionId" className="block text-sm font-medium text-gray-700 mb-2">
+          Collection
+        </label>
+        <select
+          id="collectionId"
+          value={formData.collectionId}
+          onChange={(e) => setFormData({ ...formData, collectionId: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">No collection</option>
+          {collections.map((collection) => (
+            <option key={collection.id} value={collection.id}>
+              {collection.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex items-center justify-between pt-6 border-t border-gray-200">
