@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db } from '@/database';
-import { artworks } from '@/database/schema';
+import { db, artworks } from '@/lib/db';
 
 export type Artwork = typeof artworks.$inferSelect;
 export type NewArtwork = typeof artworks.$inferInsert;
@@ -9,15 +8,15 @@ export type NewArtwork = typeof artworks.$inferInsert;
  * Get all artworks
  */
 export async function getAllArtworks(): Promise<Artwork[]> {
-  return db.select().from(artworks).all();
+  return db.select().from(artworks);
 }
 
 /**
  * Get an artwork by ID
  */
 export async function getArtworkById(id: number): Promise<Artwork | undefined> {
-  const result = db.select().from(artworks).where(eq(artworks.id, id)).get();
-  return result;
+  const results = await db.select().from(artworks).where(eq(artworks.id, id));
+  return results[0];
 }
 
 /**
@@ -36,8 +35,8 @@ export async function getArtworkWithCollection(id: number) {
  * Create a new artwork
  */
 export async function createArtwork(artwork: NewArtwork): Promise<Artwork> {
-  const result = db.insert(artworks).values(artwork).returning().get();
-  return result;
+  const results = await db.insert(artworks).values(artwork).returning();
+  return results[0];
 }
 
 /**
@@ -47,18 +46,17 @@ export async function updateArtwork(
   id: number,
   updates: Partial<NewArtwork>
 ): Promise<Artwork | undefined> {
-  const result = db
+  const results = await db
     .update(artworks)
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(artworks.id, id))
-    .returning()
-    .get();
-  return result;
+    .returning();
+  return results[0];
 }
 
 /**
  * Delete an artwork
  */
 export async function deleteArtwork(id: number): Promise<void> {
-  db.delete(artworks).where(eq(artworks.id, id)).run();
+  await db.delete(artworks).where(eq(artworks.id, id));
 }

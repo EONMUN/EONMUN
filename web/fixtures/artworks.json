@@ -1,0 +1,33 @@
+[
+  {
+    "title": "Soleil et Montagnes",
+    "slug": "soleil-et-montagnes",
+    "description": "A stunning landscape capturing the interplay of sunlight and mountains",
+    "artist": "Contemporary Artist",
+    "year": 2023,
+    "price": 250000,
+    "images": [
+      "/artworks/soleil-et-montagnes/5bba6-img_5201-scaled-1.webp",
+      "/artworks/soleil-et-montagnes/9ff11-img_5195.webp",
+      "/artworks/soleil-et-montagnes/ca342-img_5203-scaled-1.webp",
+      "/artworks/soleil-et-montagnes/what-s-inside-a-black-hole.jpg.jpeg"
+    ],
+    "collectionSlug": "featured",
+    "publishedAt": "2024-01-01T00:00:00Z",
+    "locale": "en"
+  },
+  {
+    "title": "Quiescent Citadel",
+    "slug": "quiescent-citadel",
+    "description": "An architectural study of stillness and permanence",
+    "artist": "Contemporary Artist",
+    "year": 2023,
+    "price": 300000,
+    "images": [
+      "/artworks/quiescent-citadel/quiescent-citadel.jpeg"
+    ],
+    "collectionSlug": "featured",
+    "publishedAt": "2024-01-01T00:00:00Z",
+    "locale": "en"
+  }
+]
