@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, ChangeEvent } from 'react';
 
 interface ImageUploadProps {
   onUploadComplete: (url: string) => void;
@@ -27,6 +27,16 @@ export default function ImageUpload({
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,7 +72,7 @@ export default function ImageUpload({
       formData.append('file', file);
 
       // Simulate progress (since we can't track actual upload progress with fetch)
-      const progressInterval = setInterval(() => {
+      progressIntervalRef.current = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 100);
 
@@ -71,7 +81,10 @@ export default function ImageUpload({
         body: formData,
       });
 
-      clearInterval(progressInterval);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       setUploadProgress(100);
 
       if (!response.ok) {
@@ -92,6 +105,9 @@ export default function ImageUpload({
       console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Failed to upload image');
       setPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } finally {
       setUploading(false);
       setTimeout(() => setUploadProgress(0), 1000);

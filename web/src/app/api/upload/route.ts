@@ -17,6 +17,9 @@ const ALLOWED_TYPES = [
   'image/svg+xml'
 ];
 
+// Upload directory for local development
+const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+
 // Generate unique filename
 function generateFileName(originalName: string): string {
   const ext = path.extname(originalName);
@@ -49,14 +52,12 @@ async function uploadToLocal(
   file: File,
   fileName: string
 ): Promise<string> {
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-
   // Create uploads directory if it doesn't exist
-  if (!existsSync(uploadDir)) {
-    await mkdir(uploadDir, { recursive: true });
+  if (!existsSync(UPLOAD_DIR)) {
+    await mkdir(UPLOAD_DIR, { recursive: true });
   }
 
-  const filePath = path.join(uploadDir, fileName);
+  const filePath = path.join(UPLOAD_DIR, fileName);
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     // Check if we're in production with R2 binding
     // @ts-expect-error - R2 binding is available in Cloudflare Workers
-    const r2Bucket = globalThis.R2_BUCKET || process.env.R2_BUCKET;
+    const r2Bucket = globalThis.R2_BUCKET;
 
     if (r2Bucket && typeof r2Bucket === 'object' && 'put' in r2Bucket) {
       // Production: Upload to R2
