@@ -77,7 +77,7 @@ class ArtworkFactory extends Factory<InsertArtwork> {
    * Create an artwork with multiple images
    */
   withImages(count: number = 3) {
-    const images: ArtworkImage[] = Array.from({ length: count }, (_, i) => ({
+    const images: ArtworkImage[] = Array.from({ length: count }, () => ({
       id: `img-${Factory.faker.string.uuid()}`,
       url: Factory.faker.image.url(),
       alternativeText: Factory.faker.lorem.sentence(),

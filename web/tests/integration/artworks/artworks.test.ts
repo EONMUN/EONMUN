@@ -80,7 +80,7 @@ describe('Artwork Model Integration Tests', () => {
     });
 
     it('should filter artworks by slug', async () => {
-      const artwork1 = await artworkFactory.create({ slug: 'test-artwork-1' });
+      await artworkFactory.create({ slug: 'test-artwork-1' });
       await artworkFactory.create({ slug: 'test-artwork-2' });
       await artworkFactory.create({ slug: 'test-artwork-3' });
 

@@ -113,7 +113,7 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
       ? collectionSlugToId.get(fixture.collectionSlug) || null
       : null;
 
-    const [created] = await database.insert(artworks).values({
+    await database.insert(artworks).values({
       title: fixture.title,
       slug: fixture.slug,
       description: fixture.description || null,
