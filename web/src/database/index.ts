@@ -1,17 +1,10 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './schema';
-import path from 'path';
-import fs from 'fs';
 
-// Database file location
-const DB_PATH = process.env.DATABASE_URL || path.join(process.cwd(), 'data', 'eonmun.db');
-
-// Ensure data directory exists
-const dbDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
+// Use in-memory database for local development and tests
+// Use file-based database only in production
+const DB_PATH = process.env.DATABASE_URL || ':memory:';
 
 // Create SQLite database connection
 const sqlite = new Database(DB_PATH);
