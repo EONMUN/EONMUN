@@ -83,7 +83,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+    if (!appUrl) {
+      console.error('Missing NEXT_PUBLIC_APP_URL environment variable');
+      return NextResponse.json(
+        {
+          error: 'Application configuration error',
+          details: 'NEXT_PUBLIC_APP_URL is not configured. Add it to your environment variables.',
+        },
+        { status: 500 }
+      );
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({

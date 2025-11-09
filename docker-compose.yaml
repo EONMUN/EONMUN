@@ -16,7 +16,7 @@ services:
     volumes:
       - ./strapi:/app
     env_file:
-      - strapi/.env
+      - .env
     command: npm run seed:example
     depends_on:
       strapi-init:
@@ -49,11 +49,10 @@ services:
     environment:
       - PORT=${WEB_INTERNAL_PORT:-3000}
     env_file:
-      - strapi/.env
-      - web/.env
+      - .env
     command: npm run dev
     ports:
-      - "${WEB_INTERNAL_PORT:-3000}:${WEB_INTERNAL_PORT:-3000}"
+      - "${WEB_PORT:-3002}:${WEB_INTERNAL_PORT:-3000}"
     depends_on:
       web-init:
         condition: service_completed_successfully

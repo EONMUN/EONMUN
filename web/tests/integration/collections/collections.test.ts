@@ -1,203 +1,219 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { collections, artworks, collectionsRelations, artworksRelations } from '@/database/schema';
-import path from 'path';
+import { db, collections, artworks } from '@/lib/db';
+import { collectionFactory } from '@/database/factories/collection.factory';
+import { artworkFactory } from '@/database/factories/artwork.factory';
+import { findCollections, findCollectionsWithArtworks } from '@/models/collection';
 
-// Use an in-memory database for tests
-const TEST_DB_PATH = ':memory:';
-
-describe('Collections Model Integration Tests', () => {
-  let testDb: ReturnType<typeof drizzle>;
-  let sqlite: Database.Database;
-
-  beforeEach(() => {
-    // Create a fresh in-memory database for each test
-    sqlite = new Database(TEST_DB_PATH);
-    testDb = drizzle(sqlite, { 
-      schema: { 
-        collections, 
-        artworks, 
-        collectionsRelations, 
-        artworksRelations 
-      } 
-    });
-
-    // Run migrations
-    migrate(testDb, { migrationsFolder: path.join(process.cwd(), 'drizzle') });
+describe('Collection Model Integration Tests', () => {
+  beforeEach(async () => {
+    // Clear all tables before each test to ensure isolation
+    await db.delete(artworks);
+    await db.delete(collections);
   });
 
-  afterEach(() => {
-    // Close the database connection
-    sqlite.close();
-  });
-
-  describe('Collection CRUD operations', () => {
-    it('should create a new collection', async () => {
-      const newCollection = {
-        name: 'Modern Art Collection',
-        description: 'A collection of contemporary artworks',
-      };
-
-      const collection = testDb.insert(collections).values(newCollection).returning().get();
+  describe('Collection Factory', () => {
+    it('should create collection with default values', async () => {
+      const collection = await collectionFactory.create();
 
       expect(collection).toBeDefined();
-      expect(collection.id).toBeDefined();
-      expect(collection.name).toBe('Modern Art Collection');
-      expect(collection.description).toBe('A collection of contemporary artworks');
+      expect(collection.id).toBeGreaterThan(0);
+      expect(collection.name).toBeDefined();
+      expect(collection.slug).toBeDefined();
+      expect(collection.locale).toBe('en');
+      expect(collection.publishedAt).toBeNull(); // Default is draft
       expect(collection.createdAt).toBeInstanceOf(Date);
       expect(collection.updatedAt).toBeInstanceOf(Date);
     });
 
-    it('should get all collections', async () => {
-      // Create test data
-      testDb.insert(collections).values({ name: 'Collection 1', description: 'First collection' }).run();
-      testDb.insert(collections).values({ name: 'Collection 2', description: 'Second collection' }).run();
+    it('should create published collection using trait', async () => {
+      const collection = await collectionFactory.published().create();
 
-      const allCollections = testDb.select().from(collections).all();
-
-      expect(allCollections).toHaveLength(2);
-      expect(allCollections[0].name).toBe('Collection 1');
-      expect(allCollections[1].name).toBe('Collection 2');
+      expect(collection.publishedAt).toBeInstanceOf(Date);
     });
 
-    it('should get a collection by ID', async () => {
-      const created = testDb.insert(collections).values({
-        name: 'Test Collection',
-        description: 'Test description',
-      }).returning().get();
+    it('should create draft collection using trait', async () => {
+      const collection = await collectionFactory.draft().create();
 
-      const collection = testDb.select().from(collections).where(eq(collections.id, created.id)).get();
-
-      expect(collection).toBeDefined();
-      expect(collection?.id).toBe(created.id);
-      expect(collection?.name).toBe('Test Collection');
+      expect(collection.publishedAt).toBeNull();
     });
 
-    it('should update a collection', async () => {
-      const created = testDb.insert(collections).values({
-        name: 'Original Name',
-        description: 'Original description',
-      }).returning().get();
+    it('should create multiple collections', async () => {
+      const collections = await collectionFactory.createList(5);
 
-      const createdTime = created.updatedAt.getTime();
-
-      // Use a specific future date for the update to ensure timestamp changes
-      const futureDate = new Date(createdTime + 1000);
-      
-      const updated = testDb
-        .update(collections)
-        .set({ name: 'Updated Name', description: 'Updated description', updatedAt: futureDate })
-        .where(eq(collections.id, created.id))
-        .returning()
-        .get();
-
-      expect(updated).toBeDefined();
-      expect(updated?.name).toBe('Updated Name');
-      expect(updated?.description).toBe('Updated description');
-      expect(updated?.updatedAt.getTime()).toBeGreaterThan(createdTime);
-    });
-
-    it('should delete a collection', async () => {
-      const created = testDb.insert(collections).values({
-        name: 'To Be Deleted',
-        description: 'This will be deleted',
-      }).returning().get();
-
-      testDb.delete(collections).where(eq(collections.id, created.id)).run();
-
-      const collection = testDb.select().from(collections).where(eq(collections.id, created.id)).get();
-      expect(collection).toBeUndefined();
+      expect(collections).toHaveLength(5);
+      collections.forEach((collection) => {
+        expect(collection.id).toBeGreaterThan(0);
+        expect(collection.slug).toBeDefined();
+      });
     });
   });
 
-  describe('Collection with Artworks queries', () => {
-    it('should query artworks from a collection', async () => {
-      // Create a collection
-      const collection = testDb.insert(collections).values({
-        name: 'Art Gallery',
-        description: 'A curated collection of fine art',
-      }).returning().get();
+  describe('findCollections - Filtering', () => {
+    it('should return all collections when no filters provided', async () => {
+      await collectionFactory.createList(3);
 
-      // Insert artworks
-      testDb.insert(artworks).values({
+      const result = await findCollections({});
+
+      expect(result).toHaveLength(3);
+    });
+
+    it('should filter collections by slug', async () => {
+      await collectionFactory.create({ slug: 'modern-art' });
+      await collectionFactory.create({ slug: 'classic-art' });
+
+      const result = await findCollections({ slug: ['modern-art'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].slug).toBe('modern-art');
+    });
+
+    it('should filter collections by multiple slugs', async () => {
+      await collectionFactory.create({ slug: 'collection-1' });
+      await collectionFactory.create({ slug: 'collection-2' });
+      await collectionFactory.create({ slug: 'collection-3' });
+
+      const result = await findCollections({ slug: ['collection-1', 'collection-3'] });
+
+      expect(result).toHaveLength(2);
+      expect(result.map((c) => c.slug)).toContain('collection-1');
+      expect(result.map((c) => c.slug)).toContain('collection-3');
+    });
+
+    it('should filter collections by published status (published)', async () => {
+      await collectionFactory.published().create();
+      await collectionFactory.published().create();
+      await collectionFactory.draft().create();
+
+      const result = await findCollections({ published: true });
+
+      expect(result).toHaveLength(2);
+      result.forEach((collection) => {
+        expect(collection.publishedAt).toBeInstanceOf(Date);
+      });
+    });
+
+    it('should filter collections by published status (drafts)', async () => {
+      await collectionFactory.published().create();
+      await collectionFactory.draft().create();
+      await collectionFactory.draft().create();
+
+      const result = await findCollections({ published: false });
+
+      expect(result).toHaveLength(2);
+      result.forEach((collection) => {
+        expect(collection.publishedAt).toBeNull();
+      });
+    });
+
+    it('should filter collections by locale', async () => {
+      await collectionFactory.create({ locale: 'en' });
+      await collectionFactory.create({ locale: 'en' });
+      await collectionFactory.create({ locale: 'fr' });
+
+      const result = await findCollections({ locale: ['en'] });
+
+      expect(result).toHaveLength(2);
+      result.forEach((collection) => {
+        expect(collection.locale).toBe('en');
+      });
+    });
+  });
+
+  describe('Collection CRUD Operations', () => {
+    it('should create a collection', async () => {
+      const created = await collectionFactory.create({
+        name: 'Modern Art Collection',
+        description: 'A collection of contemporary artworks',
+      });
+
+      expect(created.id).toBeGreaterThan(0);
+      expect(created.name).toBe('Modern Art Collection');
+      expect(created.description).toBe('A collection of contemporary artworks');
+    });
+
+    it('should update a collection', async () => {
+      const created = await collectionFactory.create({ name: 'Original Name' });
+
+      const updated = await db
+        .update(collections)
+        .set({ name: 'Updated Name' })
+        .where(eq(collections.id, created.id))
+        .returning();
+
+      expect(updated[0]?.name).toBe('Updated Name');
+    });
+
+    it('should delete a collection', async () => {
+      const created = await collectionFactory.create();
+
+      await db
+        .delete(collections)
+        .where(eq(collections.id, created.id));
+
+      const result = await findCollections({ id: [created.id] });
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('findCollectionsWithArtworks - Relationships', () => {
+    it('should return collection with empty artworks array when no artworks linked', async () => {
+      await collectionFactory.create({ slug: 'empty-collection' });
+
+      const result = await findCollectionsWithArtworks({ slug: ['empty-collection'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].artworks).toEqual([]);
+    });
+
+    it('should return collection with artworks when linked', async () => {
+      const collection = await collectionFactory.create({ name: 'Art Gallery' });
+
+      await artworkFactory.withCollection(collection.id).create({
         title: 'Starry Night',
-        description: 'A beautiful night sky painting',
         artist: 'Vincent van Gogh',
-        price: 100000000, // $1,000,000 in cents
-        collectionId: collection.id,
-      }).run();
+      });
 
-      testDb.insert(artworks).values({
+      await artworkFactory.withCollection(collection.id).create({
         title: 'Mona Lisa',
-        description: 'Famous portrait painting',
         artist: 'Leonardo da Vinci',
-        price: 200000000, // $2,000,000 in cents
-        collectionId: collection.id,
-      }).run();
+      });
 
-      // Query artworks by collection ID
-      const artworksList = testDb.select().from(artworks).where(eq(artworks.collectionId, collection.id)).all();
+      const result = await findCollectionsWithArtworks({ id: [collection.id] });
 
-      expect(artworksList).toHaveLength(2);
-      expect(artworksList[0].title).toBe('Starry Night');
-      expect(artworksList[0].artist).toBe('Vincent van Gogh');
-      expect(artworksList[0].price).toBe(100000000);
-      expect(artworksList[1].title).toBe('Mona Lisa');
-      expect(artworksList[1].artist).toBe('Leonardo da Vinci');
-      expect(artworksList[1].price).toBe(200000000);
+      expect(result).toHaveLength(1);
+      expect(result[0].artworks).toHaveLength(2);
+      expect(result[0].artworks[0].title).toBe('Starry Night');
+      expect(result[0].artworks[1].title).toBe('Mona Lisa');
     });
 
-    it('should get collection with nested artworks using query API', async () => {
-      // Create a collection
-      const collection = testDb.insert(collections).values({
-        name: 'Impressionist Collection',
-        description: 'Collection of impressionist paintings',
-      }).returning().get();
+    it('should filter collections with artworks by slug', async () => {
+      const collection1 = await collectionFactory.create({ slug: 'impressionist' });
+      const collection2 = await collectionFactory.create({ slug: 'modern' });
 
-      // Insert artworks
-      testDb.insert(artworks).values([
-        {
-          title: 'Water Lilies',
-          description: 'Monet\'s water lilies series',
-          artist: 'Claude Monet',
-          price: 50000000,
-          collectionId: collection.id,
-        },
-        {
-          title: 'Dance at Le Moulin de la Galette',
-          description: 'Renoir\'s famous dance scene',
-          artist: 'Pierre-Auguste Renoir',
-          price: 75000000,
-          collectionId: collection.id,
-        },
-      ]).run();
+      await artworkFactory.withCollection(collection1.id).create({ title: 'Water Lilies' });
+      await artworkFactory.withCollection(collection2.id).create({ title: 'Abstract Art' });
 
-      // Verify we can query collection directly
-      const collectionCheck = testDb.select().from(collections).where(eq(collections.id, collection.id)).get();
-      expect(collectionCheck).toBeDefined();
-      expect(collectionCheck?.name).toBe('Impressionist Collection');
+      const result = await findCollectionsWithArtworks({ slug: ['impressionist'] });
 
-      // Verify artworks are there
-      const artworksList = testDb.select().from(artworks).where(eq(artworks.collectionId, collection.id)).all();
-      expect(artworksList).toHaveLength(2);
-      expect(artworksList[0].title).toBe('Water Lilies');
-      expect(artworksList[1].title).toBe('Dance at Le Moulin de la Galette');
+      expect(result).toHaveLength(1);
+      expect(result[0].slug).toBe('impressionist');
+      expect(result[0].artworks).toHaveLength(1);
+      expect(result[0].artworks[0].title).toBe('Water Lilies');
     });
 
-    it('should return empty array for collection with no artworks', async () => {
-      // Create a collection without artworks
-      const collection = testDb.insert(collections).values({
-        name: 'Empty Collection',
-        description: 'This collection has no artworks yet',
-      }).returning().get();
+    it('should return multiple collections with their artworks', async () => {
+      const collection1 = await collectionFactory.create({ name: 'Collection 1' });
+      const collection2 = await collectionFactory.create({ name: 'Collection 2' });
 
-      const artworksList = testDb.select().from(artworks).where(eq(artworks.collectionId, collection.id)).all();
+      await artworkFactory.withCollection(collection1.id).createList(2);
+      await artworkFactory.withCollection(collection2.id).createList(3);
 
-      expect(artworksList).toHaveLength(0);
-      expect(artworksList).toEqual([]);
+      const result = await findCollectionsWithArtworks({});
+
+      expect(result).toHaveLength(2);
+      expect(result.find((c) => c.id === collection1.id)?.artworks).toHaveLength(2);
+      expect(result.find((c) => c.id === collection2.id)?.artworks).toHaveLength(3);
     });
   });
 });

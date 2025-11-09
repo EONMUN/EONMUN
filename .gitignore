@@ -1,2 +1,4 @@
 # Secrets
 deployment/secrets.yaml
+.env
+.env.production
