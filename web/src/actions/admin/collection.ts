@@ -3,10 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import * as collectionModel from '@/models/collections';
 import type { Collection, NewCollection } from '@/models/collections';
+import { guardAuth, guardAdmin } from '@/lib/actions';
 
 export type { Collection };
 
 export async function getAllCollectionsAdmin() {
+  const authError = await guardAuth();
+  if (authError) return authError;
+
   try {
     const collections = await collectionModel.getAllCollections();
     return { data: collections };
@@ -17,6 +21,9 @@ export async function getAllCollectionsAdmin() {
 }
 
 export async function getCollectionByIdAdmin(id: number) {
+  const authError = await guardAuth();
+  if (authError) return null;
+
   try {
     const collection = await collectionModel.getCollectionById(id);
     return collection;
@@ -27,6 +34,9 @@ export async function getCollectionByIdAdmin(id: number) {
 }
 
 export async function getCollectionWithArtworksAdmin(id: number) {
+  const authError = await guardAuth();
+  if (authError) return null;
+
   try {
     const collection = await collectionModel.getCollectionWithArtworks(id);
     return collection;
@@ -37,6 +47,9 @@ export async function getCollectionWithArtworksAdmin(id: number) {
 }
 
 export async function createCollectionAdmin(data: Omit<NewCollection, 'createdAt' | 'updatedAt'>) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
   try {
     const collection = await collectionModel.createCollection(data);
     revalidatePath('/admin/collections');
@@ -48,6 +61,9 @@ export async function createCollectionAdmin(data: Omit<NewCollection, 'createdAt
 }
 
 export async function updateCollectionAdmin(id: number, data: Partial<Omit<NewCollection, 'createdAt' | 'updatedAt'>>) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
   try {
     const collection = await collectionModel.updateCollection(id, data);
     if (!collection) {
@@ -62,6 +78,9 @@ export async function updateCollectionAdmin(id: number, data: Partial<Omit<NewCo
 }
 
 export async function deleteCollectionAdmin(id: number) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
   try {
     await collectionModel.deleteCollection(id);
     revalidatePath('/admin/collections');

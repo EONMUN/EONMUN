@@ -3,10 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import * as artworkModel from '@/models/artworks';
 import type { Artwork, NewArtwork } from '@/models/artworks';
+import { guardAuth, guardAdmin } from '@/lib/actions';
 
 export type { Artwork };
 
 export async function getAllArtworksAdmin() {
+  const authError = await guardAuth();
+  if (authError) return authError;
+
   try {
     const artworks = await artworkModel.getAllArtworks();
     return { data: artworks };
@@ -17,6 +21,9 @@ export async function getAllArtworksAdmin() {
 }
 
 export async function getArtworkByIdAdmin(id: number) {
+  const authError = await guardAuth();
+  if (authError) return null;
+
   try {
     const artwork = await artworkModel.getArtworkById(id);
     return artwork;
@@ -27,6 +34,9 @@ export async function getArtworkByIdAdmin(id: number) {
 }
 
 export async function createArtworkAdmin(data: Omit<NewArtwork, 'createdAt' | 'updatedAt'>) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
   try {
     const artwork = await artworkModel.createArtwork(data);
     revalidatePath('/admin/artworks');
@@ -38,6 +48,9 @@ export async function createArtworkAdmin(data: Omit<NewArtwork, 'createdAt' | 'u
 }
 
 export async function updateArtworkAdmin(id: number, data: Partial<Omit<NewArtwork, 'createdAt' | 'updatedAt'>>) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
   try {
     const artwork = await artworkModel.updateArtwork(id, data);
     if (!artwork) {
@@ -52,6 +65,9 @@ export async function updateArtworkAdmin(id: number, data: Partial<Omit<NewArtwo
 }
 
 export async function deleteArtworkAdmin(id: number) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
   try {
     await artworkModel.deleteArtwork(id);
     revalidatePath('/admin/artworks');

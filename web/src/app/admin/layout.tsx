@@ -1,10 +1,14 @@
 import Link from 'next/link';
+import { requireAdmin } from '@/lib/auth-utils';
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // This will throw notFound() if user is not admin
+  await requireAdmin();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Navigation */}
