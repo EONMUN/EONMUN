@@ -10,7 +10,7 @@
  */
 
 import type { Database } from '@/lib/db';
-import { collections, artworks } from '@/lib/db/schema';
+import { collections, artworks, users } from '@/lib/db/schema';
 import path from 'path';
 import fs from 'fs';
 
@@ -50,7 +50,33 @@ async function clearData(database: Database) {
   console.log('🗑️  Clearing existing data...');
   await database.delete(artworks);
   await database.delete(collections);
+  await database.delete(users);
   console.log('✅ Data cleared');
+}
+
+/**
+ * Load development users for authentication
+ */
+async function loadUsers(database: Database) {
+  console.log('👥 Loading development users...');
+
+  // Create admin user
+  const [adminUser] = await database.insert(users).values({
+    email: 'admin@example.com',
+    name: 'Admin User',
+    admin: true,
+    image: 'https://avatars.githubusercontent.com/u/67470890?s=200&v=4',
+  }).returning();
+  console.log(`  ✓ Created admin user: ${adminUser.email}`);
+
+  // Create regular user
+  const [regularUser] = await database.insert(users).values({
+    email: 'user@example.com',
+    name: 'Regular User',
+    admin: false,
+    image: 'https://avatars.githubusercontent.com/u/67470890?s=200&v=4',
+  }).returning();
+  console.log(`  ✓ Created regular user: ${regularUser.email}`);
 }
 
 /**
@@ -141,7 +167,11 @@ export async function loadFixtures(database: Database) {
   await clearData(database);
   console.log('');
 
-  // Load collections first (for foreign key relationships)
+  // Load users first (for authentication)
+  await loadUsers(database);
+  console.log('');
+
+  // Load collections (for foreign key relationships)
   const collectionSlugToId = await loadCollections(database);
   console.log('');
 

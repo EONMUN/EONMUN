@@ -1,6 +1,9 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
+// Export auth tables
+export * from './schema.auth';
+
 // Collections table
 export const collections = sqliteTable('collections', {
   id: integer('id').primaryKey({ autoIncrement: true }),

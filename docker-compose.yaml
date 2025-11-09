@@ -29,10 +29,10 @@ services:
       service: strapi-seed
     environment:
       - HOST=0.0.0.0
-      - PORT=${STRAPI_INTERNAL_PORT:-1337}
+      - PORT=${STRAPI_PORT:-1337}
     command: npm run dev
     ports:
-      - "${STRAPI_PORT:-1337}:${STRAPI_INTERNAL_PORT:-1337}"
+      - "${STRAPI_PORT:-1337}:${STRAPI_PORT:-1337}"
 
   web-init:
     build:
@@ -47,12 +47,12 @@ services:
     extends:
       service: web-init
     environment:
-      - PORT=${WEB_INTERNAL_PORT:-3000}
+      - PORT=${WEB_PORT:-3000}
     env_file:
       - .env
-    command: npm run dev
+    command: npm run dev -- --port ${WEB_PORT:-3000}
     ports:
-      - "${WEB_PORT:-3002}:${WEB_INTERNAL_PORT:-3000}"
+      - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
     depends_on:
       web-init:
         condition: service_completed_successfully
