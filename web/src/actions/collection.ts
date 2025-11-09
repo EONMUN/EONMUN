@@ -1,6 +1,6 @@
 'use server';
 
-import { findCollections, findCollectionsWithArtworks } from '@/models/collection';
+import { findCollectionsWithArtworks } from '@/models/collection';
 import type { CollectionWithArtworks } from '@/models/collection';
 
 /**

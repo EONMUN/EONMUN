@@ -46,9 +46,3 @@ async function createDatabaseClient() {
 export const db = await createDatabaseClient();
 
 export type Database = typeof db;
-
-// Utility function to handle both array and ResultSet return types from .returning()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getResultArray(result: any[] | { rows: any[] }): any[] {
-  return Array.isArray(result) ? result : result.rows;
-}
