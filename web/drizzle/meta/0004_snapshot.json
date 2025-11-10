@@ -1,9 +1,112 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "daa930b6-af9d-44af-82ee-318c13b050c8",
+  "id": "7eb127dd-cf55-48b6-b5b1-aefaf4afa22c",
   "prevId": "85871e9d-a686-41f8-9d8e-e18fdd72f355",
   "tables": {
+    "artwork_uploads": {
+      "name": "artwork_uploads",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "artwork_id": {
+          "name": "artwork_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "upload_id": {
+          "name": "upload_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_default": {
+          "name": "is_default",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "artwork_uploads_artwork_id_idx": {
+          "name": "artwork_uploads_artwork_id_idx",
+          "columns": [
+            "artwork_id"
+          ],
+          "isUnique": false
+        },
+        "artwork_uploads_upload_id_idx": {
+          "name": "artwork_uploads_upload_id_idx",
+          "columns": [
+            "upload_id"
+          ],
+          "isUnique": false
+        },
+        "artwork_uploads_artwork_default_idx": {
+          "name": "artwork_uploads_artwork_default_idx",
+          "columns": [
+            "artwork_id",
+            "is_default"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "artwork_uploads_artwork_id_artworks_id_fk": {
+          "name": "artwork_uploads_artwork_id_artworks_id_fk",
+          "tableFrom": "artwork_uploads",
+          "tableTo": "artworks",
+          "columnsFrom": [
+            "artwork_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "artwork_uploads_upload_id_uploads_id_fk": {
+          "name": "artwork_uploads_upload_id_uploads_id_fk",
+          "tableFrom": "artwork_uploads",
+          "tableTo": "uploads",
+          "columnsFrom": [
+            "upload_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "artworks": {
       "name": "artworks",
       "columns": {
@@ -304,21 +407,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "artwork_id": {
-          "name": "artwork_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "is_default": {
-          "name": "is_default",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
         "is_deleted": {
           "name": "is_deleted",
           "type": "integer",
@@ -350,44 +438,15 @@
           ],
           "isUnique": false
         },
-        "uploads_artwork_id_idx": {
-          "name": "uploads_artwork_id_idx",
-          "columns": [
-            "artwork_id"
-          ],
-          "isUnique": false
-        },
         "uploads_is_deleted_idx": {
           "name": "uploads_is_deleted_idx",
           "columns": [
             "is_deleted"
           ],
           "isUnique": false
-        },
-        "uploads_artwork_default_idx": {
-          "name": "uploads_artwork_default_idx",
-          "columns": [
-            "artwork_id",
-            "is_default"
-          ],
-          "isUnique": false
         }
       },
-      "foreignKeys": {
-        "uploads_artwork_id_artworks_id_fk": {
-          "name": "uploads_artwork_id_artworks_id_fk",
-          "tableFrom": "uploads",
-          "tableTo": "artworks",
-          "columnsFrom": [
-            "artwork_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

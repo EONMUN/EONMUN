@@ -66,12 +66,6 @@ export const uploads = sqliteTable('uploads', {
   alternativeText: text('alternative_text'),
   caption: text('caption'),
 
-  // Relationships
-  artworkId: integer('artwork_id').references(() => artworks.id, { onDelete: 'set null' }),
-
-  // Default flag - indicates which upload should show in the UI
-  isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
-
   // Soft delete flag
   isDeleted: integer('is_deleted', { mode: 'boolean' }).notNull().default(false),
 
@@ -84,9 +78,29 @@ export const uploads = sqliteTable('uploads', {
     .$defaultFn(() => new Date()),
 }, (table) => ({
   storagePathIdx: index('uploads_storage_path_idx').on(table.storagePath),
-  artworkIdIdx: index('uploads_artwork_id_idx').on(table.artworkId),
   isDeletedIdx: index('uploads_is_deleted_idx').on(table.isDeleted),
-  artworkDefaultIdx: index('uploads_artwork_default_idx').on(table.artworkId, table.isDefault),
+}));
+
+// Artwork Uploads join table - manages many-to-many relationship between artworks and uploads
+export const artworkUploads = sqliteTable('artwork_uploads', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  artworkId: integer('artwork_id').notNull().references(() => artworks.id, { onDelete: 'cascade' }),
+  uploadId: integer('upload_id').notNull().references(() => uploads.id, { onDelete: 'cascade' }),
+
+  // Default flag - indicates which upload should show in the UI for this artwork
+  isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+}, (table) => ({
+  artworkIdIdx: index('artwork_uploads_artwork_id_idx').on(table.artworkId),
+  uploadIdIdx: index('artwork_uploads_upload_id_idx').on(table.uploadId),
+  artworkDefaultIdx: index('artwork_uploads_artwork_default_idx').on(table.artworkId, table.isDefault),
 }));
 
 // Define relations
@@ -99,12 +113,20 @@ export const artworksRelations = relations(artworks, ({ one, many }) => ({
     fields: [artworks.collectionId],
     references: [collections.id],
   }),
-  uploads: many(uploads),
+  artworkUploads: many(artworkUploads),
 }));
 
-export const uploadsRelations = relations(uploads, ({ one }) => ({
+export const uploadsRelations = relations(uploads, ({ many }) => ({
+  artworkUploads: many(artworkUploads),
+}));
+
+export const artworkUploadsRelations = relations(artworkUploads, ({ one }) => ({
   artwork: one(artworks, {
-    fields: [uploads.artworkId],
+    fields: [artworkUploads.artworkId],
     references: [artworks.id],
+  }),
+  upload: one(uploads, {
+    fields: [artworkUploads.uploadId],
+    references: [uploads.id],
   }),
 }));
