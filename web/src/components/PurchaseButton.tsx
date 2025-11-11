@@ -1,39 +1,49 @@
 'use client';
 
 import { useState } from 'react';
-import { Artwork, Product } from '@/lib/strapi';
+import type { ArtworkWithCollections } from '@/models/artwork';
+import type { Product } from '@/lib/strapi';
 import { getStripe, ARTWORK_PRICE } from '@/lib/stripe';
 
-interface PurchaseButtonProps {
-  item: Artwork | Product;
-  type: 'artwork' | 'product';
+// Minimal artwork type for purchase button
+interface PurchaseableArtwork {
+  id: number;
+  title: string;
+  slug: string;
+}
+
+// Props for artwork purchase
+interface ArtworkPurchaseProps {
+  artwork: PurchaseableArtwork | ArtworkWithCollections;
   className?: string;
 }
 
-// Legacy interface for backward compatibility
-interface LegacyPurchaseButtonProps {
-  artwork: Artwork;
+// Props for product purchase
+interface ProductPurchaseProps {
+  item: Product;
+  type: 'product';
   className?: string;
 }
 
-export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButtonProps) {
-  // Handle legacy props
-  const isLegacy = 'artwork' in props;
-  const item = isLegacy ? props.artwork : props.item;
-  const type = isLegacy ? 'artwork' : props.type;
-  const className = props.className || '';
-  
+type PurchaseButtonProps = ArtworkPurchaseProps | ProductPurchaseProps;
+
+export function PurchaseButton(props: PurchaseButtonProps) {
   const [loading, setLoading] = useState(false);
+
+  // Determine if this is a product or artwork
+  const isProduct = 'type' in props && props.type === 'product';
+  const item = isProduct ? props.item : (props as ArtworkPurchaseProps).artwork;
+  const className = props.className || '';
 
   const handlePurchase = async () => {
     try {
       setLoading(true);
       
-      // Determine price and item details
-      const price = type === 'product' ? (item as Product).price : ARTWORK_PRICE;
-      const itemId = item.documentId;
+      // Determine item details
+      const price = isProduct ? (item as Product).price : ARTWORK_PRICE;
+      const itemId = isProduct ? (item as Product).documentId : (item as PurchaseableArtwork).id.toString();
       const itemTitle = item.title;
-      const itemSlug = item.slug;
+      const itemSlug = isProduct ? (item as Product).slug : (item as PurchaseableArtwork).slug;
       
       // Create checkout session
       const response = await fetch('/api/checkout', {
@@ -42,11 +52,11 @@ export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButton
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          artworkId: itemId, // Keep artworkId for backward compatibility
+          artworkId: itemId,
           artworkTitle: itemTitle,
           artworkSlug: itemSlug,
           price: price,
-          itemType: type,
+          itemType: isProduct ? 'product' : 'artwork',
         }),
       });
 
@@ -85,10 +95,10 @@ export function PurchaseButton(props: PurchaseButtonProps | LegacyPurchaseButton
     <div className={className}>
       <div className="mb-4">
         <div className="text-3xl font-bold text-on-background mb-2" data-testid="product-price">
-          ${(type === 'product' ? (item as Product).price : ARTWORK_PRICE).toLocaleString()}
+          ${(isProduct ? (item as Product).price : ARTWORK_PRICE).toLocaleString()}
         </div>
         <p className="text-sm text-on-surface-variant">
-          {type === 'product' 
+          {isProduct 
             ? (item as Product).description || 'Product with secure delivery'
             : 'Digital artwork with certificate of authenticity'
           }

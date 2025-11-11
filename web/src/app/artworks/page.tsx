@@ -1,10 +1,10 @@
 import { getAllArtworks } from "@/actions/artwork";
 import Image from "@/components/Image";
 import Link from "next/link";
-import { Artwork } from "@/lib/strapi";
+import type { ArtworkWithCollections } from "@/models/artwork";
 import { ARTWORK_PRICE } from "@/lib/stripe";
 
-function ArtworkCard({ artwork }: { artwork: Artwork }) {
+function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
   return (
     <div className="group">
       <Link 
@@ -12,10 +12,10 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
         className="block"
       >
         <div className="aspect-square overflow-hidden rounded-lg bg-surface border border-outline mb-4">
-          {artwork.default_image ? (
+          {artwork.defaultImageUrl ? (
             <Image
-              src={artwork.default_image.url}
-              alt={artwork.default_image.alternativeText || artwork.title}
+              src={artwork.defaultImageUrl}
+              alt={artwork.title}
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />
           ) : (
@@ -32,9 +32,9 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
           {artwork.year && (
             <p className="text-sm text-on-surface-variant">{artwork.year}</p>
           )}
-          {artwork.collections && artwork.collections.length > 0 && (
+          {artwork.collection && (
             <p className="text-xs text-on-surface-variant mt-1">
-              {artwork.collections.length} collection{artwork.collections.length !== 1 ? 's' : ''}
+              {artwork.collection.name}
             </p>
           )}
           {/* Price Display */}
@@ -50,15 +50,8 @@ function ArtworkCard({ artwork }: { artwork: Artwork }) {
 }
 
 export default async function ArtworksPage() {
-  const { data } = await getAllArtworks({
-    populate: {
-      default_image: true,
-      collections: true,
-    },
-    sort: ['year:desc', 'title:asc'],
-  });
-
-  const artworks = data as Artwork[];
+  const { data } = await getAllArtworks();
+  const artworks = data;
 
   return (
     <div className="container mx-auto px-4 py-8">

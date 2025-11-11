@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createArtworkAdmin, updateArtworkAdmin, deleteArtworkAdmin, type Artwork } from '@/actions/admin/artwork';
 import { getAllCollectionsAdmin, type Collection } from '@/actions/admin/collection';
+import { generateSlug } from '@/lib/utils';
 
 interface ArtworkFormProps {
   artwork?: Artwork;
@@ -25,8 +26,10 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
   useEffect(() => {
     const loadCollections = async () => {
       try {
-        const { data } = await getAllCollectionsAdmin();
-        setCollections(data);
+        const result = await getAllCollectionsAdmin();
+        if ('data' in result) {
+          setCollections(result.data);
+        }
       } catch (err) {
         console.error('Failed to load collections:', err);
       }
@@ -42,6 +45,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
     try {
       const data = {
         title: formData.title,
+        slug: artwork?.slug || generateSlug(formData.title),
         description: formData.description || undefined,
         artist: formData.artist || undefined,
         price: formData.price ? parseInt(formData.price) : undefined,

@@ -1,6 +1,6 @@
 import Image from "@/components/Image";
 import Link from "next/link";
-import { Artwork } from "@/lib/strapi";
+import type { SelectArtwork } from "@/database/factories/artwork.factory";
 import { getCollectionBySlug } from "@/actions/collection";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
@@ -11,14 +11,14 @@ interface CollectionPageProps {
   }>;
 }
 
-function ArtworkCard({ artwork }: { artwork: Artwork }) {
+function ArtworkCard({ artwork }: { artwork: SelectArtwork }) {
   return (
     <Link href={`/artworks/${artwork.slug}`} className="block">
       <div className="group relative aspect-square overflow-hidden rounded-lg bg-surface border border-outline">
-        {artwork.default_image ? (
+        {artwork.defaultImageUrl ? (
           <Image
-            src={artwork.default_image.url}
-            alt={artwork.default_image.alternativeText || artwork.title}
+            src={artwork.defaultImageUrl}
+            alt={artwork.title}
             className="w-full h-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
@@ -80,7 +80,7 @@ export default async function CollectionPage(props: CollectionPageProps) {
       {/* Artworks Grid */}
       {collection.artworks && collection.artworks.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {collection.artworks.map((artwork: Artwork) => (
+          {collection.artworks.map((artwork) => (
             <ArtworkCard key={artwork.id} artwork={artwork} />
           ))}
         </div>

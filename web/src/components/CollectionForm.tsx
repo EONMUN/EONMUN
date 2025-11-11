@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCollectionAdmin, updateCollectionAdmin, deleteCollectionAdmin, getCollectionWithArtworksAdmin, type Collection } from '@/actions/admin/collection';
+import { generateSlug } from '@/lib/utils';
 
 interface CollectionFormProps {
   collection?: Collection;
@@ -40,6 +41,7 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
     try {
       const data = {
         name: formData.name,
+        slug: collection?.slug || generateSlug(formData.name),
         description: formData.description || undefined,
       };
 

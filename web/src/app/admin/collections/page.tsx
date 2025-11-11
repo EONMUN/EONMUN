@@ -4,7 +4,11 @@ import { getAllCollectionsAdmin, getCollectionWithArtworksAdmin } from '@/action
 export const dynamic = 'force-dynamic';
 
 export default async function CollectionsAdminPage() {
-  const { data: collections } = await getAllCollectionsAdmin();
+  const result = await getAllCollectionsAdmin();
+  if ('error' in result) {
+    return <div>Error: {result.error}</div>;
+  }
+  const collections = result.data;
 
   // Get artwork counts for each collection
   const collectionsWithCounts = await Promise.all(

@@ -1,9 +1,10 @@
 import Image from "@/components/Image";
 import Link from "next/link";
-import { Artwork, Collection } from "@/lib/strapi";
 import { getArtworkBySlug } from "@/actions/artwork";
 import { notFound } from "next/navigation";
 import { PurchaseButton } from "@/components/PurchaseButton";
+import type { ArtworkWithCollections } from "@/models/artwork";
+import type { SelectCollection } from "@/database/factories/collection.factory";
 
 interface ArtworkPageProps {
   params: Promise<{
@@ -11,7 +12,7 @@ interface ArtworkPageProps {
   }>;
 }
 
-function CollectionTag({ collection }: { collection: Collection }) {
+function CollectionTag({ collection }: { collection: SelectCollection }) {
   return (
     <Link 
       href={`/collections/${collection.slug}`}
@@ -22,37 +23,13 @@ function CollectionTag({ collection }: { collection: Collection }) {
   );
 }
 
-function ImageGallery({ artwork }: { artwork: Artwork }) {
-  const allImages = artwork.images || [];
-  const defaultImage = artwork.default_image;
-  
-  // Create a unique list with default_image first if it exists
-  const displayImages = [];
-  if (defaultImage) {
-    displayImages.push(defaultImage);
-  }
-  
-  // Add other images that aren't the default image
-  allImages.forEach(img => {
-    if (!defaultImage || img.id !== defaultImage.id) {
-      displayImages.push(img);
-    }
-  });
-
-  if (displayImages.length === 0) {
-    return (
-      <div className="aspect-square bg-surface border border-outline rounded-lg flex items-center justify-center">
-        <span className="text-on-surface-variant text-lg">No Image Available</span>
-      </div>
-    );
-  }
-
-  if (displayImages.length === 1) {
+function ImageGallery({ artwork }: { artwork: ArtworkWithCollections }) {
+  if (artwork.defaultImageUrl) {
     return (
       <div className="aspect-square overflow-hidden rounded-lg border border-outline">
         <Image
-          src={displayImages[0].url}
-          alt={displayImages[0].alternativeText || artwork.title}
+          src={artwork.defaultImageUrl}
+          alt={artwork.title}
           className="w-full h-full object-cover"
         />
       </div>
@@ -60,30 +37,8 @@ function ImageGallery({ artwork }: { artwork: Artwork }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4">
-      {/* Main image */}
-      <div className="aspect-square overflow-hidden rounded-lg border border-outline">
-        <Image
-          src={displayImages[0].url}
-          alt={displayImages[0].alternativeText || artwork.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      
-      {/* Additional images */}
-      {displayImages.length > 1 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {displayImages.slice(1).map((image, index) => (
-            <div key={image.id} className="aspect-square overflow-hidden rounded-md border border-outline">
-              <Image
-                src={image.url}
-                alt={image.alternativeText || `${artwork.title} - Image ${index + 2}`}
-                className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-              />
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="aspect-square bg-surface border border-outline rounded-lg flex items-center justify-center">
+      <span className="text-on-surface-variant text-lg">No Image Available</span>
     </div>
   );
 }
@@ -140,13 +95,11 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
             </div>
           )}
 
-          {artwork.collections && artwork.collections.length > 0 && (
+          {artwork.collection && (
             <div>
-              <h2 className="text-lg font-semibold text-on-surface mb-3">Collections</h2>
+              <h2 className="text-lg font-semibold text-on-surface mb-3">Collection</h2>
               <div className="flex flex-wrap gap-2">
-                {artwork.collections.map((collection) => (
-                  <CollectionTag key={collection.id} collection={collection} />
-                ))}
+                <CollectionTag collection={artwork.collection} />
               </div>
             </div>
           )}

@@ -36,11 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Fetch all collections
-    const collectionsResponse = await getAllCollections({
-      populate: {
-        artworks: true,
-      },
-    });
+    const collectionsResponse = await getAllCollections();
     const collections = collectionsResponse.data;
 
     // Generate collection routes
@@ -52,12 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // Fetch all artworks
-    const artworksResponse = await getAllArtworks({
-      populate: {
-        default_image: true,
-        collections: true,
-      },
-    });
+    const artworksResponse = await getAllArtworks();
     const artworks = artworksResponse.data;
 
     // Generate artwork routes

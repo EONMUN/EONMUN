@@ -1,6 +1,6 @@
 "use client";
 
-import { Collection } from "@/lib/strapi";
+import type { CollectionWithArtworks } from "@/models/collection";
 import Image from "@/components/Image";
 import Link from "next/link";
 import {
@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/carousel";
 import { useEffect, useRef } from "react";
 
-function CollectionCard({ collection }: { collection: Collection }) {
+function CollectionCard({ collection }: { collection: CollectionWithArtworks }) {
   // Get the first artwork's image as the collection thumbnail
-  const thumbnailImage = collection.artworks?.[0]?.default_image;
+  const thumbnailImage = collection.artworks?.[0]?.defaultImageUrl;
 
   return (
     <div className="group h-full">
@@ -25,8 +25,8 @@ function CollectionCard({ collection }: { collection: Collection }) {
         <div className="aspect-[4/5] overflow-hidden rounded-lg bg-surface border border-outline mb-6">
           {thumbnailImage ? (
             <Image
-              src={thumbnailImage.url}
-              alt={thumbnailImage.alternativeText || collection.name}
+              src={thumbnailImage}
+              alt={collection.name}
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />
           ) : (
@@ -51,7 +51,7 @@ function CollectionCard({ collection }: { collection: Collection }) {
   );
 }
 
-export function CollectionsCarousel({ collections }: { collections: Collection[] }) {
+export function CollectionsCarousel({ collections }: { collections: CollectionWithArtworks[] }) {
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Focus the carousel when component mounts for keyboard navigation
