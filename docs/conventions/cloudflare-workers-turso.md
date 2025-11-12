@@ -141,7 +141,18 @@ Turso is SQLite hosted at the edge with:
 
 ```bash
 TURSO_DATABASE_URL=libsql://your-database.turso.io
-TURSO_AUTH_TOKEN=your_auth_token
+TURSO_AUTH_TOKEN_READ=your_read_only_token  # Used during build
+TURSO_AUTH_TOKEN_WRITE=your_read_write_token  # Used at runtime
+```
+
+**Creating Tokens**:
+
+```bash
+# Create read-only token (for build-time operations)
+turso db tokens create your-database --read-only
+
+# Create read-write token (for runtime operations)
+turso db tokens create your-database
 ```
 
 #### Development: Local SQLite
@@ -689,7 +700,8 @@ The project uses automated deployments via GitHub Actions:
 **Required Secrets**:
 - `CLOUDFLARE_API_TOKEN` (from production/preview environment)
 - `CLOUDFLARE_ACCOUNT_ID` (from production/preview environment)
-- `TURSO_AUTH_TOKEN` (from production/preview environment)
+- `TURSO_AUTH_TOKEN_READ` (read-only token, used during build)
+- `TURSO_AUTH_TOKEN_WRITE` (read-write token, used at runtime)
 - `TURSO_DATABASE_URL` (from production/preview environment)
 
 ### Preview Deployment (`.github/workflows/web.test.yml`)
@@ -714,7 +726,8 @@ The project uses automated deployments via GitHub Actions:
 **Required Secrets** (from production environment):
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `TURSO_AUTH_TOKEN`
+- `TURSO_AUTH_TOKEN_READ` (read-only token, used during build)
+- `TURSO_AUTH_TOKEN_WRITE` (read-write token, used at runtime)
 - `TURSO_DATABASE_URL`
 
 ### Deployment Process
@@ -725,12 +738,14 @@ All deployment jobs now follow a consistent pattern:
 1. Checkout repository
 2. Setup Node.js with npm caching
 3. Install dependencies (`npm ci`)
-4. **Upload runtime secrets to Cloudflare** (TURSO_AUTH_TOKEN, TURSO_DATABASE_URL)
-5. Build with `opennextjs-cloudflare build`
+4. **Upload runtime secrets to Cloudflare** (TURSO_AUTH_TOKEN_READ, TURSO_AUTH_TOKEN_WRITE, TURSO_DATABASE_URL)
+5. Build with `opennextjs-cloudflare build` (uses read-only token)
 6. Deploy with `opennextjs-cloudflare deploy`
 
 **Key Changes**:
 - Runtime secrets are uploaded BEFORE build/deploy (not after)
+- Build uses **read-only** token (TURSO_AUTH_TOKEN_READ) for safety
+- Runtime uses **read-write** token (TURSO_AUTH_TOKEN_WRITE) for mutations
 - This ensures secrets are available during the build process
 - All jobs use GitHub environment secrets (production or preview)
 - Concurrency controls prevent simultaneous deployments to same environment
