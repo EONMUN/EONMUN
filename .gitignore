@@ -2,3 +2,6 @@
 deployment/secrets.yaml
 .env
 .env.production
+__pycache__
+.env.production
+.env.preview

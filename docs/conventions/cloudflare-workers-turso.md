@@ -214,11 +214,13 @@ export default defineConfig({
 
 The project uses **GitHub Actions** for automated deployments to three environments:
 
-| Environment | Branch | URL | Secrets Suffix |
-|-------------|--------|-----|----------------|
-| **Production** | `master` | https://eonmun.com | _(none)_ |
-| **Next** | `next` | https://next.eonmun.com | `_NEXT` |
-| **Preview** | Pull Requests | https://pr-{number}.eonmun.com | `_PREVIEW` |
+| Environment | Branch | URL | Database | Secrets Suffix |
+|-------------|--------|-----|----------|----------------|
+| **Production** | `master` | https://eonmun.com | Production | _(none)_ |
+| **Next** | `next` | https://next.eonmun.com | Preview | `_PREVIEW` |
+| **Preview** | Pull Requests | https://pr-{number}.eonmun.com | Preview | `_PREVIEW` |
+
+**Note**: Both `next` and `preview` environments currently share the same preview database.
 
 #### Setting Up Secrets
 
@@ -266,11 +268,11 @@ The project uses **GitHub Actions** for automated deployments to three environme
    bin/gh-secrets --dry-run
    ```
 
-   This creates GitHub Actions secrets:
-   - `TURSO_AUTH_TOKEN`, `TURSO_DATABASE_URL` (from .env.production)
-   - `TURSO_AUTH_TOKEN_NEXT`, `TURSO_DATABASE_URL_NEXT` (from .env.next)
-   - `TURSO_AUTH_TOKEN_PREVIEW`, `TURSO_DATABASE_URL_PREVIEW` (from .env.preview)
-   - `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (shared across all)
+   This creates GitHub Actions secrets in environment-specific stores:
+   - `production` environment: `TURSO_AUTH_TOKEN`, `TURSO_DATABASE_URL` (from .env.production)
+   - `preview` environment: `TURSO_AUTH_TOKEN`, `TURSO_DATABASE_URL` (from .env.preview)
+   - `next` environment: Uses secrets from `next` environment (same values as preview)
+   - `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (repository secrets, shared across all)
 
 **Note**: Variables starting with `NEXT_PUBLIC_` are **not** uploaded as secrets. Add them to `web/wrangler.jsonc` instead:
 
@@ -313,7 +315,7 @@ The project uses **GitHub Actions** for automated deployments. No manual deploym
 
 2. **Automatic workflow** (`.github/workflows/deploy-web.yml`):
    - Builds and deploys to `next` wrangler environment
-   - Uses `_NEXT` suffixed secrets
+   - Uses secrets from `next` GitHub environment (shares preview database values)
    - Deploys to https://next.eonmun.com
 
 #### Preview Deployment (Pull Requests)
@@ -679,10 +681,10 @@ The project uses automated deployments via GitHub Actions:
 4. Upload runtime secrets to Cloudflare
 
 **Required Secrets**:
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `TURSO_AUTH_TOKEN` (production) or `TURSO_AUTH_TOKEN_NEXT` (next)
-- `TURSO_DATABASE_URL` (production) or `TURSO_DATABASE_URL_NEXT` (next)
+- `CLOUDFLARE_API_TOKEN` (repository secret)
+- `CLOUDFLARE_ACCOUNT_ID` (repository secret)
+- `TURSO_AUTH_TOKEN` (environment-specific secret)
+- `TURSO_DATABASE_URL` (environment-specific secret)
 
 ### Preview Deployment (`.github/workflows/web.test.yml`)
 
@@ -700,10 +702,10 @@ The project uses automated deployments via GitHub Actions:
 - ✅ Uses separate preview database
 
 **Required Secrets**:
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `TURSO_AUTH_TOKEN_PREVIEW`
-- `TURSO_DATABASE_URL_PREVIEW`
+- `CLOUDFLARE_API_TOKEN` (repository secret)
+- `CLOUDFLARE_ACCOUNT_ID` (repository secret)
+- `TURSO_AUTH_TOKEN` (environment-specific secret)
+- `TURSO_DATABASE_URL` (environment-specific secret)
 
 ### Custom Action (`.github/actions/deploy-cloudflare-worker`)
 

@@ -1,3 +1,23 @@
+# Deploy Cloudflare Worker Action
+#
+# Builds and deploys a Next.js app to Cloudflare Workers using OpenNext.
+#
+# This action is used by:
+# - .github/workflows/deploy-web.yml (production and next deployments)
+# - .github/workflows/web.test.yml (preview deployments for PRs)
+#
+# IMPORTANT: Changes to this action should be reflected in:
+# - docs/conventions/cloudflare-workers-turso.md (Custom Action section)
+# - bin/README.md (if affecting secrets workflow)
+#
+# Workflow:
+# 1. Sets up Node.js with npm caching
+# 2. Installs dependencies from web/package-lock.json
+# 3. Builds Next.js app with opennextjs-cloudflare
+# 4. Deploys to Cloudflare Workers (environment determined by inputs)
+#
+# Note: Runtime secrets are uploaded separately by the workflow after this action completes
+
 name: 'Deploy Cloudflare Worker'
 description: 'Build and deploy a Next.js app to Cloudflare Workers using OpenNext'
 
