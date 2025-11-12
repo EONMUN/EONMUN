@@ -65,14 +65,19 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_AUTH_TOKEN_READ: ${{ secrets.TURSO_AUTH_TOKEN_READ }}
+          TURSO_AUTH_TOKEN_WRITE: ${{ secrets.TURSO_AUTH_TOKEN_WRITE }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
         run: |
-          echo "$TURSO_AUTH_TOKEN" | npx wrangler secret put TURSO_AUTH_TOKEN --env production
+          echo "$TURSO_AUTH_TOKEN_READ" | npx wrangler secret put TURSO_AUTH_TOKEN_READ --env production
+          echo "$TURSO_AUTH_TOKEN_WRITE" | npx wrangler secret put TURSO_AUTH_TOKEN_WRITE --env production
           echo "$TURSO_DATABASE_URL" | npx wrangler secret put TURSO_DATABASE_URL --env production
 
       - name: Build Next.js app for Cloudflare
         working-directory: ./web
+        env:
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_READ }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
         run: npx opennextjs-cloudflare build
 
       - name: Deploy to Cloudflare Workers
@@ -117,14 +122,19 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_AUTH_TOKEN_READ: ${{ secrets.TURSO_AUTH_TOKEN_READ }}
+          TURSO_AUTH_TOKEN_WRITE: ${{ secrets.TURSO_AUTH_TOKEN_WRITE }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
         run: |
-          echo "$TURSO_AUTH_TOKEN" | npx wrangler secret put TURSO_AUTH_TOKEN --env next
+          echo "$TURSO_AUTH_TOKEN_READ" | npx wrangler secret put TURSO_AUTH_TOKEN_READ --env next
+          echo "$TURSO_AUTH_TOKEN_WRITE" | npx wrangler secret put TURSO_AUTH_TOKEN_WRITE --env next
           echo "$TURSO_DATABASE_URL" | npx wrangler secret put TURSO_DATABASE_URL --env next
 
       - name: Build Next.js app for Cloudflare
         working-directory: ./web
+        env:
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_READ }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
         run: npx opennextjs-cloudflare build
 
       - name: Deploy to Cloudflare Workers (Next)
