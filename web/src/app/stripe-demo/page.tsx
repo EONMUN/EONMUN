@@ -1,26 +1,16 @@
 import { PurchaseButton } from '@/components/PurchaseButton';
 import { ARTWORK_PRICE } from '@/lib/stripe';
-import { Artwork } from '@/lib/strapi';
 
 // Mock artwork data for demonstration
-const mockArtwork: Artwork = {
-  id: '1',
-  documentId: 'demo-artwork-1',
+const mockArtwork = {
+  id: 1,
   title: 'Digital Harmony',
   slug: 'digital-harmony',
   description: 'A stunning digital artwork exploring the intersection of technology and nature.',
   year: 2024,
-  default_image: {
-    id: '1',
-    name: 'digital-harmony.jpg',
-    url: '/placeholder-artwork.jpg',
-    alternativeText: 'Digital Harmony - Abstract digital artwork',
-    width: 800,
-    height: 800,
-  },
-  createdAt: '2024-01-01T00:00:00.000Z',
-  updatedAt: '2024-01-01T00:00:00.000Z',
-  publishedAt: '2024-01-01T00:00:00.000Z',
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
+  publishedAt: new Date('2024-01-01'),
   locale: 'en',
 };
 

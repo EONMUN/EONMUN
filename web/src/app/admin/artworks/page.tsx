@@ -5,7 +5,11 @@ import { getCollectionByIdAdmin } from '@/actions/admin/collection';
 export const dynamic = 'force-dynamic';
 
 export default async function ArtworksAdminPage() {
-  const { data: artworks } = await getAllArtworksAdmin();
+  const result = await getAllArtworksAdmin();
+  if ('error' in result) {
+    return <div>Error: {result.error}</div>;
+  }
+  const artworks = result.data;
 
   // Get collection names for each artwork
   const artworksWithCollections = await Promise.all(

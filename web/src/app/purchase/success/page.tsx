@@ -54,11 +54,11 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
             </h2>
             
             <div className="flex items-center gap-4 justify-center">
-              {artwork.default_image && (
+              {artwork.defaultImageUrl && (
                 <div className="w-24 h-24 rounded-lg overflow-hidden border border-outline">
                   <Image
-                    src={artwork.default_image.url}
-                    alt={artwork.default_image.alternativeText || artwork.title}
+                    src={artwork.defaultImageUrl}
+                    alt={artwork.title}
                     className="w-full h-full object-cover"
                   />
                 </div>

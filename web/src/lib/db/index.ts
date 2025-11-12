@@ -1,35 +1,55 @@
 import { drizzle } from 'drizzle-orm/libsql';
-import { createClient } from '@libsql/client';
-import { migrate } from 'drizzle-orm/libsql/migrator';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import * as schema from './schema';
 import path from 'path';
 export * from './schema';
 
 // Create database client based on environment
 async function createDatabaseClient() {
-  // Check if we're in production with Turso credentials
-  if (process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL) {
-    // Production Turso configuration - migrations handled separately
+  const isDevelopment = process.env.NEXT_PHASE === PHASE_DEVELOPMENT_SERVER;
+  const hasTursoConfig = process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL;
+  
+  // In production, require Turso configuration
+  if (!isDevelopment && !hasTursoConfig) {
+    throw new Error(
+      'Production database configuration missing. ' +
+      'TURSO_AUTH_TOKEN and TURSO_DATABASE_URL must be set in production. ' +
+      'See .env.production.example for setup instructions.'
+    );
+  }
+  
+  if (hasTursoConfig) {
+    // Production Turso configuration - use web client for Cloudflare Workers
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    const databaseUrl = process.env.TURSO_DATABASE_URL;
+    
+    if (!authToken || !databaseUrl) {
+      throw new Error('TURSO_AUTH_TOKEN and TURSO_DATABASE_URL must both be set');
+    }
+    
+    const { createClient } = await import('@libsql/client/web');
     const client = createClient({
-      url: process.env.TURSO_DATABASE_URL,
-      authToken: process.env.TURSO_AUTH_TOKEN,
+      url: databaseUrl,
+      authToken: authToken,
     });
     return drizzle(client, { schema });
   }
 
-  // Local development with in-memory SQLite
+  // Local development with in-memory SQLite - use Node.js client
+  const { createClient } = await import('@libsql/client');
   const client = createClient({
     url: ':memory:',
   });
   const db = drizzle(client, { schema });
 
   // Auto-migrate in-memory database on startup
+  const { migrate } = await import('drizzle-orm/libsql/migrator');
   await migrate(db, {
     migrationsFolder: path.join(process.cwd(), 'drizzle')
   });
 
   // Auto-load fixtures in development (not production and not during tests)
-  if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  if (isDevelopment && process.env.NODE_ENV !== 'test') {
     try {
       const { loadFixtures } = await import('../../database/fixtures/load');
       await loadFixtures(db);
