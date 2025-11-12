@@ -672,19 +672,25 @@ The project uses automated deployments via GitHub Actions:
 
 **Jobs**:
 - `deploy-production`: Deploys to https://eonmun.com (master branch)
+  - Uses `environment: production` and `concurrency: production`
+  - Uploads runtime secrets BEFORE build and deploy
 - `deploy-next`: Deploys to https://next.eonmun.com (next branch)
+  - Uses `environment: preview` and `concurrency: next`
+  - Uploads runtime secrets BEFORE build and deploy
 
 **Steps**:
 1. Checkout code
 2. Setup Node.js with npm cache
-3. Build and deploy via custom action
-4. Upload runtime secrets to Cloudflare
+3. Install dependencies
+4. Upload runtime secrets to Cloudflare (BEFORE build)
+5. Build Next.js app with opennextjs-cloudflare
+6. Deploy to Cloudflare Workers
 
 **Required Secrets**:
-- `CLOUDFLARE_API_TOKEN` (repository secret)
-- `CLOUDFLARE_ACCOUNT_ID` (repository secret)
-- `TURSO_AUTH_TOKEN` (environment-specific secret)
-- `TURSO_DATABASE_URL` (environment-specific secret)
+- `CLOUDFLARE_API_TOKEN` (from production/preview environment)
+- `CLOUDFLARE_ACCOUNT_ID` (from production/preview environment)
+- `TURSO_AUTH_TOKEN` (from production/preview environment)
+- `TURSO_DATABASE_URL` (from production/preview environment)
 
 ### Preview Deployment (`.github/workflows/web.test.yml`)
 
@@ -693,6 +699,9 @@ The project uses automated deployments via GitHub Actions:
 **Jobs**:
 1. `lint-and-typecheck`: Runs ESLint and TypeScript checks
 2. `deploy-preview`: Deploys to preview environment (only if tests pass)
+   - Uses `environment: production` and `concurrency: production`
+   - Uploads runtime secrets BEFORE build and deploy
+   - Comments on PR with preview URL
 3. `cleanup-preview`: Removes preview when PR is closed
 
 **Features**:
@@ -700,29 +709,31 @@ The project uses automated deployments via GitHub Actions:
 - ✅ PR comments with preview URL
 - ✅ Automatic cleanup on PR close
 - ✅ Uses separate preview database
+- ✅ Secrets uploaded before build to prevent runtime errors
 
-**Required Secrets**:
-- `CLOUDFLARE_API_TOKEN` (repository secret)
-- `CLOUDFLARE_ACCOUNT_ID` (repository secret)
-- `TURSO_AUTH_TOKEN` (environment-specific secret)
-- `TURSO_DATABASE_URL` (environment-specific secret)
+**Required Secrets** (from production environment):
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `TURSO_AUTH_TOKEN`
+- `TURSO_DATABASE_URL`
 
-### Custom Action (`.github/actions/deploy-cloudflare-worker`)
+### Deployment Process
 
-Reusable action that handles build and deployment:
-
-**Inputs**:
-- `environment`: production, next, or preview
-- `cloudflare-api-token`: Cloudflare API credentials
-- `cloudflare-account-id`: Cloudflare account ID
-- `node-version`: Node.js version (default: 22)
-- `wrangler-environment`: Optional wrangler env name
+All deployment jobs now follow a consistent pattern:
 
 **Process**:
-1. Setup Node.js with caching
-2. Install dependencies (`npm ci`)
-3. Build with `opennextjs-cloudflare build`
-4. Deploy with `opennextjs-cloudflare deploy`
+1. Checkout repository
+2. Setup Node.js with npm caching
+3. Install dependencies (`npm ci`)
+4. **Upload runtime secrets to Cloudflare** (TURSO_AUTH_TOKEN, TURSO_DATABASE_URL)
+5. Build with `opennextjs-cloudflare build`
+6. Deploy with `opennextjs-cloudflare deploy`
+
+**Key Changes**:
+- Runtime secrets are uploaded BEFORE build/deploy (not after)
+- This ensures secrets are available during the build process
+- All jobs use GitHub environment secrets (production or preview)
+- Concurrency controls prevent simultaneous deployments to same environment
 
 ## Summary
 
