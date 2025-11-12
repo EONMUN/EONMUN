@@ -4,28 +4,15 @@ import * as schema from './schema';
 import path from 'path';
 export * from './schema';
 
-// Dynamically import the appropriate libsql client based on environment
-async function getLibsqlClient() {
-  const isDevelopment = process.env.NEXT_PHASE === PHASE_DEVELOPMENT_SERVER;
-  
-  if (isDevelopment) {
-    // Use Node.js client for local development
-    const { createClient } = await import('@libsql/client');
-    return createClient;
-  } else {
-    // Use web client for Cloudflare Workers/production builds
-    const { createClient } = await import('@libsql/client/web');
-    return createClient;
-  }
-}
-
 // Create database client based on environment
 async function createDatabaseClient() {
-  const createClient = await getLibsqlClient();
-  
   // Check if we're in production with Turso credentials
-  if (process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL) {
-    // Production Turso configuration - migrations handled separately
+  const hasTursoConfig = process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL;
+  const isDevelopment = process.env.NEXT_PHASE === PHASE_DEVELOPMENT_SERVER;
+  
+  if (hasTursoConfig) {
+    // Production Turso configuration - use web client for Cloudflare Workers
+    const { createClient } = await import('@libsql/client/web');
     const client = createClient({
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN,
@@ -33,7 +20,8 @@ async function createDatabaseClient() {
     return drizzle(client, { schema });
   }
 
-  // Local development with in-memory SQLite
+  // Local development with in-memory SQLite - use Node.js client
+  const { createClient } = await import('@libsql/client');
   const client = createClient({
     url: ':memory:',
   });
@@ -46,7 +34,7 @@ async function createDatabaseClient() {
   });
 
   // Auto-load fixtures in development (not production and not during tests)
-  if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  if (isDevelopment && process.env.NODE_ENV !== 'test') {
     try {
       const { loadFixtures } = await import('../../database/fixtures/load');
       await loadFixtures(db);
