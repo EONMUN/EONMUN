@@ -1,12 +1,27 @@
 import { drizzle } from 'drizzle-orm/libsql';
-import { createClient } from '@libsql/client';
-import { migrate } from 'drizzle-orm/libsql/migrator';
 import * as schema from './schema';
 import path from 'path';
 export * from './schema';
 
+// Dynamically import the appropriate libsql client based on environment
+async function getLibsqlClient() {
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.TURSO_AUTH_TOKEN;
+  
+  if (isProduction) {
+    // Use web client for Cloudflare Workers/production
+    const { createClient } = await import('@libsql/client/web');
+    return createClient;
+  } else {
+    // Use Node.js client for local development
+    const { createClient } = await import('@libsql/client');
+    return createClient;
+  }
+}
+
 // Create database client based on environment
 async function createDatabaseClient() {
+  const createClient = await getLibsqlClient();
+  
   // Check if we're in production with Turso credentials
   if (process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL) {
     // Production Turso configuration - migrations handled separately
@@ -24,6 +39,7 @@ async function createDatabaseClient() {
   const db = drizzle(client, { schema });
 
   // Auto-migrate in-memory database on startup
+  const { migrate } = await import('drizzle-orm/libsql/migrator');
   await migrate(db, {
     migrationsFolder: path.join(process.cwd(), 'drizzle')
   });
