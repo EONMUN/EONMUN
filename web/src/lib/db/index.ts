@@ -1,19 +1,20 @@
 import { drizzle } from 'drizzle-orm/libsql';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import * as schema from './schema';
 import path from 'path';
 export * from './schema';
 
 // Dynamically import the appropriate libsql client based on environment
 async function getLibsqlClient() {
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.TURSO_AUTH_TOKEN;
+  const isDevelopment = process.env.NEXT_PHASE === PHASE_DEVELOPMENT_SERVER;
   
-  if (isProduction) {
-    // Use web client for Cloudflare Workers/production
-    const { createClient } = await import('@libsql/client/web');
-    return createClient;
-  } else {
+  if (isDevelopment) {
     // Use Node.js client for local development
     const { createClient } = await import('@libsql/client');
+    return createClient;
+  } else {
+    // Use web client for Cloudflare Workers/production builds
+    const { createClient } = await import('@libsql/client/web');
     return createClient;
   }
 }
