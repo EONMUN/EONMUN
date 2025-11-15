@@ -198,21 +198,28 @@ export async function loadFixtures(database: Database) {
 if (require.main === module) {
   (async () => {
     try {
+      // Load environment variables from .env.production
+      const dotenv = await import('dotenv');
+      dotenv.config({ path: path.join(process.cwd(), '.env.production') });
+
       // Import the database creation function directly to avoid top-level await issues
       const { drizzle } = await import('drizzle-orm/libsql');
       const schemaModule = await import('@/lib/db/schema');
       const { createClient } = await import('@libsql/client');
 
       const isDevelopment = process.env.NODE_ENV === 'development';
-      const hasTursoConfig = process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL;
+      // Support both TURSO_AUTH_TOKEN and TURSO_AUTH_TOKEN_WRITE
+      const authToken = process.env.TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN_WRITE;
+      const hasTursoConfig = authToken && process.env.TURSO_DATABASE_URL;
 
       let db;
 
       if (hasTursoConfig && !isDevelopment) {
         // Use Turso for production
+        console.log(`📡 Connecting to Turso: ${process.env.TURSO_DATABASE_URL}`);
         const client = createClient({
           url: process.env.TURSO_DATABASE_URL!,
-          authToken: process.env.TURSO_AUTH_TOKEN!,
+          authToken: authToken!,
         });
         db = drizzle(client, { schema: schemaModule });
       } else {
