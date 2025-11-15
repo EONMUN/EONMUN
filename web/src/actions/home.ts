@@ -1,22 +1,17 @@
 'use server';
 
-import { strapiClient, Artwork } from '@/lib/strapi';
+import { findArtworksWithCollections } from '@/models/artwork';
+import type { ArtworkWithCollections } from '@/models/artwork';
 
 export interface HomePageData {
-  slides: Artwork[];
+  slides: ArtworkWithCollections[];
 }
 
 export async function getHomePageData(): Promise<HomePageData> {
-  const { data } = await strapiClient.single("home").find({
-    populate: {
-      slides: {
-        populate: {
-          default_image: true,
-          collections: true,
-        },
-      },
-    },
+  const slides = await findArtworksWithCollections({
+    published: true,
+    isDefaultForCollection: true,
   });
 
-  return data as unknown as HomePageData;
+  return { slides };
 }

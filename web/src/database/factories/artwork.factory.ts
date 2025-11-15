@@ -68,10 +68,11 @@ class ArtworkFactory extends Factory<InsertArtwork> {
 
   /**
    * Create an artwork linked to a collection
+   * TODO: Update for many-to-many relationship
    */
-  withCollection(collectionId: number) {
-    return this.params({ collectionId });
-  }
+  // withCollection(collectionId: number) {
+  //   return this.params({ collectionId });
+  // }
 
   /**
    * Create an artwork with multiple images

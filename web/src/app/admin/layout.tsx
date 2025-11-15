@@ -10,25 +10,25 @@ export default async function AdminLayout({
   await requireAdmin();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Admin Navigation */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="bg-surface shadow-sm border-b border-outline">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
-              <Link href="/admin" className="text-xl font-bold text-gray-900">
+              <Link href="/admin" className="text-xl font-bold text-on-surface">
                 Admin Panel
               </Link>
               <div className="flex space-x-4">
                 <Link
                   href="/admin/artworks"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-primary-container"
                 >
                   Artworks
                 </Link>
                 <Link
                   href="/admin/collections"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-primary-container"
                 >
                   Collections
                 </Link>
@@ -36,7 +36,7 @@ export default async function AdminLayout({
             </div>
             <Link
               href="/"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="text-sm font-medium text-on-surface-variant hover:text-on-surface"
             >
               ← Back to Site
             </Link>

@@ -2,7 +2,7 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import { getArtworkBySlug } from "@/actions/artwork";
 import { notFound } from "next/navigation";
-import { PurchaseButton } from "@/components/PurchaseButton";
+// import { PurchaseButton } from "@/components/PurchaseButton";
 import type { ArtworkWithCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database/factories/collection.factory";
 
@@ -26,11 +26,11 @@ function CollectionTag({ collection }: { collection: SelectCollection }) {
 function ImageGallery({ artwork }: { artwork: ArtworkWithCollections }) {
   if (artwork.defaultImageUrl) {
     return (
-      <div className="aspect-square overflow-hidden rounded-lg border border-outline">
+      <div className="w-full rounded-lg border border-outline overflow-hidden bg-surface">
         <Image
           src={artwork.defaultImageUrl}
           alt={artwork.title}
-          className="w-full h-full object-cover"
+          className="w-full h-auto object-contain"
         />
       </div>
     );
@@ -82,9 +82,9 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
           </div>
 
           {/* Purchase Section */}
-          <div className="border-t border-b border-outline py-6">
+          {/* <div className="border-t border-b border-outline py-6">
             <PurchaseButton artwork={artwork} />
-          </div>
+          </div> */}
 
           {artwork.description && (
             <div>
@@ -95,11 +95,15 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
             </div>
           )}
 
-          {artwork.collection && (
+          {artwork.collections && artwork.collections.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-on-surface mb-3">Collection</h2>
+              <h2 className="text-lg font-semibold text-on-surface mb-3">
+                Collection{artwork.collections.length > 1 ? 's' : ''}
+              </h2>
               <div className="flex flex-wrap gap-2">
-                <CollectionTag collection={artwork.collection} />
+                {artwork.collections.map((collection) => (
+                  <CollectionTag key={collection.id} collection={collection} />
+                ))}
               </div>
             </div>
           )}

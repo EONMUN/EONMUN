@@ -10,7 +10,7 @@
  */
 
 import type { Database } from '@/lib/db';
-import { collections, artworks, users } from '@/lib/db/schema';
+import { collections, artworks, artworksToCollections, users } from '@/lib/db/schema';
 import path from 'path';
 import fs from 'fs';
 
@@ -32,6 +32,7 @@ interface ArtworkFixture {
   price?: number;
   images?: string[];
   collectionSlug?: string;
+  isDefaultForCollection?: boolean; // New field to mark default artwork
   publishedAt?: string;
   locale?: string;
 }
@@ -48,6 +49,7 @@ interface ArtworkImage {
  */
 async function clearData(database: Database) {
   console.log('🗑️  Clearing existing data...');
+  await database.delete(artworksToCollections);
   await database.delete(artworks);
   await database.delete(collections);
   await database.delete(users);
@@ -134,12 +136,8 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
       defaultImageUrl = images[0].url;
     }
 
-    // Look up collection ID by slug
-    const collectionId = fixture.collectionSlug
-      ? collectionSlugToId.get(fixture.collectionSlug) || null
-      : null;
-
-    await database.insert(artworks).values({
+    // Create artwork without collection reference
+    const [createdArtwork] = await database.insert(artworks).values({
       title: fixture.title,
       slug: fixture.slug,
       description: fixture.description || null,
@@ -150,10 +148,24 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
       imagesJson,
       publishedAt: fixture.publishedAt ? new Date(fixture.publishedAt) : null,
       locale: fixture.locale || 'en',
-      collectionId,
     }).returning();
 
-    console.log(`  ✓ Created artwork: ${fixture.title} (${fixture.slug}) ${fixture.images?.length || 0} images`);
+    // Create artwork-to-collection relationship if collection is specified
+    if (fixture.collectionSlug) {
+      const collectionId = collectionSlugToId.get(fixture.collectionSlug);
+      if (collectionId) {
+        await database.insert(artworksToCollections).values({
+          artworkId: createdArtwork.id,
+          collectionId: collectionId,
+          isDefaultForCollection: fixture.isDefaultForCollection || false,
+        });
+        console.log(`  ✓ Created artwork: ${fixture.title} (${fixture.slug}) - ${fixture.images?.length || 0} images - Collection: ${fixture.collectionSlug}${fixture.isDefaultForCollection ? ' (DEFAULT)' : ''}`);
+      } else {
+        console.log(`  ⚠️  Created artwork: ${fixture.title} (${fixture.slug}) - Collection '${fixture.collectionSlug}' not found`);
+      }
+    } else {
+      console.log(`  ✓ Created artwork: ${fixture.title} (${fixture.slug}) - ${fixture.images?.length || 0} images - No collection`);
+    }
   }
 }
 
@@ -186,8 +198,32 @@ export async function loadFixtures(database: Database) {
 if (require.main === module) {
   (async () => {
     try {
-      // Import db here to avoid circular dependency
-      const { db } = await import('@/lib/db');
+      // Import the database creation function directly to avoid top-level await issues
+      const { drizzle } = await import('drizzle-orm/libsql');
+      const schemaModule = await import('@/lib/db/schema');
+      const { createClient } = await import('@libsql/client');
+
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const hasTursoConfig = process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL;
+
+      let db;
+
+      if (hasTursoConfig && !isDevelopment) {
+        // Use Turso for production
+        const client = createClient({
+          url: process.env.TURSO_DATABASE_URL!,
+          authToken: process.env.TURSO_AUTH_TOKEN!,
+        });
+        db = drizzle(client, { schema: schemaModule });
+      } else {
+        // Use local SQLite for development
+        const dbPath = path.join(process.cwd(), 'local.db');
+        const client = createClient({
+          url: `file:${dbPath}`,
+        });
+        db = drizzle(client, { schema: schemaModule });
+      }
+
       await loadFixtures(db);
       process.exit(0);
     } catch (error) {

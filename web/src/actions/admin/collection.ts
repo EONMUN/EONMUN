@@ -12,7 +12,7 @@ export async function getAllCollectionsAdmin() {
   if (authError) return authError;
 
   try {
-    const collections = await collectionModel.getAllCollections();
+    const collections = await collectionModel.getAllCollectionsWithDefaultArtwork();
     return { data: collections };
   } catch (error) {
     console.error('Error fetching collections:', error);
@@ -33,18 +33,45 @@ export async function getCollectionByIdAdmin(id: number) {
   }
 }
 
-export async function getCollectionWithArtworksAdmin(id: number) {
+export async function getCollectionBySlugAdmin(slug: string) {
   const authError = await guardAuth();
   if (authError) return null;
 
   try {
-    const collection = await collectionModel.getCollectionWithArtworks(id);
+    const collection = await collectionModel.getCollectionBySlug(slug);
+    return collection;
+  } catch (error) {
+    console.error('Error fetching collection:', error);
+    throw error;
+  }
+}
+
+export async function getCollectionWithArtworksBySlugAdmin(slug: string) {
+  const authError = await guardAuth();
+  if (authError) return null;
+
+  try {
+    const collection = await collectionModel.getCollectionWithArtworksBySlug(slug);
     return collection;
   } catch (error) {
     console.error('Error fetching collection with artworks:', error);
     throw error;
   }
 }
+
+// TODO: Update for many-to-many relationship
+// export async function getCollectionWithArtworksAdmin(id: number) {
+//   const authError = await guardAuth();
+//   if (authError) return null;
+//
+//   try {
+//     const collection = await collectionModel.getCollectionWithArtworks(id);
+//     return collection;
+//   } catch (error) {
+//     console.error('Error fetching collection with artworks:', error);
+//     throw error;
+//   }
+// }
 
 export async function createCollectionAdmin(data: Omit<NewCollection, 'createdAt' | 'updatedAt'>) {
   const authError = await guardAdmin();

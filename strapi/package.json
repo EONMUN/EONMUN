@@ -10,15 +10,20 @@
     "dev": "strapi develop",
     "develop": "strapi develop",
     "seed:example": "node ./scripts/seed.js",
-
     "create:token": "node ./scripts/create-api-token.js",
     "enable:public": "node ./scripts/enable-public-permissions.js",
+    "r2:generate-credentials": "node ./scripts/generate-r2-credentials.js",
+    "r2:manifest": "node ./scripts/generate-r2-manifest.js",
+    "r2:upload": "node ./scripts/upload-to-r2.js",
+    "r2:verify": "node ./scripts/verify-r2-uploads.js",
+    "fixtures:update-urls": "node ./scripts/update-fixture-urls.js",
     "start": "strapi start",
     "strapi": "strapi",
     "upgrade": "npx @strapi/upgrade latest",
     "upgrade:dry": "npx @strapi/upgrade latest --dry"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.931.0",
     "@strapi/plugin-cloud": "5.16.1",
     "@strapi/plugin-users-permissions": "5.16.1",
     "@strapi/strapi": "5.16.1",

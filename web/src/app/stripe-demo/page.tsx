@@ -1,5 +1,5 @@
-import { PurchaseButton } from '@/components/PurchaseButton';
-import { ARTWORK_PRICE } from '@/lib/stripe';
+// import { PurchaseButton } from '@/components/PurchaseButton';
+// import { ARTWORK_PRICE } from '@/lib/stripe';
 
 // Mock artwork data for demonstration
 const mockArtwork = {
@@ -46,9 +46,9 @@ export default function StripeDemoPage() {
           </div>
 
           {/* Purchase Section */}
-          <div className="border-t border-b border-outline py-6">
+          {/* <div className="border-t border-b border-outline py-6">
             <PurchaseButton artwork={mockArtwork} />
-          </div>
+          </div> */}
 
           <div>
             <h2 className="text-lg font-semibold text-on-surface mb-3">Description</h2>
@@ -91,7 +91,7 @@ export default function StripeDemoPage() {
         </h2>
         <div className="text-blue-800 space-y-2">
           <p><strong>✅ Purchase Button:</strong> Ready to process payments</p>
-          <p><strong>✅ Pricing Display:</strong> All artworks priced at ${ARTWORK_PRICE.toLocaleString()}</p>
+          <p><strong>✅ Pricing Display:</strong> All artworks priced at $250,000</p>
           <p><strong>✅ Stripe Checkout:</strong> Secure payment processing</p>
           <p><strong>✅ Success Page:</strong> Confirmation and receipt</p>
           <p><strong>✅ API Integration:</strong> Backend checkout session creation</p>

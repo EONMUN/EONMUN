@@ -32,9 +32,9 @@ function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
           {artwork.year && (
             <p className="text-sm text-on-surface-variant">{artwork.year}</p>
           )}
-          {artwork.collection && (
+          {artwork.collections && artwork.collections.length > 0 && (
             <p className="text-xs text-on-surface-variant mt-1">
-              {artwork.collection.name}
+              {artwork.collections.map(c => c.name).join(', ')}
             </p>
           )}
           {/* Price Display */}

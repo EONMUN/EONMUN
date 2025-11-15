@@ -1,12 +1,11 @@
 import { drizzle } from 'drizzle-orm/libsql';
-import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import * as schema from './schema';
 import path from 'path';
 export * from './schema';
 
 // Create database client based on environment
 async function createDatabaseClient() {
-  const isDevelopment = process.env.NEXT_PHASE === PHASE_DEVELOPMENT_SERVER;
+  const isDevelopment = process.env.NODE_ENV === 'development';
   const hasTursoConfig = process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL;
   
   // In production, require Turso configuration
@@ -18,7 +17,8 @@ async function createDatabaseClient() {
     );
   }
   
-  if (hasTursoConfig) {
+  // Use Turso in production or if explicitly configured in development
+  if (hasTursoConfig && !isDevelopment) {
     // Production Turso configuration - use web client for Cloudflare Workers
     const authToken = process.env.TURSO_AUTH_TOKEN;
     const databaseUrl = process.env.TURSO_DATABASE_URL;
@@ -35,10 +35,11 @@ async function createDatabaseClient() {
     return drizzle(client, { schema });
   }
 
-  // Local development with in-memory SQLite - use Node.js client
+  // Local development with file-based SQLite - use Node.js client
   const { createClient } = await import('@libsql/client');
+  const dbPath = path.join(process.cwd(), 'local.db');
   const client = createClient({
-    url: ':memory:',
+    url: `file:${dbPath}`,
   });
   const db = drizzle(client, { schema });
 

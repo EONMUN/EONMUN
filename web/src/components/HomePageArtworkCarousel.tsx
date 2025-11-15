@@ -8,17 +8,17 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Artwork } from "@/lib/strapi";
+import type { ArtworkWithCollections } from "@/models/artwork";
 import Autoplay from "embla-carousel-autoplay";
 import Fade from "embla-carousel-fade";
 
-function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
+function ArtworkCarouselItem({ artwork }: { artwork: ArtworkWithCollections }) {
   return (
     <CarouselItem key={artwork.id} className="h-full pl-0">
       <div className="relative h-screen w-full">
         <Image
-          src={artwork.default_image!.url}
-          alt={artwork.default_image?.alternativeText}
+          src={artwork.defaultImageUrl || ''}
+          alt={artwork.title}
           className="w-full h-full object-cover"
         />
 
@@ -31,7 +31,7 @@ function ArtworkCarouselItem({ artwork }: { artwork: Artwork }) {
   );
 }
 
-export default function HomePageArtworkCarousel({ artworks }: { artworks: Artwork[] }) {
+export default function HomePageArtworkCarousel({ artworks }: { artworks: ArtworkWithCollections[] }) {
   return (
       <Carousel 
         className="w-full h-full"

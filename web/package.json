@@ -19,7 +19,12 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:fixtures:load": "tsx src/database/fixtures/load.ts"
+    "db:fixtures:load": "tsx src/database/fixtures/load.ts",
+    "r2:generate-credentials": "node ./scripts/generate-r2-credentials.js",
+    "r2:manifest": "node ./scripts/generate-r2-manifest.js",
+    "r2:upload": "node ./scripts/upload-to-r2.js",
+    "r2:verify": "node ./scripts/verify-r2-uploads.js",
+    "r2:update-fixtures": "node ./scripts/update-fixture-urls.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.10.0",
@@ -38,6 +43,7 @@
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-fade": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "fs-extra": "^11.3.2",
     "lucide-react": "^0.525.0",
     "next": "15.3.4",
     "next-auth": "^5.0.0-beta.29",

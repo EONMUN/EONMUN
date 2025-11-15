@@ -1,15 +1,60 @@
-import { eq } from 'drizzle-orm';
-import { db, collections, artworks } from '@/lib/db';
+import { eq, sql } from 'drizzle-orm';
+import { db, collections, artworks, artworksToCollections } from '@/lib/db';
 
 export type Collection = typeof collections.$inferSelect;
 export type NewCollection = typeof collections.$inferInsert;
 export type Artwork = typeof artworks.$inferSelect;
+
+export type CollectionWithDefaultArtwork = Collection & {
+  defaultArtworkImageUrl: string | null;
+};
+
+export type ArtworkWithDefault = Artwork & {
+  isDefaultForCollection: boolean;
+};
+
+export type CollectionWithArtworks = Collection & {
+  artworks: ArtworkWithDefault[];
+  defaultArtwork: Artwork | null;
+};
 
 /**
  * Get all collections
  */
 export async function getAllCollections(): Promise<Collection[]> {
   return db.select().from(collections);
+}
+
+/**
+ * Get all collections with their default artwork image URL
+ */
+export async function getAllCollectionsWithDefaultArtwork(): Promise<CollectionWithDefaultArtwork[]> {
+  const allCollections = await db.select().from(collections);
+
+  // Get default artworks for each collection
+  const collectionIds = allCollections.map(c => c.id);
+  if (collectionIds.length === 0) {
+    return [];
+  }
+
+  const defaultArtworks = await db
+    .select({
+      collectionId: artworksToCollections.collectionId,
+      defaultImageUrl: artworks.defaultImageUrl,
+    })
+    .from(artworksToCollections)
+    .innerJoin(artworks, eq(artworksToCollections.artworkId, artworks.id))
+    .where(sql`${artworksToCollections.isDefaultForCollection} = 1`);
+
+  // Map default artwork images to collections
+  const defaultImageMap = new Map(
+    defaultArtworks.map(da => [da.collectionId, da.defaultImageUrl])
+  );
+
+  return allCollections.map(collection => ({
+    ...collection,
+    defaultArtworkImageUrl: defaultImageMap.get(collection.id) || null,
+  }));
 }
 
 /**
@@ -21,22 +66,45 @@ export async function getCollectionById(id: number): Promise<Collection | undefi
 }
 
 /**
- * Get a collection with its artworks
+ * Get a collection by slug
  */
-export async function getCollectionWithArtworks(id: number) {
-  return db.query.collections.findFirst({
-    where: eq(collections.id, id),
-    with: {
-      artworks: true,
-    },
-  });
+export async function getCollectionBySlug(slug: string): Promise<Collection | undefined> {
+  const results = await db.select().from(collections).where(eq(collections.slug, slug));
+  return results[0];
 }
 
 /**
- * Get all artworks for a collection
+ * Get a collection by slug with all its artworks
  */
-export async function getArtworksByCollectionId(collectionId: number): Promise<Artwork[]> {
-  return db.select().from(artworks).where(eq(artworks.collectionId, collectionId));
+export async function getCollectionWithArtworksBySlug(slug: string): Promise<CollectionWithArtworks | null> {
+  // Get the collection
+  const [collection] = await db.select().from(collections).where(eq(collections.slug, slug));
+  if (!collection) {
+    return null;
+  }
+
+  // Get all artworks for this collection with their default status
+  const artworkData = await db
+    .select({
+      artwork: artworks,
+      isDefault: artworksToCollections.isDefaultForCollection,
+    })
+    .from(artworksToCollections)
+    .innerJoin(artworks, eq(artworksToCollections.artworkId, artworks.id))
+    .where(eq(artworksToCollections.collectionId, collection.id));
+
+  const artworksWithDefault: ArtworkWithDefault[] = artworkData.map((row) => ({
+    ...row.artwork,
+    isDefaultForCollection: row.isDefault,
+  }));
+
+  const defaultArtwork = artworksWithDefault.find(a => a.isDefaultForCollection) || null;
+
+  return {
+    ...collection,
+    artworks: artworksWithDefault,
+    defaultArtwork,
+  };
 }
 
 /**

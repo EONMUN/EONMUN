@@ -135,3 +135,6 @@ build
 ############################
 
 data/uploads/artworks/*
+data/uploads/
+data/r2-manifest.json
+data/data.json.backup

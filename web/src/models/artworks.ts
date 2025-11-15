@@ -20,16 +20,25 @@ export async function getArtworkById(id: number): Promise<Artwork | undefined> {
 }
 
 /**
- * Get an artwork with its collection
+ * Get an artwork by slug
  */
-export async function getArtworkWithCollection(id: number) {
-  return db.query.artworks.findFirst({
-    where: eq(artworks.id, id),
-    with: {
-      collection: true,
-    },
-  });
+export async function getArtworkBySlug(slug: string): Promise<Artwork | undefined> {
+  const results = await db.select().from(artworks).where(eq(artworks.slug, slug));
+  return results[0];
 }
+
+/**
+ * Get an artwork with its collection
+ * TODO: Update for many-to-many relationship using artworks_to_collections
+ */
+// export async function getArtworkWithCollection(id: number) {
+//   return db.query.artworks.findFirst({
+//     where: eq(artworks.id, id),
+//     with: {
+//       collection: true,
+//     },
+//   });
+// }
 
 /**
  * Create a new artwork

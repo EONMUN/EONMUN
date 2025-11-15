@@ -25,8 +25,8 @@
  * ```
  */
 
-import { inArray, and, isNotNull, isNull } from 'drizzle-orm';
-import { db, collections, artworks } from '@/lib/db';
+import { eq, inArray, and, isNotNull, isNull } from 'drizzle-orm';
+import { db, collections, artworks, artworksToCollections } from '@/lib/db';
 import type { SelectCollection } from '@/database/factories/collection.factory';
 import type { SelectArtwork } from '@/database/factories/artwork.factory';
 
@@ -140,21 +140,23 @@ export async function findCollectionsWithArtworks(
     return [];
   }
 
-  // Get all artworks for the matched collections
+  // Get all artworks for the matched collections via junction table
   const collectionIds = matchedCollections.map((c) => c.id);
-  const relatedArtworks = await db
-    .select()
-    .from(artworks)
-    .where(inArray(artworks.collectionId, collectionIds));
+  const junctionData = await db
+    .select({
+      collectionId: artworksToCollections.collectionId,
+      artwork: artworks,
+    })
+    .from(artworksToCollections)
+    .innerJoin(artworks, eq(artworksToCollections.artworkId, artworks.id))
+    .where(inArray(artworksToCollections.collectionId, collectionIds));
 
   // Group artworks by collection ID
   const artworksByCollectionId = new Map<number, SelectArtwork[]>();
-  for (const artwork of relatedArtworks) {
-    if (artwork.collectionId) {
-      const existing = artworksByCollectionId.get(artwork.collectionId) || [];
-      existing.push(artwork);
-      artworksByCollectionId.set(artwork.collectionId, existing);
-    }
+  for (const row of junctionData) {
+    const existing = artworksByCollectionId.get(row.collectionId) || [];
+    existing.push(row.artwork);
+    artworksByCollectionId.set(row.collectionId, existing);
   }
 
   // Combine collections with their artworks

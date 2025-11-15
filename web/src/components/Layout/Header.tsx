@@ -1,79 +1,9 @@
-"use client"
+import { auth } from '@/app/auth';
+import { Navigation } from './Navigation';
 
-import React from "react";
-import { LinkComponent } from "../LinkComponent";
-import { SITE_NAME, SOCIAL_TWITTER, SOCIAL_INSTAGRAM } from "@/utils/site";
-import { FrostedGlass } from "../ui/FrostedGlass";
-import { Twitter, Instagram } from "lucide-react";
-import ThemeToggle from "../ThemeToggle";
-import { usePathname } from "next/navigation";
+export async function Header() {
+  const session = await auth();
+  const isAdmin = session?.user ? (session.user as { admin?: boolean }).admin : false;
 
-
-export function Header() {
-  const pathname = usePathname();
-  const isHome =  pathname === '/';
-
-  
-  const NavigationContent = () => (
-    <>
-      <LinkComponent 
-        href="/collections" 
-        className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
-      >
-        Collections
-      </LinkComponent>
-      <LinkComponent 
-        href="/about" 
-        className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
-      >
-        About
-      </LinkComponent>
-      <LinkComponent 
-        href="/contact" 
-        className={`text-xs sm:text-sm transition-colors`}
-      >
-        Contact
-      </LinkComponent>
-      <LinkComponent
-        href="/store"
-        className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
-      >
-        Store
-      </LinkComponent>
-      <LinkComponent
-        href={`https://x.com/${SOCIAL_TWITTER}`}
-        className={`flex items-center justify-center transition-colors ${isHome ? 'text-white' : ''}`}
-      >
-        <Twitter className="w-3 h-3" />
-      </LinkComponent>
-      <LinkComponent
-        href={`https://instagram.com/${SOCIAL_INSTAGRAM}`}
-        className={`flex items-center justify-center transition-colors ${isHome ? 'text-white' : ''}`}
-      >
-        <Instagram className="w-3 h-3" />
-      </LinkComponent>
-      {!isHome && <ThemeToggle />}
-    </>
-  );
-
-  return (
-    <nav className="sticky top-0 z-50 p-2 flex justify-between items-center gap-2 bg-transparent">
-      <LinkComponent href="/" className={`pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold transition-colors ${isHome ? 'text-white' : ''}`}>
-          {SITE_NAME}
-      </LinkComponent>
-
-      {isHome ? (
-        <FrostedGlass
-          className="navbar flex flex-wrap gap-2 sm:gap-4 uppercase justify-between p-2 sm:p-4 rounded-lg font-bold tracking-wider sm:tracking-widest w-full sm:w-auto items-center"
-          variant="dark"
-        >
-          <NavigationContent />
-        </FrostedGlass>
-      ) : (
-        <div   className="flex flex-wrap gap-2 sm:gap-4 uppercase justify-between p-2 sm:p-4 font-bold tracking-wider sm:tracking-widest w-full sm:w-auto items-center">
-          <NavigationContent />
-        </div>
-      )}
-    </nav>
-  );
+  return <Navigation isAdmin={isAdmin} />;
 }

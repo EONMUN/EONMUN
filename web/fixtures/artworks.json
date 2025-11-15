@@ -7,12 +7,10 @@
     "year": 2023,
     "price": 250000,
     "images": [
-      "/artworks/soleil-et-montagnes/5bba6-img_5201-scaled-1.webp",
-      "/artworks/soleil-et-montagnes/9ff11-img_5195.webp",
-      "/artworks/soleil-et-montagnes/ca342-img_5203-scaled-1.webp",
-      "/artworks/soleil-et-montagnes/what-s-inside-a-black-hole.jpg.jpeg"
+      "https://r2.eonmun.com/soleil_et_montagnes_what_s_inside_a_black_hole_jpg_14c4a50009.jpeg"
     ],
     "collectionSlug": "featured",
+    "isDefaultForCollection": true,
     "publishedAt": "2024-01-01T00:00:00Z",
     "locale": "en"
   },
@@ -24,7 +22,8 @@
     "year": 2023,
     "price": 300000,
     "images": [
-      "/artworks/quiescent-citadel/quiescent-citadel.jpeg"
+      "https://r2.eonmun.com/quiescent_citadel_41dd0dd7f0.jpeg",
+      "https://r2.eonmun.com/quiescent_citadel_42bd592172.jpeg"
     ],
     "collectionSlug": "featured",
     "publishedAt": "2024-01-01T00:00:00Z",

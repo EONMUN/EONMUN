@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Artwork } from "@/lib/strapi";
+import type { ArtworkWithCollections } from "@/models/artwork";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
 
 interface ArtworkInfoProps {
-  artwork: Artwork;
+  artwork: ArtworkWithCollections;
   className?: string;
 }
 
