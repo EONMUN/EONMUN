@@ -136,3 +136,62 @@ export async function updateCollection(
 export async function deleteCollection(id: number): Promise<void> {
   await db.delete(collections).where(eq(collections.id, id));
 }
+
+/**
+ * Add an artwork to a collection
+ */
+export async function addArtworkToCollection(
+  collectionId: number,
+  artworkId: number,
+  isDefault: boolean = false
+): Promise<void> {
+  // If setting as default, first unset any existing default
+  if (isDefault) {
+    await db
+      .update(artworksToCollections)
+      .set({ isDefaultForCollection: false })
+      .where(eq(artworksToCollections.collectionId, collectionId));
+  }
+
+  await db.insert(artworksToCollections).values({
+    artworkId,
+    collectionId,
+    isDefaultForCollection: isDefault,
+  });
+}
+
+/**
+ * Remove an artwork from a collection
+ */
+export async function removeArtworkFromCollection(
+  collectionId: number,
+  artworkId: number
+): Promise<void> {
+  await db
+    .delete(artworksToCollections)
+    .where(
+      sql`${artworksToCollections.collectionId} = ${collectionId} AND ${artworksToCollections.artworkId} = ${artworkId}`
+    );
+}
+
+/**
+ * Set an artwork as the default for a collection
+ */
+export async function setDefaultArtwork(
+  collectionId: number,
+  artworkId: number
+): Promise<void> {
+  // First, unset any existing default
+  await db
+    .update(artworksToCollections)
+    .set({ isDefaultForCollection: false })
+    .where(eq(artworksToCollections.collectionId, collectionId));
+
+  // Then set the new default
+  await db
+    .update(artworksToCollections)
+    .set({ isDefaultForCollection: true })
+    .where(
+      sql`${artworksToCollections.collectionId} = ${collectionId} AND ${artworksToCollections.artworkId} = ${artworkId}`
+    );
+}

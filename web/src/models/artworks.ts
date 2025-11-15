@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql, or, like } from 'drizzle-orm';
 import { db, artworks } from '@/lib/db';
 
 export type Artwork = typeof artworks.$inferSelect;
@@ -25,6 +25,26 @@ export async function getArtworkById(id: number): Promise<Artwork | undefined> {
 export async function getArtworkBySlug(slug: string): Promise<Artwork | undefined> {
   const results = await db.select().from(artworks).where(eq(artworks.slug, slug));
   return results[0];
+}
+
+/**
+ * Search artworks by title or artist
+ */
+export async function searchArtworks(query: string): Promise<Artwork[]> {
+  if (!query || query.trim() === '') {
+    return getAllArtworks();
+  }
+
+  const searchPattern = `%${query}%`;
+  return db
+    .select()
+    .from(artworks)
+    .where(
+      or(
+        like(artworks.title, searchPattern),
+        like(artworks.artist, searchPattern)
+      )
+    );
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import * as collectionModel from '@/models/collections';
+import * as artworkModel from '@/models/artworks';
 import type { Collection, NewCollection } from '@/models/collections';
 import { guardAuth, guardAdmin } from '@/lib/actions';
 
@@ -115,5 +116,70 @@ export async function deleteCollectionAdmin(id: number) {
   } catch (error) {
     console.error('Error deleting collection:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete collection' };
+  }
+}
+
+export async function addArtworkToCollectionAdmin(
+  collectionId: number,
+  artworkId: number,
+  isDefault: boolean = false
+) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
+  try {
+    await collectionModel.addArtworkToCollection(collectionId, artworkId, isDefault);
+    revalidatePath('/admin/collections');
+    return { success: true };
+  } catch (error) {
+    console.error('Error adding artwork to collection:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to add artwork to collection' };
+  }
+}
+
+export async function removeArtworkFromCollectionAdmin(
+  collectionId: number,
+  artworkId: number
+) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
+  try {
+    await collectionModel.removeArtworkFromCollection(collectionId, artworkId);
+    revalidatePath('/admin/collections');
+    return { success: true };
+  } catch (error) {
+    console.error('Error removing artwork from collection:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to remove artwork from collection' };
+  }
+}
+
+export async function setDefaultArtworkAdmin(
+  collectionId: number,
+  artworkId: number
+) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
+  try {
+    await collectionModel.setDefaultArtwork(collectionId, artworkId);
+    revalidatePath('/admin/collections');
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting default artwork:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to set default artwork' };
+  }
+}
+
+export async function searchArtworksAdmin(query: string) {
+  const authError = await guardAuth();
+  if (authError) return { data: [] };
+
+  try {
+    const artworks = await artworkModel.searchArtworks(query);
+    return { data: artworks };
+  } catch (error) {
+    console.error('Error searching artworks:', error);
+    return { data: [] };
   }
 }
