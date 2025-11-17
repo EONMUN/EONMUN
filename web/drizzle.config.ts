@@ -4,9 +4,8 @@ import * as path from "path";
 
 dotenv.config(); // Fallback to .env
 
-// Use WRITE token for push operations
-const authToken =
-  process.env.TURSO_AUTH_TOKEN_WRITE || process.env.TURSO_AUTH_TOKEN;
+// Use Turso credentials if available
+const authToken = process.env.TURSO_AUTH_TOKEN;
 const databaseUrl = process.env.TURSO_DATABASE_URL;
 
 // Use Turso if credentials are available, otherwise use local SQLite

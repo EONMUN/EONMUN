@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     ];
   },
   skipTrailingSlashRedirect: true,
+  serverExternalPackages: ['@libsql/isomorphic-ws'],
 };
 
 export default nextConfig;

@@ -1,69 +1,30 @@
 import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client/web';
 import * as schema from './schema';
-import path from 'path';
 export * from './schema';
 
 // Create database client based on environment
-async function createDatabaseClient() {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const hasTursoConfig = process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL;
-  
-  // In production, require Turso configuration
-  if (!isDevelopment && !hasTursoConfig) {
-    throw new Error(
-      'Production database configuration missing. ' +
-      'TURSO_AUTH_TOKEN and TURSO_DATABASE_URL must be set in production. ' +
-      'See .env.production.example for setup instructions.'
-    );
-  }
-  
-  // Use Turso in production or if explicitly configured in development
-  if (hasTursoConfig && !isDevelopment) {
-    // Production Turso configuration - use web client for Cloudflare Workers
-    const authToken = process.env.TURSO_AUTH_TOKEN;
-    const databaseUrl = process.env.TURSO_DATABASE_URL;
-    
-    if (!authToken || !databaseUrl) {
-      throw new Error('TURSO_AUTH_TOKEN and TURSO_DATABASE_URL must both be set');
-    }
-    
-    const { createClient } = await import('@libsql/client/web');
+export function createDatabaseClient() {
+  // Check if we're in production with Turso credentials
+  if (process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL) {
+    // Production Turso configuration
     const client = createClient({
-      url: databaseUrl,
-      authToken: authToken,
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
     });
     return drizzle(client, { schema });
   }
 
-  // Local development with file-based SQLite - use Node.js client
-  const { createClient } = await import('@libsql/client');
-  const dbPath = path.join(process.cwd(), 'local.db');
+  // Local development with SQLite or local Turso
   const client = createClient({
-    url: `file:${dbPath}`,
+    url:
+      process.env.DATABASE_URL ||
+      `http://localhost:${process.env.DB_PORT || 8080}`,
   });
-  const db = drizzle(client, { schema });
-
-  // Auto-migrate in-memory database on startup
-  const { migrate } = await import('drizzle-orm/libsql/migrator');
-  await migrate(db, {
-    migrationsFolder: path.join(process.cwd(), 'drizzle')
-  });
-
-  // Auto-load fixtures in development (not production and not during tests)
-  if (isDevelopment && process.env.NODE_ENV !== 'test') {
-    try {
-      const { loadFixtures } = await import('../../database/fixtures/load');
-      await loadFixtures(db);
-    } catch (error) {
-      console.warn('⚠️  Could not load fixtures:', error);
-    }
-  }
-
-  return db;
+  return drizzle(client, { schema });
 }
 
 // Create db instance for both local and production
-// Using top-level await (supported in modern Node.js and Next.js)
-export const db = await createDatabaseClient();
+export const db = createDatabaseClient();
 
 export type Database = typeof db;
