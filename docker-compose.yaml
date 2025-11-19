@@ -1,38 +1,4 @@
 services:
-  strapi-init:
-    build:
-      context: ./strapi
-      dockerfile: Dockerfile
-      target: base
-    volumes:
-      - ./strapi:/app
-    command: npm install
-
-  strapi-seed:
-    build:
-      context: ./strapi
-      dockerfile: Dockerfile
-      target: base
-    volumes:
-      - ./strapi:/app
-    env_file:
-      - .env
-    command: npm run seed:example
-    depends_on:
-      strapi-init:
-        condition: service_completed_successfully
-    networks:
-      - strapi
-
-  strapi:
-    extends:
-      service: strapi-seed
-    environment:
-      - HOST=0.0.0.0
-      - PORT=${STRAPI_PORT:-1337}
-    command: npm run dev
-    ports:
-      - "${STRAPI_PORT:-1337}:${STRAPI_PORT:-1337}"
 
   web-init:
     build:
@@ -56,8 +22,6 @@ services:
     depends_on:
       web-init:
         condition: service_completed_successfully
-      strapi:
-        condition: service_started
     networks:
       - strapi
 
