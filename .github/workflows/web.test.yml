@@ -30,8 +30,6 @@ name: Web Tests
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches: [ master ]
     paths:
       - 'src/**'
       - 'public/**'
