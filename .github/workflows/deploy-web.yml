@@ -20,7 +20,7 @@
 # - 'next' (with same secrets, shares preview database)
 #
 # Setup:
-# 1. Create .env files: web/.env.production, web/.env.preview
+# 1. Create .env files: .env.production, .env.preview
 # 2. Run: bin/gh-secrets
 # 3. Push to master or next branch
 
@@ -30,7 +30,10 @@ on:
   push:
     branches: [ master, next ]
     paths:
-      - 'web/**'
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'next.config.ts'
       - '.github/workflows/deploy-web.yml'
       - '.github/actions/deploy-cloudflare-worker/**'
 
@@ -54,14 +57,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./web
         run: npm ci
 
       - name: Upload runtime secrets
-        working-directory: ./web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -74,14 +75,12 @@ jobs:
           echo "$TURSO_DATABASE_URL" | npx wrangler secret put TURSO_DATABASE_URL --env production
 
       - name: Build Next.js app for Cloudflare
-        working-directory: ./web
         env:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_READ }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
         run: npx opennextjs-cloudflare build
 
       - name: Deploy to Cloudflare Workers
-        working-directory: ./web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -111,14 +110,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./web
         run: npm ci
 
       - name: Upload runtime secrets (Next)
-        working-directory: ./web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -131,14 +128,12 @@ jobs:
           echo "$TURSO_DATABASE_URL" | npx wrangler secret put TURSO_DATABASE_URL --env next
 
       - name: Build Next.js app for Cloudflare
-        working-directory: ./web
         env:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_READ }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
         run: npx opennextjs-cloudflare build
 
       - name: Deploy to Cloudflare Workers (Next)
-        working-directory: ./web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

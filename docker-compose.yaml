@@ -2,11 +2,11 @@ services:
 
   web-init:
     build:
-      context: ./web
+      context: .
       dockerfile: Dockerfile
       target: base
     volumes:
-      - ./web:/app
+      - .:/app
     command: npm install
 
   web:
@@ -22,9 +22,7 @@ services:
     depends_on:
       web-init:
         condition: service_completed_successfully
-    networks:
-      - strapi
 
 networks:
-  strapi:
+  default:
     driver: bridge
