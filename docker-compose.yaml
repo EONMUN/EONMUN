@@ -1,67 +1,28 @@
 services:
-  strapi-init:
-    build:
-      context: ./strapi
-      dockerfile: Dockerfile
-      target: base
-    volumes:
-      - ./strapi:/app
-    command: npm install
-
-  strapi-seed:
-    build:
-      context: ./strapi
-      dockerfile: Dockerfile
-      target: base
-    volumes:
-      - ./strapi:/app
-    env_file:
-      - strapi/.env
-    command: npm run seed:example
-    depends_on:
-      strapi-init:
-        condition: service_completed_successfully
-    networks:
-      - strapi
-
-  strapi:
-    extends:
-      service: strapi-seed
-    environment:
-      - HOST=0.0.0.0
-      - PORT=${STRAPI_INTERNAL_PORT:-1337}
-    command: npm run dev
-    ports:
-      - "${STRAPI_PORT:-1337}:${STRAPI_INTERNAL_PORT:-1337}"
 
   web-init:
     build:
-      context: ./web
+      context: .
       dockerfile: Dockerfile
       target: base
     volumes:
-      - ./web:/app
+      - .:/app
     command: npm install
 
   web:
     extends:
       service: web-init
     environment:
-      - PORT=${WEB_INTERNAL_PORT:-3000}
+      - PORT=${WEB_PORT:-3000}
     env_file:
-      - strapi/.env
-      - web/.env
-    command: npm run dev
+      - .env
+    command: npm run dev -- --port ${WEB_PORT:-3000}
     ports:
-      - "${WEB_INTERNAL_PORT:-3000}:${WEB_INTERNAL_PORT:-3000}"
+      - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
     depends_on:
       web-init:
         condition: service_completed_successfully
-      strapi:
-        condition: service_started
-    networks:
-      - strapi
 
 networks:
-  strapi:
+  default:
     driver: bridge

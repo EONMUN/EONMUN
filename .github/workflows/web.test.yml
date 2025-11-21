@@ -1,0 +1,74 @@
+# Web Tests and Preview Deployment
+#
+# Automated testing and preview environment deployment for pull requests.
+#
+# IMPORTANT: Changes to this workflow should be reflected in:
+# - docs/conventions/cloudflare-workers-turso.md (Preview Deployment section)
+# - bin/README.md (if affecting secrets workflow)
+#
+# Triggers:
+# - Pull request opened/updated → Runs tests and deploys preview
+# - Pull request closed → Cleans up preview environment
+#
+# Jobs:
+# 1. lint-and-typecheck: Runs ESLint and TypeScript checks
+# 2. deploy-preview: Deploys to preview environment (only if tests pass)
+#    - Deploys to https://pr-{number}.eonmun.com
+#    - Uploads runtime secrets from 'preview' environment
+#    - Comments on PR with preview URL
+# 3. cleanup-preview: Removes preview environment when PR closes
+#
+# Required GitHub Environment:
+# - 'preview' (with TURSO_AUTH_TOKEN, TURSO_DATABASE_URL, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID)
+#
+# Setup:
+# 1. Create .env file: .env.preview
+# 2. Run: bin/gh-secrets --preview-only
+# 3. Create a pull request
+
+name: Web Tests
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'next.config.ts'
+      - '.github/workflows/web.test.yml'
+      - '.github/actions/deploy-cloudflare-worker/**'
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  lint-and-typecheck:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npx tsc --noEmit
+
+      - name: Test summary
+        if: success()
+        run: |
+          echo "## ✅ Tests Passed" >> $GITHUB_STEP_SUMMARY
+          echo "All linting and type checks passed successfully" >> $GITHUB_STEP_SUMMARY

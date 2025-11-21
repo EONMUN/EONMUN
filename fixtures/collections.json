@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Oriental",
+    "slug": "oriental",
+    "description": "Collection: Oriental",
+    "publishedAt": "2025-07-16T22:19:42.286Z",
+    "locale": "en"
+  },
+  {
+    "name": "B&W",
+    "slug": "black-and-white",
+    "description": "Collection: B&W",
+    "publishedAt": "2025-07-20T15:08:03.709Z",
+    "locale": "en"
+  },
+  {
+    "name": "Botánica",
+    "slug": "botanica",
+    "description": "Collection: Botánica",
+    "publishedAt": "2025-07-20T15:19:29.053Z",
+    "locale": "en"
+  },
+  {
+    "name": "Dorada",
+    "slug": "dorada",
+    "description": "Collection: Dorada",
+    "publishedAt": "2025-07-20T15:19:55.164Z",
+    "locale": "en"
+  },
+  {
+    "name": "2025",
+    "slug": "2025",
+    "description": "Collection: 2025",
+    "publishedAt": "2025-07-22T23:49:30.226Z",
+    "locale": "en"
+  },
+  {
+    "name": "2024",
+    "slug": "2024",
+    "description": "Collection: 2024",
+    "publishedAt": "2025-07-23T03:49:24.481Z",
+    "locale": "en"
+  }
+]

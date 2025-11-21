@@ -1,0 +1,153 @@
+[
+  {
+    "title": "Soleil et Montagnes",
+    "slug": "soleil-et-montagnes",
+    "description": "Acrylic, canvas paper\n13\"x16\"",
+    "artist": "EONMUN",
+    "year": 2025,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/soleil_et_montagnes_what_s_inside_a_black_hole_jpg_14c4a50009.jpeg"
+    ],
+    "collectionSlug": "oriental",
+    "isDefaultForCollection": false,
+    "publishedAt": "2025-07-23T03:56:51.040Z",
+    "locale": "en"
+  },
+  {
+    "title": "Quiescent Citadel",
+    "slug": "quiescent-citadel",
+    "description": "Watercolor, paper\n12\"x16\"",
+    "artist": "EONMUN",
+    "year": 2025,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/quiescent_citadel_41dd0dd7f0.jpeg",
+      "https://r2.eonmun.com/quiescent_citadel_42bd592172.jpeg"
+    ],
+    "collectionSlug": "black-and-white",
+    "publishedAt": "2025-07-23T03:56:56.621Z",
+    "locale": "en",
+    "isDefaultForCollection": false
+  },
+  {
+    "title": "Persimmons del Oro",
+    "slug": "persimmons-del-oro",
+    "description": "Watercolor, pencil, gold leaf, paper\n14\"x18\"",
+    "artist": "EONMUN",
+    "year": 2025,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/PERS_Int_b08c7cef7c.jpeg"
+    ],
+    "collectionSlug": "dorada",
+    "isDefaultForCollection": true,
+    "publishedAt": "2025-07-23T03:57:11.617Z",
+    "locale": "en"
+  },
+  {
+    "title": "Limones del Cobre",
+    "slug": "limones-del-cobre",
+    "description": null,
+    "artist": "EONMUN",
+    "year": null,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/LIM_Int_2b192a6609.jpeg"
+    ],
+    "collectionSlug": "dorada",
+    "isDefaultForCollection": false,
+    "publishedAt": "2025-07-23T03:57:29.040Z",
+    "locale": "en"
+  },
+  {
+    "title": "Casa de Fuji",
+    "slug": "casa-de-fuji",
+    "description": "Acrylic, watercolor, paper\n12\"x14\"",
+    "artist": "EONMUN",
+    "year": 2024,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/Casa_De_Fuji_Int_0b8604171b.jpeg"
+    ],
+    "collectionSlug": "oriental",
+    "isDefaultForCollection": true,
+    "publishedAt": "2025-07-23T03:59:52.922Z",
+    "locale": "en"
+  },
+  {
+    "title": "Banc de Poissons",
+    "slug": "banc-de-poissons",
+    "description": "Watercolor, rice paper\n12\"x14\"",
+    "artist": "EONMUN",
+    "year": 2024,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/Banc_De_Poison_Int_0bbb21ceb8.jpeg"
+    ],
+    "collectionSlug": "2024",
+    "isDefaultForCollection": true,
+    "publishedAt": "2025-07-23T04:13:52.427Z",
+    "locale": "en"
+  },
+  {
+    "title": "Occullilium",
+    "slug": "occullilium",
+    "description": "Watercolor, pencil, gold leaf, paper\n14\"x18\"",
+    "artist": "EONMUN",
+    "year": 2025,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/LIL_Int_d455e0684a.jpeg"
+    ],
+    "collectionSlug": "botanica",
+    "isDefaultForCollection": true,
+    "publishedAt": "2025-07-23T04:15:02.521Z",
+    "locale": "en"
+  },
+  {
+    "title": "Equestrian Equilibrium",
+    "slug": "equestrian-equilibrium",
+    "description": "Watercolor, gold leaf, paper\n13\"x16\"",
+    "artist": "EONMUN",
+    "year": 2025,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/eehor_d23eb41f2c.jpg"
+    ],
+    "collectionSlug": "2025",
+    "isDefaultForCollection": true,
+    "publishedAt": "2025-07-23T03:52:49.216Z",
+    "locale": "en"
+  },
+  {
+    "title": "Quetzalcōātlin tetl",
+    "slug": "quetzalcoatlin-tetl",
+    "description": "Watercolor, pencil, paper\n14\"x18\"",
+    "artist": "EONMUN",
+    "year": 2025,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/quetzalcoatlin_tetl_e3a31b4836.jpeg"
+    ],
+    "collectionSlug": "black-and-white",
+    "isDefaultForCollection": true,
+    "publishedAt": "2025-07-23T03:53:18.518Z",
+    "locale": "en"
+  },
+  {
+    "title": "Camélia",
+    "slug": "camelia",
+    "description": "Japanese ink, rice paper\n19\"x25\"",
+    "artist": "EONMUN",
+    "year": 2024,
+    "price": null,
+    "images": [
+      "https://r2.eonmun.com/Camelia_b90020b2bc.jpeg"
+    ],
+    "collectionSlug": "botanica",
+    "isDefaultForCollection": false,
+    "publishedAt": "2025-07-23T04:19:07.320Z",
+    "locale": "en"
+  }
+]

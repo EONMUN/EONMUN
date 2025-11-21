@@ -1,0 +1,84 @@
+# Deploy Cloudflare Worker Action
+#
+# Builds and deploys a Next.js app to Cloudflare Workers using OpenNext.
+#
+# This action is used by:
+# - .github/workflows/deploy-web.yml (production and next deployments)
+# - .github/workflows/web.test.yml (preview deployments for PRs)
+#
+# IMPORTANT: Changes to this action should be reflected in:
+# - docs/conventions/cloudflare-workers-turso.md (Custom Action section)
+# - bin/README.md (if affecting secrets workflow)
+#
+# Workflow:
+# 1. Sets up Node.js with npm caching
+# 2. Installs dependencies from web/package-lock.json
+# 3. Builds Next.js app with opennextjs-cloudflare
+# 4. Deploys to Cloudflare Workers (environment determined by inputs)
+#
+# Note: Runtime secrets are uploaded separately by the workflow after this action completes
+
+name: 'Deploy Cloudflare Worker'
+description: 'Build and deploy a Next.js app to Cloudflare Workers using OpenNext'
+
+inputs:
+  environment:
+    description: 'Environment to deploy to (production or preview)'
+    required: true
+  cloudflare-api-token:
+    description: 'Cloudflare API token for deployment'
+    required: true
+  cloudflare-account-id:
+    description: 'Cloudflare account ID'
+    required: true
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '22'
+  wrangler-environment:
+    description: 'Wrangler environment name (optional, for preview deployments)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: web/package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: web
+      run: npm ci
+
+    - name: Build Next.js app for Cloudflare
+      shell: bash
+      working-directory: web
+      run: npx opennextjs-cloudflare build
+
+    - name: Deploy to Cloudflare Workers (Production)
+      if: inputs.environment == 'production'
+      shell: bash
+      working-directory: web
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+      run: npx opennextjs-cloudflare deploy
+
+    - name: Deploy to Cloudflare Workers (Preview)
+      if: inputs.environment == 'preview'
+      shell: bash
+      working-directory: web
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+      run: |
+        if [ -n "${{ inputs.wrangler-environment }}" ]; then
+          npx opennextjs-cloudflare deploy --env ${{ inputs.wrangler-environment }}
+        else
+          npx opennextjs-cloudflare deploy
+        fi
