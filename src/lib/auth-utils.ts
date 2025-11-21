@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import { auth } from '@/app/auth';
 
@@ -61,18 +61,30 @@ export async function requireAuth() {
  *
  * Use this in Server Components (NOT Server Actions) when you need to
  * ensure a user is authenticated AND has admin privileges.
- * Redirects to sign-in page if user is not authenticated or not an admin.
+ * Redirects to sign-in page if user is not authenticated.
+ * Returns 404 if user is authenticated but not an admin.
  *
  * @returns The authenticated session (with admin user)
- * @throws redirect() if user is not authenticated or not admin
+ * @throws redirect() if user is not authenticated
+ * @throws notFound() if user is authenticated but not admin
  */
 export async function requireAdmin() {
-  const session = await getAdminSession();
+  // First check if user is authenticated at all
+  const session = await getSession();
 
   if (!session) {
+    // User not authenticated - send to sign-in
     const headersList = await headers();
     const pathname = headersList.get('x-pathname') || '/admin';
     redirect(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
+  }
+
+  // User is authenticated, check if they're an admin
+  const isAdmin = (session.user as { admin?: boolean }).admin;
+
+  if (!isAdmin) {
+    // User is authenticated but not an admin - return 404
+    notFound();
   }
 
   return session;

@@ -1,5 +1,5 @@
 import { signIn, auth } from '@/app/auth';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 
 /**
  * Sign In Page
@@ -16,7 +16,15 @@ export default async function SignInPage({
   const session = await auth();
   const params = await searchParams;
   if (session?.user) {
-    redirect(params.callbackUrl || '/');
+    const callbackUrl = params.callbackUrl || '/';
+    const isAdmin = (session.user as { admin?: boolean }).admin;
+
+    // If trying to access admin routes but not an admin, return 404
+    if (callbackUrl.startsWith('/admin') && !isAdmin) {
+      notFound();
+    }
+
+    redirect(callbackUrl);
   }
 
   const isDevelopment = process.env.NODE_ENV === 'development';
