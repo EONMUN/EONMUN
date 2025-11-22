@@ -85,56 +85,48 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     /**
      * JWT Callback - Runs on sign-in and token refresh
      *
-     * Responsibilities:
-     * - Look up user by email on every request
-     * - Create new users for OAuth (auto-registration)
-     * - Add user ID and admin status to token
+     * Called whenever a JWT is created (at sign in) or updated (when session is accessed).
+     * We look up the user in the database and store their ID and admin status in the token.
      */
-    async jwt({ token, user, account }) {
-      // On initial sign-in: user object is available
-      if (user?.id) {
+    async jwt({ token, user }) {
+      // On sign-in with Credentials provider, user object is fully populated with DB data
+      if (user && user.id) {
         token.id = user.id;
         token.admin = (user as { admin?: boolean }).admin ?? false;
         return token;
       }
 
-      // On token refresh: look up user by email
-      const { email, name, picture } = token;
-
+      // For OAuth providers (Google) or token refresh, look up user by email
+      const { email, name, picture: image } = token;
       if (!email) {
-        return token;
+        throw new Error('No email found during JWT callback');
       }
 
       const [existingUser] = await db
         .select()
         .from(users)
-        .where(eq(users.email, email))
+        .where(eq(users.email, email as string))
         .limit(1);
 
-      // If user exists, update token with latest data
       if (existingUser) {
         token.id = existingUser.id.toString();
         token.admin = existingUser.admin ?? false;
         return token;
       }
 
-      // Auto-register new OAuth users
-      if (account?.provider === 'google') {
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            email,
-            name: name ?? 'User',
-            image: picture,
-            admin: false,
-          })
-          .returning();
+      // Create new user for OAuth sign-ins
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email: email as string,
+          name: (name as string | null) ?? 'User',
+          image: image as string | null,
+          admin: false,
+        })
+        .returning();
 
-        token.id = newUser.id.toString();
-        token.admin = newUser.admin ?? false;
-        return token;
-      }
-
+      token.id = newUser.id.toString();
+      token.admin = newUser.admin ?? false;
       return token;
     },
 
