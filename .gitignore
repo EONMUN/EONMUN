@@ -55,5 +55,9 @@ next-env.d.ts
 *.db-shm
 *.db-wal
 
+# uploaded files (development)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
 # planning files
 PLAN.md
