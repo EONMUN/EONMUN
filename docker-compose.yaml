@@ -1,28 +1,100 @@
 services:
+  db:
+    env_file:
+      - .env
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    platform: linux/amd64
+    environment:
+      - SQLD_HTTP_LISTEN_ADDR=0.0.0.0:${DB_PORT:-8080}
+    ports:
+      - '${DB_PORT:-8080}:${DB_PORT:-8080}'
+    volumes:
+      - db-data:/var/lib/sqld
 
-  web-init:
+  app-init:
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: Dockerfile
-      target: base
     volumes:
       - .:/app
-    command: npm install
-
-  web:
-    extends:
-      service: web-init
+    command: bash -c "npm install"
     environment:
-      - PORT=${WEB_PORT:-3000}
+      - NODE_ENV=development
+
+  # Database initialization: runs migrations and seeds test data
+  db-init:
     env_file:
       - .env
-    command: npm run dev -- --port ${WEB_PORT:-3000}
-    ports:
-      - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app/
+    command: bash -c "npm run db:migrate && npm run db:seed"
+    environment:
+      - DATABASE_URL=http://db:${DB_PORT:-8080}
     depends_on:
-      web-init:
+      app-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_started
+
+  web:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '${WEB_PORT:-3000}:${WEB_PORT:-3000}'
+    volumes:
+      - .:/app
+    command: node_modules/.bin/next dev --port ${WEB_PORT:-3000}
+    environment:
+      - NODE_ENV=development
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=http://db:${DB_PORT:-8080}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AUTH_URL=http://localhost:${WEB_PORT:-3000}
+      - AUTH_TRUST_HOST=true
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'curl',
+          '-f',
+          'http://localhost:${WEB_PORT:-3000}/api/health/readiness',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      app-init:
+        condition: service_completed_successfully
+      db-init:
         condition: service_completed_successfully
 
-networks:
-  default:
-    driver: bridge
+  e2e:
+    env_file:
+      - .env
+    image: mcr.microsoft.com/playwright:v1.52.0-noble
+    profiles:
+      - e2e
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - NODE_ENV=test
+      - PLAYWRIGHT_BASE_URL=http://web:${WEB_PORT:-3000}
+      - AUTH_URL=http://web:${WEB_PORT:-3000}
+      - AUTH_TRUST_HOST=true
+      - DATABASE_URL=http://db:${DB_PORT:-8080}
+    command: node_modules/.bin/playwright test
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  db-data:

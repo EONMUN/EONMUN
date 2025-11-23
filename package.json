@@ -19,6 +19,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/database/fixtures/load.ts",
     "db:fixtures:load": "tsx src/database/fixtures/load.ts",
     "r2:generate-credentials": "node ./scripts/generate-r2-credentials.js",
     "r2:manifest": "node ./scripts/generate-r2-manifest.js",

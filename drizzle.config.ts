@@ -7,9 +7,11 @@ dotenv.config(); // Fallback to .env
 // Use Turso credentials if available
 const authToken = process.env.TURSO_AUTH_TOKEN;
 const databaseUrl = process.env.TURSO_DATABASE_URL;
+const localDatabaseUrl = process.env.DATABASE_URL;
 
-// Use Turso if credentials are available, otherwise use local SQLite
+// Use Turso if credentials are available, otherwise use local database URL or file
 const usesTurso = !!(authToken && databaseUrl);
+const usesLocalTurso = !!localDatabaseUrl;
 
 export default defineConfig({
   schema: "./src/database/schema.ts",
@@ -20,7 +22,11 @@ export default defineConfig({
         url: databaseUrl!,
         authToken: authToken!,
       }
-    : {
-        url: "./data/eonmun.db",
-      },
+    : usesLocalTurso
+      ? {
+          url: localDatabaseUrl!,
+        }
+      : {
+          url: "./data/eonmun.db",
+        },
 });

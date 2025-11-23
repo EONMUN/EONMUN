@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { db, collections, artworks } from '@/lib/db';
+import { db, collections, artworks } from '@/database';
 import { collectionFactory } from '@/database/factories/collection.factory';
 import { artworkFactory } from '@/database/factories/artwork.factory';
 import { findCollections, findCollectionsWithArtworks } from '@/models/collection';

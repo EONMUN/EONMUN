@@ -54,3 +54,6 @@ next-env.d.ts
 *.db
 *.db-shm
 *.db-wal
+
+# planning files
+PLAN.md
