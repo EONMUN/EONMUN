@@ -2,8 +2,8 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { authConfig } from '@/lib/auth.config';
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
+import { db } from '@/database';
+import { users } from '@/database/schema';
 import { eq } from 'drizzle-orm';
 
 /**

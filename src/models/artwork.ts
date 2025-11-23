@@ -34,7 +34,7 @@
  */
 
 import { eq, inArray, and, isNotNull, isNull } from 'drizzle-orm';
-import { db, artworks, collections, artworksToCollections } from '@/lib/db';
+import { db, artworks, collections, artworksToCollections } from '@/database';
 import type { SelectArtwork } from '@/database/factories/artwork.factory';
 import type { SelectCollection } from '@/database/factories/collection.factory';
 

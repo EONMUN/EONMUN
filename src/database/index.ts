@@ -1,18 +1,32 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client/web';
 import * as schema from './schema';
+export * from './schema';
 
-// Use file-based database for local development
-// Use in-memory only for tests
-const DB_PATH = process.env.DATABASE_URL || './local.db';
+// Create database client based on environment
+export function createDatabaseClient() {
+  // Check if we're in production with Turso credentials
+  if (process.env.TURSO_AUTH_TOKEN && process.env.TURSO_DATABASE_URL) {
+    // Production Turso configuration
+    const client = createClient({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+    return drizzle(client, { schema });
+  }
 
-// Create SQLite database connection
-const sqlite = new Database(DB_PATH);
+  // Local development with SQLite or local Turso
+  const client = createClient({
+    url:
+      process.env.DATABASE_URL ||
+      `http://localhost:${process.env.DB_PORT || 8080}`,
+  });
+  return drizzle(client, { schema });
+}
 
-// Enable foreign keys
-sqlite.pragma('foreign_keys = ON');
+// Create db instance for both local and production
+export const db = createDatabaseClient();
 
-// Create Drizzle instance
-export const db = drizzle(sqlite, { schema });
+export type Database = typeof db;
 
 export default db;

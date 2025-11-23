@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { db, collections, artworks, artworksToCollections } from '@/lib/db';
+import { db, collections, artworks, artworksToCollections } from '@/database';
 
 export type Collection = typeof collections.$inferSelect;
 export type NewCollection = typeof collections.$inferInsert;

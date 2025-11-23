@@ -1,5 +1,5 @@
 import { eq, or, like } from 'drizzle-orm';
-import { db, artworks } from '@/lib/db';
+import { db, artworks } from '@/database';
 
 export type Artwork = typeof artworks.$inferSelect;
 export type NewArtwork = typeof artworks.$inferInsert;

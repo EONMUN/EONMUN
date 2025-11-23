@@ -26,7 +26,7 @@
 
 import { Factory as FisheryFactory } from 'fishery';
 import { faker as fakerInstance } from '@faker-js/faker';
-import { db as database } from '@/lib/db';
+import { db as database } from '@/database';
 
 /**
  * Factory class for defining test data factories.

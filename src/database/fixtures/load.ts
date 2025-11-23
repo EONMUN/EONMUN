@@ -9,8 +9,8 @@
  * 2. CLI script: npm run db:fixtures:load
  */
 
-import type { Database } from '@/lib/db';
-import { collections, artworks, artworksToCollections, users } from '@/lib/db/schema';
+import type { Database } from '@/database';
+import { collections, artworks, artworksToCollections, users } from '@/database/schema';
 import path from 'path';
 import fs from 'fs';
 
@@ -198,37 +198,19 @@ export async function loadFixtures(database: Database) {
 if (require.main === module) {
   (async () => {
     try {
-      // Load environment variables from .env.production
-      const dotenv = await import('dotenv');
-      dotenv.config({ path: path.join(process.cwd(), '.env.production') });
+      // Import the database creation function directly
+      const { createDatabaseClient } = await import('@/database');
 
-      // Import the database creation function directly to avoid top-level await issues
-      const { drizzle } = await import('drizzle-orm/libsql');
-      const schemaModule = await import('@/lib/db/schema');
-      const { createClient } = await import('@libsql/client');
+      // Use the same database client logic as the rest of the app
+      const db = createDatabaseClient();
 
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      // Support both TURSO_AUTH_TOKEN and TURSO_AUTH_TOKEN_WRITE
-      const authToken = process.env.TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN_WRITE;
-      const hasTursoConfig = authToken && process.env.TURSO_DATABASE_URL;
-
-      let db;
-
-      if (hasTursoConfig && !isDevelopment) {
-        // Use Turso for production
+      // Log connection info
+      if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
         console.log(`📡 Connecting to Turso: ${process.env.TURSO_DATABASE_URL}`);
-        const client = createClient({
-          url: process.env.TURSO_DATABASE_URL!,
-          authToken: authToken!,
-        });
-        db = drizzle(client, { schema: schemaModule });
+      } else if (process.env.DATABASE_URL) {
+        console.log(`📡 Connecting to database: ${process.env.DATABASE_URL}`);
       } else {
-        // Use local SQLite for development
-        const dbPath = path.join(process.cwd(), 'local.db');
-        const client = createClient({
-          url: `file:${dbPath}`,
-        });
-        db = drizzle(client, { schema: schemaModule });
+        console.log(`📡 Connecting to local database: http://localhost:${process.env.DB_PORT || 8080}`);
       }
 
       await loadFixtures(db);

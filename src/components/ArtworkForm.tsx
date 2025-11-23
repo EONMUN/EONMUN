@@ -3,7 +3,7 @@
 import { useState } from 'react';
 // import { useEffect } from 'react'; // TODO: Re-enable when collection loading is implemented
 import { useRouter } from 'next/navigation';
-import Image from '@/components/Image';
+import ImageUpload from '@/components/ImageUpload';
 import { createArtworkAdmin, updateArtworkAdmin, deleteArtworkAdmin, type Artwork } from '@/actions/admin/artwork';
 // import { getAllCollectionsAdmin, type Collection } from '@/actions/admin/collection';
 import { generateSlug } from '@/lib/utils';
@@ -22,6 +22,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
     description: artwork?.description || '',
     artist: artwork?.artist || '',
     price: artwork?.price?.toString() || '',
+    defaultImageUrl: artwork?.defaultImageUrl || '',
     // collectionId: artwork?.collectionId?.toString() || '',
   });
 
@@ -52,6 +53,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         description: formData.description || undefined,
         artist: formData.artist || undefined,
         price: formData.price ? parseInt(formData.price) : undefined,
+        defaultImageUrl: formData.defaultImageUrl || undefined,
         // collectionId: formData.collectionId ? parseInt(formData.collectionId) : undefined,
       };
 
@@ -110,40 +112,16 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         </div>
       )}
 
-      {/* Image Preview */}
-      {artwork && (
-        <div>
-          <label className="block text-sm font-medium text-on-surface mb-2">
-            Current Image
-          </label>
-          {artwork.defaultImageUrl ? (
-            <div className="w-full rounded-lg border border-outline overflow-hidden bg-surface">
-              <Image
-                src={artwork.defaultImageUrl}
-                alt={artwork.title}
-                className="w-full h-auto object-contain"
-              />
-            </div>
-          ) : (
-            <div className="w-full aspect-video rounded-lg border border-outline bg-primary-container flex flex-col items-center justify-center">
-              <svg
-                className="w-16 h-16 text-on-primary-container mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <span className="text-on-primary-container text-sm">No Image Available</span>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Image Upload */}
+      <div>
+        <label className="block text-sm font-medium text-on-surface mb-2">
+          Artwork Image
+        </label>
+        <ImageUpload
+          currentImageUrl={formData.defaultImageUrl}
+          onUploadComplete={(url) => setFormData({ ...formData, defaultImageUrl: url })}
+        />
+      </div>
 
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-on-surface mb-2">
