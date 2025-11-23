@@ -12,13 +12,6 @@ export default async function CollectionsAdminPage() {
   }
   const collections = result.data;
 
-  // Get artwork counts for each collection
-  // TODO: Fix artwork count - need to query artworks_to_collections junction table
-  const collectionsWithCounts = collections.map((collection) => ({
-    ...collection,
-    artworkCount: 0,
-  }));
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -78,7 +71,7 @@ export default async function CollectionsAdminPage() {
               </tr>
             </thead>
             <tbody className="bg-surface divide-y divide-outline">
-              {collectionsWithCounts.map((collection) => (
+              {collections.map((collection) => (
                 <tr key={collection.id} className="hover:bg-primary-container/50">
                   <td className="px-6 py-4">
                     <div className="w-16 h-16 flex items-center justify-center bg-surface-variant rounded-md overflow-hidden">

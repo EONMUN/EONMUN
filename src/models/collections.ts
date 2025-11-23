@@ -7,6 +7,7 @@ export type Artwork = typeof artworks.$inferSelect;
 
 export type CollectionWithDefaultArtwork = Collection & {
   defaultArtworkImageUrl: string | null;
+  artworkCount: number;
 };
 
 export type ArtworkWithDefault = Artwork & {
@@ -46,14 +47,29 @@ export async function getAllCollectionsWithDefaultArtwork(): Promise<CollectionW
     .innerJoin(artworks, eq(artworksToCollections.artworkId, artworks.id))
     .where(sql`${artworksToCollections.isDefaultForCollection} = 1`);
 
+  // Get artwork counts for each collection
+  const artworkCounts = await db
+    .select({
+      collectionId: artworksToCollections.collectionId,
+      count: sql<number>`count(*)`.as('count'),
+    })
+    .from(artworksToCollections)
+    .groupBy(artworksToCollections.collectionId);
+
   // Map default artwork images to collections
   const defaultImageMap = new Map(
     defaultArtworks.map(da => [da.collectionId, da.defaultImageUrl])
   );
 
+  // Map artwork counts to collections
+  const artworkCountMap = new Map(
+    artworkCounts.map(ac => [ac.collectionId, ac.count])
+  );
+
   return allCollections.map(collection => ({
     ...collection,
     defaultArtworkImageUrl: defaultImageMap.get(collection.id) || null,
+    artworkCount: artworkCountMap.get(collection.id) || 0,
   }));
 }
 
