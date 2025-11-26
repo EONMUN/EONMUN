@@ -48,6 +48,16 @@
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 *
+	 * Required secrets for contact form (configured in .env.production):
+	 * - SMTP_HOST (e.g., smtp.gmail.com)
+	 * - SMTP_PORT (e.g., 587)
+	 * - SMTP_USER (your email address)
+	 * - SMTP_FROM (display name for sender)
+	 * - SMTP_PASS (app-specific password)
+	 *
+	 * Upload secrets from .env.production:
+	 * `npx wrangler secret bulk .env.production`
 	 */
 	/**
 	 * Static Assets
