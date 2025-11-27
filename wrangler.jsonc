@@ -26,7 +26,7 @@
 	"r2_buckets": [
 		{
 			"binding": "R2_BUCKET",
-			"bucket_name": "eonmun-uploads"
+			"bucket_name": "eonmun-production"
 		}
 	]
 	/**
