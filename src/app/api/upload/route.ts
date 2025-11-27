@@ -28,6 +28,7 @@ async function uploadToR2(
   file: File,
   fileName: string,
   r2Bucket: R2Bucket,
+  r2PublicUrl: string,
 ): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
 
@@ -38,7 +39,6 @@ async function uploadToR2(
   });
 
   // Return the R2 public URL
-  const r2PublicUrl = process.env.R2_PUBLIC_URL || "";
   return `${r2PublicUrl}/${fileName}`;
 }
 
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
     // In development, it's available via initOpenNextCloudflareForDev() with local R2 emulation
     const ctx = getCloudflareContext();
     const r2Bucket = ctx.env?.R2_BUCKET;
+    const r2PublicUrl = ctx.env?.R2_PUBLIC_URL || process.env.R2_PUBLIC_URL || "";
 
     if (!r2Bucket || typeof r2Bucket !== "object" || !("put" in r2Bucket)) {
       console.error("R2 bucket not available. Check wrangler.jsonc bindings.");
@@ -83,7 +84,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fileUrl = await uploadToR2(file, fileName, r2Bucket);
+    if (!r2PublicUrl) {
+      console.error("R2_PUBLIC_URL not configured. Check wrangler.jsonc vars.");
+      return NextResponse.json(
+        { error: "Upload service not configured" },
+        { status: 503 },
+      );
+    }
+
+    const fileUrl = await uploadToR2(file, fileName, r2Bucket, r2PublicUrl);
 
     return NextResponse.json({
       success: true,

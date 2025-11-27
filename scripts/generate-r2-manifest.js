@@ -91,7 +91,7 @@ async function generateManifest() {
     generatedDate: new Date().toISOString(),
     uploadDate: existingManifest?.uploadDate || null,
     r2BucketName: process.env.R2_BUCKET_NAME || 'eonmun-media',
-    r2PublicUrl: process.env.R2_PUBLIC_URL || 'https://cdn.eonmun.com',
+    r2PublicUrl: process.env.R2_PUBLIC_URL || 'https://r2.eonmun.com',
     files: files.map(file => {
       // Check if this file was in the previous manifest
       const existing = existingManifest?.files?.find(f => f.localPath === file.localPath);

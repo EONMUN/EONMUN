@@ -55,7 +55,7 @@ Uploaded files will be automatically saved to `public/uploads/` and accessible a
 **Option B: Use custom domain (recommended)**
 1. Go to your bucket settings → **Custom domains**
 2. Click **Connect domain**
-3. Enter your domain (e.g., `cdn.eonmun.com`)
+3. Enter your domain (e.g., `r2.eonmun.com`)
 4. Follow DNS configuration instructions
 5. Wait for DNS propagation
 
@@ -77,7 +77,7 @@ The R2 bucket binding is already configured in `wrangler.jsonc`. Just update the
 Create `.env.production` (copy from `.env.production.example`) and set:
 
 ```bash
-R2_PUBLIC_URL=https://cdn.eonmun.com  # Your R2 public URL
+R2_PUBLIC_URL=https://r2.eonmun.com  # Your R2 public URL
 ```
 
 #### 4. Deploy
@@ -141,7 +141,7 @@ const data = await response.json();
 ```json
 {
   "success": true,
-  "url": "https://cdn.eonmun.com/1234567890-abc123.jpg",
+  "url": "https://r2.eonmun.com/1234567890-abc123.jpg",
   "fileName": "1234567890-abc123.jpg",
   "fileSize": 524288,
   "fileType": "image/jpeg"

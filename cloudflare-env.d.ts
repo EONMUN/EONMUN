@@ -8,7 +8,7 @@ declare namespace Cloudflare {
 	interface Env {
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: "58d01e1f07385c9558411c3cc158d3ad";
 		NEXT_PUBLIC_INFURA_KEY: "4a51a35099fd4fbd8d8e1532eb7ea933";
-		R2_PUBLIC_URL: "https://cdn.eonmun.com";
+		R2_PUBLIC_URL: "https://r2.eonmun.com";
 		WEB_PORT: string;
 		WEB_INTERNAL_PORT: string;
 		NEXT_PUBLIC_APP_URL: string;

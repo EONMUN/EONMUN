@@ -136,7 +136,7 @@ async function generateCredentials() {
     console.log(`R2_ACCESS_KEY_ID=${access_key_id}`);
     console.log(`R2_SECRET_ACCESS_KEY=${secret_access_key}`);
     console.log(`R2_BUCKET_NAME=${R2_BUCKET_NAME}`);
-    console.log('R2_PUBLIC_URL=https://cdn.eonmun.com  # Update with your CDN URL');
+    console.log('R2_PUBLIC_URL=https://r2.eonmun.com  # Update with your R2 public URL');
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     console.log('\n📋 Token Details:');
