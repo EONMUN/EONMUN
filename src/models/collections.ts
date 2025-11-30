@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, like, or, and } from 'drizzle-orm';
 import { db, collections, artworks, artworksToCollections } from '@/database';
 
 export type Collection = typeof collections.$inferSelect;
@@ -210,4 +210,77 @@ export async function setDefaultArtwork(
     .where(
       sql`${artworksToCollections.collectionId} = ${collectionId} AND ${artworksToCollections.artworkId} = ${artworkId}`
     );
+}
+
+/**
+ * Search collections by name
+ */
+export async function searchCollections(query: string): Promise<Collection[]> {
+  if (!query || query.trim() === '') {
+    return getAllCollections();
+  }
+
+  const searchPattern = `%${query}%`;
+  return db
+    .select()
+    .from(collections)
+    .where(like(collections.name, searchPattern))
+    .limit(20);
+}
+
+export type CollectionWithDefault = Collection & {
+  isDefaultForCollection: boolean;
+};
+
+/**
+ * Get all collections for an artwork with their default status
+ */
+export async function getCollectionsForArtwork(artworkId: number): Promise<CollectionWithDefault[]> {
+  const results = await db
+    .select({
+      collection: collections,
+      isDefault: artworksToCollections.isDefaultForCollection,
+    })
+    .from(artworksToCollections)
+    .innerJoin(collections, eq(artworksToCollections.collectionId, collections.id))
+    .where(eq(artworksToCollections.artworkId, artworkId));
+
+  return results.map(r => ({
+    ...r.collection,
+    isDefaultForCollection: r.isDefault,
+  }));
+}
+
+/**
+ * Set all collections for an artwork (replaces existing)
+ */
+export async function setCollectionsForArtwork(
+  artworkId: number,
+  collectionData: { collectionId: number; isDefault: boolean }[]
+): Promise<void> {
+  // Delete all existing collection links for this artwork
+  await db
+    .delete(artworksToCollections)
+    .where(eq(artworksToCollections.artworkId, artworkId));
+
+  // Add new collection links
+  if (collectionData.length > 0) {
+    // For each collection, first unset any existing default if we're setting a new one
+    for (const data of collectionData) {
+      if (data.isDefault) {
+        await db
+          .update(artworksToCollections)
+          .set({ isDefaultForCollection: false })
+          .where(eq(artworksToCollections.collectionId, data.collectionId));
+      }
+    }
+
+    await db.insert(artworksToCollections).values(
+      collectionData.map(data => ({
+        artworkId,
+        collectionId: data.collectionId,
+        isDefaultForCollection: data.isDefault,
+      }))
+    );
+  }
 }

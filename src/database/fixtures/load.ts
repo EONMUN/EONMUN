@@ -10,7 +10,7 @@
  */
 
 import type { Database } from '@/database';
-import { collections, artworks, artworksToCollections, users } from '@/database/schema';
+import { collections, artworks, artworksToCollections, users, facets, artworksToFacets } from '@/database/schema';
 import path from 'path';
 import fs from 'fs';
 
@@ -44,13 +44,22 @@ interface ArtworkImage {
   caption?: string;
 }
 
+interface FacetFixture {
+  name: string;
+  slug: string;
+  type: string;
+  description?: string;
+}
+
 /**
- * Clear all data from collections and artworks tables
+ * Clear all data from collections, artworks, and facets tables
  */
 async function clearData(database: Database) {
   console.log('🗑️  Clearing existing data...');
+  await database.delete(artworksToFacets);
   await database.delete(artworksToCollections);
   await database.delete(artworks);
+  await database.delete(facets);
   await database.delete(collections);
   await database.delete(users);
   console.log('✅ Data cleared');
@@ -191,7 +200,40 @@ export async function loadFixtures(database: Database) {
   await loadArtworks(database, collectionSlugToId);
   console.log('');
 
+  // Load facets (materials, etc.)
+  await loadFacets(database);
+  console.log('');
+
   console.log('✨ Fixtures loaded successfully!');
+}
+
+/**
+ * Load facets (materials, techniques, styles) from fixtures
+ */
+async function loadFacets(database: Database) {
+  console.log('🏷️  Loading facets...');
+
+  const fixturesPath = path.join(process.cwd(), 'fixtures', 'facets.json');
+
+  // Check if facets.json exists
+  if (!fs.existsSync(fixturesPath)) {
+    console.log('  ⚠️  No facets.json found, skipping facets');
+    return;
+  }
+
+  const fixturesData = fs.readFileSync(fixturesPath, 'utf-8');
+  const facetFixtures: FacetFixture[] = JSON.parse(fixturesData);
+
+  for (const fixture of facetFixtures) {
+    const [created] = await database.insert(facets).values({
+      name: fixture.name,
+      slug: fixture.slug,
+      type: fixture.type,
+      description: fixture.description || null,
+    }).returning();
+
+    console.log(`  ✓ Created ${fixture.type}: ${fixture.name} (${fixture.slug})`);
+  }
 }
 
 // If running as a script (not imported)

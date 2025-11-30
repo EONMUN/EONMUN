@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
@@ -31,6 +31,11 @@ export const artworks = sqliteTable('artworks', {
   description: text('description'),
   artist: text('artist'),
   year: integer('year'),
+  // Dimensions
+  width: real('width'),
+  height: real('height'),
+  depth: real('depth'),
+  dimensionUnit: text('dimension_unit').default('in'), // 'in', 'cm', 'mm'
   price: integer('price'), // Price in cents
   defaultImageUrl: text('default_image_url'),
   imagesJson: text('images_json'), // JSON array of image objects
@@ -69,6 +74,7 @@ export const collectionsRelations = relations(collections, ({ many }) => ({
 
 export const artworksRelations = relations(artworks, ({ many }) => ({
   artworksToCollections: many(artworksToCollections),
+  artworksToFacets: many(artworksToFacets),
 }));
 
 export const artworksToCollectionsRelations = relations(artworksToCollections, ({ one }) => ({
@@ -79,5 +85,51 @@ export const artworksToCollectionsRelations = relations(artworksToCollections, (
   collection: one(collections, {
     fields: [artworksToCollections.collectionId],
     references: [collections.id],
+  }),
+}));
+
+// Facets table - generic categorization system for materials, techniques, styles, etc.
+export const facets = sqliteTable('facets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  slug: text('slug').notNull(),
+  type: text('type').notNull(), // 'material', 'technique', 'style', etc.
+  description: text('description'),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+}, (table) => ({
+  slugTypeUnique: uniqueIndex('facets_slug_type_unique').on(table.slug, table.type),
+  typeIdx: index('facets_type_idx').on(table.type),
+}));
+
+// Junction table for many-to-many relationship between artworks and facets
+export const artworksToFacets = sqliteTable('artworks_to_facets', {
+  artworkId: integer('artwork_id').notNull().references(() => artworks.id, { onDelete: 'cascade' }),
+  facetId: integer('facet_id').notNull().references(() => facets.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.artworkId, table.facetId] }),
+  facetIdx: index('artworks_to_facets_facet_idx').on(table.facetId),
+}));
+
+// Facets relations
+export const facetsRelations = relations(facets, ({ many }) => ({
+  artworksToFacets: many(artworksToFacets),
+}));
+
+export const artworksToFacetsRelations = relations(artworksToFacets, ({ one }) => ({
+  artwork: one(artworks, {
+    fields: [artworksToFacets.artworkId],
+    references: [artworks.id],
+  }),
+  facet: one(facets, {
+    fields: [artworksToFacets.facetId],
+    references: [facets.id],
   }),
 }));

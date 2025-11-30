@@ -183,3 +183,56 @@ export async function searchArtworksAdmin(query: string) {
     return { data: [] };
   }
 }
+
+/**
+ * Search collections by name
+ */
+export async function searchCollectionsAdmin(query: string) {
+  const authError = await guardAuth();
+  if (authError) return { data: [] };
+
+  try {
+    const collections = await collectionModel.searchCollections(query);
+    return { data: collections };
+  } catch (error) {
+    console.error('Error searching collections:', error);
+    return { data: [] };
+  }
+}
+
+/**
+ * Get all collections for an artwork with their default status
+ */
+export async function getCollectionsForArtworkAdmin(artworkId: number) {
+  const authError = await guardAuth();
+  if (authError) return { data: [] };
+
+  try {
+    const collections = await collectionModel.getCollectionsForArtwork(artworkId);
+    return { data: collections };
+  } catch (error) {
+    console.error('Error fetching artwork collections:', error);
+    return { data: [] };
+  }
+}
+
+/**
+ * Set all collections for an artwork (replaces existing)
+ */
+export async function setCollectionsForArtworkAdmin(
+  artworkId: number,
+  collectionData: { collectionId: number; isDefault: boolean }[]
+) {
+  const authError = await guardAdmin();
+  if (authError) return authError;
+
+  try {
+    await collectionModel.setCollectionsForArtwork(artworkId, collectionData);
+    revalidatePath('/admin/artworks');
+    revalidatePath('/admin/collections');
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting artwork collections:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to set collections' };
+  }
+}

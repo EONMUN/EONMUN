@@ -29,6 +29,13 @@
       "when": 1763073420742,
       "tag": "0003_wooden_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1764472517710,
+      "tag": "0004_far_mad_thinker",
+      "breakpoints": true
     }
   ]
 }

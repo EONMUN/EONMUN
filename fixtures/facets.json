@@ -1,0 +1,17 @@
+[
+  { "name": "Oil", "slug": "oil", "type": "material", "description": "Oil paint" },
+  { "name": "Acrylic", "slug": "acrylic", "type": "material", "description": "Acrylic paint" },
+  { "name": "Watercolor", "slug": "watercolor", "type": "material", "description": "Watercolor paint" },
+  { "name": "Canvas", "slug": "canvas", "type": "material", "description": "Canvas substrate" },
+  { "name": "Paper", "slug": "paper", "type": "material", "description": "Paper substrate" },
+  { "name": "Rice Paper", "slug": "rice-paper", "type": "material", "description": "Traditional rice paper" },
+  { "name": "Gold Leaf", "slug": "gold-leaf", "type": "material", "description": "Gold leaf application" },
+  { "name": "Pencil", "slug": "pencil", "type": "material", "description": "Graphite or colored pencil" },
+  { "name": "Japanese Ink", "slug": "japanese-ink", "type": "material", "description": "Traditional Japanese ink (sumi)" },
+  { "name": "Wood", "slug": "wood", "type": "material", "description": "Wood panel or frame" },
+  { "name": "Mixed Media", "slug": "mixed-media", "type": "material", "description": "Multiple materials combined" },
+  { "name": "Ink", "slug": "ink", "type": "material", "description": "Ink" },
+  { "name": "Charcoal", "slug": "charcoal", "type": "material", "description": "Charcoal drawing material" },
+  { "name": "Pastel", "slug": "pastel", "type": "material", "description": "Pastel sticks or pencils" },
+  { "name": "Gouache", "slug": "gouache", "type": "material", "description": "Opaque watercolor paint" }
+]

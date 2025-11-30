@@ -1,12 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-// import { useEffect } from 'react'; // TODO: Re-enable when collection loading is implemented
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/ImageUpload';
-import { createArtworkAdmin, updateArtworkAdmin, deleteArtworkAdmin, type Artwork } from '@/actions/admin/artwork';
-// import { getAllCollectionsAdmin, type Collection } from '@/actions/admin/collection';
+import FacetSelector from '@/components/FacetSelector';
+import CollectionSelector, { type SelectedCollection } from '@/components/CollectionSelector';
+import {
+  createArtworkAdmin,
+  updateArtworkAdmin,
+  deleteArtworkAdmin,
+  type Artwork,
+} from '@/actions/admin/artwork';
+import {
+  getFacetsForArtworkAdmin,
+  setFacetsForArtworkAdmin,
+} from '@/actions/admin/facet';
+import {
+  getCollectionsForArtworkAdmin,
+  setCollectionsForArtworkAdmin,
+} from '@/actions/admin/collection';
+import type { Facet } from '@/models/facets';
 import { generateSlug } from '@/lib/utils';
+
+const DIMENSION_UNITS = ['in', 'cm', 'mm'] as const;
 
 interface ArtworkFormProps {
   artwork?: Artwork;
@@ -16,30 +32,60 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // const [collections, setCollections] = useState<Collection[]>([]);
+  const [isLoading, setIsLoading] = useState(!!artwork);
+
+  // Form data for direct fields
   const [formData, setFormData] = useState({
     title: artwork?.title || '',
     description: artwork?.description || '',
     artist: artwork?.artist || '',
+    year: artwork?.year?.toString() || '',
+    width: artwork?.width?.toString() || '',
+    height: artwork?.height?.toString() || '',
+    depth: artwork?.depth?.toString() || '',
+    dimensionUnit: artwork?.dimensionUnit || 'in',
     price: artwork?.price?.toString() || '',
     defaultImageUrl: artwork?.defaultImageUrl || '',
-    // collectionId: artwork?.collectionId?.toString() || '',
   });
 
-  // TODO: Reimplement collection loading for many-to-many relationship
-  // useEffect(() => {
-  //   const loadCollections = async () => {
-  //     try {
-  //       const result = await getAllCollectionsAdmin();
-  //       if ('data' in result) {
-  //         setCollections(result.data);
-  //       }
-  //     } catch (err) {
-  //       console.error('Failed to load collections:', err);
-  //     }
-  //   };
-  //   loadCollections();
-  // }, []);
+  // Many-to-many relationship data
+  const [selectedMaterials, setSelectedMaterials] = useState<Facet[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<SelectedCollection[]>([]);
+
+  // Load existing materials and collections when editing
+  useEffect(() => {
+    if (!artwork) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadRelationships = async () => {
+      try {
+        // Load materials
+        const materialsResult = await getFacetsForArtworkAdmin(artwork.id, 'material');
+        if (materialsResult.data) {
+          setSelectedMaterials(materialsResult.data);
+        }
+
+        // Load collections
+        const collectionsResult = await getCollectionsForArtworkAdmin(artwork.id);
+        if (collectionsResult.data) {
+          setSelectedCollections(
+            collectionsResult.data.map((c) => ({
+              collection: c,
+              isDefault: c.isDefaultForCollection,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Error loading relationships:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRelationships();
+  }, [artwork]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,19 +98,43 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         slug: artwork?.slug || generateSlug(formData.title),
         description: formData.description || undefined,
         artist: formData.artist || undefined,
+        year: formData.year ? parseInt(formData.year) : undefined,
+        width: formData.width ? parseFloat(formData.width) : undefined,
+        height: formData.height ? parseFloat(formData.height) : undefined,
+        depth: formData.depth ? parseFloat(formData.depth) : undefined,
+        dimensionUnit: formData.dimensionUnit || undefined,
         price: formData.price ? parseInt(formData.price) : undefined,
         defaultImageUrl: formData.defaultImageUrl || undefined,
-        // collectionId: formData.collectionId ? parseInt(formData.collectionId) : undefined,
       };
 
       let result;
+      let artworkId: number | undefined;
+
       if (artwork) {
         result = await updateArtworkAdmin(artwork.id, data);
+        artworkId = artwork.id;
       } else {
         result = await createArtworkAdmin(data);
+        artworkId = result.data?.id;
       }
 
-      if (result.success) {
+      if (result.success && artworkId !== undefined) {
+        // Save materials
+        await setFacetsForArtworkAdmin(
+          artworkId,
+          selectedMaterials.map((m) => m.id),
+          'material'
+        );
+
+        // Save collections
+        await setCollectionsForArtworkAdmin(
+          artworkId,
+          selectedCollections.map((sc) => ({
+            collectionId: sc.collection.id,
+            isDefault: sc.isDefault,
+          }))
+        );
+
         router.push('/admin/artworks');
         router.refresh();
       } else {
@@ -80,8 +150,12 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
 
   const handleDelete = async () => {
     if (!artwork) return;
-    
-    if (!confirm('Are you sure you want to delete this artwork? This action cannot be undone.')) {
+
+    if (
+      !confirm(
+        'Are you sure you want to delete this artwork? This action cannot be undone.'
+      )
+    ) {
       return;
     }
 
@@ -104,6 +178,24 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
     }
   };
 
+  // Format dimensions for display
+  const dimensionPreview = (() => {
+    const parts = [];
+    if (formData.width) parts.push(formData.width);
+    if (formData.height) parts.push(formData.height);
+    if (formData.depth) parts.push(formData.depth);
+    if (parts.length === 0) return null;
+    return `${parts.join(' x ')} ${formData.dimensionUnit}`;
+  })();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-on-surface-variant">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -119,12 +211,18 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         </label>
         <ImageUpload
           currentImageUrl={formData.defaultImageUrl}
-          onUploadComplete={(url) => setFormData({ ...formData, defaultImageUrl: url })}
+          onUploadComplete={(url) =>
+            setFormData({ ...formData, defaultImageUrl: url })
+          }
         />
       </div>
 
+      {/* Title */}
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-on-surface mb-2">
+        <label
+          htmlFor="title"
+          className="block text-sm font-medium text-on-surface mb-2"
+        >
           Title <span className="text-red-500">*</span>
         </label>
         <input
@@ -138,8 +236,12 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         />
       </div>
 
+      {/* Artist */}
       <div>
-        <label htmlFor="artist" className="block text-sm font-medium text-on-surface mb-2">
+        <label
+          htmlFor="artist"
+          className="block text-sm font-medium text-on-surface mb-2"
+        >
           Artist
         </label>
         <input
@@ -152,22 +254,138 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         />
       </div>
 
+      {/* Physical Details Section */}
+      <div className="bg-surface-variant/30 border border-outline/50 rounded-lg p-4 space-y-4">
+        <p className="text-sm font-medium text-on-surface">Physical Details</p>
+
+        {/* Year */}
+        <div>
+          <label
+            htmlFor="year"
+            className="block text-sm font-medium text-on-surface mb-2"
+          >
+            Year Completed
+          </label>
+          <input
+            type="number"
+            id="year"
+            min="1400"
+            max={new Date().getFullYear() + 1}
+            value={formData.year}
+            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+            className="w-full sm:w-32 px-4 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="e.g., 2024"
+          />
+        </div>
+
+        {/* Dimensions */}
+        <div>
+          <label className="block text-sm font-medium text-on-surface mb-2">
+            Dimensions
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.width}
+              onChange={(e) =>
+                setFormData({ ...formData, width: e.target.value })
+              }
+              className="w-20 px-3 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary text-center"
+              placeholder="W"
+              aria-label="Width"
+            />
+            <span className="text-on-surface-variant">x</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.height}
+              onChange={(e) =>
+                setFormData({ ...formData, height: e.target.value })
+              }
+              className="w-20 px-3 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary text-center"
+              placeholder="H"
+              aria-label="Height"
+            />
+            <span className="text-on-surface-variant">x</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.depth}
+              onChange={(e) =>
+                setFormData({ ...formData, depth: e.target.value })
+              }
+              className="w-20 px-3 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary text-center"
+              placeholder="D"
+              aria-label="Depth"
+            />
+            <select
+              value={formData.dimensionUnit}
+              onChange={(e) =>
+                setFormData({ ...formData, dimensionUnit: e.target.value })
+              }
+              className="px-3 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+              aria-label="Unit"
+            >
+              {DIMENSION_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+          </div>
+          {dimensionPreview && (
+            <p className="text-sm text-on-surface-variant mt-1">
+              {dimensionPreview}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Description */}
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-on-surface mb-2">
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-on-surface mb-2"
+        >
           Description
         </label>
         <textarea
           id="description"
           rows={4}
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
           className="w-full px-4 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
           placeholder="Enter artwork description"
         />
       </div>
 
+      {/* Materials */}
+      <FacetSelector
+        type="material"
+        label="Materials"
+        selectedFacets={selectedMaterials}
+        onChange={setSelectedMaterials}
+        placeholder="Search or add materials..."
+      />
+
+      {/* Collections */}
+      <CollectionSelector
+        selectedCollections={selectedCollections}
+        onChange={setSelectedCollections}
+      />
+
+      {/* Price */}
       <div>
-        <label htmlFor="price" className="block text-sm font-medium text-on-surface mb-2">
+        <label
+          htmlFor="price"
+          className="block text-sm font-medium text-on-surface mb-2"
+        >
           Price (in cents)
         </label>
         <input
@@ -186,26 +404,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         )}
       </div>
 
-      {/* TODO: Reimplement collection selection for many-to-many relationship */}
-      {/* <div>
-        <label htmlFor="collectionId" className="block text-sm font-medium text-gray-700 mb-2">
-          Collection
-        </label>
-        <select
-          id="collectionId"
-          value={formData.collectionId}
-          onChange={(e) => setFormData({ ...formData, collectionId: e.target.value })}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">No collection</option>
-          {collections.map((collection) => (
-            <option key={collection.id} value={collection.id}>
-              {collection.name}
-            </option>
-          ))}
-        </select>
-      </div> */}
-
+      {/* Form Actions */}
       <div className="flex items-center justify-between pt-6 border-t border-outline">
         <div>
           {artwork && (
@@ -233,7 +432,11 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
             disabled={isSubmitting}
             className="px-4 py-2 bg-primary text-on-primary rounded-md hover:opacity-90 disabled:opacity-50 font-medium"
           >
-            {isSubmitting ? 'Saving...' : artwork ? 'Update Artwork' : 'Create Artwork'}
+            {isSubmitting
+              ? 'Saving...'
+              : artwork
+                ? 'Update Artwork'
+                : 'Create Artwork'}
           </button>
         </div>
       </div>
