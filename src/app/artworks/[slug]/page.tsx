@@ -2,7 +2,6 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import { getArtworkBySlug } from "@/actions/artwork";
 import { notFound } from "next/navigation";
-// import { PurchaseButton } from "@/components/PurchaseButton";
 import type { ArtworkWithCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database/factories/collection.factory";
 
@@ -81,10 +80,15 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
             )}
           </div>
 
-          {/* Purchase Section */}
-          {/* <div className="border-t border-b border-outline py-6">
-            <PurchaseButton artwork={artwork} />
-          </div> */}
+          {/* Purchase Link */}
+          <div className="border-t border-b border-outline py-6">
+            <Link
+              href={`/store/${artwork.slug}`}
+              className="inline-flex items-center justify-center px-6 py-3 bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              View in Store
+            </Link>
+          </div>
 
           {artwork.description && (
             <div>

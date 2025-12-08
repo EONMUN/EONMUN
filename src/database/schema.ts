@@ -75,6 +75,7 @@ export const collectionsRelations = relations(collections, ({ many }) => ({
 export const artworksRelations = relations(artworks, ({ many }) => ({
   artworksToCollections: many(artworksToCollections),
   artworksToFacets: many(artworksToFacets),
+  products: many(products),
 }));
 
 export const artworksToCollectionsRelations = relations(artworksToCollections, ({ one }) => ({
@@ -131,5 +132,40 @@ export const artworksToFacetsRelations = relations(artworksToFacets, ({ one }) =
   facet: one(facets, {
     fields: [artworksToFacets.facetId],
     references: [facets.id],
+  }),
+}));
+
+// Products table - store items (artworks, prints, postcards, etc.)
+export const products = sqliteTable('products', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  type: text('type').notNull(), // 'artwork' | 'print' | 'postcard' | etc.
+  artworkId: integer('artwork_id').references(() => artworks.id, { onDelete: 'set null' }), // nullable FK
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  imageUrl: text('image_url'),
+  price: integer('price').notNull(), // in cents
+  quantity: integer('quantity'), // null for unique items (artworks), number for prints/postcards
+  listedAt: integer('listed_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()), // auto-set on create
+  soldAt: integer('sold_at', { mode: 'timestamp' }), // for unique items only
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+}, (table) => ({
+  slugIdx: index('products_slug_idx').on(table.slug),
+  typeIdx: index('products_type_idx').on(table.type),
+  artworkIdx: index('products_artwork_idx').on(table.artworkId),
+}));
+
+// Products relations
+export const productsRelations = relations(products, ({ one }) => ({
+  artwork: one(artworks, {
+    fields: [products.artworkId],
+    references: [artworks.id],
   }),
 }));

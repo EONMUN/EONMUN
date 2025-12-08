@@ -1,0 +1,62 @@
+[
+  {
+    "type": "artwork",
+    "artworkSlug": "soleil-et-montagnes",
+    "price": 100000,
+    "description": "Original watercolor artwork with certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "quiescent-citadel",
+    "price": 120000,
+    "description": "Original watercolor artwork with certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "persimmons-del-oro",
+    "price": 150000,
+    "description": "Original watercolor artwork with gold leaf and certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "limones-del-cobre",
+    "price": 140000,
+    "description": "Original artwork with certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "casa-de-fuji",
+    "price": 110000,
+    "description": "Original mixed media artwork with certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "banc-de-poissons",
+    "price": 95000,
+    "description": "Original watercolor on rice paper with certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "occullilium",
+    "price": 160000,
+    "description": "Original watercolor artwork with gold leaf and certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "equestrian-equilibrium",
+    "price": 130000,
+    "description": "Original watercolor artwork with gold leaf and certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "quetzalcoatlin-tetl",
+    "price": 145000,
+    "description": "Original watercolor artwork with certificate of authenticity"
+  },
+  {
+    "type": "artwork",
+    "artworkSlug": "camelia",
+    "price": 125000,
+    "description": "Original Japanese ink artwork on rice paper with certificate of authenticity"
+  }
+]

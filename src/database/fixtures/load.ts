@@ -10,7 +10,7 @@
  */
 
 import type { Database } from '@/database';
-import { collections, artworks, artworksToCollections, users, facets, artworksToFacets } from '@/database/schema';
+import { collections, artworks, artworksToCollections, users, facets, artworksToFacets, products } from '@/database/schema';
 import path from 'path';
 import fs from 'fs';
 
@@ -51,11 +51,23 @@ interface FacetFixture {
   description?: string;
 }
 
+interface ProductFixture {
+  type: string;
+  artworkSlug?: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  imageUrl?: string;
+  price: number;
+  quantity?: number;
+}
+
 /**
  * Clear all data from collections, artworks, and facets tables
  */
 async function clearData(database: Database) {
   console.log('🗑️  Clearing existing data...');
+  await database.delete(products);
   await database.delete(artworksToFacets);
   await database.delete(artworksToCollections);
   await database.delete(artworks);
@@ -121,12 +133,14 @@ async function loadCollections(database: Database): Promise<Map<string, number>>
 /**
  * Load artworks from fixtures
  */
-async function loadArtworks(database: Database, collectionSlugToId: Map<string, number>) {
+async function loadArtworks(database: Database, collectionSlugToId: Map<string, number>): Promise<Map<string, { id: number; title: string; defaultImageUrl: string | null }>> {
   console.log('🖼️  Loading artworks...');
 
   const fixturesPath = path.join(process.cwd(), 'fixtures', 'artworks.json');
   const fixturesData = fs.readFileSync(fixturesPath, 'utf-8');
   const artworkFixtures: ArtworkFixture[] = JSON.parse(fixturesData);
+
+  const artworkSlugToData = new Map<string, { id: number; title: string; defaultImageUrl: string | null }>();
 
   for (const fixture of artworkFixtures) {
     // Process images into JSON structure
@@ -159,6 +173,13 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
       locale: fixture.locale || 'en',
     }).returning();
 
+    // Store artwork data for product creation
+    artworkSlugToData.set(fixture.slug, {
+      id: createdArtwork.id,
+      title: fixture.title,
+      defaultImageUrl,
+    });
+
     // Create artwork-to-collection relationship if collection is specified
     if (fixture.collectionSlug) {
       const collectionId = collectionSlugToId.get(fixture.collectionSlug);
@@ -175,6 +196,70 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
     } else {
       console.log(`  ✓ Created artwork: ${fixture.title} (${fixture.slug}) - ${fixture.images?.length || 0} images - No collection`);
     }
+  }
+
+  return artworkSlugToData;
+}
+
+/**
+ * Load products from fixtures
+ */
+async function loadProducts(
+  database: Database,
+  artworkSlugToData: Map<string, { id: number; title: string; defaultImageUrl: string | null }>
+) {
+  console.log('🛒 Loading products...');
+
+  const fixturesPath = path.join(process.cwd(), 'fixtures', 'products.json');
+
+  // Check if products.json exists
+  if (!fs.existsSync(fixturesPath)) {
+    console.log('  ⚠️  No products.json found, skipping products');
+    return;
+  }
+
+  const fixturesData = fs.readFileSync(fixturesPath, 'utf-8');
+  const productFixtures: ProductFixture[] = JSON.parse(fixturesData);
+
+  for (const fixture of productFixtures) {
+    let artworkId: number | null = null;
+    let name = fixture.name;
+    let slug = fixture.slug;
+    let imageUrl = fixture.imageUrl || null;
+
+    // If linked to artwork, get artwork data
+    if (fixture.artworkSlug) {
+      const artworkData = artworkSlugToData.get(fixture.artworkSlug);
+      if (artworkData) {
+        artworkId = artworkData.id;
+        name = name || artworkData.title;
+        slug = slug || fixture.artworkSlug;
+        imageUrl = imageUrl || artworkData.defaultImageUrl;
+      } else {
+        console.log(`  ⚠️  Artwork '${fixture.artworkSlug}' not found for product, skipping`);
+        continue;
+      }
+    }
+
+    if (!name || !slug) {
+      console.log(`  ⚠️  Product missing name or slug, skipping`);
+      continue;
+    }
+
+    const [created] = await database.insert(products).values({
+      type: fixture.type,
+      artworkId,
+      name,
+      slug,
+      description: fixture.description || null,
+      imageUrl,
+      price: fixture.price,
+      quantity: fixture.quantity ?? null, // null for unique items
+      // listedAt is auto-set by schema default
+    }).returning();
+
+    const priceFormatted = `$${(fixture.price / 100).toLocaleString()}`;
+    console.log(`  ✓ Created product: ${name} (${slug}) - ${fixture.type} - ${priceFormatted}`);
   }
 }
 
@@ -197,7 +282,11 @@ export async function loadFixtures(database: Database) {
   console.log('');
 
   // Load artworks
-  await loadArtworks(database, collectionSlugToId);
+  const artworkSlugToData = await loadArtworks(database, collectionSlugToId);
+  console.log('');
+
+  // Load products (store items)
+  await loadProducts(database, artworkSlugToData);
   console.log('');
 
   // Load facets (materials, etc.)

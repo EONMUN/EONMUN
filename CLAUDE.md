@@ -97,13 +97,26 @@ The frontend uses Wagmi for Web3 functionality with:
 Required environment files:
 - `.env` - Frontend configuration (copy from `.env.example`)
 
+**IMPORTANT: Always check `.env` for the correct ports and configuration values.**
+
+### Port Configuration
+
+Ports are configured in `.env`:
+- `WEB_PORT` - External web server port (e.g., 3360)
+- `WEB_INTERNAL_PORT` - Internal container port (default: 3000)
+- `DB_PORT` - Database server port (default: 9091)
+- `NEXT_PUBLIC_APP_URL` - Full application URL (e.g., `http://localhost:3360`)
+
+The Makefile reads these values from `.env`. Never hardcode ports - always reference the `.env` values.
+
 ### Database Configuration
 
 The app uses SQLite locally and Turso (libSQL) in production:
 
 **Development** (`.env`):
-- Uses local SQLite database (`local.db`)
-- Auto-migrates and loads fixtures on startup
+- `DATABASE_URL` - Local database URL (e.g., `http://localhost:9091`)
+- Uses local SQLite database via libSQL server
+- Auto-migrates and loads fixtures on startup via Docker
 
 **Production** (`.env.production`):
 - Requires Turso configuration for libSQL cloud database
@@ -112,12 +125,20 @@ The app uses SQLite locally and Turso (libSQL) in production:
 
 Note: The database client uses `@libsql/client/web` for compatibility with Cloudflare Workers.
 
+### Stripe Configuration
+
+For store functionality:
+- `STRIPE_SECRET_KEY` - Stripe secret key (sk_test_* for testing, sk_live_* for production)
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key (pk_test_* for testing, pk_live_* for production)
+
+Get your keys from https://dashboard.stripe.com/apikeys
+
 ## Development Workflow
 
 1. Run `make init` for first-time setup
 2. Use `make up` to start all services
-3. Frontend available at `http://localhost:3000`
-4. Use fixtures to load test data: `npm run db:fixtures:load`
+3. Check `.env` for `WEB_PORT` - frontend will be at `http://localhost:{WEB_PORT}`
+4. Use fixtures to load test data: `npm run db:fixtures:load` (or restart Docker services)
 
 ## Testing
 
