@@ -1,4 +1,4 @@
-import { eq, and, like, or, sql } from 'drizzle-orm';
+import { eq, and, like } from 'drizzle-orm';
 import { db, facets, artworksToFacets, artworks } from '@/database';
 
 export type Facet = typeof facets.$inferSelect;

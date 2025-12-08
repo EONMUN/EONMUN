@@ -1,7 +1,7 @@
 'use server';
 
 import { findProducts, findProductsWithArtwork, findAvailableProducts } from '@/models/product';
-import type { SelectProduct, ProductWithArtwork } from '@/models/product';
+import type { ProductWithArtwork } from '@/models/product';
 
 /**
  * Get a product by its slug.
