@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db, products } from "@/database";
-import { findProducts, findProductsWithArtwork, markProductSold } from "@/models/product";
+import { findProductsWithArtwork, markProductSold } from "@/models/product";
 import type { SelectProduct, ProductWithArtwork } from "@/models/product";
 import type { InsertProduct } from "@/database/factories/product.factory";
 import { guardAuth, guardAdmin } from "@/lib/actions";

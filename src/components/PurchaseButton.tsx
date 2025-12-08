@@ -29,7 +29,7 @@ export function PurchaseButton({ product, variant = 'default' }: PurchaseButtonP
           productId: product.id.toString(),
           productName: product.name,
           productSlug: product.slug,
-          price: priceInDollars,
+          price: product.price, // Send price in cents
         }),
       });
 
@@ -44,7 +44,10 @@ export function PurchaseButton({ product, variant = 'default' }: PurchaseButtonP
       }
 
       const stripe = await getStripe();
-      if (stripe && data.sessionId) {
+      if (!stripe) {
+        throw new Error('Failed to initialize Stripe. Please check your configuration.');
+      }
+      if (data.sessionId) {
         const { error: stripeError } = await stripe.redirectToCheckout({
           sessionId: data.sessionId
         });

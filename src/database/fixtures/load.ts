@@ -246,7 +246,7 @@ async function loadProducts(
       continue;
     }
 
-    const [created] = await database.insert(products).values({
+    await database.insert(products).values({
       type: fixture.type,
       artworkId,
       name,
@@ -256,7 +256,7 @@ async function loadProducts(
       price: fixture.price,
       quantity: fixture.quantity ?? null, // null for unique items
       // listedAt is auto-set by schema default
-    }).returning();
+    });
 
     const priceFormatted = `$${(fixture.price / 100).toLocaleString()}`;
     console.log(`  ✓ Created product: ${name} (${slug}) - ${fixture.type} - ${priceFormatted}`);
@@ -314,12 +314,12 @@ async function loadFacets(database: Database) {
   const facetFixtures: FacetFixture[] = JSON.parse(fixturesData);
 
   for (const fixture of facetFixtures) {
-    const [created] = await database.insert(facets).values({
+    await database.insert(facets).values({
       name: fixture.name,
       slug: fixture.slug,
       type: fixture.type,
       description: fixture.description || null,
-    }).returning();
+    });
 
     console.log(`  ✓ Created ${fixture.type}: ${fixture.name} (${fixture.slug})`);
   }

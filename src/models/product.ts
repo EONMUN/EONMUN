@@ -19,7 +19,7 @@
  * ```
  */
 
-import { eq, inArray, and, isNull, gt, or } from 'drizzle-orm';
+import { eq, inArray, and, isNull, isNotNull, gt, or } from 'drizzle-orm';
 import { db, products, artworks } from '@/database';
 import type { SelectProduct } from '@/database/factories/product.factory';
 import type { SelectArtwork } from '@/database/factories/artwork.factory';
@@ -88,7 +88,7 @@ export async function findProducts(filters: ProductFilters = {}): Promise<Select
     conditions.push(
       or(
         // Sold unique items
-        and(eq(products.type, 'artwork'), eq(products.soldAt, products.soldAt)), // soldAt IS NOT NULL
+        and(eq(products.type, 'artwork'), isNotNull(products.soldAt)),
         // Out of stock quantity items
         and(eq(products.quantity, 0))
       )

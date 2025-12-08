@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
               description: 'Original artwork with certificate of authenticity',
               images: [], // We could add product image URLs here later
             },
-            unit_amount: price * 100, // Convert to cents
+            unit_amount: price, // Price is already in cents
           },
           quantity: 1,
         },
