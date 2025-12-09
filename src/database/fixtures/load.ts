@@ -9,10 +9,18 @@
  * 2. CLI script: npm run db:fixtures:load
  */
 
-import type { Database } from '@/database';
-import { collections, artworks, artworksToCollections, users, facets, artworksToFacets, products } from '@/database/schema';
-import path from 'path';
-import fs from 'fs';
+import type { Database } from "@/database";
+import {
+  collections,
+  artworks,
+  artworksToCollections,
+  users,
+  facets,
+  artworksToFacets,
+  products,
+} from "@/database/schema";
+import path from "path";
+import fs from "fs";
 
 // Fixture types
 interface CollectionFixture {
@@ -29,7 +37,6 @@ interface ArtworkFixture {
   description?: string;
   artist?: string;
   year?: number;
-  price?: number;
   images?: string[];
   collectionSlug?: string;
   isDefaultForCollection?: boolean; // New field to mark default artwork
@@ -66,7 +73,7 @@ interface ProductFixture {
  * Clear all data from collections, artworks, and facets tables
  */
 async function clearData(database: Database) {
-  console.log('🗑️  Clearing existing data...');
+  console.log("🗑️  Clearing existing data...");
   await database.delete(products);
   await database.delete(artworksToFacets);
   await database.delete(artworksToCollections);
@@ -74,54 +81,65 @@ async function clearData(database: Database) {
   await database.delete(facets);
   await database.delete(collections);
   await database.delete(users);
-  console.log('✅ Data cleared');
+  console.log("✅ Data cleared");
 }
 
 /**
  * Load development users for authentication
  */
 async function loadUsers(database: Database) {
-  console.log('👥 Loading development users...');
+  console.log("👥 Loading development users...");
 
   // Create admin user
-  const [adminUser] = await database.insert(users).values({
-    email: 'admin@example.com',
-    name: 'Admin User',
-    admin: true,
-    image: 'https://avatars.githubusercontent.com/u/67470890?s=200&v=4',
-  }).returning();
+  const [adminUser] = await database
+    .insert(users)
+    .values({
+      email: "admin@example.com",
+      name: "Admin User",
+      admin: true,
+      image: "https://avatars.githubusercontent.com/u/67470890?s=200&v=4",
+    })
+    .returning();
   console.log(`  ✓ Created admin user: ${adminUser.email}`);
 
   // Create regular user
-  const [regularUser] = await database.insert(users).values({
-    email: 'user@example.com',
-    name: 'Regular User',
-    admin: false,
-    image: 'https://avatars.githubusercontent.com/u/67470890?s=200&v=4',
-  }).returning();
+  const [regularUser] = await database
+    .insert(users)
+    .values({
+      email: "user@example.com",
+      name: "Regular User",
+      admin: false,
+      image: "https://avatars.githubusercontent.com/u/67470890?s=200&v=4",
+    })
+    .returning();
   console.log(`  ✓ Created regular user: ${regularUser.email}`);
 }
 
 /**
  * Load collections from fixtures
  */
-async function loadCollections(database: Database): Promise<Map<string, number>> {
-  console.log('📦 Loading collections...');
+async function loadCollections(
+  database: Database,
+): Promise<Map<string, number>> {
+  console.log("📦 Loading collections...");
 
-  const fixturesPath = path.join(process.cwd(), 'fixtures', 'collections.json');
-  const fixturesData = fs.readFileSync(fixturesPath, 'utf-8');
+  const fixturesPath = path.join(process.cwd(), "fixtures", "collections.json");
+  const fixturesData = fs.readFileSync(fixturesPath, "utf-8");
   const collectionFixtures: CollectionFixture[] = JSON.parse(fixturesData);
 
   const slugToIdMap = new Map<string, number>();
 
   for (const fixture of collectionFixtures) {
-    const [created] = await database.insert(collections).values({
-      name: fixture.name,
-      slug: fixture.slug,
-      description: fixture.description || null,
-      publishedAt: fixture.publishedAt ? new Date(fixture.publishedAt) : null,
-      locale: fixture.locale || 'en',
-    }).returning();
+    const [created] = await database
+      .insert(collections)
+      .values({
+        name: fixture.name,
+        slug: fixture.slug,
+        description: fixture.description || null,
+        publishedAt: fixture.publishedAt ? new Date(fixture.publishedAt) : null,
+        locale: fixture.locale || "en",
+      })
+      .returning();
 
     slugToIdMap.set(fixture.slug, created.id);
     console.log(`  ✓ Created collection: ${fixture.name} (${fixture.slug})`);
@@ -133,14 +151,22 @@ async function loadCollections(database: Database): Promise<Map<string, number>>
 /**
  * Load artworks from fixtures
  */
-async function loadArtworks(database: Database, collectionSlugToId: Map<string, number>): Promise<Map<string, { id: number; title: string; defaultImageUrl: string | null }>> {
-  console.log('🖼️  Loading artworks...');
+async function loadArtworks(
+  database: Database,
+  collectionSlugToId: Map<string, number>,
+): Promise<
+  Map<string, { id: number; title: string; defaultImageUrl: string | null }>
+> {
+  console.log("🖼️  Loading artworks...");
 
-  const fixturesPath = path.join(process.cwd(), 'fixtures', 'artworks.json');
-  const fixturesData = fs.readFileSync(fixturesPath, 'utf-8');
+  const fixturesPath = path.join(process.cwd(), "fixtures", "artworks.json");
+  const fixturesData = fs.readFileSync(fixturesPath, "utf-8");
   const artworkFixtures: ArtworkFixture[] = JSON.parse(fixturesData);
 
-  const artworkSlugToData = new Map<string, { id: number; title: string; defaultImageUrl: string | null }>();
+  const artworkSlugToData = new Map<
+    string,
+    { id: number; title: string; defaultImageUrl: string | null }
+  >();
 
   for (const fixture of artworkFixtures) {
     // Process images into JSON structure
@@ -160,18 +186,20 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
     }
 
     // Create artwork without collection reference
-    const [createdArtwork] = await database.insert(artworks).values({
-      title: fixture.title,
-      slug: fixture.slug,
-      description: fixture.description || null,
-      artist: fixture.artist || null,
-      year: fixture.year || null,
-      price: fixture.price || null,
-      defaultImageUrl,
-      imagesJson,
-      publishedAt: fixture.publishedAt ? new Date(fixture.publishedAt) : null,
-      locale: fixture.locale || 'en',
-    }).returning();
+    const [createdArtwork] = await database
+      .insert(artworks)
+      .values({
+        title: fixture.title,
+        slug: fixture.slug,
+        description: fixture.description || null,
+        artist: fixture.artist || null,
+        year: fixture.year || null,
+        defaultImageUrl,
+        imagesJson,
+        publishedAt: fixture.publishedAt ? new Date(fixture.publishedAt) : null,
+        locale: fixture.locale || "en",
+      })
+      .returning();
 
     // Store artwork data for product creation
     artworkSlugToData.set(fixture.slug, {
@@ -189,12 +217,18 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
           collectionId: collectionId,
           isDefaultForCollection: fixture.isDefaultForCollection || false,
         });
-        console.log(`  ✓ Created artwork: ${fixture.title} (${fixture.slug}) - ${fixture.images?.length || 0} images - Collection: ${fixture.collectionSlug}${fixture.isDefaultForCollection ? ' (DEFAULT)' : ''}`);
+        console.log(
+          `  ✓ Created artwork: ${fixture.title} (${fixture.slug}) - ${fixture.images?.length || 0} images - Collection: ${fixture.collectionSlug}${fixture.isDefaultForCollection ? " (DEFAULT)" : ""}`,
+        );
       } else {
-        console.log(`  ⚠️  Created artwork: ${fixture.title} (${fixture.slug}) - Collection '${fixture.collectionSlug}' not found`);
+        console.log(
+          `  ⚠️  Created artwork: ${fixture.title} (${fixture.slug}) - Collection '${fixture.collectionSlug}' not found`,
+        );
       }
     } else {
-      console.log(`  ✓ Created artwork: ${fixture.title} (${fixture.slug}) - ${fixture.images?.length || 0} images - No collection`);
+      console.log(
+        `  ✓ Created artwork: ${fixture.title} (${fixture.slug}) - ${fixture.images?.length || 0} images - No collection`,
+      );
     }
   }
 
@@ -206,19 +240,22 @@ async function loadArtworks(database: Database, collectionSlugToId: Map<string, 
  */
 async function loadProducts(
   database: Database,
-  artworkSlugToData: Map<string, { id: number; title: string; defaultImageUrl: string | null }>
+  artworkSlugToData: Map<
+    string,
+    { id: number; title: string; defaultImageUrl: string | null }
+  >,
 ) {
-  console.log('🛒 Loading products...');
+  console.log("🛒 Loading products...");
 
-  const fixturesPath = path.join(process.cwd(), 'fixtures', 'products.json');
+  const fixturesPath = path.join(process.cwd(), "fixtures", "products.json");
 
   // Check if products.json exists
   if (!fs.existsSync(fixturesPath)) {
-    console.log('  ⚠️  No products.json found, skipping products');
+    console.log("  ⚠️  No products.json found, skipping products");
     return;
   }
 
-  const fixturesData = fs.readFileSync(fixturesPath, 'utf-8');
+  const fixturesData = fs.readFileSync(fixturesPath, "utf-8");
   const productFixtures: ProductFixture[] = JSON.parse(fixturesData);
 
   for (const fixture of productFixtures) {
@@ -236,7 +273,9 @@ async function loadProducts(
         slug = slug || fixture.artworkSlug;
         imageUrl = imageUrl || artworkData.defaultImageUrl;
       } else {
-        console.log(`  ⚠️  Artwork '${fixture.artworkSlug}' not found for product, skipping`);
+        console.log(
+          `  ⚠️  Artwork '${fixture.artworkSlug}' not found for product, skipping`,
+        );
         continue;
       }
     }
@@ -259,7 +298,9 @@ async function loadProducts(
     });
 
     const priceFormatted = `$${(fixture.price / 100).toLocaleString()}`;
-    console.log(`  ✓ Created product: ${name} (${slug}) - ${fixture.type} - ${priceFormatted}`);
+    console.log(
+      `  ✓ Created product: ${name} (${slug}) - ${fixture.type} - ${priceFormatted}`,
+    );
   }
 }
 
@@ -267,50 +308,50 @@ async function loadProducts(
  * Main function to load all fixtures
  */
 export async function loadFixtures(database: Database) {
-  console.log('🚀 Loading fixtures...\n');
+  console.log("🚀 Loading fixtures...\n");
 
   // Clear existing data
   await clearData(database);
-  console.log('');
+  console.log("");
 
   // Load users first (for authentication)
   await loadUsers(database);
-  console.log('');
+  console.log("");
 
   // Load collections (for foreign key relationships)
   const collectionSlugToId = await loadCollections(database);
-  console.log('');
+  console.log("");
 
   // Load artworks
   const artworkSlugToData = await loadArtworks(database, collectionSlugToId);
-  console.log('');
+  console.log("");
 
   // Load products (store items)
   await loadProducts(database, artworkSlugToData);
-  console.log('');
+  console.log("");
 
   // Load facets (materials, etc.)
   await loadFacets(database);
-  console.log('');
+  console.log("");
 
-  console.log('✨ Fixtures loaded successfully!');
+  console.log("✨ Fixtures loaded successfully!");
 }
 
 /**
  * Load facets (materials, techniques, styles) from fixtures
  */
 async function loadFacets(database: Database) {
-  console.log('🏷️  Loading facets...');
+  console.log("🏷️  Loading facets...");
 
-  const fixturesPath = path.join(process.cwd(), 'fixtures', 'facets.json');
+  const fixturesPath = path.join(process.cwd(), "fixtures", "facets.json");
 
   // Check if facets.json exists
   if (!fs.existsSync(fixturesPath)) {
-    console.log('  ⚠️  No facets.json found, skipping facets');
+    console.log("  ⚠️  No facets.json found, skipping facets");
     return;
   }
 
-  const fixturesData = fs.readFileSync(fixturesPath, 'utf-8');
+  const fixturesData = fs.readFileSync(fixturesPath, "utf-8");
   const facetFixtures: FacetFixture[] = JSON.parse(fixturesData);
 
   for (const fixture of facetFixtures) {
@@ -321,7 +362,9 @@ async function loadFacets(database: Database) {
       description: fixture.description || null,
     });
 
-    console.log(`  ✓ Created ${fixture.type}: ${fixture.name} (${fixture.slug})`);
+    console.log(
+      `  ✓ Created ${fixture.type}: ${fixture.name} (${fixture.slug})`,
+    );
   }
 }
 
@@ -330,24 +373,28 @@ if (require.main === module) {
   (async () => {
     try {
       // Import the database creation function directly
-      const { createDatabaseClient } = await import('@/database');
+      const { createDatabaseClient } = await import("@/database");
 
       // Use the same database client logic as the rest of the app
       const db = createDatabaseClient();
 
       // Log connection info
       if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
-        console.log(`📡 Connecting to Turso: ${process.env.TURSO_DATABASE_URL}`);
+        console.log(
+          `📡 Connecting to Turso: ${process.env.TURSO_DATABASE_URL}`,
+        );
       } else if (process.env.DATABASE_URL) {
         console.log(`📡 Connecting to database: ${process.env.DATABASE_URL}`);
       } else {
-        console.log(`📡 Connecting to local database: http://localhost:${process.env.DB_PORT || 8080}`);
+        console.log(
+          `📡 Connecting to local database: http://localhost:${process.env.DB_PORT || 8080}`,
+        );
       }
 
       await loadFixtures(db);
       process.exit(0);
     } catch (error) {
-      console.error('❌ Error loading fixtures:', error);
+      console.error("❌ Error loading fixtures:", error);
       process.exit(1);
     }
   })();

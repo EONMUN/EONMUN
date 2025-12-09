@@ -43,6 +43,13 @@
       "when": 1765139941902,
       "tag": "0005_black_scorpion",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1765317149423,
+      "tag": "0006_whole_micromacro",
+      "breakpoints": true
     }
   ]
 }

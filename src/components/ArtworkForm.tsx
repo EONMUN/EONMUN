@@ -1,56 +1,66 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import ImageUpload from '@/components/ImageUpload';
-import FacetSelector from '@/components/FacetSelector';
-import CollectionSelector, { type SelectedCollection } from '@/components/CollectionSelector';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import ImageUpload from "@/components/ImageUpload";
+import FacetSelector from "@/components/FacetSelector";
+import CollectionSelector, {
+  type SelectedCollection,
+} from "@/components/CollectionSelector";
 import {
   createArtworkAdmin,
   updateArtworkAdmin,
   deleteArtworkAdmin,
   type Artwork,
-} from '@/actions/admin/artwork';
+} from "@/actions/admin/artwork";
 import {
   getFacetsForArtworkAdmin,
   setFacetsForArtworkAdmin,
-} from '@/actions/admin/facet';
+} from "@/actions/admin/facet";
 import {
   getCollectionsForArtworkAdmin,
   setCollectionsForArtworkAdmin,
-} from '@/actions/admin/collection';
-import type { Facet } from '@/models/facets';
-import { generateSlug } from '@/lib/utils';
+} from "@/actions/admin/collection";
+import type { Facet } from "@/models/facets";
+import { generateSlug } from "@/lib/utils";
 
-const DIMENSION_UNITS = ['in', 'cm', 'mm'] as const;
+const DIMENSION_UNITS = ["in", "cm", "mm"] as const;
 
 interface ArtworkFormProps {
   artwork?: Artwork;
+  /** Initial price from product (passed from server to avoid client-side fetch) */
+  initialPrice?: number;
 }
 
-export default function ArtworkForm({ artwork }: ArtworkFormProps) {
+export default function ArtworkForm({
+  artwork,
+  initialPrice,
+}: ArtworkFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(!!artwork);
 
   // Form data for direct fields
+  // Note: price is passed as initialPrice prop from the server (in cents), converted to dollars for display
   const [formData, setFormData] = useState({
-    title: artwork?.title || '',
-    description: artwork?.description || '',
-    artist: artwork?.artist || '',
-    year: artwork?.year?.toString() || '',
-    width: artwork?.width?.toString() || '',
-    height: artwork?.height?.toString() || '',
-    depth: artwork?.depth?.toString() || '',
-    dimensionUnit: artwork?.dimensionUnit || 'in',
-    price: artwork?.price?.toString() || '',
-    defaultImageUrl: artwork?.defaultImageUrl || '',
+    title: artwork?.title || "",
+    description: artwork?.description || "",
+    artist: artwork?.artist || "",
+    year: artwork?.year?.toString() || "",
+    width: artwork?.width?.toString() || "",
+    height: artwork?.height?.toString() || "",
+    depth: artwork?.depth?.toString() || "",
+    dimensionUnit: artwork?.dimensionUnit || "in",
+    price: initialPrice ? (initialPrice / 100).toString() : "",
+    defaultImageUrl: artwork?.defaultImageUrl || "",
   });
 
   // Many-to-many relationship data
   const [selectedMaterials, setSelectedMaterials] = useState<Facet[]>([]);
-  const [selectedCollections, setSelectedCollections] = useState<SelectedCollection[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<
+    SelectedCollection[]
+  >([]);
 
   // Load existing materials and collections when editing
   useEffect(() => {
@@ -62,23 +72,28 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
     const loadRelationships = async () => {
       try {
         // Load materials
-        const materialsResult = await getFacetsForArtworkAdmin(artwork.id, 'material');
+        const materialsResult = await getFacetsForArtworkAdmin(
+          artwork.id,
+          "material",
+        );
         if (materialsResult.data) {
           setSelectedMaterials(materialsResult.data);
         }
 
         // Load collections
-        const collectionsResult = await getCollectionsForArtworkAdmin(artwork.id);
+        const collectionsResult = await getCollectionsForArtworkAdmin(
+          artwork.id,
+        );
         if (collectionsResult.data) {
           setSelectedCollections(
             collectionsResult.data.map((c) => ({
               collection: c,
               isDefault: c.isDefaultForCollection,
-            }))
+            })),
           );
         }
       } catch (err) {
-        console.error('Error loading relationships:', err);
+        console.error("Error loading relationships:", err);
       } finally {
         setIsLoading(false);
       }
@@ -103,7 +118,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         height: formData.height ? parseFloat(formData.height) : undefined,
         depth: formData.depth ? parseFloat(formData.depth) : undefined,
         dimensionUnit: formData.dimensionUnit || undefined,
-        price: formData.price ? parseInt(formData.price) : undefined,
+        price: formData.price ? parseFloat(formData.price) : undefined,
         defaultImageUrl: formData.defaultImageUrl || undefined,
       };
 
@@ -123,7 +138,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
         await setFacetsForArtworkAdmin(
           artworkId,
           selectedMaterials.map((m) => m.id),
-          'material'
+          "material",
         );
 
         // Save collections
@@ -132,16 +147,16 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
           selectedCollections.map((sc) => ({
             collectionId: sc.collection.id,
             isDefault: sc.isDefault,
-          }))
+          })),
         );
 
-        router.push('/admin/artworks');
+        router.push("/admin/artworks");
         router.refresh();
       } else {
-        setError(result.error || 'An error occurred');
+        setError(result.error || "An error occurred");
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError("An unexpected error occurred");
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -153,7 +168,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
 
     if (
       !confirm(
-        'Are you sure you want to delete this artwork? This action cannot be undone.'
+        "Are you sure you want to delete this artwork? This action cannot be undone.",
       )
     ) {
       return;
@@ -165,13 +180,13 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
     try {
       const result = await deleteArtworkAdmin(artwork.id);
       if (result.success) {
-        router.push('/admin/artworks');
+        router.push("/admin/artworks");
         router.refresh();
       } else {
-        setError(result.error || 'Failed to delete artwork');
+        setError(result.error || "Failed to delete artwork");
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError("An unexpected error occurred");
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -185,7 +200,7 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
     if (formData.height) parts.push(formData.height);
     if (formData.depth) parts.push(formData.depth);
     if (parts.length === 0) return null;
-    return `${parts.join(' x ')} ${formData.dimensionUnit}`;
+    return `${parts.join(" x ")} ${formData.dimensionUnit}`;
   })();
 
   if (isLoading) {
@@ -386,22 +401,25 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
           htmlFor="price"
           className="block text-sm font-medium text-on-surface mb-2"
         >
-          Price (in cents)
+          Price
         </label>
-        <input
-          type="number"
-          id="price"
-          min="0"
-          value={formData.price}
-          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-          className="w-full px-4 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-          placeholder="e.g., 10000 for $100.00"
-        />
-        {formData.price && (
-          <p className="text-sm text-on-surface-variant mt-1">
-            ${(parseInt(formData.price) / 100).toFixed(2)}
-          </p>
-        )}
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
+            $
+          </span>
+          <input
+            type="number"
+            id="price"
+            min="0"
+            step="0.01"
+            value={formData.price}
+            onChange={(e) =>
+              setFormData({ ...formData, price: e.target.value })
+            }
+            className="w-full pl-7 pr-4 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="100.00"
+          />
+        </div>
       </div>
 
       {/* Form Actions */}
@@ -433,10 +451,10 @@ export default function ArtworkForm({ artwork }: ArtworkFormProps) {
             className="px-4 py-2 bg-primary text-on-primary rounded-md hover:opacity-90 disabled:opacity-50 font-medium"
           >
             {isSubmitting
-              ? 'Saving...'
+              ? "Saving..."
               : artwork
-                ? 'Update Artwork'
-                : 'Create Artwork'}
+                ? "Update Artwork"
+                : "Create Artwork"}
           </button>
         </div>
       </div>

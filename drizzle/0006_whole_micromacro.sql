@@ -1,0 +1,1 @@
+ALTER TABLE `artworks` DROP COLUMN `price`;

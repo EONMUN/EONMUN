@@ -27,8 +27,8 @@
  * ```
  */
 
-import { Factory, db } from './index';
-import { artworks } from '../schema';
+import { Factory, db } from "./index";
+import { artworks } from "../schema";
 
 // Type for inserting an artwork
 export type InsertArtwork = typeof artworks.$inferInsert;
@@ -121,11 +121,9 @@ export const artworkFactory = ArtworkFactory.define(({ sequence }) => ({
   description: Factory.faker.lorem.paragraph(),
   artist: Factory.faker.person.fullName(),
   year: Factory.faker.number.int({ min: 1900, max: new Date().getFullYear() }),
-  price: Factory.faker.number.int({ min: 10000, max: 1000000 }), // Price in cents
   defaultImageUrl: Factory.faker.image.url(),
   imagesJson: null, // Default to no images, use .withImages() trait for images
   publishedAt: null, // Default to draft, use .published() trait for published
-  locale: 'en',
-  collectionId: null, // Default to no collection, use .withCollection() trait
+  locale: "en",
   // createdAt and updatedAt have defaults in the schema
 }));

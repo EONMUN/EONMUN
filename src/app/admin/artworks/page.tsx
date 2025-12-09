@@ -1,24 +1,15 @@
-import Link from 'next/link';
-import Image from '@/components/Image';
-import { getAllArtworksAdmin } from '@/actions/admin/artwork';
-// import { getCollectionByIdAdmin } from '@/actions/admin/collection';
+import Link from "next/link";
+import Image from "@/components/Image";
+import { getAllArtworksWithProductsAndCollectionsAdmin } from "@/actions/admin/artwork";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function ArtworksAdminPage() {
-  const result = await getAllArtworksAdmin();
-  if ('error' in result) {
+  const result = await getAllArtworksWithProductsAndCollectionsAdmin();
+  if ("error" in result) {
     return <div>Error: {result.error}</div>;
   }
   const artworks = result.data;
-
-  // Get collection names for each artwork
-  // TODO: Fix collection loading - artworks don't have a direct collectionId field
-  // They use a many-to-many relationship through artworks_to_collections
-  const artworksWithCollections = artworks.map((artwork) => ({
-    ...artwork,
-    collection: null
-  }));
 
   return (
     <div>
@@ -47,8 +38,12 @@ export default async function ArtworksAdminPage() {
               d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
-          <h3 className="text-lg font-medium text-on-surface mb-2">No artworks yet</h3>
-          <p className="text-on-surface-variant mb-4">Get started by creating your first artwork</p>
+          <h3 className="text-lg font-medium text-on-surface mb-2">
+            No artworks yet
+          </h3>
+          <p className="text-on-surface-variant mb-4">
+            Get started by creating your first artwork
+          </p>
           <Link
             href="/admin/artworks/new"
             className="inline-block px-4 py-2 bg-primary text-on-primary rounded-md hover:opacity-90 font-medium"
@@ -82,9 +77,17 @@ export default async function ArtworksAdminPage() {
               </tr>
             </thead>
             <tbody className="bg-surface divide-y divide-outline">
-              {artworksWithCollections.map((artwork) => (
-                <tr key={artwork.id} className="hover:bg-primary-container/50">
+              {artworks.map((artwork) => (
+                <tr
+                  key={artwork.id}
+                  className="hover:bg-primary-container/50 cursor-pointer relative"
+                >
                   <td className="px-6 py-4">
+                    <Link
+                      href={`/admin/artworks/${artwork.slug}`}
+                      className="absolute inset-0"
+                      aria-label={`Edit ${artwork.title}`}
+                    />
                     {artwork.defaultImageUrl ? (
                       <div className="w-16 h-16 rounded border border-outline overflow-hidden">
                         <Image
@@ -112,37 +115,47 @@ export default async function ArtworksAdminPage() {
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <Link
-                      href={`/admin/artworks/${artwork.slug}`}
-                      className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
-                    >
+                    <span className="text-sm font-medium text-primary">
                       {artwork.title}
-                    </Link>
+                    </span>
                     {artwork.description && (
-                      <div className="text-sm text-on-surface-variant truncate max-w-xs">{artwork.description}</div>
+                      <div className="text-sm text-on-surface-variant truncate max-w-xs">
+                        {artwork.description}
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-on-surface">{artwork.artist || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-on-surface">
-                      {artwork.price ? `$${(artwork.price / 100).toFixed(2)}` : '-'}
+                      {artwork.artist || "-"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-on-surface">
-                      {/* TODO: Fix collection display */}
-                      -
+                      {artwork.product?.price
+                        ? `$${(artwork.product.price / 100).toFixed(2)}`
+                        : "-"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-on-surface">
+                      {artwork.collections.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {artwork.collections.map((collection) => (
+                            <span
+                              key={collection.id}
+                              className="inline-block px-2 py-0.5 bg-primary-container text-on-primary-container rounded text-xs"
+                            >
+                              {collection.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link
-                      href={`/admin/artworks/${artwork.slug}`}
-                      className="text-primary hover:text-primary/80 mr-4"
-                    >
-                      Edit
-                    </Link>
+                    <span className="text-primary">Edit</span>
                   </td>
                 </tr>
               ))}
