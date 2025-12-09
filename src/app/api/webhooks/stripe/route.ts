@@ -3,16 +3,25 @@ import Stripe from 'stripe';
 import { markProductSold, decrementProductQuantity } from '@/models/product';
 import { findProducts } from '@/models/product';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
-  httpClient: Stripe.createFetchHttpClient()
-});
-
-// Webhook secret for verifying signatures
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Stripe inside handler to avoid build-time errors
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      console.error('Missing STRIPE_SECRET_KEY');
+      return NextResponse.json(
+        { error: 'Stripe not configured' },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-06-30.basil',
+      httpClient: Stripe.createFetchHttpClient()
+    });
+
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
 
