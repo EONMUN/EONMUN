@@ -1,4 +1,4 @@
-import { eq, sql, like, or, and } from 'drizzle-orm';
+import { eq, sql, like } from 'drizzle-orm';
 import { db, collections, artworks, artworksToCollections } from '@/database';
 
 export type Collection = typeof collections.$inferSelect;

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import Image from '@/components/Image';
 import { searchCollectionsAdmin } from '@/actions/admin/collection';
-import type { Collection, CollectionWithDefault } from '@/models/collections';
+import type { Collection } from '@/models/collections';
 
 export interface SelectedCollection {
   collection: Collection;

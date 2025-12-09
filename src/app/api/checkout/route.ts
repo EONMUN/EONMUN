@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 interface CheckoutRequestBody {
-  artworkId: string;
-  artworkTitle: string;
-  artworkSlug: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
   price: number;
 }
 
@@ -74,9 +74,9 @@ export async function POST(request: NextRequest) {
       httpClient: Stripe.createFetchHttpClient()
     });
 
-    const { artworkId, artworkTitle, artworkSlug, price }: CheckoutRequestBody = await request.json();
+    const { productId, productName, productSlug, price }: CheckoutRequestBody = await request.json();
 
-    if (!artworkId || !artworkTitle || !price) {
+    if (!productId || !productName || !price) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -104,21 +104,21 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: artworkTitle,
-              description: 'Digital artwork with certificate of authenticity',
-              images: [], // We could add artwork image URLs here later
+              name: productName,
+              description: 'Original artwork with certificate of authenticity',
+              images: [], // We could add product image URLs here later
             },
-            unit_amount: price * 100, // Convert to cents
+            unit_amount: price, // Price is already in cents
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: `${appUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}&artwork_slug=${artworkSlug}`,
-      cancel_url: `${appUrl}/artworks/${artworkSlug}?canceled=true`,
+      success_url: `${appUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}&product_slug=${productSlug}`,
+      cancel_url: `${appUrl}/store/${productSlug}?canceled=true`,
       metadata: {
-        artworkId,
-        artworkSlug,
+        productId,
+        productSlug,
       },
     });
 

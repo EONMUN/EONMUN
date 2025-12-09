@@ -1,22 +1,19 @@
 import Link from 'next/link';
-import { getArtworkBySlug } from '@/actions/artwork';
+import { getProductBySlug } from '@/actions/product';
 import Image from '@/components/Image';
 
 interface SuccessPageProps {
   searchParams: Promise<{
     session_id?: string;
-    artwork_slug?: string;
+    product_slug?: string;
   }>;
 }
 
 export default async function PurchaseSuccessPage(props: SuccessPageProps) {
-  const { session_id, artwork_slug } = await props.searchParams;
+  const { session_id, product_slug } = await props.searchParams;
 
-  // Fetch artwork details if slug is provided
-  let artwork = null;
-  if (artwork_slug) {
-    artwork = await getArtworkBySlug(artwork_slug);
-  }
+  // Fetch product details if slug is provided
+  const product = product_slug ? await getProductBySlug(product_slug) : null;
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -46,33 +43,33 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
           Thank you for your purchase. Your payment has been processed successfully.
         </p>
 
-        {/* Artwork Details */}
-        {artwork && (
+        {/* Product Details */}
+        {product && (
           <div className="bg-surface border border-outline rounded-lg p-6 mb-8">
             <h2 className="text-lg font-semibold text-on-surface mb-4">
               You&apos;ve purchased:
             </h2>
-            
+
             <div className="flex items-center gap-4 justify-center">
-              {artwork.defaultImageUrl && (
+              {(product.imageUrl || product.artwork?.defaultImageUrl) && (
                 <div className="w-24 h-24 rounded-lg overflow-hidden border border-outline">
                   <Image
-                    src={artwork.defaultImageUrl}
-                    alt={artwork.title}
+                    src={product.imageUrl || product.artwork?.defaultImageUrl || ''}
+                    alt={product.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
               )}
-              
+
               <div className="text-left">
                 <h3 className="text-xl font-bold text-on-background">
-                  {artwork.title}
+                  {product.name}
                 </h3>
-                {artwork.year && (
-                  <p className="text-on-surface-variant">{artwork.year}</p>
+                {product.artwork?.year && (
+                  <p className="text-on-surface-variant">{product.artwork.year}</p>
                 )}
                 <p className="text-lg font-semibold text-green-600 mt-1">
-                  $1,000.00
+                  ${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -115,15 +112,15 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/artworks"
+            href="/store"
             className="px-6 py-3 bg-primary text-on-primary rounded-lg font-semibold hover:bg-primary/90 transition-colors"
           >
-            Browse More Artworks
+            Browse More Products
           </Link>
-          
-          {artwork && (
+
+          {product?.artwork && (
             <Link
-              href={`/artworks/${artwork.slug}`}
+              href={`/artworks/${product.artwork.slug}`}
               className="px-6 py-3 border border-outline text-on-surface rounded-lg font-semibold hover:bg-surface-variant transition-colors"
             >
               View Artwork Details
@@ -136,12 +133,12 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
 }
 
 export async function generateMetadata({ searchParams }: SuccessPageProps) {
-  const { artwork_slug } = await searchParams;
-  
+  const { product_slug } = await searchParams;
+
   return {
     title: 'Purchase Successful - EONMUN',
-    description: artwork_slug 
-      ? `Successfully purchased artwork. Thank you for your purchase!`
+    description: product_slug
+      ? `Successfully purchased product. Thank you for your purchase!`
       : 'Purchase completed successfully',
   };
 }

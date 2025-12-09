@@ -2,15 +2,11 @@ import { getAllArtworks } from "@/actions/artwork";
 import Image from "@/components/Image";
 import Link from "next/link";
 import type { ArtworkWithCollections } from "@/models/artwork";
-import { ARTWORK_PRICE } from "@/lib/stripe";
 
 function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
   return (
     <div className="group">
-      <Link 
-        href={`/artworks/${artwork.slug}`}
-        className="block"
-      >
+      <Link href={`/artworks/${artwork.slug}`} className="block">
         <div className="aspect-square overflow-hidden rounded-lg bg-surface border border-outline mb-4">
           {artwork.defaultImageUrl ? (
             <Image
@@ -24,7 +20,7 @@ function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
             </div>
           )}
         </div>
-        
+
         <div className="text-center">
           <h3 className="text-lg font-medium text-on-background group-hover:text-primary transition-colors mb-1">
             {artwork.title}
@@ -34,15 +30,9 @@ function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
           )}
           {artwork.collections && artwork.collections.length > 0 && (
             <p className="text-xs text-on-surface-variant mt-1">
-              {artwork.collections.map(c => c.name).join(', ')}
+              {artwork.collections.map((c) => c.name).join(", ")}
             </p>
           )}
-          {/* Price Display */}
-          <div className="mt-2 pt-2 border-t border-outline">
-            <p className="text-lg font-bold text-primary">
-              ${ARTWORK_PRICE.toLocaleString()}
-            </p>
-          </div>
         </div>
       </Link>
     </div>
@@ -62,7 +52,8 @@ export default async function ArtworksPage() {
         </p>
         {artworks.length > 0 && (
           <p className="text-sm text-on-surface-variant mt-2">
-            {artworks.length} artwork{artworks.length !== 1 ? 's' : ''} available
+            {artworks.length} artwork{artworks.length !== 1 ? "s" : ""}{" "}
+            available
           </p>
         )}
       </div>
@@ -76,8 +67,8 @@ export default async function ArtworksPage() {
       ) : (
         <div className="text-center py-12">
           <p className="text-on-surface-variant text-lg">No artworks found.</p>
-          <Link 
-            href="/collections" 
+          <Link
+            href="/collections"
             className="mt-4 inline-block text-primary hover:text-primary/80 transition-colors"
           >
             Browse collections instead
@@ -97,4 +88,4 @@ export async function generateMetadata() {
     title: `Artworks (${artworkCount}) - Gallery`,
     description: `Browse our collection of ${artworkCount} artworks`,
   };
-} 
+}
