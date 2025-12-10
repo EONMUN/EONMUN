@@ -176,17 +176,43 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     /**
      * SignIn Callback - Runs on successful sign in
      *
-     * Used for PostHog user identification
+     * Used for PostHog user identification.
+     * For OAuth users, we look up the DB user by email since user.id is the OAuth provider's ID.
+     * For Credentials users, user.id is already our DB ID.
      */
-    signIn({ user }) {
-      if (user && user.id) {
+    async signIn({ user, account }) {
+      if (!user?.email) {
+        return true;
+      }
+
+      // For Credentials provider, user object already has our DB ID
+      if (account?.provider === "password") {
         identifyUserWithPostHog({
-          id: user.id,
+          id: user.id!,
           email: user.email,
           name: user.name,
           admin: (user as { admin?: boolean }).admin,
         });
+        return true;
       }
+
+      // For OAuth providers, look up user by email to get DB ID
+      const [dbUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, user.email))
+        .limit(1);
+
+      if (dbUser) {
+        identifyUserWithPostHog({
+          id: dbUser.id.toString(),
+          email: dbUser.email,
+          name: dbUser.name,
+          admin: dbUser.admin ?? false,
+        });
+      }
+      // If no DB user yet (new OAuth user), they'll be identified via client-side PostHogIdentifier
+
       return true;
     },
   },
