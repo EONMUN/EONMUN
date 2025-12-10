@@ -1,10 +1,39 @@
-import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import Google from 'next-auth/providers/google';
-import { authConfig } from '@/lib/auth.config';
-import { db } from '@/database';
-import { users } from '@/database/schema';
-import { eq } from 'drizzle-orm';
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import { authConfig } from "@/lib/auth.config";
+import { db } from "@/database";
+import { users } from "@/database/schema";
+import { eq } from "drizzle-orm";
+import PostHogClient from "@/lib/posthog-server";
+
+// PostHog identification helper function
+function identifyUserWithPostHog(user: {
+  id: string;
+  email: string | null | undefined;
+  name: string | null | undefined;
+  admin?: boolean | undefined;
+}) {
+  // Skip PostHog identification if no API key is configured
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    return;
+  }
+
+  try {
+    const posthog = PostHogClient();
+    posthog.identify({
+      distinctId: user.id,
+      properties: {
+        email: user.email || null,
+        name: user.name || null,
+        admin: user.admin || false,
+      },
+    });
+    posthog.flush();
+  } catch (error) {
+    console.error("Failed to identify user with PostHog:", error);
+  }
+}
 
 /**
  * Auth.js (NextAuth.js v5) Configuration
@@ -22,59 +51,60 @@ import { eq } from 'drizzle-orm';
  */
 
 // Configure providers based on environment
-const providers = process.env.NODE_ENV === 'development'
-  ? [
-      // Development: Google OAuth + Credentials
-      Google,
-      Credentials({
-        id: 'password',
-        name: 'Password',
-        credentials: {
-          password: {
-            label: 'Password',
-            type: 'password',
-            placeholder: 'password or admin',
+const providers =
+  process.env.NODE_ENV === "development"
+    ? [
+        // Development: Google OAuth + Credentials
+        Google,
+        Credentials({
+          id: "password",
+          name: "Password",
+          credentials: {
+            password: {
+              label: "Password",
+              type: "password",
+              placeholder: "password or admin",
+            },
           },
-        },
-        authorize: async (credentials) => {
-          // Accept "password" or "admin" with optional suffix
-          // Examples: "password", "password-123", "admin", "admin-456"
-          const password = credentials.password as string;
-          const passwordMatch = password.match(/^(password|admin)(?:-.*)?$/);
+          authorize: async (credentials) => {
+            // Accept "password" or "admin" with optional suffix
+            // Examples: "password", "password-123", "admin", "admin-456"
+            const password = credentials.password as string;
+            const passwordMatch = password.match(/^(password|admin)(?:-.*)?$/);
 
-          if (!passwordMatch) {
-            return null;
-          }
+            if (!passwordMatch) {
+              return null;
+            }
 
-          const [, baseType] = passwordMatch;
-          const isAdmin = baseType === 'admin';
-          const email = isAdmin ? 'admin@example.com' : 'user@example.com';
+            const [, baseType] = passwordMatch;
+            const isAdmin = baseType === "admin";
+            const email = isAdmin ? "admin@example.com" : "user@example.com";
 
-          // Look up user in database
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.email, email))
-            .limit(1);
+            // Look up user in database
+            const [user] = await db
+              .select()
+              .from(users)
+              .where(eq(users.email, email))
+              .limit(1);
 
-          if (!user) {
-            return null;
-          }
+            if (!user) {
+              return null;
+            }
 
-          return {
-            id: user.id.toString(),
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            admin: user.admin ?? false,
-          };
-        },
-      }),
-    ]
-  : [
-      // Production: Google OAuth only
-      Google,
-    ];
+            return {
+              id: user.id.toString(),
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              admin: user.admin ?? false,
+            };
+          },
+        }),
+      ]
+    : [
+        // Production: Google OAuth only
+        Google,
+      ];
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -99,7 +129,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // For OAuth providers (Google) or token refresh, look up user by email
       const { email, name, picture: image } = token;
       if (!email) {
-        throw new Error('No email found during JWT callback');
+        throw new Error("No email found during JWT callback");
       }
 
       const [existingUser] = await db
@@ -119,7 +149,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         .insert(users)
         .values({
           email: email as string,
-          name: (name as string | null) ?? 'User',
+          name: (name as string | null) ?? "User",
           image: image as string | null,
           admin: false,
         })
@@ -142,16 +172,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     },
+
+    /**
+     * SignIn Callback - Runs on successful sign in
+     *
+     * Used for PostHog user identification
+     */
+    signIn({ user }) {
+      if (user && user.id) {
+        identifyUserWithPostHog({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          admin: (user as { admin?: boolean }).admin,
+        });
+      }
+      return true;
+    },
   },
 
   // Session configuration
   session: {
-    strategy: 'jwt',
+    strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
   // Enable debug logs in development
-  debug: process.env.NODE_ENV === 'development',
+  debug: process.env.NODE_ENV === "development",
 });
 
 /**
@@ -163,7 +210,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 export async function authRequired() {
   const session = await auth();
   if (!session?.user) {
-    throw new Error('Authentication required');
+    throw new Error("Authentication required");
   }
   return session;
 }
@@ -178,7 +225,7 @@ export async function requireAdmin() {
   const isAdmin = (session.user as { admin?: boolean }).admin;
 
   if (!isAdmin) {
-    throw new Error('Admin access required');
+    throw new Error("Admin access required");
   }
 
   return session;
