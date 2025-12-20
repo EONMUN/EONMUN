@@ -71,30 +71,6 @@ export default function ContractAdminPage() {
     }
   };
   
-  // Generate contract URI from form data
-  const generateContractURI = () => {
-    if (useRawJSON) {
-      return rawJSONData;
-    }
-    
-    const metadata: Record<string, string | string[]> = {
-      name: contractURIFormData.name,
-    };
-    
-    // Add optional fields only if they have values
-    if (contractURIFormData.symbol) metadata.symbol = contractURIFormData.symbol;
-    if (contractURIFormData.description) metadata.description = contractURIFormData.description;
-    if (contractURIFormData.image) metadata.image = contractURIFormData.image;
-    if (contractURIFormData.banner_image) metadata.banner_image = contractURIFormData.banner_image;
-    if (contractURIFormData.featured_image) metadata.featured_image = contractURIFormData.featured_image;
-    if (contractURIFormData.external_link) metadata.external_link = contractURIFormData.external_link;
-    if (contractURIFormData.collaborators.length > 0) {
-      metadata.collaborators = contractURIFormData.collaborators.filter(c => c.trim() !== '');
-    }
-    
-    return `data:application/json;utf8,${JSON.stringify(metadata)}`;
-  };
-  
   // Get the effective contract address (custom or default)
   const getContractAddress = (): `0x${string}` | undefined => {
     if (addressOverride && isValidAddress(addressOverride)) {
@@ -210,6 +186,30 @@ export default function ContractAdminPage() {
   const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
   const [roleAction, setRoleAction] = useState<'grant' | 'revoke'>('grant');
   const [roleSuccess, setRoleSuccess] = useState<string>('');
+  
+  // Generate contract URI from form data
+  const generateContractURI = () => {
+    if (useRawJSON) {
+      return rawJSONData;
+    }
+    
+    const metadata: Record<string, string | string[]> = {
+      name: contractURIFormData.name,
+    };
+    
+    // Add optional fields only if they have values
+    if (contractURIFormData.symbol) metadata.symbol = contractURIFormData.symbol;
+    if (contractURIFormData.description) metadata.description = contractURIFormData.description;
+    if (contractURIFormData.image) metadata.image = contractURIFormData.image;
+    if (contractURIFormData.banner_image) metadata.banner_image = contractURIFormData.banner_image;
+    if (contractURIFormData.featured_image) metadata.featured_image = contractURIFormData.featured_image;
+    if (contractURIFormData.external_link) metadata.external_link = contractURIFormData.external_link;
+    if (contractURIFormData.collaborators.length > 0) {
+      metadata.collaborators = contractURIFormData.collaborators.filter(c => c.trim() !== '');
+    }
+    
+    return `data:application/json;utf8,${JSON.stringify(metadata)}`;
+  };
   
   // Contract address management functions
   const handleAddressChange = (newAddress: string) => {
@@ -1124,7 +1124,7 @@ export default function ContractAdminPage() {
                         <div>
                           <h4 className="text-sm font-semibold text-yellow-800">Warning</h4>
                           <p className="text-sm text-yellow-700 mt-1">
-                            Removing the default royalty will disable royalties for all tokens that don&apos;t have individual royalty settings.
+                            Removing the default royalty will disable royalties for all tokens that don&rsquo;t have individual royalty settings.
                           </p>
                         </div>
                       </div>
