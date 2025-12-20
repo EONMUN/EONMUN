@@ -388,7 +388,7 @@ export default function EMNPage() {
                   <h3 className="text-xl font-bold text-white mb-4">Minting</h3>
                   <div className="space-y-3">
                     <p className="text-green-100 text-sm">Create new NFTs in the collection.</p>
-                    <Link href="/nfts/emn/mint" className="btn bg-white text-green-700 hover:bg-gray-100 border-0 px-6 py-3 font-semibold w-full">
+                    <Link href="/admin/nfts/mint" className="btn bg-white text-green-700 hover:bg-gray-100 border-0 px-6 py-3 font-semibold w-full">
                       Mint New Token
                     </Link>
                   </div>
@@ -407,7 +407,7 @@ export default function EMNPage() {
                         ? 'Manage contract settings, roles, and advanced features.' 
                         : 'Manage contract metadata and royalty settings.'}
                     </p>
-                    <Link href="/nfts/emn/admin" className="btn bg-orange-600 text-white hover:bg-orange-700 border-0 px-6 py-3 font-semibold w-full">
+                    <Link href="/admin/nfts/contract" className="btn bg-orange-600 text-white hover:bg-orange-700 border-0 px-6 py-3 font-semibold w-full">
                       {isAdmin ? 'Contract Admin' : 'Contract Settings'}
                     </Link>
                   </div>
@@ -603,7 +603,7 @@ export default function EMNPage() {
                 <span className="text-blue-900 text-lg font-semibold">No tokens have been minted yet.</span>
                 {isAdmin && (
                   <div className="mt-3">
-                    <Link href="/nfts/emn/mint" className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-6 py-3 font-semibold">
+                    <Link href="/admin/nfts/mint" className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-6 py-3 font-semibold">
                       Mint First Token
                     </Link>
                   </div>

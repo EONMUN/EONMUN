@@ -32,6 +32,12 @@ export default async function AdminLayout({
                 >
                   Collections
                 </Link>
+                <Link
+                  href="/admin/nfts"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-primary-container"
+                >
+                  NFTs
+                </Link>
               </div>
             </div>
             <Link
