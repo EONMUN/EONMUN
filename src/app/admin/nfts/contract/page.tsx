@@ -24,7 +24,7 @@ import {
 } from "@/abis";
 
 export default function ContractAdminPage() {
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   const chainId = useChainId();
   const publicClient = usePublicClient();
   
@@ -69,30 +69,6 @@ export default function ContractAdminPage() {
     } catch {
       return false;
     }
-  };
-  
-  // Generate contract URI from form data
-  const generateContractURI = () => {
-    if (useRawJSON) {
-      return rawJSONData;
-    }
-    
-    const metadata: Record<string, string | string[]> = {
-      name: contractURIFormData.name,
-    };
-    
-    // Add optional fields only if they have values
-    if (contractURIFormData.symbol) metadata.symbol = contractURIFormData.symbol;
-    if (contractURIFormData.description) metadata.description = contractURIFormData.description;
-    if (contractURIFormData.image) metadata.image = contractURIFormData.image;
-    if (contractURIFormData.banner_image) metadata.banner_image = contractURIFormData.banner_image;
-    if (contractURIFormData.featured_image) metadata.featured_image = contractURIFormData.featured_image;
-    if (contractURIFormData.external_link) metadata.external_link = contractURIFormData.external_link;
-    if (contractURIFormData.collaborators.length > 0) {
-      metadata.collaborators = contractURIFormData.collaborators.filter(c => c.trim() !== '');
-    }
-    
-    return `data:application/json;utf8,${JSON.stringify(metadata)}`;
   };
   
   // Get the effective contract address (custom or default)
@@ -210,6 +186,30 @@ export default function ContractAdminPage() {
   const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
   const [roleAction, setRoleAction] = useState<'grant' | 'revoke'>('grant');
   const [roleSuccess, setRoleSuccess] = useState<string>('');
+  
+  // Generate contract URI from form data
+  const generateContractURI = () => {
+    if (useRawJSON) {
+      return rawJSONData;
+    }
+    
+    const metadata: Record<string, string | string[]> = {
+      name: contractURIFormData.name,
+    };
+    
+    // Add optional fields only if they have values
+    if (contractURIFormData.symbol) metadata.symbol = contractURIFormData.symbol;
+    if (contractURIFormData.description) metadata.description = contractURIFormData.description;
+    if (contractURIFormData.image) metadata.image = contractURIFormData.image;
+    if (contractURIFormData.banner_image) metadata.banner_image = contractURIFormData.banner_image;
+    if (contractURIFormData.featured_image) metadata.featured_image = contractURIFormData.featured_image;
+    if (contractURIFormData.external_link) metadata.external_link = contractURIFormData.external_link;
+    if (contractURIFormData.collaborators.length > 0) {
+      metadata.collaborators = contractURIFormData.collaborators.filter(c => c.trim() !== '');
+    }
+    
+    return `data:application/json;utf8,${JSON.stringify(metadata)}`;
+  };
   
   // Contract address management functions
   const handleAddressChange = (newAddress: string) => {
@@ -590,50 +590,17 @@ export default function ContractAdminPage() {
     }
   };
   
-  if (!isConnected) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="card bg-white shadow-xl border border-gray-300">
-          <div className="card-body p-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Contract Management</h1>
-            <p className="text-gray-600 mb-6">Please connect your wallet to access contract management features.</p>
-            <appkit-button />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (!isAdmin && !isEditor) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="card bg-white shadow-xl border border-gray-300">
-          <div className="card-body p-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Contract Administration</h1>
-            <div className="bg-red-50 border border-red-300 rounded-xl p-6">
-              <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-              </svg>
-              <h2 className="text-xl font-bold text-red-900 mb-2">Access Denied</h2>
-              <p className="text-red-800">Only users with Admin or Editor role can access administration functions.</p>
-            </div>
-            <div className="mt-6">
-              <Link href="/nfts/emn" className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-6 py-3">
-                ← Back to Collection
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Auth is handled by admin layout - no need to check here
+  // This page is only accessible to admins
   
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* Navigation */}
       <div className="text-sm">
         <ul className="flex items-center space-x-2 text-on-surface-variant">
-          <li><Link href="/nfts/emn" className="text-primary hover:text-primary">EMN Collection</Link></li>
+          <li><Link href="/admin" className="text-primary hover:text-primary">Admin</Link></li>
+          <li className="text-on-surface-variant">/</li>
+          <li><Link href="/admin/nfts" className="text-primary hover:text-primary">NFTs</Link></li>
           <li className="text-on-surface-variant">/</li>
           <li className="text-on-surface">{isAdmin ? 'Contract Administration' : 'Contract Management'}</li>
         </ul>
@@ -1157,7 +1124,7 @@ export default function ContractAdminPage() {
                         <div>
                           <h4 className="text-sm font-semibold text-yellow-800">Warning</h4>
                           <p className="text-sm text-yellow-700 mt-1">
-                            Removing the default royalty will disable royalties for all tokens that don&apos;t have individual royalty settings.
+                            Removing the default royalty will disable royalties for all tokens that don&rsquo;t have individual royalty settings.
                           </p>
                         </div>
                       </div>
@@ -1955,8 +1922,8 @@ export default function ContractAdminPage() {
       
       {/* Actions */}
       <div className="flex gap-2">
-        <Link href="/nfts/emn" className="btn bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 px-6 py-3">
-          ← Back to Collection
+        <Link href="/admin/nfts" className="btn bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 px-6 py-3">
+          ← Back to NFT Management
         </Link>
       </div>
     </div>

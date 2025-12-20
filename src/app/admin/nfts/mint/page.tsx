@@ -269,50 +269,17 @@ export default function MintPage() {
     }
   };
   
-  // if (!isConnected) {
-  //   return (
-  //     <div className="container mx-auto p-6">
-  //       <div className="card bg-white shadow-xl border border-gray-300">
-  //         <div className="card-body p-8 text-center">
-  //           <h1 className="text-3xl font-bold text-gray-900 mb-4">Mint New NFT</h1>
-  //           <p className="text-gray-600 mb-6">Please connect your wallet to mint NFTs.</p>
-  //           <appkit-button />
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-  
-  if (!isEditor) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="card bg-surface shadow-xl border border-outline">
-          <div className="card-body p-8 text-center">
-            <h1 className="text-3xl font-bold text-on-surface mb-4">Mint New NFT</h1>
-            <div className="bg-red-50 border border-red-300 rounded-xl p-6">
-              <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-              </svg>
-              <h2 className="text-xl font-bold text-red-900 mb-2">Access Denied</h2>
-              <p className="text-red-800">Only users with Editor role can mint new NFTs.</p>
-            </div>
-            <div className="mt-6">
-              <Link href="/nfts/emn" className="btn bg-blue-600 text-white hover:bg-blue-700 border-0 px-6 py-3">
-                ← Back to Collection
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Auth is handled by admin layout - no need to check here
+  // This page is only accessible to admins
   
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="text-sm">
         <ul className="flex items-center space-x-2 text-on-surface-variant">
-          <li><Link href="/nfts/emn" className="text-primary hover:text-primary">EMN Collection</Link></li>
+          <li><Link href="/admin" className="text-primary hover:text-primary">Admin</Link></li>
+          <li className="text-on-surface-variant">/</li>
+          <li><Link href="/admin/nfts" className="text-primary hover:text-primary">NFTs</Link></li>
           <li className="text-on-surface-variant">/</li>
           <li className="text-on-surface">Mint NFT</li>
         </ul>
@@ -574,7 +541,7 @@ export default function MintPage() {
             
             {/* Action Buttons */}
             <div className="flex gap-4 pt-6">
-              <Link href="/nfts/emn" className="btn bg-gray-500 text-white hover:bg-gray-600 border-0 px-6 py-3">
+              <Link href="/admin/nfts" className="btn bg-gray-500 text-white hover:bg-gray-600 border-0 px-6 py-3">
                 ← Cancel
               </Link>
               
