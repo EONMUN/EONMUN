@@ -24,7 +24,7 @@ import {
 } from "@/abis";
 
 export default function ContractAdminPage() {
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   const chainId = useChainId();
   const publicClient = usePublicClient();
   
