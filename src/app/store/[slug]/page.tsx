@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from '@/components/Image';
 import { getProductBySlug } from '@/actions/product';
 import { PurchaseButton } from '@/components/PurchaseButton';
+import { ARViewButton } from '@/components/ARViewButton';
 import type { ProductWithArtwork } from '@/models/product';
 
 interface ProductPageProps {
@@ -74,8 +75,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Purchase Section */}
-          <div className="bg-surface border border-outline rounded-lg p-6">
+          <div className="bg-surface border border-outline rounded-lg p-6 space-y-3">
             <PurchaseButton product={product} />
+            {(product.imageUrl || product.artwork?.defaultImageUrl) && (
+              <ARViewButton
+                imageUrl={product.imageUrl || product.artwork!.defaultImageUrl!}
+                artworkTitle={product.name}
+                className="w-full"
+              />
+            )}
           </div>
 
           {/* What's Included */}
