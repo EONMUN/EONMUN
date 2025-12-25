@@ -57,10 +57,14 @@ export function ARViewer({ imageUrl, artworkTitle, onClose }: ARViewerProps) {
   }, []);
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (!containerRef.current) return;
+    
     setIsDragging(true);
+    const rect = containerRef.current.getBoundingClientRect();
+    // Store the offset from the pointer to the artwork center (in pixels)
     setDragStart({
-      x: e.clientX - artworkPosition.x,
-      y: e.clientY - artworkPosition.y,
+      x: e.clientX - (artworkPosition.x / 100) * rect.width,
+      y: e.clientY - (artworkPosition.y / 100) * rect.height,
     });
     e.currentTarget.setPointerCapture(e.pointerId);
   };

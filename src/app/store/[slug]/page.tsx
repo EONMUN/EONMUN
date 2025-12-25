@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <PurchaseButton product={product} />
             {(product.imageUrl || product.artwork?.defaultImageUrl) && (
               <ARViewButton
-                imageUrl={product.imageUrl || product.artwork!.defaultImageUrl!}
+                imageUrl={(product.imageUrl || product.artwork?.defaultImageUrl) as string}
                 artworkTitle={product.name}
                 className="w-full"
               />
