@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Camera, Move, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { X, Camera, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 
 interface ARViewerProps {
   imageUrl: string;
@@ -10,7 +10,6 @@ interface ARViewerProps {
 }
 
 export function ARViewer({ imageUrl, artworkTitle, onClose }: ARViewerProps) {
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>('');
   const [artworkPosition, setArtworkPosition] = useState({ x: 50, y: 50 });
   const [artworkScale, setArtworkScale] = useState(1);
@@ -36,7 +35,6 @@ export function ARViewer({ imageUrl, artworkTitle, onClose }: ARViewerProps) {
         });
 
         currentStream = mediaStream;
-        setStream(mediaStream);
 
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -123,6 +121,7 @@ export function ARViewer({ imageUrl, artworkTitle, onClose }: ARViewerProps) {
         onPointerUp={handlePointerUp}
         style={{ touchAction: 'none' }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageUrl}
           alt={artworkTitle}
