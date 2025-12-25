@@ -4,6 +4,7 @@ import { getArtworkBySlug } from "@/actions/artwork";
 import { notFound } from "next/navigation";
 import type { ArtworkWithCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database/factories/collection.factory";
+import { ARViewButton } from "@/components/ARViewButton";
 
 interface ArtworkPageProps {
   params: Promise<{
@@ -81,13 +82,20 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
           </div>
 
           {/* Purchase Link */}
-          <div className="border-t border-b border-outline py-6">
+          <div className="border-t border-b border-outline py-6 space-y-3">
             <Link
               href={`/store/${artwork.slug}`}
-              className="inline-flex items-center justify-center px-6 py-3 bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors font-medium"
+              className="inline-flex items-center justify-center px-6 py-3 bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors font-medium w-full sm:w-auto"
             >
               View in Store
             </Link>
+            {artwork.defaultImageUrl && (
+              <ARViewButton
+                imageUrl={artwork.defaultImageUrl}
+                artworkTitle={artwork.title}
+                className="w-full sm:w-auto"
+              />
+            )}
           </div>
 
           {artwork.description && (
