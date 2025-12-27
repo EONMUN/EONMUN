@@ -24,6 +24,7 @@ export default async function EditArtworkPage({
       </h1>
       <div className="bg-surface rounded-lg shadow-md p-8 border border-outline">
         <ArtworkForm
+          key={artworkWithProduct.slug}
           artwork={artworkWithProduct}
           initialPrice={artworkWithProduct.product?.price}
         />
