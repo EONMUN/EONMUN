@@ -33,7 +33,7 @@
  * ```
  */
 
-import { eq, inArray, and, isNotNull, isNull } from "drizzle-orm";
+import { eq, inArray, and, isNotNull, isNull, asc } from "drizzle-orm";
 import {
   db,
   artworks,
@@ -63,6 +63,10 @@ export interface ArtworkFilters {
   locale?: string[];
   /** Filter by default for collection status */
   isDefaultForCollection?: boolean;
+  /** Filter by home page presence (true = has homePageOrder, false = no homePageOrder) */
+  onHomePage?: boolean;
+  /** Order by homePageOrder ascending */
+  orderByHomePageOrder?: boolean;
 }
 
 /**
@@ -107,11 +111,26 @@ export async function findArtworks(
     conditions.push(inArray(artworks.locale, filters.locale));
   }
 
+  if (filters.onHomePage === true) {
+    conditions.push(isNotNull(artworks.homePageOrder));
+  } else if (filters.onHomePage === false) {
+    conditions.push(isNull(artworks.homePageOrder));
+  }
+
   // Execute query with conditions
   const query = db.select().from(artworks);
 
   if (conditions.length > 0) {
+    if (filters.orderByHomePageOrder) {
+      return await query
+        .where(and(...conditions))
+        .orderBy(asc(artworks.homePageOrder));
+    }
     return await query.where(and(...conditions));
+  }
+
+  if (filters.orderByHomePageOrder) {
+    return await query.orderBy(asc(artworks.homePageOrder));
   }
 
   return await query;
@@ -153,6 +172,12 @@ export async function findArtworksWithCollections(
     artworkConditions.push(inArray(artworks.locale, filters.locale));
   }
 
+  if (filters.onHomePage === true) {
+    artworkConditions.push(isNotNull(artworks.homePageOrder));
+  } else if (filters.onHomePage === false) {
+    artworkConditions.push(isNull(artworks.homePageOrder));
+  }
+
   // Build WHERE conditions for junction table
   if (filters.collectionId && filters.collectionId.length > 0) {
     junctionConditions.push(
@@ -173,12 +198,27 @@ export async function findArtworksWithCollections(
   // Get artworks first
   let matchedArtworks: SelectArtwork[];
   if (artworkConditions.length > 0) {
-    matchedArtworks = await db
-      .select()
-      .from(artworks)
-      .where(and(...artworkConditions));
+    if (filters.orderByHomePageOrder) {
+      matchedArtworks = await db
+        .select()
+        .from(artworks)
+        .where(and(...artworkConditions))
+        .orderBy(asc(artworks.homePageOrder));
+    } else {
+      matchedArtworks = await db
+        .select()
+        .from(artworks)
+        .where(and(...artworkConditions));
+    }
   } else {
-    matchedArtworks = await db.select().from(artworks);
+    if (filters.orderByHomePageOrder) {
+      matchedArtworks = await db
+        .select()
+        .from(artworks)
+        .orderBy(asc(artworks.homePageOrder));
+    } else {
+      matchedArtworks = await db.select().from(artworks);
+    }
   }
 
   if (matchedArtworks.length === 0) {

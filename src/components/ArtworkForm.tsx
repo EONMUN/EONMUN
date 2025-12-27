@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ImageUpload from "@/components/ImageUpload";
+import MultiImageUpload, {
+  type ArtworkImage,
+} from "@/components/MultiImageUpload";
 import FacetSelector from "@/components/FacetSelector";
 import CollectionSelector, {
   type SelectedCollection,
@@ -41,6 +43,37 @@ export default function ArtworkForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(!!artwork);
 
+  // Parse initial images from artwork
+  const parseInitialImages = (): ArtworkImage[] => {
+    if (!artwork) return [];
+    if (artwork.imagesJson) {
+      try {
+        return JSON.parse(artwork.imagesJson) as ArtworkImage[];
+      } catch {
+        // If parsing fails but we have a default image, create an image entry for it
+        if (artwork.defaultImageUrl) {
+          return [
+            {
+              id: `img-${Date.now()}`,
+              url: artwork.defaultImageUrl,
+              alternativeText: artwork.title,
+            },
+          ];
+        }
+      }
+    } else if (artwork.defaultImageUrl) {
+      // No imagesJson but has defaultImageUrl - create an image entry
+      return [
+        {
+          id: `img-${Date.now()}`,
+          url: artwork.defaultImageUrl,
+          alternativeText: artwork.title,
+        },
+      ];
+    }
+    return [];
+  };
+
   // Form data for direct fields
   // Note: price is passed as initialPrice prop from the server (in cents), converted to dollars for display
   const [formData, setFormData] = useState({
@@ -53,8 +86,10 @@ export default function ArtworkForm({
     depth: artwork?.depth?.toString() || "",
     dimensionUnit: artwork?.dimensionUnit || "in",
     price: initialPrice ? (initialPrice / 100).toString() : "",
-    defaultImageUrl: artwork?.defaultImageUrl || "",
   });
+
+  // Images state (separate from formData for easier management)
+  const [images, setImages] = useState<ArtworkImage[]>(parseInitialImages);
 
   // Many-to-many relationship data
   const [selectedMaterials, setSelectedMaterials] = useState<Facet[]>([]);
@@ -119,7 +154,8 @@ export default function ArtworkForm({
         depth: formData.depth ? parseFloat(formData.depth) : undefined,
         dimensionUnit: formData.dimensionUnit || undefined,
         price: formData.price ? parseFloat(formData.price) : undefined,
-        defaultImageUrl: formData.defaultImageUrl || undefined,
+        defaultImageUrl: images.length > 0 ? images[0].url : undefined,
+        imagesJson: images.length > 0 ? JSON.stringify(images) : undefined,
       };
 
       let result;
@@ -222,14 +258,9 @@ export default function ArtworkForm({
       {/* Image Upload */}
       <div>
         <label className="block text-sm font-medium text-on-surface mb-2">
-          Artwork Image
+          Artwork Images
         </label>
-        <ImageUpload
-          currentImageUrl={formData.defaultImageUrl}
-          onUploadComplete={(url) =>
-            setFormData({ ...formData, defaultImageUrl: url })
-          }
-        />
+        <MultiImageUpload images={images} onChange={setImages} />
       </div>
 
       {/* Title */}

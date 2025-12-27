@@ -1,0 +1,1 @@
+ALTER TABLE `artworks` ADD `home_page_order` integer;

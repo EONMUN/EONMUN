@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { requireAdmin } from '@/lib/auth-utils';
+import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-utils";
 
 export default async function AdminLayout({
   children,
@@ -32,6 +32,12 @@ export default async function AdminLayout({
                 >
                   Collections
                 </Link>
+                <Link
+                  href="/admin/home"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-primary-container"
+                >
+                  Home Page
+                </Link>
               </div>
             </div>
             <Link
@@ -45,9 +51,7 @@ export default async function AdminLayout({
       </nav>
 
       {/* Admin Content */}
-      <main className="container mx-auto px-6 py-8">
-        {children}
-      </main>
+      <main className="container mx-auto px-6 py-8">{children}</main>
     </div>
   );
 }

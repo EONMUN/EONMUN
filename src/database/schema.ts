@@ -52,6 +52,7 @@ export const artworks = sqliteTable(
     dimensionUnit: text("dimension_unit").default("in"), // 'in', 'cm', 'mm'
     defaultImageUrl: text("default_image_url"),
     imagesJson: text("images_json"), // JSON array of image objects
+    homePageOrder: integer("home_page_order"), // Order on home page (null = not on home page)
     publishedAt: integer("published_at", { mode: "timestamp" }),
     locale: text("locale").notNull().default("en"),
     createdAt: integer("created_at", { mode: "timestamp" })

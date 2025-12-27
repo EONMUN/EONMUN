@@ -10,16 +10,18 @@ interface ArtworkInfoProps {
 export function ArtworkInfo({ artwork, className = "" }: ArtworkInfoProps) {
   return (
     <div className={`absolute bottom-5 right-4 z-[50] ${className}`}>
-      <FrostedGlass 
-        variant="dark" 
-        className="p-3 rounded-lg"
-      >
+      <FrostedGlass variant="dark" className="p-3 rounded-lg">
         <div className="flex flex-col gap-2 text-right">
           <div className="tracking-wide">
             <div className="text-xs text-white/70 font-medium uppercase">
               Name
             </div>
-            <div className="text-base text-white font-medium">{artwork.title}</div>
+            <Link
+              href={`/artworks/${artwork.slug}`}
+              className="text-base text-white font-medium hover:text-gray-200 transition-colors"
+            >
+              {artwork.title}
+            </Link>
           </div>
 
           {artwork.year && (
@@ -27,7 +29,9 @@ export function ArtworkInfo({ artwork, className = "" }: ArtworkInfoProps) {
               <div className="text-xs text-white/70 font-medium uppercase">
                 Year
               </div>
-              <div className="text-base text-white font-medium">{artwork.year}</div>
+              <div className="text-base text-white font-medium">
+                {artwork.year}
+              </div>
             </div>
           )}
 
@@ -53,4 +57,4 @@ export function ArtworkInfo({ artwork, className = "" }: ArtworkInfoProps) {
       </FrostedGlass>
     </div>
   );
-} 
+}
