@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import Image from "@/components/Image";
 import { ArtworkInfo } from "@/components/ArtworkInfo";
 import {
@@ -15,9 +15,9 @@ import Fade from "embla-carousel-fade";
 function ArtworkCarouselItem({ artwork }: { artwork: ArtworkWithCollections }) {
   return (
     <CarouselItem key={artwork.id} className="h-full pl-0">
-      <div className="relative h-screen w-full">
+      <div className="relative h-dvh w-full">
         <Image
-          src={artwork.defaultImageUrl || ''}
+          src={artwork.defaultImageUrl || ""}
           alt={artwork.title}
           className="w-full h-full object-cover"
         />
@@ -31,27 +31,31 @@ function ArtworkCarouselItem({ artwork }: { artwork: ArtworkWithCollections }) {
   );
 }
 
-export default function HomePageArtworkCarousel({ artworks }: { artworks: ArtworkWithCollections[] }) {
+export default function HomePageArtworkCarousel({
+  artworks,
+}: {
+  artworks: ArtworkWithCollections[];
+}) {
   return (
-      <Carousel 
-        className="w-full h-full"
-        plugins={[
-          Autoplay({
-            delay: 5000,
-          }),
-          Fade(),
-        ]}
-        opts={{
-          loop: true,
-        }}
-      >
-        <CarouselContent className="h-full -ml-0">
-          {artworks.map((artwork) => (
-            <ArtworkCarouselItem key={artwork.id} artwork={artwork} />
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="left-4 z-10" />
-        <CarouselNext className="right-4 z-10" />
-      </Carousel>
+    <Carousel
+      className="w-full h-full"
+      plugins={[
+        Autoplay({
+          delay: 5000,
+        }),
+        Fade(),
+      ]}
+      opts={{
+        loop: true,
+      }}
+    >
+      <CarouselContent className="h-full -ml-0">
+        {artworks.map((artwork) => (
+          <ArtworkCarouselItem key={artwork.id} artwork={artwork} />
+        ))}
+      </CarouselContent>
+      <CarouselPrevious className="left-4 z-10" />
+      <CarouselNext className="right-4 z-10" />
+    </Carousel>
   );
-} 
+}
