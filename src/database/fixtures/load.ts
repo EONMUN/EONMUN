@@ -18,6 +18,7 @@ import {
   facets,
   artworksToFacets,
   products,
+  artworkImages,
 } from "@/database/schema";
 import path from "path";
 import fs from "fs";
@@ -194,12 +195,23 @@ async function loadArtworks(
         description: fixture.description || null,
         artist: fixture.artist || null,
         year: fixture.year || null,
-        defaultImageUrl,
-        imagesJson,
         publishedAt: fixture.publishedAt ? new Date(fixture.publishedAt) : null,
         locale: fixture.locale || "en",
       })
       .returning();
+
+    // Insert images into artworkImages table
+    if (imagesJson) {
+      const parsedImages = JSON.parse(imagesJson) as ArtworkImage[];
+      for (const [index, image] of parsedImages.entries()) {
+        await database.insert(artworkImages).values({
+          artworkId: createdArtwork.id,
+          url: image.url,
+          caption: image.caption,
+          isDefault: index === 0,
+        });
+      }
+    }
 
     // Store artwork data for product creation
     artworkSlugToData.set(fixture.slug, {

@@ -1,13 +1,21 @@
-'use server';
+"use server";
 
-import { findArtworksWithCollections, findArtworksWithProductsAndCollections, findArtworkWithProductBySlug } from '@/models/artwork';
-import type { ArtworkWithCollections, ArtworkWithProductAndCollections, ArtworkWithProduct } from '@/models/artwork';
+import {
+  findArtworksWithCollections,
+  findArtworksWithProductsAndCollections,
+} from "@/models/artwork";
+import type {
+  ArtworkWithCollections,
+  ArtworkWithProductAndCollections,
+} from "@/models/artwork";
 
 /**
  * Get an artwork by its slug.
  * Returns the artwork with collection data or null if not found.
  */
-export async function getArtworkBySlug(slug: string): Promise<ArtworkWithCollections | null> {
+export async function getArtworkBySlug(
+  slug: string,
+): Promise<ArtworkWithCollections | null> {
   const artworks = await findArtworksWithCollections({
     slug: [slug],
     published: true, // Only return published artworks
@@ -20,7 +28,9 @@ export async function getArtworkBySlug(slug: string): Promise<ArtworkWithCollect
  * Get an artwork with its product and collection data by slug.
  * Returns the artwork with product and collection data or null if not found.
  */
-export async function getArtworkWithProductAndCollectionsBySlug(slug: string): Promise<ArtworkWithProductAndCollections | null> {
+export async function getArtworkWithProductAndCollectionsBySlug(
+  slug: string,
+): Promise<ArtworkWithProductAndCollections | null> {
   const artworks = await findArtworksWithProductsAndCollections({
     slug: [slug],
     published: true,
@@ -83,7 +93,9 @@ export async function getAllArtworksWithProducts(params?: {
  * Get an artwork by its ID.
  * Returns the artwork with collection data or null if not found.
  */
-export async function getArtworkById(id: number): Promise<ArtworkWithCollections | null> {
+export async function getArtworkById(
+  id: number,
+): Promise<ArtworkWithCollections | null> {
   const artworks = await findArtworksWithCollections({
     id: [id],
   });

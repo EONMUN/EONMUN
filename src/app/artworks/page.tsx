@@ -3,7 +3,11 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 
-function ArtworkCard({ artwork }: { artwork: ArtworkWithProductAndCollections }) {
+function ArtworkCard({
+  artwork,
+}: {
+  artwork: ArtworkWithProductAndCollections;
+}) {
   const price = artwork.product ? artwork.product.price / 100 : null;
 
   return (
@@ -88,7 +92,7 @@ export default async function ArtworksPage() {
 
 // Generate metadata for the page
 export async function generateMetadata() {
-  const { data } = await getAllArtworks();
+  const { data } = await getAllArtworksWithProducts();
   const artworkCount = data.length;
 
   return {

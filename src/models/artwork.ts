@@ -40,10 +40,18 @@ import {
   collections,
   artworksToCollections,
   products,
+  artworkImages,
+  type SelectArtwork as BaseSelectArtwork,
+  type SelectCollection,
+  type SelectProduct,
 } from "@/database";
-import type { SelectArtwork } from "@/database/factories/artwork.factory";
-import type { SelectCollection } from "@/database/factories/collection.factory";
-import type { SelectProduct } from "@/database/factories/product.factory";
+
+/**
+ * Artwork with default image URL (computed from artworkImages join)
+ */
+export interface SelectArtwork extends BaseSelectArtwork {
+  defaultImageUrl: string | null;
+}
 
 /**
  * Filters for querying artworks
@@ -70,6 +78,7 @@ export interface ArtworkFilters {
  */
 export interface ArtworkWithCollections extends SelectArtwork {
   collections: SelectCollection[];
+  images: { url: string; isDefault: boolean; caption: string | null }[];
 }
 
 /**
@@ -107,14 +116,41 @@ export async function findArtworks(
     conditions.push(inArray(artworks.locale, filters.locale));
   }
 
-  // Execute query with conditions
-  const query = db.select().from(artworks);
+  // Execute query with conditions and join with artworkImages for default image
+  const query = db
+    .select({
+      id: artworks.id,
+      title: artworks.title,
+      slug: artworks.slug,
+      description: artworks.description,
+      artist: artworks.artist,
+      year: artworks.year,
+      width: artworks.width,
+      height: artworks.height,
+      depth: artworks.depth,
+      dimensionUnit: artworks.dimensionUnit,
+      publishedAt: artworks.publishedAt,
+      locale: artworks.locale,
+      createdAt: artworks.createdAt,
+      updatedAt: artworks.updatedAt,
+      defaultImageUrl: artworkImages.url,
+    })
+    .from(artworks)
+    .leftJoin(
+      artworkImages,
+      and(
+        eq(artworks.id, artworkImages.artworkId),
+        eq(artworkImages.isDefault, true),
+      ),
+    );
 
   if (conditions.length > 0) {
-    return await query.where(and(...conditions));
+    query.where(and(...conditions));
   }
 
-  return await query;
+  const results = await query;
+
+  return results as SelectArtwork[];
 }
 
 /**
@@ -127,39 +163,21 @@ export async function findArtworks(
 export async function findArtworksWithCollections(
   filters: ArtworkFilters = {},
 ): Promise<ArtworkWithCollections[]> {
-  const artworkConditions = [];
+  const matchedArtworks = await findArtworks(filters);
+
+  if (matchedArtworks.length === 0) {
+    return [];
+  }
+
+  const artworkIds = matchedArtworks.map((a) => a.id);
+
+  // Fetch collections
   const junctionConditions = [];
-
-  // Build WHERE conditions for artworks table
-  if (filters.id && filters.id.length > 0) {
-    artworkConditions.push(inArray(artworks.id, filters.id));
-  }
-
-  if (filters.slug && filters.slug.length > 0) {
-    artworkConditions.push(inArray(artworks.slug, filters.slug));
-  }
-
-  if (filters.year && filters.year.length > 0) {
-    artworkConditions.push(inArray(artworks.year, filters.year));
-  }
-
-  if (filters.published === true) {
-    artworkConditions.push(isNotNull(artworks.publishedAt));
-  } else if (filters.published === false) {
-    artworkConditions.push(isNull(artworks.publishedAt));
-  }
-
-  if (filters.locale && filters.locale.length > 0) {
-    artworkConditions.push(inArray(artworks.locale, filters.locale));
-  }
-
-  // Build WHERE conditions for junction table
   if (filters.collectionId && filters.collectionId.length > 0) {
     junctionConditions.push(
       inArray(artworksToCollections.collectionId, filters.collectionId),
     );
   }
-
   if (filters.isDefaultForCollection === true) {
     junctionConditions.push(
       eq(artworksToCollections.isDefaultForCollection, true),
@@ -170,28 +188,9 @@ export async function findArtworksWithCollections(
     );
   }
 
-  // Get artworks first
-  let matchedArtworks: SelectArtwork[];
-  if (artworkConditions.length > 0) {
-    matchedArtworks = await db
-      .select()
-      .from(artworks)
-      .where(and(...artworkConditions));
-  } else {
-    matchedArtworks = await db.select().from(artworks);
-  }
-
-  if (matchedArtworks.length === 0) {
-    return [];
-  }
-
-  // Get junction table data with collection info
-  const artworkIds = matchedArtworks.map((a) => a.id);
-  const junctionQuery = db
+  const collectionQuery = db
     .select({
       artworkId: artworksToCollections.artworkId,
-      collectionId: artworksToCollections.collectionId,
-      isDefault: artworksToCollections.isDefaultForCollection,
       collection: collections,
     })
     .from(artworksToCollections)
@@ -206,22 +205,41 @@ export async function findArtworksWithCollections(
       ),
     );
 
-  const junctionData = await junctionQuery;
+  const collectionData = await collectionQuery;
 
-  // If filtering by collection/isDefault and no junction data found, return empty
-  if (junctionConditions.length > 0 && junctionData.length === 0) {
-    return [];
-  }
+  // Fetch images
+  const imagesQuery = db
+    .select()
+    .from(artworkImages)
+    .where(inArray(artworkImages.artworkId, artworkIds));
+
+  const imagesData = await imagesQuery;
 
   // Group collections by artwork ID
   const collectionsByArtworkId = new Map<number, SelectCollection[]>();
-  for (const row of junctionData) {
+  for (const row of collectionData) {
     const existing = collectionsByArtworkId.get(row.artworkId) || [];
     existing.push(row.collection);
     collectionsByArtworkId.set(row.artworkId, existing);
   }
 
-  // Filter artworks based on junction conditions if any
+  // Group images by artwork ID
+  const imagesByArtworkId = new Map<
+    number,
+    { url: string; isDefault: boolean; caption: string | null }[]
+  >();
+  for (const img of imagesData) {
+    const existing = imagesByArtworkId.get(img.artworkId) || [];
+    existing.push({
+      url: img.url,
+      isDefault: img.isDefault ?? false,
+      caption: img.caption,
+    });
+    imagesByArtworkId.set(img.artworkId, existing);
+  }
+
+  // Filter artworks if specific collection filters were applied
+  // (Note: matchedArtworks already has basic filters, but collection junction filtering happens here)
   const filteredArtworks =
     junctionConditions.length > 0
       ? matchedArtworks.filter((artwork) =>
@@ -229,10 +247,11 @@ export async function findArtworksWithCollections(
         )
       : matchedArtworks;
 
-  // Combine artworks with their collections
+  // Combine data
   return filteredArtworks.map((artwork) => ({
     ...artwork,
     collections: collectionsByArtworkId.get(artwork.id) || [],
+    images: imagesByArtworkId.get(artwork.id) || [],
   }));
 }
 

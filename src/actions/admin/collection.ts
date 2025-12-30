@@ -1,10 +1,10 @@
-'use server';
+"use server";
 
-import { revalidatePath } from 'next/cache';
-import * as collectionModel from '@/models/collections';
-import * as artworkModel from '@/models/artworks';
-import type { Collection, NewCollection } from '@/models/collections';
-import { guardAuth, guardAdmin } from '@/lib/actions';
+import { revalidatePath } from "next/cache";
+import * as collectionModel from "@/models/collections";
+import { findArtworks } from "@/models/artwork";
+import type { Collection, NewCollection } from "@/models/collections";
+import { guardAuth, guardAdmin } from "@/lib/actions";
 
 export type { Collection };
 
@@ -13,10 +13,11 @@ export async function getAllCollectionsAdmin() {
   if (authError) return authError;
 
   try {
-    const collections = await collectionModel.getAllCollectionsWithDefaultArtwork();
+    const collections =
+      await collectionModel.getAllCollectionsWithDefaultArtwork();
     return { data: collections };
   } catch (error) {
-    console.error('Error fetching collections:', error);
+    console.error("Error fetching collections:", error);
     throw error;
   }
 }
@@ -29,7 +30,7 @@ export async function getCollectionByIdAdmin(id: number) {
     const collection = await collectionModel.getCollectionById(id);
     return collection;
   } catch (error) {
-    console.error('Error fetching collection:', error);
+    console.error("Error fetching collection:", error);
     throw error;
   }
 }
@@ -42,7 +43,7 @@ export async function getCollectionBySlugAdmin(slug: string) {
     const collection = await collectionModel.getCollectionBySlug(slug);
     return collection;
   } catch (error) {
-    console.error('Error fetching collection:', error);
+    console.error("Error fetching collection:", error);
     throw error;
   }
 }
@@ -52,10 +53,11 @@ export async function getCollectionWithArtworksBySlugAdmin(slug: string) {
   if (authError) return null;
 
   try {
-    const collection = await collectionModel.getCollectionWithArtworksBySlug(slug);
+    const collection =
+      await collectionModel.getCollectionWithArtworksBySlug(slug);
     return collection;
   } catch (error) {
-    console.error('Error fetching collection with artworks:', error);
+    console.error("Error fetching collection with artworks:", error);
     throw error;
   }
 }
@@ -74,34 +76,47 @@ export async function getCollectionWithArtworksBySlugAdmin(slug: string) {
 //   }
 // }
 
-export async function createCollectionAdmin(data: Omit<NewCollection, 'createdAt' | 'updatedAt'>) {
+export async function createCollectionAdmin(
+  data: Omit<NewCollection, "createdAt" | "updatedAt">,
+) {
   const authError = await guardAdmin();
   if (authError) return authError;
 
   try {
     const collection = await collectionModel.createCollection(data);
-    revalidatePath('/admin/collections');
+    revalidatePath("/admin/collections");
     return { success: true, data: collection };
   } catch (error) {
-    console.error('Error creating collection:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to create collection' };
+    console.error("Error creating collection:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to create collection",
+    };
   }
 }
 
-export async function updateCollectionAdmin(id: number, data: Partial<Omit<NewCollection, 'createdAt' | 'updatedAt'>>) {
+export async function updateCollectionAdmin(
+  id: number,
+  data: Partial<Omit<NewCollection, "createdAt" | "updatedAt">>,
+) {
   const authError = await guardAdmin();
   if (authError) return authError;
 
   try {
     const collection = await collectionModel.updateCollection(id, data);
     if (!collection) {
-      return { success: false, error: 'Collection not found' };
+      return { success: false, error: "Collection not found" };
     }
-    revalidatePath('/admin/collections');
+    revalidatePath("/admin/collections");
     return { success: true, data: collection };
   } catch (error) {
-    console.error('Error updating collection:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to update collection' };
+    console.error("Error updating collection:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to update collection",
+    };
   }
 }
 
@@ -111,63 +126,89 @@ export async function deleteCollectionAdmin(id: number) {
 
   try {
     await collectionModel.deleteCollection(id);
-    revalidatePath('/admin/collections');
+    revalidatePath("/admin/collections");
     return { success: true };
   } catch (error) {
-    console.error('Error deleting collection:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to delete collection' };
+    console.error("Error deleting collection:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to delete collection",
+    };
   }
 }
 
 export async function addArtworkToCollectionAdmin(
   collectionId: number,
   artworkId: number,
-  isDefault: boolean = false
+  isDefault: boolean = false,
 ) {
   const authError = await guardAdmin();
   if (authError) return authError;
 
   try {
-    await collectionModel.addArtworkToCollection(collectionId, artworkId, isDefault);
-    revalidatePath('/admin/collections');
+    await collectionModel.addArtworkToCollection(
+      collectionId,
+      artworkId,
+      isDefault,
+    );
+    revalidatePath("/admin/collections");
     return { success: true };
   } catch (error) {
-    console.error('Error adding artwork to collection:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to add artwork to collection' };
+    console.error("Error adding artwork to collection:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to add artwork to collection",
+    };
   }
 }
 
 export async function removeArtworkFromCollectionAdmin(
   collectionId: number,
-  artworkId: number
+  artworkId: number,
 ) {
   const authError = await guardAdmin();
   if (authError) return authError;
 
   try {
     await collectionModel.removeArtworkFromCollection(collectionId, artworkId);
-    revalidatePath('/admin/collections');
+    revalidatePath("/admin/collections");
     return { success: true };
   } catch (error) {
-    console.error('Error removing artwork from collection:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to remove artwork from collection' };
+    console.error("Error removing artwork from collection:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to remove artwork from collection",
+    };
   }
 }
 
 export async function setDefaultArtworkAdmin(
   collectionId: number,
-  artworkId: number
+  artworkId: number,
 ) {
   const authError = await guardAdmin();
   if (authError) return authError;
 
   try {
     await collectionModel.setDefaultArtwork(collectionId, artworkId);
-    revalidatePath('/admin/collections');
+    revalidatePath("/admin/collections");
     return { success: true };
   } catch (error) {
-    console.error('Error setting default artwork:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to set default artwork' };
+    console.error("Error setting default artwork:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to set default artwork",
+    };
   }
 }
 
@@ -176,10 +217,19 @@ export async function searchArtworksAdmin(query: string) {
   if (authError) return { data: [] };
 
   try {
-    const artworks = await artworkModel.searchArtworks(query);
-    return { data: artworks };
+    // Use findArtworks which returns artworks with defaultImageUrl
+    const artworks = await findArtworks({});
+    // Filter by query (simple case-insensitive search)
+    const filtered = query.trim()
+      ? artworks.filter(
+          (a) =>
+            a.title.toLowerCase().includes(query.toLowerCase()) ||
+            (a.artist && a.artist.toLowerCase().includes(query.toLowerCase())),
+        )
+      : artworks;
+    return { data: filtered };
   } catch (error) {
-    console.error('Error searching artworks:', error);
+    console.error("Error searching artworks:", error);
     return { data: [] };
   }
 }
@@ -195,7 +245,7 @@ export async function searchCollectionsAdmin(query: string) {
     const collections = await collectionModel.searchCollections(query);
     return { data: collections };
   } catch (error) {
-    console.error('Error searching collections:', error);
+    console.error("Error searching collections:", error);
     return { data: [] };
   }
 }
@@ -208,10 +258,11 @@ export async function getCollectionsForArtworkAdmin(artworkId: number) {
   if (authError) return { data: [] };
 
   try {
-    const collections = await collectionModel.getCollectionsForArtwork(artworkId);
+    const collections =
+      await collectionModel.getCollectionsForArtwork(artworkId);
     return { data: collections };
   } catch (error) {
-    console.error('Error fetching artwork collections:', error);
+    console.error("Error fetching artwork collections:", error);
     return { data: [] };
   }
 }
@@ -221,18 +272,22 @@ export async function getCollectionsForArtworkAdmin(artworkId: number) {
  */
 export async function setCollectionsForArtworkAdmin(
   artworkId: number,
-  collectionData: { collectionId: number; isDefault: boolean }[]
+  collectionData: { collectionId: number; isDefault: boolean }[],
 ) {
   const authError = await guardAdmin();
   if (authError) return authError;
 
   try {
     await collectionModel.setCollectionsForArtwork(artworkId, collectionData);
-    revalidatePath('/admin/artworks');
-    revalidatePath('/admin/collections');
+    revalidatePath("/admin/artworks");
+    revalidatePath("/admin/collections");
     return { success: true };
   } catch (error) {
-    console.error('Error setting artwork collections:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to set collections' };
+    console.error("Error setting artwork collections:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to set collections",
+    };
   }
 }

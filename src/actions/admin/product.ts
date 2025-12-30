@@ -2,10 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import { db, products } from "@/database";
+import { db, products, type InsertProduct } from "@/database";
 import { findProductsWithArtwork, markProductSold } from "@/models/product";
 import type { SelectProduct, ProductWithArtwork } from "@/models/product";
-import type { InsertProduct } from "@/database/factories/product.factory";
 import { guardAuth, guardAdmin } from "@/lib/actions";
 
 export type { SelectProduct, ProductWithArtwork };
@@ -29,7 +28,9 @@ export async function getAllProductsAdmin() {
 /**
  * Get a product by ID (admin view)
  */
-export async function getProductByIdAdmin(id: number): Promise<ProductWithArtwork | null> {
+export async function getProductByIdAdmin(
+  id: number,
+): Promise<ProductWithArtwork | null> {
   const authError = await guardAuth();
   if (authError) return null;
 
@@ -45,7 +46,9 @@ export async function getProductByIdAdmin(id: number): Promise<ProductWithArtwor
 /**
  * Get a product by slug (admin view)
  */
-export async function getProductBySlugAdmin(slug: string): Promise<ProductWithArtwork | null> {
+export async function getProductBySlugAdmin(
+  slug: string,
+): Promise<ProductWithArtwork | null> {
   const authError = await guardAuth();
   if (authError) return null;
 
@@ -63,7 +66,7 @@ export async function getProductBySlugAdmin(slug: string): Promise<ProductWithAr
  * listedAt is automatically set on creation.
  */
 export async function createProductAdmin(
-  data: Omit<InsertProduct, "id" | "createdAt" | "updatedAt" | "listedAt">
+  data: Omit<InsertProduct, "id" | "createdAt" | "updatedAt" | "listedAt">,
 ) {
   const authError = await guardAdmin();
   if (authError) return authError;
@@ -84,7 +87,8 @@ export async function createProductAdmin(
     console.error("Error creating product:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create product",
+      error:
+        error instanceof Error ? error.message : "Failed to create product",
     };
   }
 }
@@ -94,7 +98,7 @@ export async function createProductAdmin(
  */
 export async function updateProductAdmin(
   id: number,
-  data: Partial<Omit<InsertProduct, "id" | "createdAt" | "listedAt">>
+  data: Partial<Omit<InsertProduct, "id" | "createdAt" | "listedAt">>,
 ) {
   const authError = await guardAdmin();
   if (authError) return authError;
@@ -121,7 +125,8 @@ export async function updateProductAdmin(
     console.error("Error updating product:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update product",
+      error:
+        error instanceof Error ? error.message : "Failed to update product",
     };
   }
 }
@@ -148,7 +153,10 @@ export async function markProductSoldAdmin(id: number) {
     console.error("Error marking product as sold:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to mark product as sold",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to mark product as sold",
     };
   }
 }
@@ -177,7 +185,8 @@ export async function deleteProductAdmin(id: number) {
     console.error("Error deleting product:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to delete product",
+      error:
+        error instanceof Error ? error.message : "Failed to delete product",
     };
   }
 }

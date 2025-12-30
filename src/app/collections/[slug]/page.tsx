@@ -1,6 +1,6 @@
 import Image from "@/components/Image";
 import Link from "next/link";
-import type { SelectArtwork } from "@/database/factories/artwork.factory";
+import type { SelectArtwork } from "@/models/artwork";
 import { getCollectionBySlug } from "@/actions/collection";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
@@ -26,12 +26,14 @@ function ArtworkCard({ artwork }: { artwork: SelectArtwork }) {
             <span className="text-on-surface-variant">No Image</span>
           </div>
         )}
-        
+
         {/* Artwork info overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="absolute bottom-4 left-4 right-4">
             <FrostedGlass variant="dark" className="p-3 rounded-lg">
-              <h3 className="text-white font-medium text-lg">{artwork.title}</h3>
+              <h3 className="text-white font-medium text-lg">
+                {artwork.title}
+              </h3>
               {artwork.year && (
                 <p className="text-gray-300 text-sm">{artwork.year}</p>
               )}
@@ -61,18 +63,24 @@ export default async function CollectionPage(props: CollectionPageProps) {
       {/* Collection Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-4">
-          <Link href="/collections" className="hover:text-primary transition-colors">
+          <Link
+            href="/collections"
+            className="hover:text-primary transition-colors"
+          >
             Collections
           </Link>
           <span>/</span>
           <span>{collection.name}</span>
         </div>
-        
-        <h1 className="text-4xl font-bold text-on-background mb-4">{collection.name}</h1>
-        
+
+        <h1 className="text-4xl font-bold text-on-background mb-4">
+          {collection.name}
+        </h1>
+
         {collection.artworks && (
           <p className="text-on-surface-variant">
-            {collection.artworks.length} artwork{collection.artworks.length !== 1 ? 's' : ''} in this collection
+            {collection.artworks.length} artwork
+            {collection.artworks.length !== 1 ? "s" : ""} in this collection
           </p>
         )}
       </div>
@@ -86,9 +94,11 @@ export default async function CollectionPage(props: CollectionPageProps) {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-on-surface-variant text-lg">No artworks found in this collection.</p>
-          <Link 
-            href="/collections" 
+          <p className="text-on-surface-variant text-lg">
+            No artworks found in this collection.
+          </p>
+          <Link
+            href="/collections"
             className="mt-4 inline-block text-primary hover:text-primary/80 transition-colors"
           >
             Browse all collections
@@ -114,4 +124,4 @@ export async function generateMetadata({ params }: CollectionPageProps) {
     title: `${collection.name} - Collections`,
     description: `Browse artworks in the ${collection.name} collection`,
   };
-} 
+}
