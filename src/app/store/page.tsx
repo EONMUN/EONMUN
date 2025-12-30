@@ -16,7 +16,10 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
   const imageUrl = product.imageUrl || product.artwork?.defaultImageUrl;
 
   return (
-    <div className="group bg-surface border border-outline rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+    <div 
+      className="group bg-surface border border-outline rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+      data-testid="product-card"
+    >
       <Link href={`/store/${product.slug}`}>
         <div className="aspect-square overflow-hidden bg-surface-variant">
           {imageUrl ? (
@@ -44,12 +47,20 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
         </Link>
 
         <div className="flex items-center justify-between">
-          <span className="text-xl font-bold text-primary">
+          <span className="text-xl font-bold text-primary" data-testid="product-price">
             ${priceInDollars.toLocaleString()}
           </span>
         </div>
 
-        <PurchaseButton product={product} variant="compact" />
+        <PurchaseButton 
+          product={{
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            price: product.price,
+          }} 
+          variant="compact" 
+        />
       </div>
     </div>
   );

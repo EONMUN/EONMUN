@@ -1,9 +1,10 @@
 import Image from "@/components/Image";
 import Link from "next/link";
-import { getArtworkBySlug } from "@/actions/artwork";
+import { getArtworkWithProductAndCollectionsBySlug } from "@/actions/artwork";
 import { notFound } from "next/navigation";
 import type { ArtworkWithCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database/factories/collection.factory";
+import { PurchaseButton } from "@/components/PurchaseButton";
 
 interface ArtworkPageProps {
   params: Promise<{
@@ -44,7 +45,7 @@ function ImageGallery({ artwork }: { artwork: ArtworkWithCollections }) {
 
 export default async function ArtworkPage(props: ArtworkPageProps) {
   const { slug } = await props.params;
-  const artwork = await getArtworkBySlug(slug);
+  const artwork = await getArtworkWithProductAndCollectionsBySlug(slug);
 
   if (!artwork) {
     notFound();
@@ -80,14 +81,25 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
             )}
           </div>
 
-          {/* Purchase Link */}
+          {/* Purchase Link or Button */}
           <div className="border-t border-b border-outline py-6">
-            <Link
-              href={`/store/${artwork.slug}`}
-              className="inline-flex items-center justify-center px-6 py-3 bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors font-medium"
-            >
-              View in Store
-            </Link>
+            {artwork.product ? (
+              <PurchaseButton 
+                product={{
+                  id: artwork.product.id,
+                  name: artwork.product.name,
+                  slug: artwork.product.slug,
+                  price: artwork.product.price,
+                }} 
+              />
+            ) : (
+              <Link
+                href={`/store/${artwork.slug}`}
+                className="inline-flex items-center justify-center px-6 py-3 bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors font-medium"
+              >
+                View in Store
+              </Link>
+            )}
           </div>
 
           {artwork.description && (
@@ -156,7 +168,7 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
 // Generate metadata for the page
 export async function generateMetadata({ params }: ArtworkPageProps) {
   const { slug } = await params;
-  const artwork = await getArtworkBySlug(slug);
+  const artwork = await getArtworkWithProductAndCollectionsBySlug(slug);
 
   if (!artwork) {
     return {

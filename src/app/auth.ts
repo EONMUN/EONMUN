@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import PostHogClient from "@/lib/posthog-server";
 
 // PostHog identification helper function
-function identifyUserWithPostHog(user: {
+async function identifyUserWithPostHog(user: {
   id: string;
   email: string | null | undefined;
   name: string | null | undefined;
@@ -29,7 +29,8 @@ function identifyUserWithPostHog(user: {
         admin: user.admin || false,
       },
     });
-    posthog.flush();
+    // Use shutdown() to ensure all queued events are sent in serverless environments
+    await posthog.shutdown();
   } catch (error) {
     console.error("Failed to identify user with PostHog:", error);
   }
@@ -187,7 +188,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // For Credentials provider, user object already has our DB ID
       if (account?.provider === "password") {
-        identifyUserWithPostHog({
+        await identifyUserWithPostHog({
           id: user.id!,
           email: user.email,
           name: user.name,
@@ -204,7 +205,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         .limit(1);
 
       if (dbUser) {
-        identifyUserWithPostHog({
+        await identifyUserWithPostHog({
           id: dbUser.id.toString(),
           email: dbUser.email,
           name: dbUser.name,

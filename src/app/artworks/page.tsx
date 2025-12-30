@@ -1,9 +1,11 @@
-import { getAllArtworks } from "@/actions/artwork";
+import { getAllArtworksWithProducts } from "@/actions/artwork";
 import Image from "@/components/Image";
 import Link from "next/link";
-import type { ArtworkWithCollections } from "@/models/artwork";
+import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 
-function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
+function ArtworkCard({ artwork }: { artwork: ArtworkWithProductAndCollections }) {
+  const price = artwork.product ? artwork.product.price / 100 : null;
+
   return (
     <div className="group">
       <Link href={`/artworks/${artwork.slug}`} className="block">
@@ -33,6 +35,11 @@ function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
               {artwork.collections.map((c) => c.name).join(", ")}
             </p>
           )}
+          {price !== null && (
+            <p className="text-sm font-semibold text-primary mt-2">
+              ${price.toLocaleString()}
+            </p>
+          )}
         </div>
       </Link>
     </div>
@@ -40,7 +47,7 @@ function ArtworkCard({ artwork }: { artwork: ArtworkWithCollections }) {
 }
 
 export default async function ArtworksPage() {
-  const { data } = await getAllArtworks();
+  const { data } = await getAllArtworksWithProducts();
   const artworks = data;
 
   return (

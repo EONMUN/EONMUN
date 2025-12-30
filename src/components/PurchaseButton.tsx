@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import { getStripe } from '@/lib/stripe';
 import { Button } from '@/components/ui/button';
-import type { SelectProduct } from '@/database/factories/product.factory';
 
 interface PurchaseButtonProps {
-  product: SelectProduct;
+  product: {
+    id: number;
+    name: string;
+    slug: string;
+    price: number;
+  };
   variant?: 'default' | 'compact';
 }
 
@@ -91,8 +95,9 @@ export function PurchaseButton({ product, variant = 'default' }: PurchaseButtonP
         disabled={loading}
         size="lg"
         className="w-full"
+        data-testid="purchase-button"
       >
-        {loading ? 'Processing...' : 'Purchase'}
+        {loading ? 'Processing...' : 'Purchase Artwork'}
       </Button>
 
       {error && (

@@ -15,9 +15,13 @@ help: ## Show this help message
 
 check-ports: ## Check and set available ports
 	@echo "Checking port availability..."
-	@WEB_PORT=$$(call find_available_port,3000); \
-	echo "Available port: WEB=$$WEB_PORT"; \
-	export WEB_PORT=$$WEB_PORT
+	@if [ -z "$$WEB_PORT" ]; then \
+		WEB_PORT=$(call find_available_port,3000); \
+		echo "Auto-detected port: WEB=$$WEB_PORT"; \
+		export WEB_PORT=$$WEB_PORT; \
+	else \
+		echo "Using configured port: WEB=$$WEB_PORT"; \
+	fi
 
 init: check-ports ## Initialize the project
 	[ -f .env ] || cp .env.example .env

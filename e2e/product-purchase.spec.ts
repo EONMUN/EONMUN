@@ -26,7 +26,8 @@ test.describe('Product Purchase Flow', () => {
     const firstProduct = page.locator('[data-testid="product-card"]').first();
     const productTitle = await firstProduct.locator('h3').textContent();
     
-    await firstProduct.click();
+    await firstProduct.locator('a').first().click();
+    await page.waitForURL(/\/store\/[^\/]+$/); // Wait for navigation to product detail page
     await page.waitForLoadState('networkidle');
     
     // Verify we're on the product detail page
