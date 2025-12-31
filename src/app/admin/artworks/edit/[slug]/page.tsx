@@ -1,6 +1,6 @@
 import { getArtworkWithProductBySlugAdmin } from "@/actions/admin/artwork";
 import ArtworkForm from "@/components/ArtworkForm";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +10,6 @@ export default async function EditArtworkPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  // Redirect "new" to the proper new artwork route to avoid conflicts
-  if (slug === "new") {
-    redirect("/admin/artworks/new");
-  }
 
   const artworkWithProduct = await getArtworkWithProductBySlugAdmin(slug);
 
