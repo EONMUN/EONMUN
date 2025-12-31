@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe-server';
 
 interface CheckoutRequestBody {
   productId: string;
@@ -67,12 +68,6 @@ export async function POST(request: NextRequest) {
     if (isSecretTest !== isPublishableTest) {
       console.warn('Warning: Mixing test and live Stripe keys - secret key and publishable key should both be test or both be live');
     }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-06-30.basil',
-      // This is required because cloudflare workers are not running node
-      httpClient: Stripe.createFetchHttpClient()
-    });
 
     const { productId, productName, productSlug, price }: CheckoutRequestBody = await request.json();
 

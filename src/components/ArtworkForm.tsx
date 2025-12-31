@@ -43,6 +43,7 @@ export default function ArtworkForm({
 
   // Form data for direct fields
   // Note: price is passed as initialPrice prop from the server (in cents), converted to dollars for display
+  // Note: defaultImageUrl is now stored in artwork_images table, not on artwork directly
   const [formData, setFormData] = useState({
     title: artwork?.title || "",
     description: artwork?.description || "",
@@ -53,7 +54,7 @@ export default function ArtworkForm({
     depth: artwork?.depth?.toString() || "",
     dimensionUnit: artwork?.dimensionUnit || "in",
     price: initialPrice ? (initialPrice / 100).toString() : "",
-    defaultImageUrl: artwork?.defaultImageUrl || "",
+    defaultImageUrl: "", // TODO: Load from artwork images when editing
   });
 
   // Many-to-many relationship data

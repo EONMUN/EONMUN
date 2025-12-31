@@ -139,12 +139,13 @@ export async function createArtworkAdmin(
     const artwork = await artworkModel.createArtwork(artworkData);
 
     // Sync product if price is provided
+    // Note: defaultImageUrl is null for newly created artworks (images added separately)
     if (priceInCents !== undefined) {
       await syncArtworkProduct(artwork.id, priceInCents, {
         title: artwork.title,
         slug: artwork.slug,
         description: artwork.description,
-        defaultImageUrl: artwork.defaultImageUrl,
+        defaultImageUrl: null,
       });
     }
 
@@ -186,12 +187,15 @@ export async function updateArtworkAdmin(
     }
 
     // Sync product if price is provided (including explicit null to clear)
+    // Note: We need to fetch the default image URL separately since it's now in artwork_images table
     if (priceInCents !== undefined) {
+      // Get the default image URL from artworkImages
+      const artworkWithProduct = await findArtworkWithProduct(artwork.id);
       await syncArtworkProduct(artwork.id, priceInCents, {
         title: artwork.title,
         slug: artwork.slug,
         description: artwork.description,
-        defaultImageUrl: artwork.defaultImageUrl,
+        defaultImageUrl: artworkWithProduct?.defaultImageUrl ?? null,
       });
     }
 

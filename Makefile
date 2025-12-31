@@ -58,4 +58,4 @@ test-hardhat: ## Run Hardhat tests
 	$(DC) run --rm --no-deps hardhat npm test
 
 e2e: ## Run Playwright e2e tests
-	npx playwright test
+	npm run test:e2e

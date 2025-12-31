@@ -2,8 +2,8 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import { getArtworkWithProductAndCollectionsBySlug } from "@/actions/artwork";
 import { notFound } from "next/navigation";
-import type { ArtworkWithCollections } from "@/models/artwork";
-import type { SelectCollection } from "@/database/factories/collection.factory";
+import type { ArtworkWithProductAndCollections } from "@/models/artwork";
+import type { SelectCollection } from "@/database";
 import { PurchaseButton } from "@/components/PurchaseButton";
 
 interface ArtworkPageProps {
@@ -14,7 +14,7 @@ interface ArtworkPageProps {
 
 function CollectionTag({ collection }: { collection: SelectCollection }) {
   return (
-    <Link 
+    <Link
       href={`/collections/${collection.slug}`}
       className="inline-block px-3 py-1 text-sm bg-primary-container hover:bg-primary-container/80 text-on-primary-container rounded-full transition-colors"
     >
@@ -23,7 +23,11 @@ function CollectionTag({ collection }: { collection: SelectCollection }) {
   );
 }
 
-function ImageGallery({ artwork }: { artwork: ArtworkWithCollections }) {
+function ImageGallery({
+  artwork,
+}: {
+  artwork: ArtworkWithProductAndCollections;
+}) {
   if (artwork.defaultImageUrl) {
     return (
       <div className="w-full rounded-lg border border-outline overflow-hidden bg-surface">
@@ -38,7 +42,9 @@ function ImageGallery({ artwork }: { artwork: ArtworkWithCollections }) {
 
   return (
     <div className="aspect-square bg-surface border border-outline rounded-lg flex items-center justify-center">
-      <span className="text-on-surface-variant text-lg">No Image Available</span>
+      <span className="text-on-surface-variant text-lg">
+        No Image Available
+      </span>
     </div>
   );
 }
@@ -75,7 +81,9 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
         {/* Artwork Details */}
         <div className="space-y-6">
           <div>
-            <h1 className="text-4xl font-bold text-on-background mb-2">{artwork.title}</h1>
+            <h1 className="text-4xl font-bold text-on-background mb-2">
+              {artwork.title}
+            </h1>
             {artwork.year && (
               <p className="text-xl text-on-surface-variant">{artwork.year}</p>
             )}
@@ -84,13 +92,13 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
           {/* Purchase Link or Button */}
           <div className="border-t border-b border-outline py-6">
             {artwork.product ? (
-              <PurchaseButton 
+              <PurchaseButton
                 product={{
                   id: artwork.product.id,
                   name: artwork.product.name,
                   slug: artwork.product.slug,
                   price: artwork.product.price,
-                }} 
+                }}
               />
             ) : (
               <Link
@@ -104,7 +112,9 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
 
           {artwork.description && (
             <div>
-              <h2 className="text-lg font-semibold text-on-surface mb-3">Description</h2>
+              <h2 className="text-lg font-semibold text-on-surface mb-3">
+                Description
+              </h2>
               <p className="text-on-surface leading-relaxed whitespace-pre-line">
                 {artwork.description}
               </p>
@@ -114,7 +124,7 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
           {artwork.collections && artwork.collections.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-on-surface mb-3">
-                Collection{artwork.collections.length > 1 ? 's' : ''}
+                Collection{artwork.collections.length > 1 ? "s" : ""}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {artwork.collections.map((collection) => (
@@ -126,7 +136,9 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
 
           {/* Metadata */}
           <div className="pt-6 border-t border-outline">
-            <h2 className="text-lg font-semibold text-on-surface mb-3">Details</h2>
+            <h2 className="text-lg font-semibold text-on-surface mb-3">
+              Details
+            </h2>
             <dl className="space-y-2">
               <div className="flex justify-between">
                 <dt className="text-on-surface-variant">Created:</dt>
@@ -151,12 +163,22 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
 
       {/* Back to Collections link */}
       <div className="mt-12 text-center">
-        <Link 
-          href="/collections" 
+        <Link
+          href="/collections"
           className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Browse Collections
         </Link>
@@ -178,6 +200,8 @@ export async function generateMetadata({ params }: ArtworkPageProps) {
 
   return {
     title: `${artwork.title} - Artwork`,
-    description: artwork.description || `View ${artwork.title} ${artwork.year ? `from ${artwork.year}` : ''}`,
+    description:
+      artwork.description ||
+      `View ${artwork.title} ${artwork.year ? `from ${artwork.year}` : ""}`,
   };
-} 
+}

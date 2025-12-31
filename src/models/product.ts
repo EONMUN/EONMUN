@@ -20,9 +20,14 @@
  */
 
 import { eq, inArray, and, isNull, isNotNull, gt, or } from "drizzle-orm";
-import { db, products, artworks } from "@/database";
-import type { SelectProduct } from "@/database/factories/product.factory";
-import type { SelectArtwork } from "@/database/factories/artwork.factory";
+import {
+  db,
+  products,
+  artworks,
+  artworkImages,
+  type SelectProduct,
+} from "@/database";
+import type { SelectArtwork } from "@/models/artwork";
 
 /**
  * Filters for querying products
@@ -152,16 +157,39 @@ export async function findProductsWithArtwork(
     }));
   }
 
-  // Fetch artworks
+  // Fetch artworks with their default images
   const artworkData = await db
-    .select()
+    .select({
+      id: artworks.id,
+      title: artworks.title,
+      slug: artworks.slug,
+      description: artworks.description,
+      artist: artworks.artist,
+      year: artworks.year,
+      width: artworks.width,
+      height: artworks.height,
+      depth: artworks.depth,
+      dimensionUnit: artworks.dimensionUnit,
+      publishedAt: artworks.publishedAt,
+      locale: artworks.locale,
+      createdAt: artworks.createdAt,
+      updatedAt: artworks.updatedAt,
+      defaultImageUrl: artworkImages.url,
+    })
     .from(artworks)
+    .leftJoin(
+      artworkImages,
+      and(
+        eq(artworks.id, artworkImages.artworkId),
+        eq(artworkImages.isDefault, true),
+      ),
+    )
     .where(inArray(artworks.id, artworkIds));
 
   // Create a map of artwork by ID
   const artworkById = new Map<number, SelectArtwork>();
   for (const artwork of artworkData) {
-    artworkById.set(artwork.id, artwork);
+    artworkById.set(artwork.id, artwork as SelectArtwork);
   }
 
   // Combine products with artworks

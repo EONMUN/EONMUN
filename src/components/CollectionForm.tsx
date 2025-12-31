@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from '@/components/Image';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "@/components/Image";
 import {
   createCollectionAdmin,
   updateCollectionAdmin,
@@ -12,10 +12,10 @@ import {
   addArtworkToCollectionAdmin,
   removeArtworkFromCollectionAdmin,
   setDefaultArtworkAdmin,
-} from '@/actions/admin/collection';
-import type { CollectionWithArtworks } from '@/models/collections';
-import type { Artwork } from '@/models/artworks';
-import { generateSlug } from '@/lib/utils';
+} from "@/actions/admin/collection";
+import type { CollectionWithArtworks } from "@/models/collections";
+import type { SelectArtwork } from "@/models/artwork";
+import { generateSlug } from "@/lib/utils";
 
 interface CollectionFormProps {
   collection?: CollectionWithArtworks;
@@ -26,11 +26,11 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: collection?.name || '',
-    description: collection?.description || '',
+    name: collection?.name || "",
+    description: collection?.description || "",
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Artwork[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SelectArtwork[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,13 +53,13 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
       }
 
       if (result.success) {
-        router.push('/admin/collections');
+        router.push("/admin/collections");
         router.refresh();
       } else {
-        setError(result.error || 'An error occurred');
+        setError(result.error || "An error occurred");
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError("An unexpected error occurred");
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -69,7 +69,11 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
   const handleDelete = async () => {
     if (!collection) return;
 
-    if (!confirm('Are you sure you want to delete this collection? This action cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this collection? This action cannot be undone.",
+      )
+    ) {
       return;
     }
 
@@ -79,13 +83,13 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
     try {
       const result = await deleteCollectionAdmin(collection.id);
       if (result.success) {
-        router.push('/admin/collections');
+        router.push("/admin/collections");
         router.refresh();
       } else {
-        setError(result.error || 'Failed to delete collection');
+        setError(result.error || "Failed to delete collection");
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError("An unexpected error occurred");
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -103,11 +107,15 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
     try {
       const result = await searchArtworksAdmin(query);
       // Filter out artworks already in this collection
-      const existingArtworkIds = new Set(collection?.artworks?.map(a => a.id) || []);
-      const filteredResults = result.data.filter(artwork => !existingArtworkIds.has(artwork.id));
+      const existingArtworkIds = new Set(
+        collection?.artworks?.map((a) => a.id) || [],
+      );
+      const filteredResults = result.data.filter(
+        (artwork) => !existingArtworkIds.has(artwork.id),
+      );
       setSearchResults(filteredResults);
     } catch (err) {
-      console.error('Error searching artworks:', err);
+      console.error("Error searching artworks:", err);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -118,7 +126,10 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
     if (!collection) return;
 
     try {
-      const result = await addArtworkToCollectionAdmin(collection.id, artworkId);
+      const result = await addArtworkToCollectionAdmin(
+        collection.id,
+        artworkId,
+      );
       if (result.success) {
         router.refresh();
         // Re-run search to update filtered results
@@ -126,23 +137,26 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
           handleSearch(searchQuery);
         }
       } else {
-        setError(result.error || 'Failed to add artwork');
+        setError(result.error || "Failed to add artwork");
       }
     } catch (err) {
-      console.error('Error adding artwork:', err);
-      setError('Failed to add artwork');
+      console.error("Error adding artwork:", err);
+      setError("Failed to add artwork");
     }
   };
 
   const handleRemoveArtwork = async (artworkId: number) => {
     if (!collection) return;
 
-    if (!confirm('Remove this artwork from the collection?')) {
+    if (!confirm("Remove this artwork from the collection?")) {
       return;
     }
 
     try {
-      const result = await removeArtworkFromCollectionAdmin(collection.id, artworkId);
+      const result = await removeArtworkFromCollectionAdmin(
+        collection.id,
+        artworkId,
+      );
       if (result.success) {
         router.refresh();
         // Re-run search to update filtered results
@@ -150,11 +164,11 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
           handleSearch(searchQuery);
         }
       } else {
-        setError(result.error || 'Failed to remove artwork');
+        setError(result.error || "Failed to remove artwork");
       }
     } catch (err) {
-      console.error('Error removing artwork:', err);
-      setError('Failed to remove artwork');
+      console.error("Error removing artwork:", err);
+      setError("Failed to remove artwork");
     }
   };
 
@@ -166,11 +180,11 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
       if (result.success) {
         router.refresh();
       } else {
-        setError(result.error || 'Failed to set default artwork');
+        setError(result.error || "Failed to set default artwork");
       }
     } catch (err) {
-      console.error('Error setting default artwork:', err);
-      setError('Failed to set default artwork');
+      console.error("Error setting default artwork:", err);
+      setError("Failed to set default artwork");
     }
   };
 
@@ -183,7 +197,10 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
       )}
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-on-surface mb-2">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-on-surface mb-2"
+        >
           Name <span className="text-red-500">*</span>
         </label>
         <input
@@ -198,14 +215,19 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-on-surface mb-2">
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-on-surface mb-2"
+        >
           Description
         </label>
         <textarea
           id="description"
           rows={4}
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
           className="w-full px-4 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
           placeholder="Enter collection description"
         />
@@ -276,7 +298,9 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
                 className="w-full px-3 py-2 bg-surface text-on-surface border border-outline rounded-md focus:ring-2 focus:ring-primary focus:border-primary text-sm"
               />
               {isSearching && (
-                <p className="text-xs text-on-surface-variant mt-2">Searching...</p>
+                <p className="text-xs text-on-surface-variant mt-2">
+                  Searching...
+                </p>
               )}
               {searchResults.length > 0 && (
                 <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
@@ -332,7 +356,9 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
                 </div>
               )}
               {!isSearching && searchQuery && searchResults.length === 0 && (
-                <p className="text-xs text-on-surface-variant mt-2">No artworks found</p>
+                <p className="text-xs text-on-surface-variant mt-2">
+                  No artworks found
+                </p>
               )}
             </div>
           </div>
@@ -340,7 +366,8 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
           {/* Artworks List */}
           <div className="bg-primary-container/30 border border-primary rounded-lg p-4">
             <p className="text-sm font-medium text-on-primary-container mb-3">
-              <strong>Artworks in this collection:</strong> {collection.artworks?.length || 0}
+              <strong>Artworks in this collection:</strong>{" "}
+              {collection.artworks?.length || 0}
             </p>
 
             {/* Existing Artworks */}
@@ -416,7 +443,8 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
               </div>
             ) : (
               <p className="text-xs text-on-primary-container/80">
-                No artworks in this collection yet. Click &quot;Add Artwork&quot; to get started.
+                No artworks in this collection yet. Click &quot;Add
+                Artwork&quot; to get started.
               </p>
             )}
           </div>
@@ -450,7 +478,11 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
             disabled={isSubmitting}
             className="px-4 py-2 bg-primary text-on-primary rounded-md hover:opacity-90 disabled:opacity-50 font-medium"
           >
-            {isSubmitting ? 'Saving...' : collection ? 'Update Collection' : 'Create Collection'}
+            {isSubmitting
+              ? "Saving..."
+              : collection
+                ? "Update Collection"
+                : "Create Collection"}
           </button>
         </div>
       </div>

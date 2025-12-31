@@ -21,11 +21,20 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": [
-        "./cloudflare-env.d.ts",
-        "node"
-    ]
+    "types": ["./cloudflare-env.d.ts", "node"]
   },
-  "include": ["next-env.d.ts", "global.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "tests", "src/database/index.ts", "hardhat"]
+  "include": [
+    "next-env.d.ts",
+    "global.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests",
+    "src/database/index.ts",
+    "hardhat",
+    "drizzle.config.ts"
+  ]
 }

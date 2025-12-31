@@ -35,6 +35,9 @@ const metadata = {
 }
 
 createAppKit({
+  // TODO: extract all web3 code into packages
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   adapters: [WALLETCONNECT_ADAPTER],
   projectId: WALLETCONNECT_PROJECT_ID,
   networks: [mainnet, ...ETH_CHAINS],
