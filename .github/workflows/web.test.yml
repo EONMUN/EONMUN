@@ -124,16 +124,19 @@ jobs:
       - name: Run Migration
         env:
           AUTH_SECRET: test-secret-for-ci
+          DATABASE_URL: http://localhost:8080
         run: npm run db:push
 
       - name: Load fixture data
         env:
           AUTH_SECRET: test-secret-for-ci
+          DATABASE_URL: http://localhost:8080
         run: npm run db:fixtures:load
 
       - name: Run Playwright tests
         env:
           AUTH_SECRET: test-secret-for-ci
+          DATABASE_URL: http://localhost:8080
           NEXT_PUBLIC_R2_DOMAIN: r2.meze.fyi
         run: npm run test:e2e
 
