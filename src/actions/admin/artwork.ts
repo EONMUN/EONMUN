@@ -10,7 +10,6 @@ import { syncArtworkProduct, findArtworkProduct } from "@/models/product";
 import {
   findArtworksWithProducts,
   findArtworkWithProduct,
-  findArtworkWithProductBySlug,
   findArtworksWithProductsAndCollections,
   type ArtworkWithProduct,
   type ArtworkWithProductAndCollections,
