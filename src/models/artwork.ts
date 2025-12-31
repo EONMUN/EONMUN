@@ -350,6 +350,7 @@ export async function findArtworkWithProductBySlug(
 export interface ArtworkWithProductAndCollections extends SelectArtwork {
   product: SelectProduct | null;
   collections: SelectCollection[];
+  images: { url: string; isDefault: boolean; caption: string | null }[];
 }
 
 /**
@@ -378,8 +379,8 @@ export async function findArtworksWithProductsAndCollections(
   // Get artwork IDs
   const artworkIds = matchedArtworks.map((a) => a.id);
 
-  // Fetch products and collections in parallel
-  const [artworkProducts, junctionData] = await Promise.all([
+  // Fetch products, collections, and images in parallel
+  const [artworkProducts, junctionData, imagesData] = await Promise.all([
     // Fetch products for these artworks (type='artwork' only)
     db
       .select()
@@ -402,6 +403,11 @@ export async function findArtworksWithProductsAndCollections(
         eq(artworksToCollections.collectionId, collections.id),
       )
       .where(inArray(artworksToCollections.artworkId, artworkIds)),
+    // Fetch images
+    db
+      .select()
+      .from(artworkImages)
+      .where(inArray(artworkImages.artworkId, artworkIds)),
   ]);
 
   // Create a map of artworkId -> product
@@ -420,10 +426,26 @@ export async function findArtworksWithProductsAndCollections(
     collectionsByArtworkId.set(row.artworkId, existing);
   }
 
+  // Create a map of artworkId -> images
+  const imagesByArtworkId = new Map<
+    number,
+    { url: string; isDefault: boolean; caption: string | null }[]
+  >();
+  for (const img of imagesData) {
+    const existing = imagesByArtworkId.get(img.artworkId) || [];
+    existing.push({
+      url: img.url,
+      isDefault: img.isDefault ?? false,
+      caption: img.caption,
+    });
+    imagesByArtworkId.set(img.artworkId, existing);
+  }
+
   // Combine artworks with their products and collections
   return matchedArtworks.map((artwork) => ({
     ...artwork,
     product: productByArtworkId.get(artwork.id) || null,
     collections: collectionsByArtworkId.get(artwork.id) || [],
+    images: imagesByArtworkId.get(artwork.id) || [],
   }));
 }

@@ -6,6 +6,7 @@ interface ImageUploadProps {
   onUploadComplete: (url: string) => void;
   currentImageUrl?: string;
   className?: string;
+  compact?: boolean;
 }
 
 interface UploadResponse {
@@ -20,7 +21,8 @@ interface UploadResponse {
 export default function ImageUpload({
   onUploadComplete,
   currentImageUrl,
-  className = ""
+  className = "",
+  compact = false
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
@@ -196,9 +198,11 @@ export default function ImageUpload({
               </>
             )}
           </button>
-          <p className="text-sm text-on-surface-variant mt-2">
-            Supported: JPEG, PNG, GIF, WebP, SVG (Max 10MB)
-          </p>
+          {!compact && (
+            <p className="text-sm text-on-surface-variant mt-2">
+              Supported: JPEG, PNG, GIF, WebP, SVG (Max 10MB)
+            </p>
+          )}
         </div>
       )}
 

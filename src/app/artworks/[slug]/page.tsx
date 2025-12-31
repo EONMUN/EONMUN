@@ -28,23 +28,50 @@ function ImageGallery({
 }: {
   artwork: ArtworkWithProductAndCollections;
 }) {
-  if (artwork.defaultImageUrl) {
+  const images = artwork.images || [];
+  const defaultImage = images.find((img) => img.isDefault) || images[0];
+  const mainImageSrc = defaultImage?.url || artwork.defaultImageUrl;
+
+  if (!mainImageSrc) {
     return (
-      <div className="w-full rounded-lg border border-outline overflow-hidden bg-surface">
-        <Image
-          src={artwork.defaultImageUrl}
-          alt={artwork.title}
-          className="w-full h-auto object-contain"
-        />
+      <div className="aspect-square bg-surface border border-outline rounded-lg flex items-center justify-center">
+        <span className="text-on-surface-variant text-lg">
+          No Image Available
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="aspect-square bg-surface border border-outline rounded-lg flex items-center justify-center">
-      <span className="text-on-surface-variant text-lg">
-        No Image Available
-      </span>
+    <div className="space-y-4">
+      <div className="w-full rounded-lg border border-outline overflow-hidden bg-surface">
+        <Image
+          src={mainImageSrc}
+          alt={artwork.title}
+          className="w-full h-auto object-contain"
+        />
+      </div>
+
+      {images.length > 1 && (
+        <div className="grid grid-cols-4 gap-4">
+          {images.map((img, index) => (
+            <div
+              key={index}
+              className={`aspect-square rounded-md overflow-hidden border ${
+                img.url === mainImageSrc
+                  ? "border-primary ring-2 ring-primary/20"
+                  : "border-outline"
+              }`}
+            >
+              <Image
+                src={img.url}
+                alt={`${artwork.title} view ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,8 @@ import {
   updateArtworkAdmin,
   deleteArtworkAdmin,
   type Artwork,
+  type ArtworkWithProduct,
+  type ArtworkWithProductAndCollections,
 } from "@/actions/admin/artwork";
 import {
   getFacetsForArtworkAdmin,
@@ -27,7 +29,7 @@ import { generateSlug } from "@/lib/utils";
 const DIMENSION_UNITS = ["in", "cm", "mm"] as const;
 
 interface ArtworkFormProps {
-  artwork?: Artwork;
+  artwork?: Artwork | ArtworkWithProduct | ArtworkWithProductAndCollections;
   /** Initial price from product (passed from server to avoid client-side fetch) */
   initialPrice?: number;
 }
@@ -41,9 +43,8 @@ export default function ArtworkForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(!!artwork);
 
-  // Form data for direct fields
+  // Form data
   // Note: price is passed as initialPrice prop from the server (in cents), converted to dollars for display
-  // Note: defaultImageUrl is now stored in artwork_images table, not on artwork directly
   const [formData, setFormData] = useState({
     title: artwork?.title || "",
     description: artwork?.description || "",
@@ -54,7 +55,12 @@ export default function ArtworkForm({
     depth: artwork?.depth?.toString() || "",
     dimensionUnit: artwork?.dimensionUnit || "in",
     price: initialPrice ? (initialPrice / 100).toString() : "",
-    defaultImageUrl: "", // TODO: Load from artwork images when editing
+    images:
+      artwork && "images" in artwork
+        ? artwork.images
+        : artwork && "defaultImageUrl" in artwork && artwork.defaultImageUrl
+          ? [{ url: artwork.defaultImageUrl, isDefault: true }]
+          : ([] as { url: string; isDefault: boolean; caption?: string | null }[]),
   });
 
   // Many-to-many relationship data
@@ -103,6 +109,43 @@ export default function ArtworkForm({
     loadRelationships();
   }, [artwork]);
 
+  const handleImageUpload = (url: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: [
+        ...prev.images,
+        {
+          url,
+          isDefault: prev.images.length === 0, // Make default if it's the first image
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setFormData((prev) => {
+      const newImages = prev.images.filter((_, i) => i !== indexToRemove);
+      // If we removed the default image, make the first one default (if any exist)
+      if (
+        prev.images[indexToRemove].isDefault &&
+        newImages.length > 0
+      ) {
+        newImages[0].isDefault = true;
+      }
+      return { ...prev, images: newImages };
+    });
+  };
+
+  const handleSetDefaultImage = (indexToSet: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.map((img, i) => ({
+        ...img,
+        isDefault: i === indexToSet,
+      })),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -120,7 +163,7 @@ export default function ArtworkForm({
         depth: formData.depth ? parseFloat(formData.depth) : undefined,
         dimensionUnit: formData.dimensionUnit || undefined,
         price: formData.price ? parseFloat(formData.price) : undefined,
-        defaultImageUrl: formData.defaultImageUrl || undefined,
+        images: formData.images,
       };
 
       let result;
@@ -220,17 +263,86 @@ export default function ArtworkForm({
         </div>
       )}
 
-      {/* Image Upload */}
+      {/* Image Gallery */}
       <div>
         <label className="block text-sm font-medium text-on-surface mb-2">
-          Artwork Image
+          Artwork Images
         </label>
-        <ImageUpload
-          currentImageUrl={formData.defaultImageUrl}
-          onUploadComplete={(url) =>
-            setFormData({ ...formData, defaultImageUrl: url })
-          }
-        />
+        <div className="space-y-4">
+          {/* List of images */}
+          {formData.images.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4 grid-flow-dense">
+              {formData.images.map((img, index) => (
+                <div
+                  key={index}
+                  className={`relative group rounded-lg border overflow-hidden ${
+                    img.isDefault
+                      ? "border-primary ring-2 ring-primary/30 col-span-2 row-span-2"
+                      : "border-outline"
+                  }`}
+                >
+                  <div className="bg-surface-variant/20 h-full w-full">
+                    <img
+                      src={img.url}
+                      alt={`Artwork view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Actions overlay */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="text-white hover:text-red-400 p-1"
+                        title="Remove image"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSetDefaultImage(index)}
+                      className={`text-xs px-2 py-1 rounded-full text-center font-medium ${
+                        img.isDefault
+                          ? "bg-primary text-on-primary"
+                          : "bg-white/20 text-white hover:bg-white/40"
+                      }`}
+                    >
+                      {img.isDefault ? "Default Image" : "Make Default"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new image */}
+          <div className="border border-dashed border-outline rounded-lg p-4 flex flex-col items-center justify-center bg-surface-variant/5 min-h-[120px]">
+            <p className="text-sm text-on-surface-variant mb-2">Add more</p>
+            <ImageUpload
+              key={formData.images.length}
+              compact
+              onUploadComplete={(url) => {
+                if (url) handleImageUpload(url);
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Title */}
