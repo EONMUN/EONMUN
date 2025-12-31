@@ -23,6 +23,16 @@ import {
   emnAddress
 } from "@/abis";
 
+// Augment JSX namespace locally to ensure appkit-button is recognized
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      'appkit-button': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
+}
+
 export default function ContractAdminPage() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
