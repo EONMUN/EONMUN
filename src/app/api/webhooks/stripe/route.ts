@@ -1,25 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe-server';
 import { markProductSold, decrementProductQuantity } from '@/models/product';
 import { findProducts } from '@/models/product';
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Stripe inside handler to avoid build-time errors
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey) {
-      console.error('Missing STRIPE_SECRET_KEY');
-      return NextResponse.json(
-        { error: 'Stripe not configured' },
-        { status: 500 }
-      );
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-08-27.basil',
-      httpClient: Stripe.createFetchHttpClient()
-    });
-
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     const body = await request.text();

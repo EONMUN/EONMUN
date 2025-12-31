@@ -9,7 +9,8 @@ if (!WALLETCONNECT_PROJECT_ID) {
 
 export const WALLETCONNECT_ADAPTER = new WagmiAdapter({
   projectId: WALLETCONNECT_PROJECT_ID,
-  // @ts-expect-error - TODO: extract all web3 code into packages
+  // TODO: extract all web3 code into packages
+  // @ts-ignore
   networks: process.env.NODE_ENV === 'development' ? ETH_CHAINS_DEV : ETH_CHAINS,
   ssr: true,
   storage: createStorage({
