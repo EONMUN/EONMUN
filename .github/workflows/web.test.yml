@@ -133,6 +133,9 @@ jobs:
           DATABASE_URL: http://localhost:8080
         run: npm run db:fixtures:load
 
+      - name: Setup environment
+        run: cp .env.example .env
+
       - name: Run Playwright tests
         env:
           AUTH_SECRET: test-secret-for-ci
