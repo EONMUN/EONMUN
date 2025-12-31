@@ -35,6 +35,7 @@ const metadata = {
 }
 
 createAppKit({
+  // @ts-expect-error - TODO: extract all web3 code into packages
   adapters: [WALLETCONNECT_ADAPTER],
   projectId: WALLETCONNECT_PROJECT_ID,
   networks: [mainnet, ...ETH_CHAINS],
