@@ -9,7 +9,7 @@ if (!stripeSecretKey) {
 }
 
 export const stripe = new Stripe(stripeSecretKey || '', {
-  // @ts-ignore - version mismatch between package and desired version
+  // @ts-expect-error - version mismatch between package and desired version
   apiVersion: '2025-08-27.basil',
   httpClient: Stripe.createFetchHttpClient(),
 });
