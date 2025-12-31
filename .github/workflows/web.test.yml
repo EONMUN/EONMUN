@@ -138,6 +138,7 @@ jobs:
           AUTH_SECRET: test-secret-for-ci
           DATABASE_URL: http://localhost:8080
           NEXT_PUBLIC_R2_DOMAIN: r2.meze.fyi
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: npm run test:e2e
 
       - name: Upload test report
