@@ -84,7 +84,7 @@ export default async function ArtworksAdminPage() {
                 >
                   <td className="px-6 py-4">
                     <Link
-                      href={`/admin/artworks/${artwork.slug}`}
+                      href={`/admin/artworks/edit/${artwork.slug}`}
                       className="absolute inset-0"
                       aria-label={`Edit ${artwork.title}`}
                     />

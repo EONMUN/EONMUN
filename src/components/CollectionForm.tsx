@@ -269,7 +269,7 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
                 </div>
                 <div className="flex-1">
                   <Link
-                    href={`/admin/artworks/${collection.defaultArtwork.slug}`}
+                    href={`/admin/artworks/edit/${collection.defaultArtwork.slug}`}
                     className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                   >
                     {collection.defaultArtwork.title}
@@ -405,7 +405,7 @@ export default function CollectionForm({ collection }: CollectionFormProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <Link
-                        href={`/admin/artworks/${artwork.slug}`}
+                        href={`/admin/artworks/edit/${artwork.slug}`}
                         className="text-sm font-medium text-primary hover:text-primary/80 hover:underline block truncate"
                       >
                         {artwork.title}
