@@ -4,6 +4,7 @@ import Image from '@/components/Image';
 import { getAvailableProductsWithArtwork } from '@/actions/product';
 import { getAllCollections } from '@/actions/collection';
 import { PurchaseButton } from '@/components/PurchaseButton';
+import { FrostedGlass } from '@/components/ui/FrostedGlass';
 import type { ProductWithArtwork } from '@/models/product';
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 function ProductCard({ product }: { product: ProductWithArtwork }) {
   const priceInDollars = product.price / 100;
   const imageUrl = product.imageUrl || product.artwork?.defaultImageUrl;
+  const description = product.description || product.artwork?.description;
 
   return (
     <div 
@@ -21,7 +23,7 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
       data-testid="product-card"
     >
       <Link href={`/store/${product.slug}`}>
-        <div className="aspect-square overflow-hidden bg-surface-variant">
+        <div className="relative aspect-square overflow-hidden bg-surface-variant">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -33,6 +35,25 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
               No Image
             </div>
           )}
+
+          {/* Description overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute bottom-4 left-4 right-4">
+              <FrostedGlass variant="dark" className="p-3 rounded-lg">
+                <h3 className="text-white font-medium text-lg">
+                  {product.name}
+                </h3>
+                {product.artwork?.year && (
+                  <p className="text-gray-300 text-sm">{product.artwork.year}</p>
+                )}
+                {description && (
+                  <p className="text-gray-300 text-sm mt-2 line-clamp-2">
+                    {description}
+                  </p>
+                )}
+              </FrostedGlass>
+            </div>
+          </div>
         </div>
       </Link>
 
