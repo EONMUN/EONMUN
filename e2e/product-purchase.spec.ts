@@ -15,16 +15,17 @@ test.describe('Product Purchase Flow', () => {
     const productCards = page.locator('[data-testid="product-card"]');
     expect(await productCards.count()).toBeGreaterThan(0);
     
-    // Verify product information is displayed
+    // Verify product information is displayed in the card info section (not the overlay)
     const firstProduct = productCards.first();
-    await expect(firstProduct.locator('h3')).toBeVisible(); // Product title
+    await expect(firstProduct.locator('.p-4 h3')).toBeVisible(); // Product title in card info
     await expect(firstProduct.locator('[data-testid="product-price"]')).toBeVisible(); // Product price
   });
 
   test('should navigate to product detail page', async ({ page }) => {
     // Click on the first product
     const firstProduct = page.locator('[data-testid="product-card"]').first();
-    const productTitle = await firstProduct.locator('h3').textContent();
+    // Get title from the card info section (not the overlay)
+    const productTitle = await firstProduct.locator('.p-4 h3').textContent();
     
     await firstProduct.locator('a').first().click();
     await page.waitForURL(/\/store\/[^\/]+$/); // Wait for navigation to product detail page
