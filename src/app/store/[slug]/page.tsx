@@ -92,12 +92,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Certificate of authenticity
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
                 Secure packaging and shipping
               </li>
             </ul>
@@ -153,6 +147,6 @@ export async function generateMetadata({ params }: ProductPageProps) {
 
   return {
     title: `${product.name} | Shop EONMUN`,
-    description: product.description || `Purchase ${product.name} by EONMUN. Includes certificate of authenticity.`,
+    description: product.description || `Purchase ${product.name} by EONMUN.`,
   };
 }
