@@ -39,8 +39,10 @@ test.describe("Admin Artwork Management", () => {
     await page.waitForURL("/admin/artworks");
     await expect(page).toHaveURL(/.*\/admin\/artworks/);
 
-    // Verify the new artwork appears in the list (use first() to handle multiple matches)
-    await expect(page.locator(`text=${artworkTitle}`).first()).toBeVisible();
+    // Verify the new artwork appears in the desktop table
+    await expect(
+      page.locator(".hidden.md\\:block table").locator(`text=${artworkTitle}`).first()
+    ).toBeVisible();
   });
 
   test("should allow an admin to create artwork with image upload", async ({
@@ -81,8 +83,10 @@ test.describe("Admin Artwork Management", () => {
     await page.waitForURL("/admin/artworks", { timeout: 15000 });
     await expect(page).toHaveURL(/.*\/admin\/artworks/);
 
-    // Verify the new artwork appears in the list
-    await expect(page.locator(`text=${artworkTitle}`).first()).toBeVisible();
+    // Verify the new artwork appears in the desktop table
+    await expect(
+      page.locator(".hidden.md\\:block table").locator(`text=${artworkTitle}`).first()
+    ).toBeVisible();
   });
 
   test("should reset form properly when creating multiple artworks consecutively", async ({
@@ -137,7 +141,7 @@ test.describe("Admin Artwork Management", () => {
     // Wait for redirect to artworks list
     await page.waitForURL("/admin/artworks", { timeout: 15000 });
     await expect(
-      page.locator(`text=${firstArtworkTitle}`).first(),
+      page.locator(".hidden.md\\:block table").locator(`text=${firstArtworkTitle}`).first(),
     ).toBeVisible();
 
     // --- Create SECOND artwork ---
@@ -199,12 +203,12 @@ test.describe("Admin Artwork Management", () => {
     // Wait for redirect to artworks list
     await page.waitForURL("/admin/artworks", { timeout: 15000 });
 
-    // Verify both artworks appear in the list
+    // Verify both artworks appear in the desktop table
     await expect(
-      page.locator(`text=${firstArtworkTitle}`).first(),
+      page.locator(".hidden.md\\:block table").locator(`text=${firstArtworkTitle}`).first(),
     ).toBeVisible();
     await expect(
-      page.locator(`text=${secondArtworkTitle}`).first(),
+      page.locator(".hidden.md\\:block table").locator(`text=${secondArtworkTitle}`).first(),
     ).toBeVisible();
   });
 });
