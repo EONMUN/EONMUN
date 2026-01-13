@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
-import { generateSlug } from "./utils";
+import { generateSlug } from "../src/lib/utils";
 
 test.describe("Admin Artwork Management", () => {
   // Login as admin before all tests
