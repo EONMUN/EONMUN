@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   description: 'Shop original artworks by EONMUN.',
 };
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Enable ISR - revalidate every hour
+export const revalidate = 3600;
 
 function ProductCard({ product }: { product: ProductWithArtwork }) {
   const priceInDollars = product.price / 100;

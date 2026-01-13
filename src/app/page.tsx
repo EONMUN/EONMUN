@@ -1,8 +1,8 @@
 import HomePageArtworkCarousel from "@/components/HomePageArtworkCarousel";
 import { getHomePageData } from "@/actions/home";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Enable ISR - revalidate every hour
+export const revalidate = 3600;
 
 export default async function Home() {
   const { slides } = await getHomePageData();

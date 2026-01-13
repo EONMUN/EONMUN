@@ -5,8 +5,8 @@ import { getCollectionBySlug } from "@/actions/collection";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Enable ISR - revalidate every hour
+export const revalidate = 3600;
 
 interface CollectionPageProps {
   params: Promise<{

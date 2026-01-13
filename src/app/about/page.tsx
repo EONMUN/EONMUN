@@ -1,5 +1,5 @@
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Enable ISR - revalidate every day
+export const revalidate = 86400;
 
 export default function AboutPage() {
   return (

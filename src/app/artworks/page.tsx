@@ -3,8 +3,8 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Enable ISR - revalidate every hour
+export const revalidate = 3600;
 
 function ArtworkCard({
   artwork,

@@ -6,8 +6,8 @@ import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database";
 import { PurchaseButton } from "@/components/PurchaseButton";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Enable ISR - revalidate every hour
+export const revalidate = 3600;
 
 interface ArtworkPageProps {
   params: Promise<{
