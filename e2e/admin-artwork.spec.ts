@@ -52,12 +52,15 @@ test.describe("Admin Artwork Management", () => {
     const artworkYear = "2025";
     const artworkSlug = generateSlug(artworkTitle);
 
-    // Create a new artwork as admin
+    // Create a new artwork as admin (Published checkbox is checked by default)
     await page.goto("/admin/artworks/new");
 
     await page.fill("#title", artworkTitle);
     await page.fill("#artist", artworkArtist);
     await page.fill("#year", artworkYear);
+
+    // Verify the Published checkbox is checked by default
+    await expect(page.locator('#published')).toBeChecked();
 
     await page.click('button[type="submit"]:has-text("Create Artwork")');
     await page.waitForURL("/admin/artworks");
@@ -69,6 +72,32 @@ test.describe("Admin Artwork Management", () => {
     await expect(page).toHaveURL(`/artworks/${artworkSlug}`);
     await expect(page.locator('h1')).toContainText(artworkTitle);
     await expect(page.locator(`text=${artworkArtist}`)).toBeVisible();
+  });
+
+  test("should prevent public access to unpublished artworks", async ({ page }) => {
+    const artworkTitle = `Unpublished Test Artwork ${Date.now()}`;
+    const artworkArtist = "Unpublished Test Artist";
+    const artworkYear = "2025";
+    const artworkSlug = generateSlug(artworkTitle);
+
+    // Create a new artwork as admin with Published unchecked
+    await page.goto("/admin/artworks/new");
+
+    await page.fill("#title", artworkTitle);
+    await page.fill("#artist", artworkArtist);
+    await page.fill("#year", artworkYear);
+
+    // Uncheck the Published checkbox
+    await page.uncheck('#published');
+
+    await page.click('button[type="submit"]:has-text("Create Artwork")');
+    await page.waitForURL("/admin/artworks");
+
+    // Navigate to the public artwork page
+    await page.goto(`/artworks/${artworkSlug}`);
+
+    // Verify the page shows 404 (Next.js not-found page)
+    await expect(page.locator('text=404')).toBeVisible();
   });
 
   test("should allow an admin to create artwork with image upload", async ({

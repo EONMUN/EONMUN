@@ -131,6 +131,7 @@ export async function getArtworkBySlugAdmin(slug: string) {
 export async function createArtworkAdmin(
   data: Omit<NewArtwork, "createdAt" | "updatedAt"> & {
     price?: number;
+    published?: boolean;
     defaultImageUrl?: string;
     images?: { url: string; isDefault: boolean; caption?: string | null }[];
   },
@@ -139,16 +140,15 @@ export async function createArtworkAdmin(
   if (authError) return authError;
 
   try {
-    // Extract price from data (it will be used for product, not artwork)
+    // Extract price and published from data
     // Price comes in as dollars, convert to cents for storage
-    const { price, defaultImageUrl, images, ...artworkData } = data;
+    const { price, published, defaultImageUrl, images, ...artworkData } = data;
     const priceInCents =
       price !== undefined ? Math.round(price * 100) : undefined;
-    // Auto-publish new artworks to make them immediately visible on public pages.
-    // All artworks created through the admin panel should be published by default.
+    // Set publishedAt based on the published checkbox (defaults to true)
     const artwork = await artworkModel.createArtwork({
       ...artworkData,
-      publishedAt: new Date(),
+      publishedAt: published !== false ? new Date() : null,
     });
 
     // Save images
@@ -207,6 +207,7 @@ export async function updateArtworkAdmin(
   id: number,
   data: Partial<Omit<NewArtwork, "createdAt" | "updatedAt">> & {
     price?: number | null;
+    published?: boolean;
     defaultImageUrl?: string | null;
     images?: { url: string; isDefault: boolean; caption?: string | null }[];
   },
@@ -215,16 +216,23 @@ export async function updateArtworkAdmin(
   if (authError) return authError;
 
   try {
-    // Extract price from data (it will be used for product, not artwork)
+    // Extract price, published from data
     // Price comes in as dollars, convert to cents for storage
-    const { price, defaultImageUrl, images, ...artworkData } = data;
+    const { price, published, defaultImageUrl, images, ...artworkData } = data;
     const priceInCents =
       price !== undefined
         ? price === null
           ? null
           : Math.round(price * 100)
         : undefined;
-    const artwork = await artworkModel.updateArtwork(id, artworkData);
+    
+    // Handle publishedAt based on the published checkbox
+    const updateData = { ...artworkData };
+    if (published !== undefined) {
+      updateData.publishedAt = published ? new Date() : null;
+    }
+    
+    const artwork = await artworkModel.updateArtwork(id, updateData);
     if (!artwork) {
       return { success: false, error: "Artwork not found" };
     }

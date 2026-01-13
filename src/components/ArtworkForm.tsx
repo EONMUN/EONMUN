@@ -55,6 +55,7 @@ export default function ArtworkForm({
     depth: artwork?.depth?.toString() || "",
     dimensionUnit: artwork?.dimensionUnit || "in",
     price: initialPrice ? (initialPrice / 100).toString() : "",
+    published: artwork ? !!artwork.publishedAt : true, // Default to published for new artworks
     images:
       artwork && "images" in artwork
         ? artwork.images
@@ -163,6 +164,7 @@ export default function ArtworkForm({
         depth: formData.depth ? parseFloat(formData.depth) : undefined,
         dimensionUnit: formData.dimensionUnit || undefined,
         price: formData.price ? parseFloat(formData.price) : undefined,
+        published: formData.published,
         images: formData.images,
       };
 
@@ -533,6 +535,27 @@ export default function ArtworkForm({
             placeholder="100.00"
           />
         </div>
+      </div>
+
+      {/* Published */}
+      <div>
+        <label className="flex items-center space-x-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="published"
+            checked={formData.published}
+            onChange={(e) =>
+              setFormData({ ...formData, published: e.target.checked })
+            }
+            className="w-4 h-4 text-primary bg-surface border-outline rounded focus:ring-2 focus:ring-primary"
+          />
+          <span className="text-sm font-medium text-on-surface">
+            Published
+          </span>
+        </label>
+        <p className="text-xs text-on-surface-variant mt-1 ml-7">
+          Published artworks are visible on the public website
+        </p>
       </div>
 
       {/* Form Actions */}
