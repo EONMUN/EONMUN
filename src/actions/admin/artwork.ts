@@ -144,7 +144,11 @@ export async function createArtworkAdmin(
     const { price, defaultImageUrl, images, ...artworkData } = data;
     const priceInCents =
       price !== undefined ? Math.round(price * 100) : undefined;
-    const artwork = await artworkModel.createArtwork(artworkData);
+    // Automatically publish new artworks
+    const artwork = await artworkModel.createArtwork({
+      ...artworkData,
+      publishedAt: new Date(),
+    });
 
     // Save images
     if (images && images.length > 0) {

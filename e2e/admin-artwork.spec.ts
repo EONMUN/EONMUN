@@ -45,6 +45,31 @@ test.describe("Admin Artwork Management", () => {
     ).toBeVisible();
   });
 
+  test("should allow public access to newly created artworks", async ({ page }) => {
+    const artworkTitle = `Public Test Artwork ${Date.now()}`;
+    const artworkArtist = "Public Test Artist";
+    const artworkYear = "2025";
+    const artworkSlug = artworkTitle.toLowerCase().replace(/\s+/g, '-');
+
+    // Create a new artwork as admin
+    await page.goto("/admin/artworks/new");
+
+    await page.fill("#title", artworkTitle);
+    await page.fill("#artist", artworkArtist);
+    await page.fill("#year", artworkYear);
+
+    await page.click('button[type="submit"]:has-text("Create Artwork")');
+    await page.waitForURL("/admin/artworks");
+
+    // Navigate to the public artwork page
+    await page.goto(`/artworks/${artworkSlug}`);
+
+    // Verify the artwork is accessible (not 404)
+    await expect(page).toHaveURL(new RegExp(`/artworks/${artworkSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    await expect(page.locator('h1')).toContainText(artworkTitle);
+    await expect(page.locator(`text=${artworkArtist}`)).toBeVisible();
+  });
+
   test("should allow an admin to create artwork with image upload", async ({
     page,
   }) => {
