@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   description: "EONMUN Artwork",
 };
 
+// Force dynamic rendering - disable build-time caching
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: Readonly<{

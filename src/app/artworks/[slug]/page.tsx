@@ -6,6 +6,9 @@ import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database";
 import { PurchaseButton } from "@/components/PurchaseButton";
 
+// Force dynamic rendering - disable build-time caching
+export const dynamic = 'force-dynamic';
+
 interface ArtworkPageProps {
   params: Promise<{
     slug: string;

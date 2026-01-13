@@ -1,6 +1,9 @@
 import { Mail, User, MessageSquare } from "lucide-react";
 import { submitContactForm } from "@/actions/contact";
 
+// Force dynamic rendering - disable build-time caching
+export const dynamic = 'force-dynamic';
+
 export default async function ContactPage({
   searchParams,
 }: {

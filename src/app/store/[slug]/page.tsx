@@ -5,6 +5,9 @@ import { getProductBySlug } from '@/actions/product';
 import { PurchaseButton } from '@/components/PurchaseButton';
 import type { ProductWithArtwork } from '@/models/product';
 
+// Force dynamic rendering - disable build-time caching
+export const dynamic = 'force-dynamic';
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }

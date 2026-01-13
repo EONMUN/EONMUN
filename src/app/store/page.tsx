@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'Shop original artworks by EONMUN. Each piece includes a certificate of authenticity.',
 };
 
+// Force dynamic rendering - disable build-time caching
+export const dynamic = 'force-dynamic';
+
 function ProductCard({ product }: { product: ProductWithArtwork }) {
   const priceInDollars = product.price / 100;
   const imageUrl = product.imageUrl || product.artwork?.defaultImageUrl;
