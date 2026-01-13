@@ -15,7 +15,7 @@ import Fade from "embla-carousel-fade";
 function ArtworkCarouselItem({ artwork }: { artwork: ArtworkWithCollections }) {
   return (
     <CarouselItem key={artwork.id} className="h-full pl-0">
-      <div className="relative h-full w-full bg-black">
+      <div className="relative h-screen w-full bg-black">
         <Image
           src={artwork.defaultImageUrl || ''}
           alt={artwork.title}
