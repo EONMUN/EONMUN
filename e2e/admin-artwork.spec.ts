@@ -49,7 +49,13 @@ test.describe("Admin Artwork Management", () => {
     const artworkTitle = `Public Test Artwork ${Date.now()}`;
     const artworkArtist = "Public Test Artist";
     const artworkYear = "2025";
-    const artworkSlug = artworkTitle.toLowerCase().replace(/\s+/g, '-');
+    // Generate slug using same logic as production code
+    const artworkSlug = artworkTitle
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
 
     // Create a new artwork as admin
     await page.goto("/admin/artworks/new");
@@ -65,7 +71,7 @@ test.describe("Admin Artwork Management", () => {
     await page.goto(`/artworks/${artworkSlug}`);
 
     // Verify the artwork is accessible (not 404)
-    await expect(page).toHaveURL(new RegExp(`/artworks/${artworkSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    await expect(page).toHaveURL(`/artworks/${artworkSlug}`);
     await expect(page.locator('h1')).toContainText(artworkTitle);
     await expect(page.locator(`text=${artworkArtist}`)).toBeVisible();
   });
