@@ -8,7 +8,7 @@ export default async function Home() {
   const { slides } = await getHomePageData();
 
   return (
-    <div className="fixed inset-0 w-full h-screen bg-black">
+    <div className="fixed inset-0 w-full h-full bg-black">
       <HomePageArtworkCarousel artworks={slides} />
     </div>
   );
