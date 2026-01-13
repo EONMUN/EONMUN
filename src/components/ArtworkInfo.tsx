@@ -9,7 +9,7 @@ interface ArtworkInfoProps {
 
 export function ArtworkInfo({ artwork, className = "" }: ArtworkInfoProps) {
   return (
-    <div className={`absolute bottom-5 right-4 z-[50] ${className}`}>
+    <div className={`absolute bottom-20 right-4 z-[50] ${className}`}>
       <FrostedGlass 
         variant="dark" 
         className="p-3 rounded-lg"
