@@ -13,11 +13,11 @@ export default async function ArtworksAdminPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-on-background">Artworks</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-on-background">Artworks</h1>
         <Link
           href="/admin/artworks/new"
-          className="px-4 py-2 bg-primary text-on-primary rounded-md hover:opacity-90 font-medium"
+          className="px-4 py-2 bg-primary text-on-primary rounded-md hover:opacity-90 font-medium text-center whitespace-nowrap"
         >
           + New Artwork
         </Link>
@@ -52,116 +52,201 @@ export default async function ArtworksAdminPage() {
           </Link>
         </div>
       ) : (
-        <div className="bg-surface rounded-lg shadow-md overflow-hidden border border-outline">
-          <table className="min-w-full divide-y divide-outline">
-            <thead className="bg-primary-container">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
-                  Image
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
-                  Artist
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
-                  Price
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
-                  Collection
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-on-primary-container uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-surface divide-y divide-outline">
-              {artworks.map((artwork) => (
-                <tr
-                  key={artwork.id}
-                  className="hover:bg-primary-container/50 cursor-pointer relative"
-                >
-                  <td className="px-6 py-4">
-                    <Link
-                      href={`/admin/artworks/edit/${artwork.slug}`}
-                      className="absolute inset-0"
-                      aria-label={`Edit ${artwork.title}`}
-                    />
-                    {artwork.defaultImageUrl ? (
-                      <div className="w-16 h-16 rounded border border-outline overflow-hidden">
-                        <Image
-                          src={artwork.defaultImageUrl}
-                          alt={artwork.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-16 h-16 rounded border border-outline bg-primary-container flex items-center justify-center">
-                        <svg
-                          className="w-8 h-8 text-on-primary-container"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+        <>
+          {/* Mobile Card Layout - visible on small screens */}
+          <div className="md:hidden space-y-4">
+            {artworks.map((artwork) => (
+              <Link
+                key={artwork.id}
+                href={`/admin/artworks/edit/${artwork.slug}`}
+                className="block bg-surface rounded-lg shadow-md border border-outline hover:bg-primary-container/50 transition-colors"
+              >
+                <div className="p-4">
+                  <div className="flex gap-4">
+                    {/* Image */}
+                    <div className="flex-shrink-0">
+                      {artwork.defaultImageUrl ? (
+                        <div className="w-20 h-20 rounded border border-outline overflow-hidden">
+                          <Image
+                            src={artwork.defaultImageUrl}
+                            alt={artwork.title}
+                            className="w-full h-full object-cover"
                           />
-                        </svg>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-primary">
-                      {artwork.title}
-                    </span>
-                    {artwork.description && (
-                      <div className="text-sm text-on-surface-variant truncate max-w-xs">
-                        {artwork.description}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-on-surface">
-                      {artwork.artist || "-"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-on-surface">
-                      {artwork.product?.price
-                        ? `$${(artwork.product.price / 100).toFixed(2)}`
-                        : "-"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-on-surface">
-                      {artwork.collections.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {artwork.collections.map((collection) => (
-                            <span
-                              key={collection.id}
-                              className="inline-block px-2 py-0.5 bg-primary-container text-on-primary-container rounded text-xs"
-                            >
-                              {collection.name}
-                            </span>
-                          ))}
                         </div>
                       ) : (
-                        "-"
+                        <div className="w-20 h-20 rounded border border-outline bg-primary-container flex items-center justify-center">
+                          <svg
+                            className="w-10 h-10 text-on-primary-container"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
                       )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <span className="text-primary">Edit</span>
-                  </td>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-medium text-primary mb-1 truncate">
+                        {artwork.title}
+                      </h3>
+                      {artwork.description && (
+                        <p className="text-sm text-on-surface-variant line-clamp-2 mb-2">
+                          {artwork.description}
+                        </p>
+                      )}
+                      <div className="space-y-1 text-sm">
+                        {artwork.artist && (
+                          <div className="text-on-surface">
+                            <span className="text-on-surface-variant">Artist:</span>{" "}
+                            {artwork.artist}
+                          </div>
+                        )}
+                        {artwork.product?.price && (
+                          <div className="text-on-surface">
+                            <span className="text-on-surface-variant">Price:</span>{" "}
+                            ${(artwork.product.price / 100).toFixed(2)}
+                          </div>
+                        )}
+                        {artwork.collections.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {artwork.collections.map((collection) => (
+                              <span
+                                key={collection.id}
+                                className="inline-block px-2 py-0.5 bg-primary-container text-on-primary-container rounded text-xs"
+                              >
+                                {collection.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop Table Layout - hidden on small screens */}
+          <div className="hidden md:block bg-surface rounded-lg shadow-md overflow-hidden border border-outline">
+            <table className="min-w-full divide-y divide-outline">
+              <thead className="bg-primary-container">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
+                    Image
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
+                    Artist
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-on-primary-container uppercase tracking-wider">
+                    Collection
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-on-primary-container uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-surface divide-y divide-outline">
+                {artworks.map((artwork) => (
+                  <tr
+                    key={artwork.id}
+                    className="hover:bg-primary-container/50 cursor-pointer relative"
+                  >
+                    <td className="px-6 py-4">
+                      <Link
+                        href={`/admin/artworks/edit/${artwork.slug}`}
+                        className="absolute inset-0"
+                        aria-label={`Edit ${artwork.title}`}
+                      />
+                      {artwork.defaultImageUrl ? (
+                        <div className="w-16 h-16 rounded border border-outline overflow-hidden">
+                          <Image
+                            src={artwork.defaultImageUrl}
+                            alt={artwork.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded border border-outline bg-primary-container flex items-center justify-center">
+                          <svg
+                            className="w-8 h-8 text-on-primary-container"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-medium text-primary">
+                        {artwork.title}
+                      </span>
+                      {artwork.description && (
+                        <div className="text-sm text-on-surface-variant truncate max-w-xs">
+                          {artwork.description}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-on-surface">
+                        {artwork.artist || "-"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-on-surface">
+                        {artwork.product?.price
+                          ? `$${(artwork.product.price / 100).toFixed(2)}`
+                          : "-"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-on-surface">
+                        {artwork.collections.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {artwork.collections.map((collection) => (
+                              <span
+                                key={collection.id}
+                                className="inline-block px-2 py-0.5 bg-primary-container text-on-primary-container rounded text-xs"
+                              >
+                                {collection.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <span className="text-primary">Edit</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
