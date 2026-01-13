@@ -144,7 +144,8 @@ export async function createArtworkAdmin(
     const { price, defaultImageUrl, images, ...artworkData } = data;
     const priceInCents =
       price !== undefined ? Math.round(price * 100) : undefined;
-    // Automatically publish new artworks
+    // Auto-publish new artworks to make them immediately visible on public pages.
+    // All artworks created through the admin panel should be published by default.
     const artwork = await artworkModel.createArtwork({
       ...artworkData,
       publishedAt: new Date(),
