@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
+import { generateSlug } from "./utils";
 
 test.describe("Admin Artwork Management", () => {
   // Login as admin before all tests
@@ -49,13 +50,7 @@ test.describe("Admin Artwork Management", () => {
     const artworkTitle = `Public Test Artwork ${Date.now()}`;
     const artworkArtist = "Public Test Artist";
     const artworkYear = "2025";
-    // Generate slug using same logic as production code
-    const artworkSlug = artworkTitle
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    const artworkSlug = generateSlug(artworkTitle);
 
     // Create a new artwork as admin
     await page.goto("/admin/artworks/new");
