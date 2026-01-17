@@ -32,7 +32,7 @@ export function Navigation({ isAdmin }: NavigationProps) {
       </LinkComponent>
       <LinkComponent
         href="/contact"
-        className={`text-xs sm:text-sm transition-colors`}
+        className={`text-xs sm:text-sm transition-colors ${isHome ? 'text-white' : ''}`}
       >
         Contact
       </LinkComponent>
