@@ -20,7 +20,52 @@
             "command": "python3 .claude/hooks/typecheck-on-stop.py"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m deepwork.hooks.rules_check"
+          }
+        ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".deepwork/jobs/deepwork_rules/hooks/user_prompt_submit.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m deepwork.hooks.rules_check"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read(./.deepwork/tmp/**)",
+      "Edit(./.deepwork/tmp/**)",
+      "Write(./.deepwork/tmp/**)",
+      "Skill(deepwork_jobs)",
+      "Skill(deepwork_jobs.define)",
+      "Skill(deepwork_jobs.review_job_spec)",
+      "Skill(deepwork_jobs.implement)",
+      "Skill(deepwork_jobs.learn)",
+      "Skill(deepwork_rules)",
+      "Skill(deepwork_rules.define)"
     ]
   }
 }
