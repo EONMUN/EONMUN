@@ -65,7 +65,14 @@
       "Skill(deepwork_jobs.implement)",
       "Skill(deepwork_jobs.learn)",
       "Skill(deepwork_rules)",
-      "Skill(deepwork_rules.define)"
+      "Skill(deepwork_rules.define)",
+      "Skill(spec_driven_development)",
+      "Skill(spec_driven_development.constitution)",
+      "Skill(spec_driven_development.specify)",
+      "Skill(spec_driven_development.clarify)",
+      "Skill(spec_driven_development.plan)",
+      "Skill(spec_driven_development.tasks)",
+      "Skill(spec_driven_development.implement)"
     ]
   }
 }
