@@ -11,7 +11,7 @@ steps:
       - name: development_priorities
         description: "Key priorities like code quality, testing, UX consistency, performance"
     outputs:
-      - file: "[docs_folder]/constitution.md"
+      - file: "docs/constitution.md"
     dependencies: []
     quality_criteria:
       - "**Priorities Captured**: Did the agent gather specific development priorities from the user?"
@@ -30,7 +30,7 @@ steps:
         description: "Name of the feature being specified (lowercase, hyphens for spaces)"
       - name: feature_description
         description: "High-level description of what the feature should do"
-      - file: "[docs_folder]/constitution.md"
+      - file: "docs/constitution.md"
         from_step: constitution
     outputs:
       - file: specs/[feature-name]/spec.md
@@ -73,16 +73,14 @@ steps:
     inputs:
       - file: specs/[feature-name]/spec.md
         from_step: clarify
-      - file: "[docs_folder]/constitution.md"
-        from_step: constitution
-      - file: "[docs_folder]/architecture.md"
+      - file: "docs/constitution.md"
         from_step: constitution
     outputs:
       - file: specs/[feature-name]/plan.md
       - file: specs/[feature-name]/data-model.md
       - file: specs/[feature-name]/api-spec.json
       - file: specs/[feature-name]/research.md
-      - file: "[docs_folder]/architecture.md"
+      - file: "docs/architecture.md"
     dependencies:
       - clarify
       - constitution
@@ -107,7 +105,7 @@ steps:
         from_step: plan
       - file: specs/[feature-name]/spec.md
         from_step: clarify
-      - file: "[docs_folder]/architecture.md"
+      - file: "docs/architecture.md"
         from_step: plan
     outputs:
       - file: specs/[feature-name]/tasks.md
@@ -136,11 +134,11 @@ steps:
         from_step: plan
       - file: specs/[feature-name]/spec.md
         from_step: clarify
-      - file: "[docs_folder]/architecture.md"
+      - file: "docs/architecture.md"
         from_step: plan
     outputs:
-      - file: src/
-      - file: tests/
+      - directory: src/
+      - directory: tests/
     dependencies:
       - tasks
       - plan
