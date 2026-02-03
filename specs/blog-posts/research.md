@@ -75,11 +75,11 @@ The implementation follows these existing patterns discovered during codebase an
 
 ### New npm packages
 
-| Package           | Version | Purpose                                                  | Size  |
-| ----------------- | ------- | -------------------------------------------------------- | ----- |
-| `react-markdown`  | ^9.x    | Render Markdown to React components                      | ~30KB |
-| `remark-gfm`      | ^4.x    | GitHub Flavored Markdown support (tables, strikethrough) | ~5KB  |
-| `rehype-sanitize` | ^6.x    | Sanitize HTML output to prevent XSS                      | ~10KB |
+| Package           | Version  | Purpose                                                  | Size  |
+| ----------------- | -------- | -------------------------------------------------------- | ----- |
+| `react-markdown`  | ^10.1.0  | Render Markdown to React components                      | ~30KB |
+| `remark-gfm`      | ^4.0.1   | GitHub Flavored Markdown support (tables, strikethrough) | ~5KB  |
+| `rehype-sanitize` | ^6.0.0   | Sanitize HTML output to prevent XSS                      | ~10KB |
 
 Total new dependency footprint: ~45KB (reasonable for the functionality provided).
 

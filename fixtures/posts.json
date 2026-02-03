@@ -7,8 +7,13 @@
     "postType": "announcement",
     "publishedAt": "2025-08-01T10:00:00.000Z",
     "locale": "en",
-    "artworkSlugs": ["persimmons-del-oro", "limones-del-cobre"],
-    "collectionSlugs": ["dorada"]
+    "artworkSlugs": [
+      "persimmons-del-oro",
+      "limones-del-cobre"
+    ],
+    "collectionSlugs": [
+      "dorada"
+    ]
   },
   {
     "title": "Working with Gold Leaf: Techniques and Tips",
@@ -18,7 +23,9 @@
     "postType": "educational",
     "publishedAt": "2025-08-15T14:00:00.000Z",
     "locale": "en",
-    "artworkSlugs": ["persimmons-del-oro"],
+    "artworkSlugs": [
+      "persimmons-del-oro"
+    ],
     "collectionSlugs": []
   },
   {
@@ -29,8 +36,12 @@
     "postType": "behind_the_scenes",
     "publishedAt": "2025-09-01T12:00:00.000Z",
     "locale": "en",
-    "artworkSlugs": ["casa-de-fuji"],
-    "collectionSlugs": ["oriental"]
+    "artworkSlugs": [
+      "casa-de-fuji"
+    ],
+    "collectionSlugs": [
+      "oriental"
+    ]
   },
   {
     "title": "Gallery Showing: Black & White Exhibition",
@@ -40,8 +51,12 @@
     "postType": "announcement",
     "publishedAt": "2025-09-15T09:00:00.000Z",
     "locale": "en",
-    "artworkSlugs": ["quiescent-citadel"],
-    "collectionSlugs": ["black-and-white"]
+    "artworkSlugs": [
+      "quiescent-citadel"
+    ],
+    "collectionSlugs": [
+      "black-and-white"
+    ]
   },
   {
     "title": "Learning Watercolor: My Journey So Far",
@@ -51,8 +66,13 @@
     "postType": "educational",
     "publishedAt": "2025-10-01T10:00:00.000Z",
     "locale": "en",
-    "artworkSlugs": ["camelia", "banc-de-poissons"],
-    "collectionSlugs": ["botanica"]
+    "artworkSlugs": [
+      "camelia",
+      "banc-de-poissons"
+    ],
+    "collectionSlugs": [
+      "botanica"
+    ]
   },
   {
     "title": "The Language of Gold: Understanding the Dorada Palette",
@@ -62,8 +82,13 @@
     "postType": "educational",
     "publishedAt": "2025-08-20T11:00:00.000Z",
     "locale": "en",
-    "artworkSlugs": ["persimmons-del-oro", "limones-del-cobre"],
-    "collectionSlugs": ["dorada"]
+    "artworkSlugs": [
+      "persimmons-del-oro",
+      "limones-del-cobre"
+    ],
+    "collectionSlugs": [
+      "dorada"
+    ]
   },
   {
     "title": "Future Feature: The 2026 Roadmap",

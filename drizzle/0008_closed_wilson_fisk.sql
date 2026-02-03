@@ -14,7 +14,6 @@ CREATE TABLE `posts` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `posts_slug_unique` ON `posts` (`slug`);--> statement-breakpoint
-CREATE INDEX `posts_slug_idx` ON `posts` (`slug`);--> statement-breakpoint
 CREATE INDEX `posts_published_at_idx` ON `posts` (`published_at`);--> statement-breakpoint
 CREATE INDEX `posts_post_type_idx` ON `posts` (`post_type`);--> statement-breakpoint
 CREATE TABLE `posts_to_artworks` (

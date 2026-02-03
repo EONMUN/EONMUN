@@ -73,10 +73,10 @@
 
 ### Scheduled Publishing
 
-**Chosen**: Request-time evaluation using `publishedAt` timestamp comparison
+**Chosen**: Request-time evaluation using separate `publishedAt` and `scheduledAt` timestamp fields
 **Alternatives Considered**: Background cron job, Cloudflare Workers scheduled events
-**Rationale**: Per spec clarification, request-time checking is sufficient. A post with `publishedAt` in the future is treated as "scheduled" and filtered out of public queries until the time passes. No additional infrastructure needed.
-**Constitution Alignment**: Simplicity - no background job infrastructure, just a WHERE clause.
+**Rationale**: Per `research.md` and `data-model.md`, we use two separate fields: `scheduledAt` controls when a post should become publicly visible (future scheduling), and `publishedAt` records when it was actually published. Public queries filter posts with `WHERE (publishedAt IS NOT NULL AND publishedAt <= now()) OR (scheduledAt IS NOT NULL AND scheduledAt <= now())` so scheduled posts automatically become visible at request time without additional infrastructure.
+**Constitution Alignment**: Simplicity - no background job infrastructure, just timestamp fields and request-time WHERE clauses.
 
 ### Slug Generation
 
@@ -116,7 +116,7 @@
 ## Security Considerations
 
 - **Admin auth**: All write operations use `guardAdmin()`. Admin pages protected by `requireAdmin()` in admin layout.
-- **Draft/scheduled post protection**: Public queries filter by `publishedAt IS NOT NULL AND publishedAt <= now()`. No public URL exists for unpublished content.
+- **Draft/scheduled post protection**: Public queries filter by `(publishedAt IS NOT NULL AND publishedAt <= now()) OR (scheduledAt IS NOT NULL AND scheduledAt <= now())`. No public URL exists for unpublished content.
 - **XSS prevention**: Markdown output sanitized via `rehype-sanitize` before rendering. No raw HTML injection possible.
 - **Slug validation**: Slugs validated and sanitized on creation to prevent path traversal or injection.
 
