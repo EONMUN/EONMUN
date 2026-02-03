@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { generateSlug } from "../src/lib/utils";
 
+// Helper function to format date for datetime-local input (local time, not UTC)
+function formatDateTimeLocal(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 test.describe("Blog Post Management", () => {
   // Login as admin before all tests
   test.beforeEach(async ({ page }) => {
@@ -54,8 +59,7 @@ test.describe("Blog Post Management", () => {
     // --- Scenario 1: Future Scheduled Post (Should be HIDDEN) ---
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 1); // Tomorrow
-    // Format to YYYY-MM-DDTHH:mm for datetime-local input (local time, not UTC)
-    const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}T${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+    const futureDateStr = formatDateTimeLocal(futureDate);
     
     const futurePostTitle = `Future Scheduled Post ${Date.now()}`;
     const futurePostSlug = generateSlug(futurePostTitle);
@@ -88,7 +92,7 @@ test.describe("Blog Post Management", () => {
     // --- Scenario 2: Past Scheduled Post (Should be VISIBLE) ---
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 1); // Yesterday
-    const pastDateStr = `${pastDate.getFullYear()}-${String(pastDate.getMonth() + 1).padStart(2, '0')}-${String(pastDate.getDate()).padStart(2, '0')}T${String(pastDate.getHours()).padStart(2, '0')}:${String(pastDate.getMinutes()).padStart(2, '0')}`;
+    const pastDateStr = formatDateTimeLocal(pastDate);
 
     const pastPostTitle = `Past Scheduled Post ${Date.now()}`;
     const pastPostSlug = generateSlug(pastPostTitle);
