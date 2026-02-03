@@ -23,6 +23,12 @@ const POST_TYPES: { value: PostType; label: string }[] = [
   { value: "general", label: "General" },
 ];
 
+function getLocalISOString(date: Date) {
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+  return localDate.toISOString().slice(0, 16);
+}
+
 interface PostFormProps {
   post?: PostWithRelations;
 }
@@ -45,6 +51,9 @@ export default function PostForm({ post }: PostFormProps) {
       : post?.scheduledAt
         ? "scheduled"
         : "draft",
+    publishedAt: post?.publishedAt
+      ? getLocalISOString(post.publishedAt)
+      : getLocalISOString(new Date()),
     scheduledAt: post?.scheduledAt
       ? new Date(post.scheduledAt).toISOString().slice(0, 16)
       : "",
@@ -176,7 +185,9 @@ export default function PostForm({ post }: PostFormProps) {
         excerpt: formData.excerpt || null,
         postType: formData.postType,
         coverImageUrl: formData.coverImageUrl || null,
-        publishedAt: formData.publishStatus === "published" ? new Date() : null,
+        publishedAt: formData.publishStatus === "published" 
+          ? (formData.publishedAt ? new Date(formData.publishedAt) : new Date()) 
+          : null,
         scheduledAt:
           formData.publishStatus === "scheduled" && formData.scheduledAt
             ? new Date(formData.scheduledAt)
@@ -184,11 +195,6 @@ export default function PostForm({ post }: PostFormProps) {
         artworkIds: selectedArtworkIds,
         collectionIds: selectedCollectionIds,
       };
-
-      // Keep existing publishedAt if already published and status hasn't changed
-      if (post?.publishedAt && formData.publishStatus === "published") {
-        submitData.publishedAt = post.publishedAt;
-      }
 
       let result;
       if (post) {
@@ -349,11 +355,12 @@ export default function PostForm({ post }: PostFormProps) {
           <div className="w-full min-h-[300px] px-3 py-2 border border-outline rounded-md bg-surface text-on-surface prose prose-sm max-w-none">
             <div
               dangerouslySetInnerHTML={{
-                __html: formData.body
-                  .replace(/&/g, "&amp;")
-                  .replace(/</g, "&lt;")
-                  .replace(/>/g, "&gt;")
-                  .replace(/\n/g, "<br />"),
+                __html:
+                  formData.body
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/\n/g, "<br />"),
               }}
             />
             <p className="text-xs text-on-surface-variant mt-4 italic">
@@ -454,8 +461,25 @@ export default function PostForm({ post }: PostFormProps) {
             <span className="text-sm text-on-surface">Scheduled</span>
           </label>
         </div>
+        {formData.publishStatus === "published" && (
+          <div className="mt-2 ml-6">
+            <label className="block text-xs text-on-surface-variant mb-1">Published Date</label>
+            <input
+              type="datetime-local"
+              value={formData.publishedAt}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  publishedAt: e.target.value,
+                }))
+              }
+              className="px-3 py-2 border border-outline rounded-md bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        )}
         {formData.publishStatus === "scheduled" && (
-          <div className="mt-2">
+          <div className="mt-2 ml-6">
+            <label className="block text-xs text-on-surface-variant mb-1">Scheduled Date</label>
             <input
               type="datetime-local"
               value={formData.scheduledAt}
