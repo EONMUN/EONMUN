@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { requireAdmin } from '@/lib/auth-utils';
+import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-utils";
 
 export default async function AdminLayout({
   children,
@@ -16,7 +16,10 @@ export default async function AdminLayout({
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2 sm:space-x-8 min-w-0 flex-1">
-              <Link href="/admin" className="text-lg sm:text-xl font-bold text-on-surface whitespace-nowrap">
+              <Link
+                href="/admin"
+                className="text-lg sm:text-xl font-bold text-on-surface whitespace-nowrap"
+              >
                 Admin
               </Link>
               <div className="flex space-x-2 sm:space-x-4">
@@ -31,6 +34,12 @@ export default async function AdminLayout({
                   className="px-2 py-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-primary-container whitespace-nowrap"
                 >
                   Collections
+                </Link>
+                <Link
+                  href="/admin/posts"
+                  className="px-2 py-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-primary-container whitespace-nowrap"
+                >
+                  Posts
                 </Link>
               </div>
             </div>

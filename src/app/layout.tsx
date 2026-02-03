@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Abel } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
@@ -15,6 +15,11 @@ const abel = Abel({
 export const metadata: Metadata = {
   title: "EONMUN",
   description: "EONMUN Artwork",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 // Force dynamic rendering - disable build-time caching

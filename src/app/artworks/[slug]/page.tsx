@@ -1,13 +1,15 @@
 import Image from "@/components/Image";
 import Link from "next/link";
 import { getArtworkWithProductAndCollectionsBySlug } from "@/actions/artwork";
+import { getRelatedPostsForArtwork } from "@/actions/post";
 import { notFound } from "next/navigation";
 import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database";
 import { PurchaseButton } from "@/components/PurchaseButton";
+import PostCard from "@/components/PostCard";
 
 // Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface ArtworkPageProps {
   params: Promise<{
@@ -76,6 +78,24 @@ function ImageGallery({
         </div>
       )}
     </div>
+  );
+}
+
+async function RelatedPosts({ artworkId }: { artworkId: number }) {
+  const { data: posts } = await getRelatedPostsForArtwork(artworkId);
+  if (posts.length === 0) return null;
+
+  return (
+    <section className="mt-12 pt-8 border-t border-outline">
+      <h2 className="text-2xl font-bold text-on-background mb-6">
+        Related Posts
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -170,6 +190,12 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
               Details
             </h2>
             <dl className="space-y-2">
+              {artwork.artist && (
+                <div className="flex justify-between">
+                  <dt className="text-on-surface-variant">Artist:</dt>
+                  <dd className="text-on-surface">{artwork.artist}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-on-surface-variant">Created:</dt>
                 <dd className="text-on-surface">
@@ -190,6 +216,9 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Related Posts */}
+      <RelatedPosts artworkId={artwork.id} />
 
       {/* Back to Collections link */}
       <div className="mt-12 text-center">

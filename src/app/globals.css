@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
+@import "tailwindcss/theme";
+
+@plugin "@tailwindcss/typography";
 
 :root {
   color-scheme: light dark;
