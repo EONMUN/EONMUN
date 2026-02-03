@@ -56,9 +56,7 @@ test.describe("Admin Artwork Management - Mobile", () => {
     }
   });
 
-  test("should display new artwork button correctly on mobile", async ({
-    page,
-  }) => {
+  test("should display new artwork button correctly on mobile", async ({ page }) => {
     await page.goto("/admin/artworks");
 
     // The "+ New Artwork" button should be visible and properly sized
@@ -78,13 +76,11 @@ test.describe("Admin Artwork Management - Mobile", () => {
     await expect(collectionsLink).toBeVisible();
 
     // Back to Site link should show shortened version on mobile
-    const backLink = page.locator('a[href="/"]');
+    const backLink = page.getByRole('link', { name: /Back to Site|Site/ }).first();
     await expect(backLink).toBeVisible();
   });
 
-  test("should properly display artwork details in mobile card", async ({
-    page,
-  }) => {
+  test("should properly display artwork details in mobile card", async ({ page }) => {
     await page.goto("/admin/artworks");
 
     // Wait for page to load

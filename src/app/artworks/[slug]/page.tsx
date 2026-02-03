@@ -190,6 +190,12 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
               Details
             </h2>
             <dl className="space-y-2">
+              {artwork.artist && (
+                <div className="flex justify-between">
+                  <dt className="text-on-surface-variant">Artist:</dt>
+                  <dd className="text-on-surface">{artwork.artist}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-on-surface-variant">Created:</dt>
                 <dd className="text-on-surface">
