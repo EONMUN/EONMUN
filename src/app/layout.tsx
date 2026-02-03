@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Abel } from "next/font/google";
+import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
 import { Header } from "@/components/Layout/Header";
 import AuthProvider from "@/components/AuthProvider";
@@ -26,6 +27,7 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <GoogleTagManager gtmId="GTM-WPDKWVN5" />
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
