@@ -1,0 +1,473 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Blog Posts Feature - Server Actions API",
+    "version": "1.0.0",
+    "description": "This feature uses Next.js Server Actions rather than REST API routes. This document describes the server action contracts as if they were API endpoints for documentation purposes."
+  },
+  "paths": {
+    "/actions/admin/post/createPostAdmin": {
+      "post": {
+        "summary": "Create a new blog post (admin)",
+        "tags": ["Admin"],
+        "security": [{ "adminAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/admin/post/updatePostAdmin": {
+      "post": {
+        "summary": "Update an existing blog post (admin)",
+        "tags": ["Admin"],
+        "security": [{ "adminAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "properties": { "id": { "type": "integer" } } },
+                  { "$ref": "#/components/schemas/UpdatePostInput" }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/admin/post/deletePostAdmin": {
+      "post": {
+        "summary": "Delete a blog post (admin)",
+        "tags": ["Admin"],
+        "security": [{ "adminAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "id": { "type": "integer" }
+                },
+                "required": ["id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/admin/post/getAllPostsAdmin": {
+      "get": {
+        "summary": "List all posts for admin (including drafts and scheduled)",
+        "tags": ["Admin"],
+        "security": [{ "adminAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "All posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Post" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/admin/post/getPostBySlugAdmin": {
+      "get": {
+        "summary": "Get a single post by slug for admin editing",
+        "tags": ["Admin"],
+        "security": [{ "adminAuth": [] }],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post with relationships",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostWithRelations"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/admin/post/setArtworksForPostAdmin": {
+      "post": {
+        "summary": "Set artwork associations for a post",
+        "tags": ["Admin"],
+        "security": [{ "adminAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "postId": { "type": "integer" },
+                  "artworkIds": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  }
+                },
+                "required": ["postId", "artworkIds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Associations updated" }
+        }
+      }
+    },
+    "/actions/admin/post/setCollectionsForPostAdmin": {
+      "post": {
+        "summary": "Set collection associations for a post",
+        "tags": ["Admin"],
+        "security": [{ "adminAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "postId": { "type": "integer" },
+                  "collectionIds": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  }
+                },
+                "required": ["postId", "collectionIds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Associations updated" }
+        }
+      }
+    },
+    "/actions/post/getAllPublishedPosts": {
+      "get": {
+        "summary": "List all published posts (public)",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "name": "postType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "announcement",
+                "educational",
+                "behind_the_scenes",
+                "general"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Post" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/post/getPostBySlug": {
+      "get": {
+        "summary": "Get a published post by slug (public)",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post with linked artworks and collections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostWithRelations"
+                }
+              }
+            }
+          },
+          "404": { "description": "Post not found or not published" }
+        }
+      }
+    },
+    "/actions/post/getRelatedPostsForArtwork": {
+      "get": {
+        "summary": "Get published posts linked to an artwork",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "name": "artworkId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Related posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Post" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/post/getRelatedPostsForCollection": {
+      "get": {
+        "summary": "Get published posts linked to a collection",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Related posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Post" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "adminAuth": {
+        "type": "http",
+        "description": "NextAuth session with admin flag. Enforced via guardAdmin() server action guard."
+      }
+    },
+    "schemas": {
+      "Post": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "slug": { "type": "string" },
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "excerpt": { "type": "string", "nullable": true },
+          "postType": {
+            "type": "string",
+            "enum": [
+              "announcement",
+              "educational",
+              "behind_the_scenes",
+              "general"
+            ]
+          },
+          "coverImageUrl": { "type": "string", "nullable": true },
+          "publishedAt": { "type": "integer", "nullable": true },
+          "scheduledAt": { "type": "integer", "nullable": true },
+          "locale": { "type": "string" },
+          "createdAt": { "type": "integer" },
+          "updatedAt": { "type": "integer" }
+        }
+      },
+      "PostWithRelations": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Post" },
+          {
+            "type": "object",
+            "properties": {
+              "artworks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "slug": { "type": "string" },
+                    "title": { "type": "string" },
+                    "defaultImageUrl": { "type": "string", "nullable": true }
+                  }
+                }
+              },
+              "collections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "slug": { "type": "string" },
+                    "name": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CreatePostInput": {
+        "type": "object",
+        "required": ["title", "body", "postType"],
+        "properties": {
+          "title": { "type": "string" },
+          "slug": {
+            "type": "string",
+            "description": "Auto-generated from title if not provided"
+          },
+          "body": { "type": "string" },
+          "excerpt": { "type": "string", "nullable": true },
+          "postType": {
+            "type": "string",
+            "enum": [
+              "announcement",
+              "educational",
+              "behind_the_scenes",
+              "general"
+            ]
+          },
+          "coverImageUrl": { "type": "string", "nullable": true },
+          "publishedAt": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Set to current timestamp to publish immediately, null for draft"
+          },
+          "scheduledAt": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Future timestamp for scheduled publication"
+          },
+          "artworkIds": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Artwork IDs to associate"
+          },
+          "collectionIds": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Collection IDs to associate"
+          }
+        }
+      },
+      "UpdatePostInput": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "slug": { "type": "string" },
+          "body": { "type": "string" },
+          "excerpt": { "type": "string", "nullable": true },
+          "postType": {
+            "type": "string",
+            "enum": [
+              "announcement",
+              "educational",
+              "behind_the_scenes",
+              "general"
+            ]
+          },
+          "coverImageUrl": { "type": "string", "nullable": true },
+          "publishedAt": { "type": "integer", "nullable": true },
+          "scheduledAt": { "type": "integer", "nullable": true },
+          "artworkIds": { "type": "array", "items": { "type": "integer" } },
+          "collectionIds": { "type": "array", "items": { "type": "integer" } }
+        }
+      },
+      "ActionResult": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "object" },
+          "error": { "type": "string" }
+        }
+      }
+    }
+  }
+}

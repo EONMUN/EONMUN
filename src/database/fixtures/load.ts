@@ -19,6 +19,9 @@ import {
   artworksToFacets,
   products,
   artworkImages,
+  posts,
+  postsToArtworks,
+  postsToCollections,
 } from "@/database/schema";
 import path from "path";
 import fs from "fs";
@@ -70,11 +73,28 @@ interface ProductFixture {
   quantity?: number;
 }
 
+interface PostFixture {
+  title: string;
+  slug: string;
+  body: string;
+  excerpt?: string;
+  postType: string;
+  coverImageUrl?: string;
+  publishedAt?: string;
+  scheduledAt?: string;
+  locale?: string;
+  artworkSlugs?: string[];
+  collectionSlugs?: string[];
+}
+
 /**
  * Clear all data from collections, artworks, and facets tables
  */
 async function clearData(database: Database) {
   console.log("🗑️  Clearing existing data...");
+  await database.delete(postsToArtworks);
+  await database.delete(postsToCollections);
+  await database.delete(posts);
   await database.delete(products);
   await database.delete(artworksToFacets);
   await database.delete(artworksToCollections);
@@ -317,6 +337,87 @@ async function loadProducts(
 }
 
 /**
+ * Load posts from fixtures
+ */
+async function loadPosts(
+  database: Database,
+  artworkSlugToData: Map<
+    string,
+    { id: number; title: string; defaultImageUrl: string | null }
+  >,
+  collectionSlugToId: Map<string, number>,
+) {
+  console.log("📝 Loading posts...");
+
+  const fixturesPath = path.join(process.cwd(), "fixtures", "posts.json");
+
+  if (!fs.existsSync(fixturesPath)) {
+    console.log("  ⚠️  No posts.json found, skipping posts");
+    return;
+  }
+
+  const fixturesData = fs.readFileSync(fixturesPath, "utf-8");
+  const postFixtures: PostFixture[] = JSON.parse(fixturesData);
+
+  for (const fixture of postFixtures) {
+    const [createdPost] = await database
+      .insert(posts)
+      .values({
+        title: fixture.title,
+        slug: fixture.slug,
+        body: fixture.body,
+        excerpt: fixture.excerpt || null,
+        postType: fixture.postType,
+        coverImageUrl: fixture.coverImageUrl || null,
+        publishedAt: fixture.publishedAt ? new Date(fixture.publishedAt) : null,
+        scheduledAt: fixture.scheduledAt ? new Date(fixture.scheduledAt) : null,
+        locale: fixture.locale || "en",
+      })
+      .returning();
+
+    // Create post-to-artwork relationships
+    if (fixture.artworkSlugs && fixture.artworkSlugs.length > 0) {
+      for (const artworkSlug of fixture.artworkSlugs) {
+        const artworkData = artworkSlugToData.get(artworkSlug);
+        if (artworkData) {
+          await database.insert(postsToArtworks).values({
+            postId: createdPost.id,
+            artworkId: artworkData.id,
+          });
+        } else {
+          console.log(
+            `  ⚠️  Artwork '${artworkSlug}' not found for post '${fixture.slug}'`,
+          );
+        }
+      }
+    }
+
+    // Create post-to-collection relationships
+    if (fixture.collectionSlugs && fixture.collectionSlugs.length > 0) {
+      for (const collectionSlug of fixture.collectionSlugs) {
+        const collectionId = collectionSlugToId.get(collectionSlug);
+        if (collectionId) {
+          await database.insert(postsToCollections).values({
+            postId: createdPost.id,
+            collectionId,
+          });
+        } else {
+          console.log(
+            `  ⚠️  Collection '${collectionSlug}' not found for post '${fixture.slug}'`,
+          );
+        }
+      }
+    }
+
+    const artworkCount = fixture.artworkSlugs?.length || 0;
+    const collectionCount = fixture.collectionSlugs?.length || 0;
+    console.log(
+      `  ✓ Created post: ${fixture.title} (${fixture.slug}) - ${fixture.postType} - ${artworkCount} artworks, ${collectionCount} collections`,
+    );
+  }
+}
+
+/**
  * Main function to load all fixtures
  */
 export async function loadFixtures(database: Database) {
@@ -344,6 +445,10 @@ export async function loadFixtures(database: Database) {
 
   // Load facets (materials, etc.)
   await loadFacets(database);
+  console.log("");
+
+  // Load posts (blog posts with artwork/collection links)
+  await loadPosts(database, artworkSlugToData, collectionSlugToId);
   console.log("");
 
   console.log("✨ Fixtures loaded successfully!");
