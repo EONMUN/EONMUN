@@ -29,6 +29,10 @@ export const posts = sqliteTable(
     publishedAt: integer("published_at", { mode: "timestamp" }),
     scheduledAt: integer("scheduled_at", { mode: "timestamp" }),
     locale: text("locale").notNull().default("en"),
+    // Social media metadata
+    socialMetaX: text("social_meta_x"),
+    socialMetaInstagram: text("social_meta_instagram"),
+    socialMetaThreads: text("social_meta_threads"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),

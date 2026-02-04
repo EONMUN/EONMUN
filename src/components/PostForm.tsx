@@ -57,6 +57,9 @@ export default function PostForm({ post }: PostFormProps) {
     scheduledAt: post?.scheduledAt
       ? new Date(post.scheduledAt).toISOString().slice(0, 16)
       : "",
+    socialMetaX: post?.socialMetaX || "",
+    socialMetaInstagram: post?.socialMetaInstagram || "",
+    socialMetaThreads: post?.socialMetaThreads || "",
   });
 
   // Artwork and collection selections
@@ -192,6 +195,9 @@ export default function PostForm({ post }: PostFormProps) {
           formData.publishStatus === "scheduled" && formData.scheduledAt
             ? new Date(formData.scheduledAt)
             : null,
+        socialMetaX: formData.socialMetaX || null,
+        socialMetaInstagram: formData.socialMetaInstagram || null,
+        socialMetaThreads: formData.socialMetaThreads || null,
         artworkIds: selectedArtworkIds,
         collectionIds: selectedCollectionIds,
       };
@@ -620,6 +626,91 @@ export default function PostForm({ post }: PostFormProps) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Social Media Metadata Section */}
+      <div className="pt-6 border-t border-outline">
+        <h3 className="text-lg font-semibold text-on-surface mb-4">
+          Social Media Guidelines
+        </h3>
+        <p className="text-sm text-on-surface-variant mb-4">
+          Provide guidelines and metadata for sharing this post on social media platforms.
+        </p>
+
+        {/* X (Twitter) / Threads */}
+        <div className="mb-4">
+          <label
+            htmlFor="socialMetaX"
+            className="block text-sm font-medium text-on-surface mb-1"
+          >
+            X (Twitter) / Threads
+          </label>
+          <textarea
+            id="socialMetaX"
+            rows={4}
+            value={formData.socialMetaX}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, socialMetaX: e.target.value }))
+            }
+            className="w-full px-3 py-2 border border-outline rounded-md bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+            placeholder="Guidelines for X/Twitter posts. Note: Consider creating threads rather than linking back (avoids penalties). Include suggested thread structure, key points, and hashtags."
+          />
+          <p className="mt-1 text-xs text-on-surface-variant">
+            For X: Create threads instead of linking directly to avoid penalties. Include thread structure and key talking points.
+          </p>
+        </div>
+
+        {/* Instagram */}
+        <div className="mb-4">
+          <label
+            htmlFor="socialMetaInstagram"
+            className="block text-sm font-medium text-on-surface mb-1"
+          >
+            Instagram
+          </label>
+          <textarea
+            id="socialMetaInstagram"
+            rows={4}
+            value={formData.socialMetaInstagram}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                socialMetaInstagram: e.target.value,
+              }))
+            }
+            className="w-full px-3 py-2 border border-outline rounded-md bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+            placeholder="Guidelines for Instagram posts. Include caption suggestions, hashtags, image requirements, and story ideas."
+          />
+          <p className="mt-1 text-xs text-on-surface-variant">
+            Include caption, hashtags, visual requirements, and any story/reel suggestions.
+          </p>
+        </div>
+
+        {/* Threads */}
+        <div className="mb-4">
+          <label
+            htmlFor="socialMetaThreads"
+            className="block text-sm font-medium text-on-surface mb-1"
+          >
+            Threads
+          </label>
+          <textarea
+            id="socialMetaThreads"
+            rows={4}
+            value={formData.socialMetaThreads}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                socialMetaThreads: e.target.value,
+              }))
+            }
+            className="w-full px-3 py-2 border border-outline rounded-md bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+            placeholder="Guidelines for Threads posts. Include post structure, tone, and any specific linking strategy."
+          />
+          <p className="mt-1 text-xs text-on-surface-variant">
+            Provide post structure, tone guidelines, and engagement strategies for Threads.
+          </p>
+        </div>
       </div>
 
       {/* Actions */}
