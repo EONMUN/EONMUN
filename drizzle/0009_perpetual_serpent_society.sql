@@ -15,14 +15,22 @@ CREATE UNIQUE INDEX `homepage_artworks_unique_artwork` ON `homepage_artworks` (`
 -- Migrate data from old system to new system
 -- Populate homepage_artworks with artworks that have isDefaultForCollection = true
 -- Order by artwork ID to maintain consistent ordering
+-- Use DISTINCT to prevent duplicate artworks (in case one artwork is default for multiple collections)
 INSERT INTO `homepage_artworks` (`artwork_id`, `position`, `created_at`, `updated_at`)
 SELECT 
-  a.id,
-  ROW_NUMBER() OVER (ORDER BY a.id) - 1 as position,
-  CAST(strftime('%s', 'now') AS INTEGER) as created_at,
-  CAST(strftime('%s', 'now') AS INTEGER) as updated_at
-FROM `artworks` a
-INNER JOIN `artworks_to_collections` atc ON a.id = atc.artwork_id
-WHERE atc.is_default_for_collection = 1
-  AND a.published_at IS NOT NULL
-ORDER BY a.id;
+  artwork_id,
+  position,
+  created_at,
+  updated_at
+FROM (
+  SELECT DISTINCT
+    a.id as artwork_id,
+    ROW_NUMBER() OVER (ORDER BY a.id) - 1 as position,
+    CAST(strftime('%s', 'now') AS INTEGER) as created_at,
+    CAST(strftime('%s', 'now') AS INTEGER) as updated_at
+  FROM `artworks` a
+  INNER JOIN `artworks_to_collections` atc ON a.id = atc.artwork_id
+  WHERE atc.is_default_for_collection = 1
+    AND a.published_at IS NOT NULL
+  ORDER BY a.id
+);
