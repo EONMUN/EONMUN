@@ -197,6 +197,32 @@ export const products = sqliteTable(
   }),
 );
 
+// Homepage Artworks table - configurable homepage carousel
+export const homepageArtworks = sqliteTable(
+  "homepage_artworks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    artworkId: integer("artwork_id")
+      .notNull()
+      .references(() => artworks.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(), // order of display (0, 1, 2, ...)
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => ({
+    artworkIdx: index("homepage_artworks_artwork_idx").on(table.artworkId),
+    positionIdx: index("homepage_artworks_position_idx").on(table.position),
+    // Ensure each artwork appears only once on homepage
+    uniqueArtwork: uniqueIndex("homepage_artworks_unique_artwork").on(
+      table.artworkId,
+    ),
+  }),
+);
+
 // Define relations
 export const collectionsRelations = relations(collections, ({ many }) => ({
   artworksToCollections: many(artworksToCollections),
@@ -255,6 +281,16 @@ export const productsRelations = relations(products, ({ one }) => ({
   }),
 }));
 
+export const homepageArtworksRelations = relations(
+  homepageArtworks,
+  ({ one }) => ({
+    artwork: one(artworks, {
+      fields: [homepageArtworks.artworkId],
+      references: [artworks.id],
+    }),
+  }),
+);
+
 // Type exports for use in application code
 export type InsertCollection = typeof collections.$inferInsert;
 export type SelectCollection = typeof collections.$inferSelect;
@@ -270,6 +306,9 @@ export type SelectProduct = typeof products.$inferSelect;
 
 export type InsertFacet = typeof facets.$inferInsert;
 export type SelectFacet = typeof facets.$inferSelect;
+
+export type InsertHomepageArtwork = typeof homepageArtworks.$inferInsert;
+export type SelectHomepageArtwork = typeof homepageArtworks.$inferSelect;
 
 // Product types
 export type ProductType = "artwork" | "print" | "postcard";
