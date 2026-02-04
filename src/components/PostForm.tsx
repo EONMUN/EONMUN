@@ -643,7 +643,7 @@ export default function PostForm({ post }: PostFormProps) {
             htmlFor="socialMetaX"
             className="block text-sm font-medium text-on-surface mb-1"
           >
-            X (Twitter) / Threads
+            X (Twitter)
           </label>
           <textarea
             id="socialMetaX"
@@ -653,10 +653,10 @@ export default function PostForm({ post }: PostFormProps) {
               setFormData((prev) => ({ ...prev, socialMetaX: e.target.value }))
             }
             className="w-full px-3 py-2 border border-outline rounded-md bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-            placeholder="Guidelines for X/Twitter posts. Note: Consider creating threads rather than linking back (avoids penalties). Include suggested thread structure, key points, and hashtags."
+            placeholder="Guidelines for X (Twitter) posts. Note: Consider creating tweet threads rather than linking back (avoids penalties). Include suggested thread structure, key points, and hashtags."
           />
           <p className="mt-1 text-xs text-on-surface-variant">
-            For X: Create threads instead of linking directly to avoid penalties. Include thread structure and key talking points.
+            For X: Create tweet threads instead of linking directly to avoid penalties. Include thread structure and key talking points.
           </p>
         </div>
 
