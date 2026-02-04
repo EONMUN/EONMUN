@@ -74,7 +74,7 @@ export default function HomepageArtworksManager({
       const artworkIds = selectedArtworks.map((a) => a.id);
       const result = await updateHomepageArtworks(artworkIds);
 
-      if ("error" in result && result.error) {
+      if (!result.success && result.error) {
         setMessage({ type: "error", text: result.error });
       } else {
         setMessage({

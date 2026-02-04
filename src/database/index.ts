@@ -4,6 +4,9 @@ import { createClient } from '@libsql/client';
 import * as schema from './schema';
 export * from './schema';
 
+// Default port for local Turso/libSQL server
+const DEFAULT_DB_PORT = 8080;
+
 // Create database client based on environment
 export function createDatabaseClient() {
   // Check if we're in production with Turso credentials
@@ -16,7 +19,7 @@ export function createDatabaseClient() {
     return drizzle(client, { schema });
   }
 
-  const dbUrl = process.env.DATABASE_URL || `http://localhost:${process.env.DB_PORT || 8080}`;
+  const dbUrl = process.env.DATABASE_URL || `http://localhost:${process.env.DB_PORT || DEFAULT_DB_PORT}`;
   
   // Use file-based client for file: URLs, web client for http(s):
   if (dbUrl.startsWith('file:')) {

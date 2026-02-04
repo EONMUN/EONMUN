@@ -5,6 +5,7 @@ import { auth } from "@/app/auth";
 import { revalidatePath } from "next/cache";
 
 export interface ActionResult<T = void> {
+  success: boolean;
   data?: T;
   error?: string;
 }
@@ -16,7 +17,7 @@ export async function updateHomepageArtworks(
     // Check authentication
     const session = await auth();
     if (!session?.user) {
-      return { error: "Unauthorized" };
+      return { success: false, error: "Unauthorized" };
     }
 
     // Update homepage artworks
@@ -26,9 +27,9 @@ export async function updateHomepageArtworks(
     revalidatePath("/");
     revalidatePath("/admin/homepage");
 
-    return { data: undefined };
+    return { success: true };
   } catch (error) {
     console.error("Error updating homepage artworks:", error);
-    return { error: "Failed to update homepage artworks" };
+    return { success: false, error: "Failed to update homepage artworks" };
   }
 }

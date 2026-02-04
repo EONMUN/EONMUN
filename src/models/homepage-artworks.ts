@@ -147,23 +147,26 @@ export async function removeHomepageArtwork(artworkId: number): Promise<void> {
 }
 
 /**
- * Update positions of homepage artworks
+ * Update positions of homepage artworks in a transaction
  */
 export async function updateHomepageArtworkPositions(
   artworkIds: number[],
 ): Promise<void> {
-  // Delete all existing homepage artworks
-  await db.delete(homepageArtworks);
+  // Use a transaction to ensure atomicity
+  await db.transaction(async (tx) => {
+    // Delete all existing homepage artworks
+    await tx.delete(homepageArtworks);
 
-  // Insert new positions
-  const values = artworkIds.map((artworkId, index) => ({
-    artworkId,
-    position: index,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }));
+    // Insert new positions
+    if (artworkIds.length > 0) {
+      const values = artworkIds.map((artworkId, index) => ({
+        artworkId,
+        position: index,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
 
-  if (values.length > 0) {
-    await db.insert(homepageArtworks).values(values);
-  }
+      await tx.insert(homepageArtworks).values(values);
+    }
+  });
 }
