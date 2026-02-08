@@ -2,7 +2,7 @@
  * Homepage artworks model functions for querying homepage artworks from the database.
  */
 
-import { asc, eq, and, inArray } from "drizzle-orm";
+import { asc, eq, and, inArray, isNotNull } from "drizzle-orm";
 import {
   db,
   homepageArtworks,
@@ -57,7 +57,10 @@ export async function getHomepageArtworks(): Promise<ArtworkWithCollections[]> {
         eq(artworkImages.isDefault, true)
       ),
     )
-    .where(inArray(artworks.id, artworkIds));
+    .where(and(
+      inArray(artworks.id, artworkIds),
+      isNotNull(artworks.publishedAt)
+    ));
 
   // Fetch collections for these artworks
   const collectionData = await db
