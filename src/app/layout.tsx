@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Abel } from "next/font/google";
+import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
 import { Header } from "@/components/Layout/Header";
 import AuthProvider from "@/components/AuthProvider";
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
   description: "EONMUN Artwork",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 // Force dynamic rendering - disable build-time caching
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +32,7 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <GoogleTagManager gtmId="GTM-WPDKWVN5" />
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>

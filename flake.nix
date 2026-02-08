@@ -3,9 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    deepwork.url = "github:Unsupervisedcom/deepwork";
   };
 
-  outputs = { self, nixpkgs, ... }: let
+  outputs = { self, nixpkgs, deepwork, ... }: let
     systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     forAllSystems = nixpkgs.lib.genAttrs systems;
   in {
@@ -23,6 +24,7 @@
           sqld
           playwright-mcp
           playwright-driver
+          deepwork.packages.${system}.default
         ];
 
         shellHook = ''

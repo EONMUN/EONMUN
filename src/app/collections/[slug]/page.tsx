@@ -2,11 +2,13 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import type { SelectArtwork } from "@/models/artwork";
 import { getCollectionBySlug } from "@/actions/collection";
+import { getRelatedPostsForCollection } from "@/actions/post";
 import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
+import PostCard from "@/components/PostCard";
 
 // Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface CollectionPageProps {
   params: Promise<{
@@ -50,6 +52,24 @@ function ArtworkCard({ artwork }: { artwork: SelectArtwork }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+async function RelatedPosts({ collectionId }: { collectionId: number }) {
+  const { data: posts } = await getRelatedPostsForCollection(collectionId);
+  if (posts.length === 0) return null;
+
+  return (
+    <section className="mt-12 pt-8 border-t border-outline">
+      <h2 className="text-2xl font-bold text-on-background mb-6">
+        Related Posts
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -108,6 +128,9 @@ export default async function CollectionPage(props: CollectionPageProps) {
           </Link>
         </div>
       )}
+
+      {/* Related Posts */}
+      <RelatedPosts collectionId={collection.id} />
     </div>
   );
 }
