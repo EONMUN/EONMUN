@@ -22,6 +22,7 @@ import {
   posts,
   postsToArtworks,
   postsToCollections,
+  homepageArtworks,
 } from "@/database/schema";
 import path from "path";
 import fs from "fs";
@@ -92,6 +93,7 @@ interface PostFixture {
  */
 async function clearData(database: Database) {
   console.log("🗑️  Clearing existing data...");
+  await database.delete(homepageArtworks);
   await database.delete(postsToArtworks);
   await database.delete(postsToCollections);
   await database.delete(posts);
@@ -418,6 +420,45 @@ async function loadPosts(
 }
 
 /**
+ * Load homepage artworks from fixtures
+ */
+async function loadHomepageArtworks(
+  database: Database,
+  artworkSlugToData: Map<
+    string,
+    { id: number; title: string; defaultImageUrl: string | null }
+  >,
+) {
+  console.log("🏠 Loading homepage artworks...");
+
+  const fixturesPath = path.join(process.cwd(), "fixtures", "homepage.json");
+
+  if (!fs.existsSync(fixturesPath)) {
+    console.log("  ⚠️  No homepage.json found, skipping homepage artworks");
+    return;
+  }
+
+  const fixturesData = fs.readFileSync(fixturesPath, "utf-8");
+  const homepageSlugs: string[] = JSON.parse(fixturesData);
+
+  for (const [index, slug] of homepageSlugs.entries()) {
+    const artworkData = artworkSlugToData.get(slug);
+
+    if (artworkData) {
+      await database.insert(homepageArtworks).values({
+        artworkId: artworkData.id,
+        position: index,
+      });
+      console.log(
+        `  ✓ Added to homepage: ${artworkData.title} (Position: ${index})`,
+      );
+    } else {
+      console.log(`  ⚠️  Artwork '${slug}' not found for homepage`);
+    }
+  }
+}
+
+/**
  * Main function to load all fixtures
  */
 export async function loadFixtures(database: Database) {
@@ -449,6 +490,10 @@ export async function loadFixtures(database: Database) {
 
   // Load posts (blog posts with artwork/collection links)
   await loadPosts(database, artworkSlugToData, collectionSlugToId);
+  console.log("");
+
+  // Load homepage artworks
+  await loadHomepageArtworks(database, artworkSlugToData);
   console.log("");
 
   console.log("✨ Fixtures loaded successfully!");

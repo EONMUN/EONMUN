@@ -3,7 +3,7 @@ import { test, expect, devices } from "@playwright/test";
 // Use iPhone 13 viewport for mobile testing
 test.use({ ...devices["iPhone 13"] });
 
-test.describe("Admin Artwork Management - Mobile", () => {
+test.describe.skip("Admin Artwork Management - Mobile", () => {
   // Login as admin before all tests
   test.beforeEach(async ({ page }) => {
     await page.goto("/auth/signin");

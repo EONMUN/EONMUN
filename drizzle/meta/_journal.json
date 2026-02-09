@@ -64,6 +64,13 @@
       "when": 1770074208067,
       "tag": "0008_closed_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1770231087375,
+      "tag": "0009_perpetual_serpent_society",
+      "breakpoints": true
     }
   ]
 }

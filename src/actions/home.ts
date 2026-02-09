@@ -1,6 +1,6 @@
 'use server';
 
-import { findArtworksWithCollections } from '@/models/artwork';
+import { getHomepageArtworks } from '@/models/homepage-artworks';
 import type { ArtworkWithCollections } from '@/models/artwork';
 
 export interface HomePageData {
@@ -8,10 +8,6 @@ export interface HomePageData {
 }
 
 export async function getHomePageData(): Promise<HomePageData> {
-  const slides = await findArtworksWithCollections({
-    published: true,
-    isDefaultForCollection: true,
-  });
-
+  const slides = await getHomepageArtworks();
   return { slides };
 }
