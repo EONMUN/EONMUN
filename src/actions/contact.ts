@@ -25,8 +25,9 @@ export async function submitContactForm(data: FormData) {
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
   const smtpFrom = process.env.SMTP_FROM;
+  const contactEmail = process.env.CONTACT_EMAIL;
 
-  if (!smtpHost || !smtpUser || !smtpPass || !smtpFrom) {
+  if (!smtpHost || !smtpUser || !smtpPass || !smtpFrom || !contactEmail) {
     console.error("SMTP configuration missing");
     redirect("/contact?error=Email service configuration error");
   }
@@ -83,7 +84,7 @@ This message was sent from the EONMUN contact form.
     // Send email using SMTP
     const emailOptions = {
       from: smtpFrom,
-      to: "contacts@eonmun.com",
+      to: contactEmail,
       replyTo: email,
       subject: emailSubject,
       text: emailText,
