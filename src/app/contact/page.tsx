@@ -88,10 +88,10 @@ export default async function ContactPage({
             <p className="text-on-surface-variant">
               Or email us directly at{" "}
               <a
-                href="mailto:contacts@eonmun.com"
+                href="mailto:contact@eonmun.com"
                 className="text-on-background font-medium hover:underline"
               >
-                contacts@eonmun.com
+                contact@eonmun.com
               </a>
             </p>
           </div>
