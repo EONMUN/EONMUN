@@ -7,6 +7,7 @@ import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 import type { SelectCollection } from "@/database";
 import { PurchaseButton } from "@/components/PurchaseButton";
 import PostCard from "@/components/PostCard";
+import ArtworkViewedTracker from "@/components/ArtworkViewedTracker";
 
 // Force dynamic rendering - disable build-time caching
 export const dynamic = "force-dynamic";
@@ -109,6 +110,16 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Client-side analytics: top of the purchase funnel */}
+      <ArtworkViewedTracker
+        artworkId={artwork.id}
+        artworkSlug={artwork.slug}
+        artworkTitle={artwork.title}
+        artist={artwork.artist}
+        year={artwork.year}
+        priceCents={artwork.product?.price ?? null}
+        collections={artwork.collections?.map((c) => c.slug)}
+      />
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-8">
         <Link href="/" className="hover:text-primary transition-colors">

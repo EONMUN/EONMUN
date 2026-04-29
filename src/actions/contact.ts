@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createTransport } from "nodemailer";
+import { ANALYTICS_EVENTS, captureServerEvent } from "@/lib/analytics-server";
 
 export async function submitContactForm(data: FormData) {
   const name = data.get("name") as string;
@@ -21,7 +22,9 @@ export async function submitContactForm(data: FormData) {
 
   // Get SMTP configuration from environment variables
   const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+  const smtpPort = process.env.SMTP_PORT
+    ? parseInt(process.env.SMTP_PORT)
+    : 587;
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
   const smtpFrom = process.env.SMTP_FROM;
@@ -97,6 +100,23 @@ This message was sent from the EONMUN contact form.
     console.error("Error sending email:", error);
     errorMessage = "Failed to send email";
   }
+
+  // Capture analytics regardless of success so we can detect SMTP failures
+  // as a drop-off in the funnel. Use the submitter email as distinct id so
+  // PostHog can join with later activity if they sign in.
+  await captureServerEvent({
+    event: ANALYTICS_EVENTS.CONTACT_FORM_SUBMITTED,
+    distinctId: email,
+    properties: {
+      // PRIVACY: do not store the message body — only metadata about the submission.
+      email_sent: emailSent,
+      message_length: message.length,
+      // SECURITY: capture the email domain (but not the local-part) for routing
+      // analysis without storing PII unnecessarily. Full email is the distinct id.
+      email_domain: email.split("@")[1] ?? null,
+      error: emailSent ? null : errorMessage,
+    },
+  });
 
   // Handle redirects outside of try/catch block
   if (emailSent) {
