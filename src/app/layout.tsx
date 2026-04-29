@@ -22,9 +22,6 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
-
 export default async function RootLayout({
   children,
 }: Readonly<{

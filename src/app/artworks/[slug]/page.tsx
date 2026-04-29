@@ -8,8 +8,8 @@ import type { SelectCollection } from "@/database";
 import { PurchaseButton } from "@/components/PurchaseButton";
 import PostCard from "@/components/PostCard";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = "force-dynamic";
+// Admin artwork mutations call revalidatePath('/artworks/[slug]'); 5min TTL is the safety net.
+export const revalidate = 300;
 
 interface ArtworkPageProps {
   params: Promise<{

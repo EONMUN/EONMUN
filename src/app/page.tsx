@@ -1,8 +1,8 @@
 import HomePageArtworkCarousel from "@/components/HomePageArtworkCarousel";
 import { getHomePageData } from "@/actions/home";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Curated homepage carousel — admin updates trigger revalidatePath('/'); 60s TTL is the safety net.
+export const revalidate = 60;
 
 export default async function Home() {
   const { slides } = await getHomePageData();
