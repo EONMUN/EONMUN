@@ -7,8 +7,8 @@ import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
 import PostCard from "@/components/PostCard";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = "force-dynamic";
+// Admin collection mutations revalidate admin paths; 5min TTL covers public collection-detail freshness.
+export const revalidate = 300;
 
 interface CollectionPageProps {
   params: Promise<{

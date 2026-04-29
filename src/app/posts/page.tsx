@@ -3,7 +3,8 @@ import { getAllPublishedPosts } from "@/actions/post";
 import PostCard from "@/components/PostCard";
 import type { PostType } from "@/database/schema.posts";
 
-export const dynamic = "force-dynamic";
+// Admin post mutations call revalidatePath('/posts'); searchParams (?type=) auto-opt dynamic at request time.
+export const revalidate = 300;
 
 const POST_TYPE_LABELS: Record<string, string> = {
   announcement: "Announcements",

@@ -6,7 +6,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
 
-export const dynamic = "force-dynamic";
+// Admin post mutations call revalidatePath('/posts/[slug]'); blog content is low-velocity, 10min TTL fallback.
+export const revalidate = 600;
 
 const POST_TYPE_LABELS: Record<string, string> = {
   announcement: "Announcement",

@@ -3,8 +3,8 @@ import Image from "@/components/Image";
 import Link from "next/link";
 import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Admin artwork mutations call revalidatePath('/artworks'); 5min TTL is the safety net.
+export const revalidate = 300;
 
 function ArtworkCard({
   artwork,
