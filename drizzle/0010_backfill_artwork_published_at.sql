@@ -1,0 +1,14 @@
+-- Backfill published_at for legacy artworks (issue #50).
+--
+-- Before PR #53 the admin createArtwork form did not write to published_at,
+-- so every artwork created prior to that ships with published_at = NULL.
+-- The public detail route filters `published: true`, which compiles to
+-- `WHERE published_at IS NOT NULL`, so those legacy rows 404 even though
+-- admins still consider them visible.
+--
+-- This one-shot data migration restores visibility by copying created_at
+-- into published_at for every row that is currently NULL. The trade-off:
+-- artworks an artist deliberately unpublished (set then cleared) are also
+-- resurrected. The artist can re-unpublish from the admin; leaving every
+-- legacy row 404'd is the worse failure for the M1 baseline-fixes goal.
+UPDATE `artworks` SET `published_at` = `created_at` WHERE `published_at` IS NULL;

@@ -71,6 +71,13 @@
       "when": 1770231087375,
       "tag": "0009_perpetual_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1777429343690,
+      "tag": "0010_backfill_artwork_published_at",
+      "breakpoints": true
     }
   ]
 }
