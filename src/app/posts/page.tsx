@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAllPublishedPosts } from "@/actions/post";
 import PostCard from "@/components/PostCard";
 import type { PostType } from "@/database/schema.posts";
+import { buildSocialMetadata, SITE_NAME } from "@/utils/metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -81,8 +82,10 @@ export default async function PostsPage({
 }
 
 export async function generateMetadata() {
-  return {
-    title: "Posts - EONMUN",
+  return buildSocialMetadata({
+    title: `Posts - ${SITE_NAME}`,
     description: "News, insights, and stories from the EONMUN studio",
-  };
+    path: "/posts",
+    type: "website",
+  });
 }
