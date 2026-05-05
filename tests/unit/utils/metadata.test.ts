@@ -15,41 +15,26 @@ import {
 } from "@/utils/metadata";
 
 const ORIGINAL_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
-const ORIGINAL_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
 
 describe("getSiteUrl", () => {
   beforeAll(() => {
     delete process.env.NEXT_PUBLIC_APP_URL;
-    delete process.env.NEXT_PUBLIC_SITE_URL;
   });
 
   afterAll(() => {
     if (ORIGINAL_APP_URL !== undefined)
       process.env.NEXT_PUBLIC_APP_URL = ORIGINAL_APP_URL;
     else delete process.env.NEXT_PUBLIC_APP_URL;
-    if (ORIGINAL_SITE_URL !== undefined)
-      process.env.NEXT_PUBLIC_SITE_URL = ORIGINAL_SITE_URL;
-    else delete process.env.NEXT_PUBLIC_SITE_URL;
   });
 
   it("falls back to https://eonmun.com when no env vars set", () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
-    delete process.env.NEXT_PUBLIC_SITE_URL;
     expect(getSiteUrl()).toBe("https://eonmun.com");
   });
 
-  it("prefers NEXT_PUBLIC_APP_URL over NEXT_PUBLIC_SITE_URL", () => {
-    // Mirrors precedence in src/app/sitemap.ts so social tags and the
-    // sitemap canonical never disagree on the host.
+  it("uses NEXT_PUBLIC_APP_URL when set", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.example.com";
-    process.env.NEXT_PUBLIC_SITE_URL = "https://legacy.example.com";
     expect(getSiteUrl()).toBe("https://app.example.com");
-  });
-
-  it("falls back to NEXT_PUBLIC_SITE_URL when APP_URL absent", () => {
-    delete process.env.NEXT_PUBLIC_APP_URL;
-    process.env.NEXT_PUBLIC_SITE_URL = "https://legacy.example.com";
-    expect(getSiteUrl()).toBe("https://legacy.example.com");
   });
 });
 
