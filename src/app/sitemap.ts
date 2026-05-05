@@ -10,7 +10,11 @@ import { getAvailableProducts } from "@/actions/product";
 // sitemap than a 500 that drops us out of search-engine indexes entirely.
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://eonmun.com";
+  // SECURITY: NEXT_PUBLIC_APP_URL is the canonical site-URL env var
+  // (used by Stripe checkout in src/app/api/checkout/route.ts and typed in
+  // cloudflare-env.d.ts). NEXT_PUBLIC_SITE_URL was a duplicate alias used
+  // only here; collapsed to the single canonical name.
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eonmun.com";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
