@@ -3,8 +3,12 @@ import { getAllCollections } from '@/actions/collection';
 import { getAllArtworks } from '@/actions/artwork';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Base URL for the site
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eonmun.com';
+  // Base URL for the site — mirrors metadata.ts precedence so sitemap and
+  // og:url always agree on the canonical host.
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'https://eonmun.com';
 
   // Static routes
   const staticRoutes: MetadataRoute.Sitemap = [

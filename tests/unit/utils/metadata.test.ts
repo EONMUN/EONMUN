@@ -26,8 +26,10 @@ describe("getSiteUrl", () => {
   afterAll(() => {
     if (ORIGINAL_APP_URL !== undefined)
       process.env.NEXT_PUBLIC_APP_URL = ORIGINAL_APP_URL;
+    else delete process.env.NEXT_PUBLIC_APP_URL;
     if (ORIGINAL_SITE_URL !== undefined)
       process.env.NEXT_PUBLIC_SITE_URL = ORIGINAL_SITE_URL;
+    else delete process.env.NEXT_PUBLIC_SITE_URL;
   });
 
   it("falls back to https://eonmun.com when no env vars set", () => {

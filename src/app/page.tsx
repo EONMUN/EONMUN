@@ -1,3 +1,4 @@
+import { cache } from "react";
 import HomePageArtworkCarousel from "@/components/HomePageArtworkCarousel";
 import { getHomePageData } from "@/actions/home";
 import {
@@ -9,10 +10,14 @@ import {
 // Force dynamic rendering - disable build-time caching
 export const dynamic = "force-dynamic";
 
+// Wrap in React cache so generateMetadata and the page component share a
+// single DB fetch per request instead of issuing duplicate queries.
+const getCachedHomePageData = cache(getHomePageData);
+
 export async function generateMetadata() {
   // Use the first homepage slide as the OG image when available so the
   // shared preview matches what visitors see on the landing page.
-  const { slides } = await getHomePageData();
+  const { slides } = await getCachedHomePageData();
   const heroImage = slides[0]?.defaultImageUrl ?? null;
 
   return buildSocialMetadata({
@@ -25,7 +30,7 @@ export async function generateMetadata() {
 }
 
 export default async function Home() {
-  const { slides } = await getHomePageData();
+  const { slides } = await getCachedHomePageData();
 
   return (
     <div className="absolute inset-0 w-full h-screen">
