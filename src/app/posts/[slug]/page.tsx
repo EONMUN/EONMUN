@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
+import { buildSocialMetadata, SITE_NAME } from "@/utils/metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -184,8 +185,16 @@ export async function generateMetadata({ params }: PostPageProps) {
     return { title: "Post Not Found" };
   }
 
-  return {
-    title: `${post.title} - EONMUN`,
-    description: post.excerpt || `Read "${post.title}" on EONMUN`,
-  };
+  const description = post.excerpt || `Read "${post.title}" on ${SITE_NAME}`;
+
+  return buildSocialMetadata({
+    title: `${post.title} - ${SITE_NAME}`,
+    description,
+    image: post.coverImageUrl,
+    path: `/posts/${post.slug}`,
+    type: "article",
+    publishedTime: post.publishedAt
+      ? new Date(post.publishedAt).toISOString()
+      : undefined,
+  });
 }

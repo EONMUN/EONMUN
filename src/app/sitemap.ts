@@ -10,7 +10,9 @@ import { getAvailableProducts } from "@/actions/product";
 // sitemap than a 500 that drops us out of search-engine indexes entirely.
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://eonmun.com";
+  // Base URL for the site — NEXT_PUBLIC_APP_URL is the canonical site-URL
+  // env var (Stripe checkout, cloudflare-env.d.ts, all .env.*.example files).
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eonmun.com";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {

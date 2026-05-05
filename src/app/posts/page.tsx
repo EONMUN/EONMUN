@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAllPublishedPosts } from "@/actions/post";
 import PostCard from "@/components/PostCard";
 import type { PostType } from "@/database/schema.posts";
+import { buildSocialMetadata, SITE_NAME } from "@/utils/metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -12,18 +13,19 @@ const POST_TYPE_LABELS: Record<string, string> = {
   general: "General",
 };
 
+const validTypes = [
+  "announcement",
+  "educational",
+  "behind_the_scenes",
+  "general",
+];
+
 export default async function PostsPage({
   searchParams,
 }: {
   searchParams: Promise<{ type?: string }>;
 }) {
   const { type } = await searchParams;
-  const validTypes = [
-    "announcement",
-    "educational",
-    "behind_the_scenes",
-    "general",
-  ];
   const postType =
     type && validTypes.includes(type) ? (type as PostType) : undefined;
 
@@ -80,9 +82,26 @@ export default async function PostsPage({
   );
 }
 
-export async function generateMetadata() {
-  return {
-    title: "Posts - EONMUN",
-    description: "News, insights, and stories from the EONMUN studio",
-  };
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
+  const { type } = await searchParams;
+  const postType =
+    type && validTypes.includes(type) ? (type as PostType) : undefined;
+  const typeLabel = postType ? POST_TYPE_LABELS[postType] : null;
+
+  const title = typeLabel ? `${typeLabel} - ${SITE_NAME}` : `Posts - ${SITE_NAME}`;
+  const description = typeLabel
+    ? `${typeLabel} posts from the EONMUN studio`
+    : "News, insights, and stories from the EONMUN studio";
+  const path = postType ? `/posts?type=${postType}` : "/posts";
+
+  return buildSocialMetadata({
+    title,
+    description,
+    path,
+    type: "website",
+  });
 }
