@@ -3,17 +3,13 @@ import type { Metadata } from "next";
 /**
  * Resolve the canonical site URL for absolute metadata URLs.
  *
- * Order of precedence matches the existing sitemap convention
- * (see src/app/sitemap.ts): NEXT_PUBLIC_APP_URL is the primary OG/SEO
- * variable per .env.production.example; NEXT_PUBLIC_SITE_URL is the
- * legacy alias kept for compatibility.
+ * NEXT_PUBLIC_APP_URL is the canonical site-URL env var across the codebase
+ * (Stripe checkout, cloudflare-env.d.ts type binding, all .env.*.example
+ * files). The legacy NEXT_PUBLIC_SITE_URL alias is removed in coordinated
+ * PR #77 (sitemap.ts cleanup).
  */
 export function getSiteUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://eonmun.com"
-  );
+  return process.env.NEXT_PUBLIC_APP_URL || "https://eonmun.com";
 }
 
 /**
