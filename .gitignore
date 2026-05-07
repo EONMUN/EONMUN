@@ -62,3 +62,7 @@ next-env.d.ts
 # planning files
 PLAN.md
 .direnv
+
+# deepwork / claude runtime artifacts
+.deepwork/job.schema.json
+.claude/worktrees/
