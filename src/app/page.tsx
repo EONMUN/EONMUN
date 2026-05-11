@@ -7,8 +7,11 @@ import {
   SITE_NAME,
 } from "@/utils/metadata";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = "force-dynamic";
+// Edge-cache the homepage for 5 min. Carousel slides change only when an
+// admin edits them, so serving cached HTML keeps Turso pressure off the
+// Worker under bursts. Was force-dynamic until e70e2ab established the
+// pattern on /artworks/[slug] post-PR #74.
+export const revalidate = 300;
 
 // Wrap in React cache so generateMetadata and the page component share a
 // single DB fetch per request instead of issuing duplicate queries.

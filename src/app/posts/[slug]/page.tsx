@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Link from "next/link";
 import Image from "@/components/Image";
 import { getPostBySlug } from "@/actions/post";
@@ -7,7 +8,13 @@ import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
 import { buildSocialMetadata, SITE_NAME } from "@/utils/metadata";
 
-export const dynamic = "force-dynamic";
+// Edge-cache post detail for 5 min — once a post is published its
+// content is stable; bursts from social-media link previews benefit
+// from a longer TTL than the listing index.
+export const revalidate = 300;
+
+// Dedupe the lookup between page render and generateMetadata.
+const getPostCached = cache(getPostBySlug);
 
 const POST_TYPE_LABELS: Record<string, string> = {
   announcement: "Announcement",
@@ -22,7 +29,7 @@ interface PostPageProps {
 
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const post = await getPostCached(slug);
 
   if (!post) {
     notFound();
@@ -179,7 +186,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
 export async function generateMetadata({ params }: PostPageProps) {
   const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const post = await getPostCached(slug);
 
   if (!post) {
     return { title: "Post Not Found" };

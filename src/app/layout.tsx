@@ -48,8 +48,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = "force-dynamic";
+// NOTE: previously this layout exported `dynamic = "force-dynamic"`, which
+// opted every route in the app out of edge caching by default. That was
+// the root cause behind the /artworks/[slug] 500 storm after PR #74 —
+// every concurrent visitor hammered Turso through the module-scoped libSQL
+// singleton instead of being served cached HTML from the edge. Each route
+// now opts into its own revalidate cadence; admin routes still set
+// force-dynamic explicitly where fresh data + auth checks are required.
 
 export default async function RootLayout({
   children,

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Image from "@/components/Image";
 import Link from "next/link";
 import type { SelectArtwork } from "@/models/artwork";
@@ -7,8 +8,12 @@ import { FrostedGlass } from "@/components/ui/FrostedGlass";
 import { notFound } from "next/navigation";
 import PostCard from "@/components/PostCard";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = "force-dynamic";
+// Edge-cache for 5 min; see e70e2ab for context on why this replaced
+// force-dynamic after the post-PR #74 500 storm.
+export const revalidate = 300;
+
+// Dedupe the slug lookup between page render and generateMetadata.
+const getCollectionCached = cache(getCollectionBySlug);
 
 interface CollectionPageProps {
   params: Promise<{
@@ -75,7 +80,7 @@ async function RelatedPosts({ collectionId }: { collectionId: number }) {
 
 export default async function CollectionPage(props: CollectionPageProps) {
   const { slug } = await props.params;
-  const collection = await getCollectionBySlug(slug);
+  const collection = await getCollectionCached(slug);
 
   if (!collection) {
     notFound();
@@ -138,7 +143,7 @@ export default async function CollectionPage(props: CollectionPageProps) {
 // Generate metadata for the page
 export async function generateMetadata({ params }: CollectionPageProps) {
   const { slug } = await params;
-  const collection = await getCollectionBySlug(slug);
+  const collection = await getCollectionCached(slug);
 
   if (!collection) {
     return {

@@ -4,7 +4,11 @@ import PostCard from "@/components/PostCard";
 import type { PostType } from "@/database/schema.posts";
 import { buildSocialMetadata, SITE_NAME } from "@/utils/metadata";
 
-export const dynamic = "force-dynamic";
+// Edge-cache for 1 min — new posts appear sporadically; 60s is fresh
+// enough for a news feed. Replaces force-dynamic after the post-PR #74
+// 500 storm. The `searchParams.type` filter is part of the cache key,
+// so each type gets its own cached variant.
+export const revalidate = 60;
 
 const POST_TYPE_LABELS: Record<string, string> = {
   announcement: "Announcements",
@@ -92,7 +96,9 @@ export async function generateMetadata({
     type && validTypes.includes(type) ? (type as PostType) : undefined;
   const typeLabel = postType ? POST_TYPE_LABELS[postType] : null;
 
-  const title = typeLabel ? `${typeLabel} - ${SITE_NAME}` : `Posts - ${SITE_NAME}`;
+  const title = typeLabel
+    ? `${typeLabel} - ${SITE_NAME}`
+    : `Posts - ${SITE_NAME}`;
   const description = typeLabel
     ? `${typeLabel} posts from the EONMUN studio`
     : "News, insights, and stories from the EONMUN studio";

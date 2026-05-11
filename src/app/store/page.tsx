@@ -1,19 +1,21 @@
-import { Metadata } from 'next';
-import Link from 'next/link';
-import Image from '@/components/Image';
-import { getAvailableProductsWithArtwork } from '@/actions/product';
-import { getAllCollections } from '@/actions/collection';
-import { PurchaseButton } from '@/components/PurchaseButton';
-import { FrostedGlass } from '@/components/ui/FrostedGlass';
-import type { ProductWithArtwork } from '@/models/product';
+import { Metadata } from "next";
+import Link from "next/link";
+import Image from "@/components/Image";
+import { getAvailableProductsWithArtwork } from "@/actions/product";
+import { getAllCollections } from "@/actions/collection";
+import { PurchaseButton } from "@/components/PurchaseButton";
+import { FrostedGlass } from "@/components/ui/FrostedGlass";
+import type { ProductWithArtwork } from "@/models/product";
 
 export const metadata: Metadata = {
-  title: 'Shop | EONMUN',
-  description: 'Shop original artworks by EONMUN.',
+  title: "Shop | EONMUN",
+  description: "Shop original artworks by EONMUN.",
 };
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Edge-cache the store listing for 1 min — prices/availability can shift,
+// but a 60s TTL keeps Worker invocations low under bursts while staying
+// near-fresh. Replaces force-dynamic after the post-PR #74 fan-out 500s.
+export const revalidate = 60;
 
 function ProductCard({ product }: { product: ProductWithArtwork }) {
   const priceInDollars = product.price / 100;
@@ -21,7 +23,7 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
   const description = product.description || product.artwork?.description;
 
   return (
-    <div 
+    <div
       className="group bg-surface border border-outline rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
       data-testid="product-card"
     >
@@ -47,7 +49,9 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
                   {product.name}
                 </h3>
                 {product.artwork?.year && (
-                  <p className="text-gray-300 text-sm">{product.artwork.year}</p>
+                  <p className="text-gray-300 text-sm">
+                    {product.artwork.year}
+                  </p>
                 )}
                 {description && (
                   <p className="text-gray-300 text-sm mt-2 line-clamp-2">
@@ -66,24 +70,29 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
             {product.name}
           </h3>
           {product.artwork?.year && (
-            <p className="text-sm text-on-surface-variant">{product.artwork.year}</p>
+            <p className="text-sm text-on-surface-variant">
+              {product.artwork.year}
+            </p>
           )}
         </Link>
 
         <div className="flex items-center justify-between">
-          <span className="text-xl font-bold text-primary" data-testid="product-price">
+          <span
+            className="text-xl font-bold text-primary"
+            data-testid="product-price"
+          >
             ${priceInDollars.toLocaleString()}
           </span>
         </div>
 
-        <PurchaseButton 
+        <PurchaseButton
           product={{
             id: product.id,
             name: product.name,
             slug: product.slug,
             price: product.price,
-          }} 
-          variant="compact" 
+          }}
+          variant="compact"
         />
       </div>
     </div>
@@ -91,7 +100,9 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
 }
 
 export default async function StorePage() {
-  const { data: products } = await getAvailableProductsWithArtwork({ type: 'artwork' });
+  const { data: products } = await getAvailableProductsWithArtwork({
+    type: "artwork",
+  });
   const { data: collections } = await getAllCollections();
 
   return (
@@ -110,10 +121,7 @@ export default async function StorePage() {
             <h2 className="font-semibold text-on-surface mb-4">Collections</h2>
             <ul className="space-y-2">
               <li>
-                <Link
-                  href="/store"
-                  className="text-primary hover:underline"
-                >
+                <Link href="/store" className="text-primary hover:underline">
                   All Products
                 </Link>
               </li>

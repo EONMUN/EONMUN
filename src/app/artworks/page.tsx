@@ -1,10 +1,18 @@
+import { cache } from "react";
 import { getAllArtworksWithProducts } from "@/actions/artwork";
 import Image from "@/components/Image";
 import Link from "next/link";
 import type { ArtworkWithProductAndCollections } from "@/models/artwork";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+// Edge-cache the gallery listing for 5 min. Crawlers + the homepage's
+// related-works fan-out hit this route frequently; was force-dynamic
+// until the post-PR #74 fan-out load on the dynamic data path produced
+// CF 1101 500s. See e70e2ab.
+export const revalidate = 300;
+
+// Dedupe the data fetch between the page render and generateMetadata —
+// without this both async invocations hit Turso for the same data.
+const getCachedArtworks = cache(getAllArtworksWithProducts);
 
 function ArtworkCard({
   artwork,
@@ -54,7 +62,7 @@ function ArtworkCard({
 }
 
 export default async function ArtworksPage() {
-  const { data } = await getAllArtworksWithProducts();
+  const { data } = await getCachedArtworks();
   const artworks = data;
 
   return (
@@ -95,7 +103,7 @@ export default async function ArtworksPage() {
 
 // Generate metadata for the page
 export async function generateMetadata() {
-  const { data } = await getAllArtworksWithProducts();
+  const { data } = await getCachedArtworks();
   const artworkCount = data.length;
 
   return {
