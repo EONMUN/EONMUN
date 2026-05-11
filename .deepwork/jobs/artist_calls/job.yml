@@ -1,0 +1,166 @@
+name: artist_calls
+summary: "Discover open artist calls matching the artist's profile, draft applications, gate on human review, then auto-submit and track in a committed JSON file."
+
+step_arguments:
+  - name: artist_profile
+    description: "Committed artist criteria file (data/artist-profile.yml) — mediums, themes, eligibility, fee ceiling, geography, blackout dates. Source of truth for matching and drafting."
+    type: file_path
+
+  - name: lookback_window
+    description: "How far ahead deadlines should be considered (e.g. 'deadlines within 90 days')."
+    type: string
+
+  - name: artist_calls_json
+    description: "Single committed JSON tracking file at data/artist-calls.json. Append/update only — never drop entries or mutate ids. CI on push to main upserts this file into the prod Turso database."
+    type: file_path
+    json_schema:
+      type: array
+      items:
+        type: object
+        required: [id, source_url, organization, title, deadline, status]
+        properties:
+          id: { type: string }
+          source_url: { type: string, format: uri }
+          organization: { type: string }
+          title: { type: string }
+          deadline: { type: string, format: date-time }
+          fee: { type: [number, "null"] }
+          eligibility_summary: { type: string }
+          status:
+            type: string
+            enum: [discovered, drafted, rejected_auto, approved, rejected, submitted, submit_failed]
+          discovered_at: { type: string, format: date-time }
+          match_score: { type: [number, "null"] }
+          match_rationale: { type: [string, "null"] }
+          rejection_reason: { type: [string, "null"] }
+          submitted_at: { type: [string, "null"], format: date-time }
+          confirmation_ref: { type: [string, "null"] }
+
+  - name: application_drafts
+    description: "Per-call application directory artist-calls/<call_id>/application.md — tailored statement, image picks, eligibility/fee notes."
+    type: file_path
+
+  - name: submission_receipts
+    description: "Per-call submission record artist-calls/<call_id>/submission.md — submitted form fields, timestamp, confirmation ref or screenshot."
+    type: file_path
+
+workflows:
+  run:
+    summary: "End-to-end pipeline: discover, match+draft, human-review gate, auto-submit."
+    common_job_info_provided_to_all_steps_at_runtime: |
+      EONMUN is a working artist. This pipeline keeps the open-call application
+      queue full without manual aggregator trawling. The single committed file
+      data/artist-calls.json is the source of truth — append/update only, never
+      drop entries or mutate ids. CI on push to main upserts that file into the
+      prod Turso database (wiring in .github/workflows/, out of scope here).
+
+      Browser tool: Claude in Chrome (Anthropic's browser extension).
+      Profile lives at data/artist-profile.yml.
+
+    steps:
+      - name: discover_calls
+        instructions: |
+          Search aggregators (CaFE, ArtDeadline, ResArtis, regional arts councils)
+          and direct organization sites for open calls matching artist_profile
+          within lookback_window. Use Claude in Chrome.
+
+          For each new call:
+          - Generate a stable slug id from organization + deadline.
+          - Append to artist_calls_json with status="discovered" and discovered_at
+            set to ISO 8601 now.
+          - Dedupe by source_url AND by (organization + title + deadline).
+          - Cite source_url for every entry.
+
+          Never fabricate calls. Never mutate or drop existing entries.
+        inputs:
+          artist_profile: {}
+          lookback_window: {}
+          artist_calls_json: { required: false }
+        outputs:
+          artist_calls_json:
+            review:
+              strategy: matches_together
+              instructions: |
+                Verify: valid JSON; every new entry has id, source_url, organization,
+                title, deadline (ISO 8601), fee, eligibility_summary, discovered_at,
+                status="discovered"; no existing entries dropped or ids mutated;
+                no duplicates by source_url or (organization+title+deadline); each
+                entry cites a real source_url.
+
+      - name: match_and_draft
+        instructions: |
+          For every entry with status="discovered" in artist_calls_json:
+
+          1. Score against artist_profile criteria (0-100). Set match_score and
+             match_rationale.
+          2. If score below threshold OR ineligible OR fee exceeds tolerance:
+             set status="rejected_auto" with rejection_reason.
+          3. Otherwise: set status="drafted" and create
+             artist-calls/<id>/application.md with:
+             - artist statement tailored to the call's prospectus
+             - image/work selections from the artist's portfolio
+             - explicit fee + eligibility check
+             - any required short-answer prompts pulled from source_url
+
+          Never fabricate submission requirements — everything traces to source_url.
+        inputs:
+          artist_profile: {}
+          artist_calls_json: {}
+        outputs:
+          artist_calls_json: {}
+          application_drafts:
+            review:
+              strategy: individual
+              instructions: |
+                Verify the application is tailored to the specific call (not generic),
+                includes statement + image picks + eligibility/fee check, and every
+                claimed requirement traces back to source_url content.
+
+      - name: review_shortlist
+        instructions: |
+          Human review gate. Pause and instruct the operator to open
+          artist_calls_json and transition every status="drafted" entry to
+          either status="approved" or status="rejected" (with rejection_reason).
+
+          Do not proceed until zero "drafted" entries remain. Verify the operator's
+          edits before completing the step.
+        inputs:
+          artist_calls_json: {}
+        outputs:
+          artist_calls_json:
+            review:
+              strategy: matches_together
+              instructions: |
+                Verify: zero entries remain with status="drafted"; every "rejected"
+                entry has a non-empty rejection_reason; JSON valid; ids unchanged.
+
+      - name: submit_applications
+        instructions: |
+          For every entry with status="approved": use Claude in Chrome to open
+          source_url, fill the submission form using the matching
+          artist-calls/<id>/application.md, and submit.
+
+          On success: set status="submitted", submitted_at (ISO 8601), and
+          confirmation_ref (or screenshot path). Write
+          artist-calls/<id>/submission.md with form fields sent and receipt.
+
+          On failure: set status="submit_failed" with error message and remediation
+          note. Still write submission.md capturing what was attempted.
+
+          Never silently skip an approved entry.
+        inputs:
+          artist_calls_json: {}
+          application_drafts: {}
+        outputs:
+          artist_calls_json: {}
+          submission_receipts:
+            review:
+              strategy: individual
+              instructions: |
+                Verify submission.md captures form fields submitted, timestamp, and
+                either confirmation_ref/screenshot (success) or error+remediation
+                (failure). No silent skips.
+
+    post_workflow_instructions: |
+      Commit data/artist-calls.json and any new artist-calls/<id>/ files. CI on
+      push to main will upsert the JSON into the prod Turso database.

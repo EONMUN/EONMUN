@@ -1,0 +1,86 @@
+# EONMUN artist profile
+#
+# Source-of-truth criteria for the artist_calls DeepWork job.
+# Update this file when the practice evolves — the discover/match steps
+# read it on every run.
+#
+# Edit the TODO fields before running `mcp__deepwork__start_workflow`
+# job_name=artist_calls workflow_name=run.
+
+artist:
+  name: EONMUN
+  primary_url: https://eonmun.com
+  contact_email: # TODO: contact@ address that submission forms should use
+  bio_short: # TODO: 1-2 sentence bio used in application short-answer fields
+  bio_long: # TODO: longer artist statement used as the seed for tailored statements
+  cv_url: # TODO: public CV/resume URL or path under data/
+
+practice:
+  mediums: # what the artist works in — used to filter calls
+    # - oil painting
+    # - mixed media on panel
+    - TODO
+  themes: # recurring conceptual threads — used for tailoring statements
+    # - memory and place
+    # - color field
+    - TODO
+  career_stage: # emerging | mid-career | established
+  years_active: # integer
+
+eligibility:
+  citizenship: # e.g. US
+  residency: # state/region for region-restricted calls
+  age_minimum: 18 # set higher if some calls require it
+  excludes_student_only: true # skip calls limited to currently enrolled students
+  group_show_ok: true
+  solo_show_ok: true
+  juried_ok: true
+  open_to_residencies: false
+
+constraints:
+  fee_ceiling_usd: 50 # auto-reject calls with submission fees above this
+  submission_lead_time_days: 7 # need this many days between discovery and deadline
+  blackout_dates: # ranges where the artist cannot ship/install/travel
+    # - { start: "2026-07-01", end: "2026-07-15", reason: "summer studio closure" }
+    []
+
+geography:
+  willing_to_ship_to: # ISO country codes; empty = anywhere
+    - US
+  travel_radius_miles: # for in-person install requirements; null = won't travel
+    null
+
+matching:
+  score_threshold: 60 # 0-100; calls scoring below this auto-reject
+  prefer_themes_match_weight: 0.5
+  prefer_mediums_match_weight: 0.3
+  fee_penalty_weight: 0.2
+
+portfolio:
+  # Image picks the match_and_draft step can choose from. Each entry is a
+  # local path or absolute URL. Add the strongest 8-15 representative works.
+  works:
+    # - title: "Untitled (study, 2025)"
+    #   image: /public/portfolio/untitled-2025.jpg
+    #   year: 2025
+    #   medium: oil on linen
+    #   dimensions: "24 × 30 in"
+    #   themes: [color field, memory]
+    []
+
+aggregators:
+  # Sources to crawl. Comment out any the artist doesn't want considered.
+  - name: CaFE
+    url: https://www.callforentry.org/
+  - name: ArtDeadline
+    url: https://artdeadline.com/
+  - name: ResArtis
+    url: https://resartis.org/
+  - name: NYFA Classifieds
+    url: https://www.nyfa.org/classifieds/
+
+notes: |
+  Free-form notes the agent should consider when matching. Examples:
+  - "Skip anything requiring NFT-only submissions."
+  - "Prioritize calls within 200mi of Denver."
+  - "Avoid orgs that retain reproduction rights in perpetuity."

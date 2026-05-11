@@ -50,7 +50,9 @@ next-env.d.ts
 .dev.vars*
 
 # database files
-/data
+/data/*
+!/data/artist-profile.yml
+!/data/artist-calls.json
 *.db
 *.db-shm
 *.db-wal
@@ -62,3 +64,7 @@ next-env.d.ts
 # planning files
 PLAN.md
 .direnv
+
+# deepwork / claude runtime artifacts
+.deepwork/job.schema.json
+.claude/worktrees/
