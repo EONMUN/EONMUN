@@ -36,6 +36,40 @@
 		{
 			"binding": "R2_BUCKET",
 			"bucket_name": "eonmun-production"
+		},
+		{
+			// Second binding to the same bucket. OpenNext's R2 incremental
+			// cache writes under the `incremental-cache/` prefix by default
+			// (overridable via NEXT_INC_CACHE_R2_PREFIX), so it's isolated
+			// from media at the bucket root.
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "eonmun-production"
+		}
+	],
+	// Durable Object used by OpenNext's `doQueue` to dedupe revalidation
+	// renders. When a page's revalidate TTL expires and N concurrent
+	// visitors hit it, this object ensures exactly one re-render fires.
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "NEXT_CACHE_DO_QUEUE",
+				"class_name": "DOQueueHandler"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["DOQueueHandler"]
+		}
+	],
+	// Self-service binding so the queue can invoke the worker for the
+	// dedup'd revalidation render. Required by both r2IncrementalCache
+	// and doQueue per OpenNext docs.
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "eonmun"
 		}
 	]
 	/**
