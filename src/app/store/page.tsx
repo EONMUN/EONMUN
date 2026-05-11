@@ -1,19 +1,19 @@
-import { Metadata } from 'next';
-import Link from 'next/link';
-import Image from '@/components/Image';
-import { getAvailableProductsWithArtwork } from '@/actions/product';
-import { getAllCollections } from '@/actions/collection';
-import { PurchaseButton } from '@/components/PurchaseButton';
-import { FrostedGlass } from '@/components/ui/FrostedGlass';
-import type { ProductWithArtwork } from '@/models/product';
+import { Metadata } from "next";
+import Link from "next/link";
+import Image from "@/components/Image";
+import { getAvailableProductsWithArtwork } from "@/actions/product";
+import { getAllCollections } from "@/actions/collection";
+import { PurchaseButton } from "@/components/PurchaseButton";
+import { FrostedGlass } from "@/components/ui/FrostedGlass";
+import type { ProductWithArtwork } from "@/models/product";
 
 export const metadata: Metadata = {
-  title: 'Shop | EONMUN',
-  description: 'Shop original artworks by EONMUN.',
+  title: "Shop | EONMUN",
+  description: "Shop original artworks by EONMUN.",
 };
 
 // Force dynamic rendering - disable build-time caching
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 function ProductCard({ product }: { product: ProductWithArtwork }) {
   const priceInDollars = product.price / 100;
@@ -21,17 +21,26 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
   const description = product.description || product.artwork?.description;
 
   return (
-    <div 
+    <div
       className="group bg-surface border border-outline rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
       data-testid="product-card"
     >
-      <Link href={`/store/${product.slug}`}>
+      {/*
+       * CRITICAL: The always-visible card body below carries the accessible product name,
+       * year, and price. The hover/focus overlay is supplementary reinforcement only —
+       * removing the body fields would break touch users (no hover surface) and screen
+       * readers (overlay h3 is aria-hidden to avoid double announcement). See issue #71.
+       */}
+      <Link
+        href={`/store/${product.slug}`}
+        className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 rounded-lg"
+      >
         <div className="relative aspect-square overflow-hidden bg-surface-variant">
           {imageUrl ? (
             <Image
               src={imageUrl}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover motion-safe:group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
@@ -39,15 +48,20 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
             </div>
           )}
 
-          {/* Description overlay on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Description overlay on hover/focus. Symmetric duration+easing matches the image transform. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 motion-safe:transition-opacity motion-safe:duration-300 motion-safe:ease-out">
             <div className="absolute bottom-4 left-4 right-4">
               <FrostedGlass variant="dark" className="p-3 rounded-lg">
-                <h3 className="text-white font-medium text-lg">
+                <h3
+                  aria-hidden="true"
+                  className="text-white font-medium text-lg"
+                >
                   {product.name}
                 </h3>
                 {product.artwork?.year && (
-                  <p className="text-gray-300 text-sm">{product.artwork.year}</p>
+                  <p className="text-gray-300 text-sm">
+                    {product.artwork.year}
+                  </p>
                 )}
                 {description && (
                   <p className="text-gray-300 text-sm mt-2 line-clamp-2">
@@ -66,24 +80,29 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
             {product.name}
           </h3>
           {product.artwork?.year && (
-            <p className="text-sm text-on-surface-variant">{product.artwork.year}</p>
+            <p className="text-sm text-on-surface-variant">
+              {product.artwork.year}
+            </p>
           )}
         </Link>
 
         <div className="flex items-center justify-between">
-          <span className="text-xl font-bold text-primary" data-testid="product-price">
+          <span
+            className="text-xl font-bold text-primary"
+            data-testid="product-price"
+          >
             ${priceInDollars.toLocaleString()}
           </span>
         </div>
 
-        <PurchaseButton 
+        <PurchaseButton
           product={{
             id: product.id,
             name: product.name,
             slug: product.slug,
             price: product.price,
-          }} 
-          variant="compact" 
+          }}
+          variant="compact"
         />
       </div>
     </div>
@@ -91,7 +110,9 @@ function ProductCard({ product }: { product: ProductWithArtwork }) {
 }
 
 export default async function StorePage() {
-  const { data: products } = await getAvailableProductsWithArtwork({ type: 'artwork' });
+  const { data: products } = await getAvailableProductsWithArtwork({
+    type: "artwork",
+  });
   const { data: collections } = await getAllCollections();
 
   return (
@@ -110,10 +131,7 @@ export default async function StorePage() {
             <h2 className="font-semibold text-on-surface mb-4">Collections</h2>
             <ul className="space-y-2">
               <li>
-                <Link
-                  href="/store"
-                  className="text-primary hover:underline"
-                >
+                <Link href="/store" className="text-primary hover:underline">
                   All Products
                 </Link>
               </li>
