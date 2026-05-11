@@ -18,7 +18,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 
@@ -42,11 +42,15 @@ const BACKFILL_SQL_RE =
  * at import time and would point at a real libSQL server.
  */
 async function findPublishedArtworkBySlug(db: DrizzleDb, slug: string) {
-  const rows = await db
+  // CRITICAL: predicates must compose at the SQL layer the same way
+  // findArtworks() does in src/models/artwork.ts, so this test exercises
+  // the real query shape (`WHERE published_at IS NOT NULL AND slug = ?`).
+  // An in-memory .find() would still pass when slug filtering breaks.
+  const [row] = await db
     .select()
     .from(artworks)
-    .where(isNotNull(artworks.publishedAt));
-  return rows.find((row) => row.slug === slug) ?? null;
+    .where(and(isNotNull(artworks.publishedAt), eq(artworks.slug, slug)));
+  return row ?? null;
 }
 
 describe("Artwork publishedAt backfill (regression for #50)", () => {
@@ -118,9 +122,17 @@ describe("Artwork publishedAt backfill (regression for #50)", () => {
     expect(stillNull).toHaveLength(0);
   });
 
-  it("explicit drafts (publishedAt set then cleared) remain hidden after backfill", async () => {
+  it("explicit drafts are resurrected by the backfill — documented trade-off, not a draft-preservation guarantee", async () => {
     // Simulates the post-#53 admin flow: a row created as published, then
-    // unpublished by the artist. The backfill MUST NOT resurrect those.
+    // unpublished by the artist. publishedAt = NULL is a two-valued column
+    // carrying three semantic states (legacy / explicit-draft / published),
+    // so the backfill cannot distinguish "never set" from "deliberately
+    // cleared" and resurrects both. The artist can re-unpublish from the
+    // admin; leaving every legacy row 404'd is the worse failure for the
+    // M1 baseline-fixes goal.
+    //
+    // This test locks in that trade-off so a future change cannot quietly
+    // drop the resurrection behavior without an explicit rewrite here.
     await db.insert(artworks).values({
       title: "Hidden Draft",
       slug: "hidden-draft",
@@ -135,10 +147,6 @@ describe("Artwork publishedAt backfill (regression for #50)", () => {
       "UPDATE artworks SET published_at = created_at WHERE published_at IS NULL",
     );
 
-    // The backfill resurrects this row — that is the trade-off documented
-    // in the migration. The artist can re-unpublish from the admin if
-    // needed; the alternative (leaving every legacy row 404'd) is worse
-    // for the milestone-1 baseline-fixes goal.
     const result = await findPublishedArtworkBySlug(db, "hidden-draft");
     expect(result).not.toBeNull();
   });
