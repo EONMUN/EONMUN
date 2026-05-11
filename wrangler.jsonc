@@ -9,7 +9,17 @@
 	"compatibility_date": "2025-03-01",
 	"compatibility_flags": [
 		"nodejs_compat",
-		"global_fetch_strictly_public"
+		"global_fetch_strictly_public",
+		// CRITICAL: Without this flag the runtime tries to "handle" promises
+		// that resolve in a different request context than they were created
+		// in. With our module-scoped libSQL `db` singleton (src/database/index.ts),
+		// concurrent requests share that client; the runtime's cross-request
+		// handling deadlocks until the hang detector fires and returns a CF
+		// 1101 "Worker threw exception". Setting the flag makes the runtime
+		// fail fast on the leak instead of hanging — verified live via
+		// `wrangler tail` after PR #74 surfaced the issue under fan-out load
+		// on /artworks/[slug]. Long-term fix: per-request db client.
+		"no_handle_cross_request_promise_resolution"
 	],
 	"assets": {
 		"binding": "ASSETS",
