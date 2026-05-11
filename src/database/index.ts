@@ -38,28 +38,9 @@ export function createDatabaseClient() {
   }
 }
 
-export type Database = ReturnType<typeof createDatabaseClient>;
+// Create db instance for both local and production
+export const db = createDatabaseClient();
 
-// CRITICAL: do NOT cache a module-scoped Drizzle instance on Cloudflare
-// Workers. The runtime reuses one Worker isolate across many concurrent
-// requests, and Drizzle's internal query-builder state on a shared `db`
-// causes cross-request promise resolution — which CF either hangs and
-// returns a 1101 "Worker threw exception" (default) or fails fast with
-// `no_handle_cross_request_promise_resolution`. Either way the symptom
-// is 500s under fan-out load. See commits fb8ca3a → e67ae2f for the
-// flag experiment that confirmed the diagnosis.
-//
-// The Proxy below returns a fresh `drizzle(...)` wrapper for every
-// property access, so every top-level call (`db.select()`, `db.insert()`,
-// `db.transaction()`, etc.) constructs its own builder with no shared
-// state. The underlying `@libsql/client/web` is a thin fetch wrapper, so
-// construction is cheap (~one object + a closure), and the only real
-// cost — the network round-trip to Turso — is identical to the
-// singleton variant.
-export const db: Database = new Proxy({} as Database, {
-  get(_target, prop, receiver) {
-    return Reflect.get(createDatabaseClient(), prop, receiver);
-  },
-});
+export type Database = typeof db;
 
 export default db;

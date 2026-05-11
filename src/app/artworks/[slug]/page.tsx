@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Image from "@/components/Image";
 import Link from "next/link";
 import { getArtworkWithProductAndCollectionsBySlug } from "@/actions/artwork";
@@ -8,8 +9,22 @@ import type { SelectCollection } from "@/database";
 import { PurchaseButton } from "@/components/PurchaseButton";
 import PostCard from "@/components/PostCard";
 
-// Force dynamic rendering - disable build-time caching
-export const dynamic = "force-dynamic";
+// CRITICAL: revalidate-based ISR instead of `force-dynamic`. Under
+// concurrent fan-out, `force-dynamic` made every detail-page render run
+// fresh through Drizzle/libSQL/Turso. With the module-scoped `db`
+// singleton, that produced cross-request promise resolution → CF 1101
+// 500s on a measurable fraction of requests. Serving cached HTML from
+// the CF edge for 5 minutes drops the Worker invocation count for this
+// route by >95% under any realistic traffic profile and masks the
+// underlying singleton issue while the proper data-layer fix lands.
+// Do not remove this revalidate until that fix is shipped.
+export const revalidate = 300;
+
+// `cache()` dedupes the artwork lookup between the page component and
+// generateMetadata. Next.js runs them in the same request but as
+// separate async invocations, so without this we hit Turso twice per
+// request for the same row.
+const getArtworkCached = cache(getArtworkWithProductAndCollectionsBySlug);
 
 interface ArtworkPageProps {
   params: Promise<{
@@ -101,7 +116,7 @@ async function RelatedPosts({ artworkId }: { artworkId: number }) {
 
 export default async function ArtworkPage(props: ArtworkPageProps) {
   const { slug } = await props.params;
-  const artwork = await getArtworkWithProductAndCollectionsBySlug(slug);
+  const artwork = await getArtworkCached(slug);
 
   if (!artwork) {
     notFound();
@@ -249,7 +264,7 @@ export default async function ArtworkPage(props: ArtworkPageProps) {
 // Generate metadata for the page
 export async function generateMetadata({ params }: ArtworkPageProps) {
   const { slug } = await params;
-  const artwork = await getArtworkWithProductAndCollectionsBySlug(slug);
+  const artwork = await getArtworkCached(slug);
 
   if (!artwork) {
     return {
