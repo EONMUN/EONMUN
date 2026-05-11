@@ -35,6 +35,8 @@ on:
       - 'public/**'
       - 'package.json'
       - 'next.config.ts'
+      - 'open-next.config.ts'
+      - 'wrangler.jsonc'
       - 'drizzle/**'
       - '.github/workflows/deploy-web.yml'
       - '.github/actions/deploy-cloudflare-worker/**'
