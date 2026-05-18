@@ -1,0 +1,50 @@
+name: Validate Astro
+
+on:
+  pull_request:
+    paths:
+      - 'astro/**'
+      - '.github/workflows/validate.yml'
+
+concurrency:
+  group: astro-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Astro build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('astro/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        working-directory: astro
+        run: bun install --frozen-lockfile
+
+      # `astro build` exercises the full content-collection schema, MDX
+      # parser, and adapter bundling — covers the same failure modes a
+      # deploy would hit, just without the Cloudflare upload. Runs on
+      # fork PRs too (no secrets needed), so external contributions get
+      # a green/red signal without granting them deploy access.
+      - name: Build
+        working-directory: astro
+        run: bun run astro build

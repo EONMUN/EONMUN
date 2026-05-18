@@ -1,0 +1,89 @@
+name: Preview Astro
+
+on:
+  pull_request:
+    paths:
+      - 'astro/**'
+      - '.github/workflows/preview.yml'
+      - '.github/actions/cloudflare-deploy/**'
+
+concurrency:
+  group: astro-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build + version-upload preview
+    runs-on: ubuntu-latest
+    # No `environment:` — this uses the repo-scoped CLOUDFLARE_API_TOKEN
+    # secret and CLOUDFLARE_ACCOUNT_ID variable. Granting environment
+    # access would expose unrelated prod secrets to PR workflow runs.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      # PR conversation comments are issue comments under the hood — the
+      # github-script step below calls github.rest.issues.{list,create,update}Comment.
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Derive a DNS-safe slug from the PR's source branch so the preview
+      # URL becomes <slug>-eonmun-astro.<acct>.workers.dev instead
+      # of the opaque <version-id>-… form. Lowercase, only [a-z0-9-],
+      # collapsed dashes, trimmed leading/trailing dashes, capped at 45
+      # chars to fit in the workers.dev subdomain label limit (63 chars
+      # minus worker name plus a dash).
+      - name: Compute preview alias from branch
+        id: alias
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          slug=$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]' \
+            | tr -c 'a-z0-9-' '-' \
+            | sed -E 's/-+/-/g; s/^-+//; s/-+$//' \
+            | cut -c1-45 \
+            | sed -E 's/-+$//')
+          echo "slug=$slug" >> "$GITHUB_OUTPUT"
+          echo "Branch '$BRANCH' → alias '$slug'"
+
+      - name: Build + upload versioned preview
+        id: deploy
+        uses: ./.github/actions/cloudflare-deploy
+        with:
+          mode: upload
+          preview-alias: ${{ steps.alias.outputs.slug }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Comment preview URL on PR
+        if: steps.deploy.outputs.preview_url
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = `${{ steps.deploy.outputs.preview_url }}`;
+            const marker = '<!-- gha-preview-deploy-astro -->';
+            const body = `${marker}\nAstro preview: ${url}`;
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }

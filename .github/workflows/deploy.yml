@@ -1,0 +1,30 @@
+name: Deploy Astro
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'astro/**'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/cloudflare-deploy/**'
+  workflow_dispatch:
+
+concurrency:
+  group: astro-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Astro to Cloudflare
+        uses: ./.github/actions/cloudflare-deploy
+        with:
+          mode: deploy
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
