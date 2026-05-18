@@ -21,6 +21,9 @@
         packages = with pkgs; [
           nodejs_22
           pnpm
+          # bun powers the Astro scaffold under astro/. Kept alongside pnpm so
+          # the Next.js app and the Astro subdir each use their native toolchain.
+          bun
           sqld
           playwright-mcp
           playwright-driver
