@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAllArtworks } from '../../db/queries';
+import { setEdgeCache } from '../../lib/cache';
+
+const env = Astro.locals.runtime.env;
+const artworks = await getAllArtworks(env);
+
+setEdgeCache(Astro);
+---
+<BaseLayout title="Artworks — EONMUN" description={`Browse ${artworks.length} artworks from the EONMUN studio.`}>
+	<div class="container mx-auto px-4 py-8">
+		<div class="mb-8">
+			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Artworks</h1>
+			<p class="text-gray-600 dark:text-gray-400">Explore the complete collection of artworks.</p>
+			{artworks.length > 0 && (
+				<p class="text-sm text-gray-500 mt-2">
+					{artworks.length} artwork{artworks.length !== 1 ? 's' : ''}
+				</p>
+			)}
+		</div>
+
+		{artworks.length > 0 ? (
+			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+				{artworks.map((artwork) => (
+					<a href={`/artworks/${artwork.slug}`} class="group block">
+						<div class="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-4">
+							{artwork.defaultImageUrl ? (
+								<img
+									src={artwork.defaultImageUrl}
+									alt={artwork.title}
+									loading="lazy"
+									class="w-full h-full object-cover transition-transform group-hover:scale-105"
+								/>
+							) : (
+								<div class="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+							)}
+						</div>
+						<div class="text-center">
+							<h3 class="text-lg font-medium mb-1">{artwork.title}</h3>
+							{artwork.year && <p class="text-sm text-gray-500">{artwork.year}</p>}
+						</div>
+					</a>
+				))}
+			</div>
+		) : (
+			<div class="text-center py-12">
+				<p class="text-gray-600 dark:text-gray-400 text-lg">No artworks found.</p>
+			</div>
+		)}
+	</div>
+</BaseLayout>

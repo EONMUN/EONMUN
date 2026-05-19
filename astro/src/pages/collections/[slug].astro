@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollectionBySlug } from '../../db/queries';
+import { setEdgeCache } from '../../lib/cache';
+
+const { slug } = Astro.params;
+if (!slug) {
+	return new Response('Not found', { status: 404 });
+}
+
+const env = Astro.locals.runtime.env;
+const collection = await getCollectionBySlug(env, slug);
+
+if (!collection) {
+	return new Response('Not found', { status: 404 });
+}
+
+setEdgeCache(Astro);
+---
+<BaseLayout
+	title={`${collection.name} — Collections — EONMUN`}
+	description={collection.description ?? `Browse artworks in the ${collection.name} collection.`}
+>
+	<div class="container mx-auto px-4 py-8">
+		<nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+			<a href="/collections" class="hover:underline">Collections</a>
+			<span>/</span>
+			<span>{collection.name}</span>
+		</nav>
+
+		<div class="mb-8">
+			<h1 class="text-4xl font-bold mb-4 uppercase tracking-wider">{collection.name}</h1>
+			{collection.description && (
+				<p class="text-lg text-gray-600 dark:text-gray-400 mb-2">{collection.description}</p>
+			)}
+			<p class="text-sm text-gray-500">
+				{collection.artworks.length} artwork{collection.artworks.length !== 1 ? 's' : ''}
+			</p>
+		</div>
+
+		{collection.artworks.length > 0 ? (
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+				{collection.artworks.map((artwork) => (
+					<a href={`/artworks/${artwork.slug}`} class="group block">
+						<div class="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-3">
+							{artwork.defaultImageUrl ? (
+								<img
+									src={artwork.defaultImageUrl}
+									alt={artwork.title}
+									loading="lazy"
+									class="w-full h-full object-cover transition-transform group-hover:scale-105"
+								/>
+							) : (
+								<div class="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+							)}
+						</div>
+						<div class="text-center">
+							<h3 class="font-medium">{artwork.title}</h3>
+							{artwork.year && <p class="text-sm text-gray-500">{artwork.year}</p>}
+						</div>
+					</a>
+				))}
+			</div>
+		) : (
+			<div class="text-center py-12">
+				<p class="text-gray-600 dark:text-gray-400 text-lg">No artworks in this collection yet.</p>
+			</div>
+		)}
+	</div>
+</BaseLayout>
