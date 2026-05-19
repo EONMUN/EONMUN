@@ -3,12 +3,12 @@ name: Preview Astro
 on:
   pull_request:
     paths:
-      - 'astro/**'
+      - 'code/**'
       - '.github/workflows/preview.yml'
       - '.github/actions/cloudflare-deploy/**'
 
 concurrency:
-  group: astro-preview-${{ github.event.pull_request.number }}
+  group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v4
 
       # Derive a DNS-safe slug from the PR's source branch so the preview
-      # URL becomes <slug>-eonmun-astro.<acct>.workers.dev instead
+      # URL becomes <slug>-eonmun.<acct>.workers.dev instead
       # of the opaque <version-id>-… form. Lowercase, only [a-z0-9-],
       # collapsed dashes, trimmed leading/trailing dashes, capped at 45
       # chars to fit in the workers.dev subdomain label limit (63 chars
@@ -64,8 +64,8 @@ jobs:
         with:
           script: |
             const url = `${{ steps.deploy.outputs.preview_url }}`;
-            const marker = '<!-- gha-preview-deploy-astro -->';
-            const body = `${marker}\nAstro preview: ${url}`;
+            const marker = '<!-- gha-preview-deploy -->';
+            const body = `${marker}\nPreview: ${url}`;
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,

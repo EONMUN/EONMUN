@@ -1,5 +1,5 @@
 name: 'Deploy Astro to Cloudflare Workers'
-description: 'Build the Astro site under astro/ and deploy via @astrojs/cloudflare + wrangler'
+description: 'Build the Astro site under code/ and deploy via @astrojs/cloudflare + wrangler'
 
 inputs:
   mode:
@@ -49,14 +49,14 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.bun/install/cache
-        key: ${{ runner.os }}-bun-${{ hashFiles('astro/bun.lock') }}
+        key: ${{ runner.os }}-bun-${{ hashFiles('code/bun.lock') }}
         restore-keys: |
           ${{ runner.os }}-bun-
 
     - name: Install dependencies
       if: inputs.skip-setup != 'true'
       shell: bash
-      working-directory: astro
+      working-directory: code
       run: bun install --frozen-lockfile
 
     # Persist Astro's content-collection metadata cache so incremental
@@ -65,20 +65,20 @@ runs:
     - name: Cache Astro build
       uses: actions/cache@v4
       with:
-        path: astro/node_modules/.astro
-        key: ${{ runner.os }}-astro-${{ hashFiles('astro/bun.lock') }}-${{ hashFiles('astro/src/content/**/*', 'astro/src/content.config.ts') }}
+        path: code/node_modules/.astro
+        key: ${{ runner.os }}-astro-${{ hashFiles('code/bun.lock') }}-${{ hashFiles('code/src/content/**/*', 'code/src/content.config.ts') }}
         restore-keys: |
-          ${{ runner.os }}-astro-${{ hashFiles('astro/bun.lock') }}-
+          ${{ runner.os }}-astro-${{ hashFiles('code/bun.lock') }}-
 
     - name: Build Astro site
       shell: bash
-      working-directory: astro
+      working-directory: code
       run: bun run astro build
 
     - name: Deploy to Cloudflare (promote)
       if: inputs.mode == 'deploy'
       shell: bash
-      working-directory: astro
+      working-directory: code
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
@@ -89,7 +89,7 @@ runs:
     # DNS-safe URL like <alias>-eonmun.<acct>.workers.dev
     # instead of the opaque <version-id>-… form.
     #
-    # The worker name comes from astro/wrangler.jsonc (`eonmun`) so the
+    # The worker name comes from code/wrangler.jsonc (`eonmun`) so the
     # version uploads against the legacy Next.js worker and inherits its
     # secrets (TURSO_*, STRIPE_*, SMTP_*). Production traffic on
     # eonmun.com stays on whichever version is currently promoted —
@@ -101,7 +101,7 @@ runs:
       id: upload
       if: inputs.mode == 'upload'
       shell: bash
-      working-directory: astro
+      working-directory: code
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}

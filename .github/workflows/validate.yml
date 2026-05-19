@@ -3,11 +3,11 @@ name: Validate Astro
 on:
   pull_request:
     paths:
-      - 'astro/**'
+      - 'code/**'
       - '.github/workflows/validate.yml'
 
 concurrency:
-  group: astro-validate-${{ github.ref }}
+  group: validate-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -32,12 +32,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('astro/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('code/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        working-directory: astro
+        working-directory: code
         run: bun install --frozen-lockfile
 
       # `astro build` exercises the full content-collection schema, MDX
@@ -46,5 +46,5 @@ jobs:
       # fork PRs too (no secrets needed), so external contributions get
       # a green/red signal without granting them deploy access.
       - name: Build
-        working-directory: astro
+        working-directory: code
         run: bun run astro build

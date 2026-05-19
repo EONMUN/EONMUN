@@ -4,13 +4,13 @@ on:
   push:
     branches: [master]
     paths:
-      - 'astro/**'
+      - 'code/**'
       - '.github/workflows/deploy.yml'
       - '.github/actions/cloudflare-deploy/**'
   workflow_dispatch:
 
 concurrency:
-  group: astro-production
+  group: production
   cancel-in-progress: false
 
 jobs:
