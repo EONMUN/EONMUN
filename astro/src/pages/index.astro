@@ -1,7 +1,51 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+// Homepage is prerendered to keep the hero load fast and Worker
+// invocations at zero. The "featured artworks" carousel is dynamic in the
+// legacy app — that's intentionally deferred until the data dump lands.
+// When that lands, drop this and swap to SSR + cache headers.
+export const prerender = true;
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-	<h1 class="text-4xl font-bold">EONMUN</h1>
+	<section class="relative w-full min-h-[80vh] flex items-center justify-center text-center px-4 py-24">
+		<div class="max-w-3xl space-y-6">
+			<h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-[0.2em] uppercase">
+				EONMUN
+			</h1>
+			<p class="text-lg sm:text-xl text-gray-600 dark:text-gray-300">
+				Contemporary artworks, collections, and writings from the studio.
+			</p>
+			<div class="flex flex-wrap gap-4 justify-center pt-4">
+				<a
+					href="/collections"
+					class="inline-block px-6 py-3 border border-current rounded-lg uppercase tracking-wider text-sm font-bold hover:bg-current hover:text-white dark:hover:text-gray-900 transition-colors"
+				>
+					Browse Collections
+				</a>
+				<a
+					href="/store"
+					class="inline-block px-6 py-3 border border-current rounded-lg uppercase tracking-wider text-sm font-bold hover:bg-current hover:text-white dark:hover:text-gray-900 transition-colors"
+				>
+					Visit Store
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<section class="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+		<a href="/posts" class="group block p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+			<h2 class="text-xl font-bold uppercase tracking-wider mb-2">Posts</h2>
+			<p class="text-gray-600 dark:text-gray-400">News, announcements, and behind-the-scenes from the studio.</p>
+		</a>
+		<a href="/artworks" class="group block p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+			<h2 class="text-xl font-bold uppercase tracking-wider mb-2">Artworks</h2>
+			<p class="text-gray-600 dark:text-gray-400">Explore the full body of work.</p>
+		</a>
+		<a href="/about" class="group block p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+			<h2 class="text-xl font-bold uppercase tracking-wider mb-2">About</h2>
+			<p class="text-gray-600 dark:text-gray-400">Learn about the artist and the work.</p>
+		</a>
+	</section>
 </BaseLayout>
