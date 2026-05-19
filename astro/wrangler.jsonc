@@ -1,10 +1,19 @@
+// Required Worker secrets — set via `wrangler secret put <NAME> --name eonmun-astro`
+// after the first deploy. These are distinct from the GitHub Actions
+// `CLOUDFLARE_API_TOKEN` / account ID used by the deploy workflow.
+//
+//   TURSO_DATABASE_URL   — libsql connection URL to the production Turso DB
+//   TURSO_AUTH_TOKEN     — Turso auth token
+//   STRIPE_SECRET_KEY    — only when `/api/checkout` is implemented (later PR)
+//   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "eonmun-astro",
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"compatibility_date": "2026-05-13",
 	"compatibility_flags": [
-		"global_fetch_strictly_public"
+		"global_fetch_strictly_public",
+		"nodejs_compat"
 	],
 	"assets": {
 		"directory": "./dist",
@@ -12,5 +21,8 @@
 	},
 	"observability": {
 		"enabled": true
+	},
+	"vars": {
+		"R2_PUBLIC_URL": "https://r2.eonmun.com"
 	}
 }

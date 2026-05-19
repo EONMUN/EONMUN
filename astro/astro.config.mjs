@@ -7,14 +7,22 @@ import tailwindcss from '@tailwindcss/vite';
 
 import cloudflare from '@astrojs/cloudflare';
 
-// https://astro.build/config
+// `output: 'server'` makes routes SSR by default. Pages that should be
+// prerendered must opt in with `export const prerender = true` (the homepage,
+// /about, /contact). SSR routes set their own `Cache-Control` headers so
+// the Cloudflare edge can cache the response — see `src/lib/cache.ts`.
 export default defineConfig({
 	site: 'https://eonmun.com',
+	output: 'server',
 	integrations: [mdx(), sitemap()],
 
 	vite: {
 		plugins: [tailwindcss()],
 	},
 
-	adapter: cloudflare(),
+	adapter: cloudflare({
+		platformProxy: {
+			enabled: true,
+		},
+	}),
 });
