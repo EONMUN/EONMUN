@@ -24,5 +24,12 @@
 	},
 	"vars": {
 		"R2_PUBLIC_URL": "https://r2.eonmun.com"
-	}
+	},
+	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare
+	// adapter. Bound explicitly to the pre-provisioned `eonmun-session`
+	// namespace so `wrangler versions upload` doesn't try to auto-create
+	// it on every deploy (Cloudflare rejects duplicate-name creation).
+	"kv_namespaces": [
+		{ "binding": "SESSION", "id": "bb7fb2ed056c45cbbed3751258005fe6" }
+	]
 }
