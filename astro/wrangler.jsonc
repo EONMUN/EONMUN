@@ -8,7 +8,15 @@
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "eonmun-astro",
+	// Name matches the legacy Next.js worker so previews upload as
+	// versions of it and inherit its secrets (TURSO_*, STRIPE_*, SMTP_*).
+	// Production traffic on eonmun.com stays on whichever version is
+	// currently promoted (the Next.js one); `wrangler versions upload`
+	// creates a new non-promoted version. CRITICAL: do not run plain
+	// `wrangler deploy` from this directory — that promotes astro to
+	// production. Use `wrangler versions deploy` only when the cutover
+	// is intentional.
+	"name": "eonmun",
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"compatibility_date": "2026-05-13",
 	"compatibility_flags": [

@@ -22,9 +22,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy Astro to Cloudflare
+      # On master we still only do a versioned upload (no production
+      # promote). The legacy Next.js worker remains the promoted
+      # version on eonmun.com — we don't want every astro merge to
+      # silently take over the production domain. To cut over, run
+      # `bunx wrangler versions deploy` against the latest astro
+      # version manually once we're ready.
+      - name: Upload Astro version
         uses: ./.github/actions/cloudflare-deploy
         with:
-          mode: deploy
+          mode: upload
+          preview-alias: main
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

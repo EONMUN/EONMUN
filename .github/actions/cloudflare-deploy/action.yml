@@ -89,14 +89,14 @@ runs:
     # DNS-safe URL like <alias>-eonmun.<acct>.workers.dev
     # instead of the opaque <version-id>-… form.
     #
-    # `--name eonmun` overrides the script name from wrangler.jsonc so
-    # the preview uploads as a version of the existing legacy `eonmun`
-    # worker. Worker secrets (TURSO_*, STRIPE_*, SMTP_*) are inherited
-    # by every version of a worker, so the SSR routes can hit the DB
-    # without duplicating credentials on a parallel worker. Production
-    # traffic on eonmun.com stays on the currently-deployed Next.js
-    # version until we explicitly `wrangler versions deploy` to promote
-    # the astro version.
+    # The worker name comes from astro/wrangler.jsonc (`eonmun`) so the
+    # version uploads against the legacy Next.js worker and inherits its
+    # secrets (TURSO_*, STRIPE_*, SMTP_*). Production traffic on
+    # eonmun.com stays on whichever version is currently promoted —
+    # `wrangler versions upload` only creates a new non-promoted version.
+    # Combining `--name` with `--preview-alias` silently drops the alias
+    # in wrangler 4.92, so don't reintroduce the flag here; change the
+    # name in wrangler.jsonc instead if you need to retarget.
     - name: Upload versioned preview
       id: upload
       if: inputs.mode == 'upload'
@@ -108,7 +108,7 @@ runs:
         PREVIEW_ALIAS: ${{ inputs.preview-alias }}
       run: |
         set -o pipefail
-        passthrough=(--name eonmun)
+        passthrough=()
         if [ -n "$PREVIEW_ALIAS" ]; then
           passthrough+=(--preview-alias "$PREVIEW_ALIAS")
         fi
