@@ -1,2 +1,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+@theme {
+	--font-sans: "Abel", ui-sans-serif, system-ui, sans-serif;
+}
+
+html, body {
+	font-family: var(--font-sans);
+}

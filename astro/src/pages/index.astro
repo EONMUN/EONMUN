@@ -8,15 +8,77 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 // configuration from the DB.
 export const prerender = true;
 
-const slides = [
-	{ src: 'https://r2.eonmun.com/1775752300190-44673548e9cb29c8.jpeg', alt: 'Before the Eternal' },
-	{ src: 'https://r2.eonmun.com/1775751480745-23b12edb2a0730ae.jpeg', alt: 'Poppies' },
-	{ src: 'https://r2.eonmun.com/1767296108544-1e9fc0562e8c704e.jpeg', alt: 'When Clouds Part' },
-	{ src: 'https://r2.eonmun.com/1775753048979-db1aaf6dbf2f2b27.jpeg', alt: 'Somewhere in West Texas' },
-	{ src: 'https://r2.eonmun.com/1775753290453-8db9813ccc72ab26.jpeg', alt: 'Crane Beneath the Maple' },
-	{ src: 'https://r2.eonmun.com/PERS_Int_b08c7cef7c.jpeg', alt: 'Persimmons del Oro' },
-	{ src: 'https://r2.eonmun.com/LIM_Int_2b192a6609.jpeg', alt: 'Limones del Cobre' },
-	{ src: 'https://r2.eonmun.com/quetzalcoatlin_tetl_e3a31b4836.jpeg', alt: 'Quetzalcōātlin tetl' },
+interface CarouselSlide {
+	src: string;
+	title: string;
+	year: number;
+	collections: { slug: string; name: string }[];
+}
+
+// Hardcoded snapshot of the legacy homepage's admin-configured slides
+// (8 artworks). Mirrors the ArtworkInfo overlay's Name/Year/Collection(s)
+// structure rendered by HomePageArtworkCarousel in the legacy app.
+const slides: CarouselSlide[] = [
+	{
+		src: 'https://r2.eonmun.com/1775752300190-44673548e9cb29c8.jpeg',
+		title: 'Before the Eternal',
+		year: 2025,
+		collections: [
+			{ slug: 'oriental', name: 'Oriental' },
+			{ slug: '2025', name: '2025' },
+		],
+	},
+	{
+		src: 'https://r2.eonmun.com/1775751480745-23b12edb2a0730ae.jpeg',
+		title: 'Poppies',
+		year: 2026,
+		collections: [
+			{ slug: 'botanica', name: 'Botánica' },
+			{ slug: 'dorada', name: 'Dorada' },
+		],
+	},
+	{
+		src: 'https://r2.eonmun.com/1767296108544-1e9fc0562e8c704e.jpeg',
+		title: 'When Clouds Part',
+		year: 2025,
+		collections: [
+			{ slug: 'oriental', name: 'Oriental' },
+			{ slug: '2025', name: '2025' },
+		],
+	},
+	{
+		src: 'https://r2.eonmun.com/1775753048979-db1aaf6dbf2f2b27.jpeg',
+		title: 'Somewhere in West Texas',
+		year: 2026,
+		collections: [{ slug: 'dorada', name: 'Dorada' }],
+	},
+	{
+		src: 'https://r2.eonmun.com/1775753290453-8db9813ccc72ab26.jpeg',
+		title: 'Crane Beneath the Maple',
+		year: 2026,
+		collections: [
+			{ slug: 'oriental', name: 'Oriental' },
+			{ slug: 'dorada', name: 'Dorada' },
+		],
+	},
+	{
+		src: 'https://r2.eonmun.com/PERS_Int_b08c7cef7c.jpeg',
+		title: 'Persimmons del Oro',
+		year: 2025,
+		collections: [{ slug: 'dorada', name: 'Dorada' }],
+	},
+	{
+		src: 'https://r2.eonmun.com/LIM_Int_2b192a6609.jpeg',
+		title: 'Limones del Cobre',
+		year: 2025,
+		collections: [{ slug: 'dorada', name: 'Dorada' }],
+	},
+	{
+		src: 'https://r2.eonmun.com/quetzalcoatlin_tetl_e3a31b4836.jpeg',
+		title: 'Quetzalcōātlin tetl',
+		year: 2025,
+		collections: [{ slug: 'black-and-white', name: 'B&W' }],
+	},
 ];
 
 const slideSeconds = 5;
@@ -24,15 +86,32 @@ const cycleSeconds = slides.length * slideSeconds;
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0].src}>
 	<div class="hero-carousel">
-		{slides.map(({ src, alt }, i) => (
+		{slides.map((slide, i) => (
 			<figure class="slide" style={`animation-delay: ${i * slideSeconds}s;`}>
 				<img
-					src={src}
-					alt={alt}
+					src={slide.src}
+					alt={slide.title}
 					loading={i === 0 ? 'eager' : 'lazy'}
 					fetchpriority={i === 0 ? 'high' : 'auto'}
 				/>
-				<figcaption>{alt}</figcaption>
+				<figcaption class="artwork-info">
+					<div class="field">
+						<div class="label">Name</div>
+						<div class="value">{slide.title}</div>
+					</div>
+					<div class="field">
+						<div class="label">Year</div>
+						<div class="value">{slide.year}</div>
+					</div>
+					<div class="field">
+						<div class="label">{slide.collections.length > 1 ? 'Collections' : 'Collection'}</div>
+						<div class="values">
+							{slide.collections.map((c) => (
+								<a href={`/collections/${c.slug}`}>{c.name}</a>
+							))}
+						</div>
+					</div>
+				</figcaption>
 			</figure>
 		))}
 	</div>
@@ -64,17 +143,44 @@ const cycleSeconds = slides.length * slideSeconds;
 		object-fit: cover;
 		display: block;
 	}
-	.slide figcaption {
+	/* ArtworkInfo box — frosted-glass card bottom-right, matches legacy. */
+	.artwork-info {
 		position: absolute;
-		right: 1.5rem;
-		bottom: 1.5rem;
-		padding: 0.5rem 0.875rem;
+		right: 1rem;
+		bottom: 1.25rem;
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		text-align: right;
 		color: #fff;
-		background: rgba(0, 0, 0, 0.45);
-		backdrop-filter: blur(4px);
-		font-size: 0.875rem;
-		letter-spacing: 0.05em;
+		background: rgba(0, 0, 0, 0.3);
+		border: 1px solid rgba(107, 114, 128, 0.3);
+		border-radius: 0.5rem;
+		backdrop-filter: blur(16px);
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+		letter-spacing: 0.025em;
+	}
+	.artwork-info .label {
+		font-size: 0.75rem;
 		text-transform: uppercase;
+		color: rgba(255, 255, 255, 0.7);
+		font-weight: 500;
+	}
+	.artwork-info .value,
+	.artwork-info .values a {
+		display: block;
+		font-size: 1rem;
+		font-weight: 500;
+		color: #fff;
+	}
+	.artwork-info .values a {
+		text-decoration: none;
+		transition: color 150ms;
+	}
+	.artwork-info .values a:hover {
+		color: rgb(229, 231, 235);
 	}
 	/* Each slide visible for 5 of 40s (12.5% of cycle). Fade in 0%→1.25%,
 	   hold to 12.5%, fade out 12.5%→13.75%. */
