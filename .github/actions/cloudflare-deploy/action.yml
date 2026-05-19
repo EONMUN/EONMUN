@@ -86,8 +86,17 @@ runs:
 
     # `wrangler versions upload` creates a versioned preview without
     # touching the production alias. `--preview-alias` gives it a
-    # DNS-safe URL like <alias>-eonmun-astro.<acct>.workers.dev
+    # DNS-safe URL like <alias>-eonmun.<acct>.workers.dev
     # instead of the opaque <version-id>-… form.
+    #
+    # `--name eonmun` overrides the script name from wrangler.jsonc so
+    # the preview uploads as a version of the existing legacy `eonmun`
+    # worker. Worker secrets (TURSO_*, STRIPE_*, SMTP_*) are inherited
+    # by every version of a worker, so the SSR routes can hit the DB
+    # without duplicating credentials on a parallel worker. Production
+    # traffic on eonmun.com stays on the currently-deployed Next.js
+    # version until we explicitly `wrangler versions deploy` to promote
+    # the astro version.
     - name: Upload versioned preview
       id: upload
       if: inputs.mode == 'upload'
@@ -99,7 +108,7 @@ runs:
         PREVIEW_ALIAS: ${{ inputs.preview-alias }}
       run: |
         set -o pipefail
-        passthrough=()
+        passthrough=(--name eonmun)
         if [ -n "$PREVIEW_ALIAS" ]; then
           passthrough+=(--preview-alias "$PREVIEW_ALIAS")
         fi
@@ -118,7 +127,7 @@ runs:
           url="$(grep -oE 'Version Preview URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview URL: //')"
         fi
         if [ -z "$url" ]; then
-          url="$(grep -oE 'https://[a-z0-9-]+-eonmun-astro\.[a-z0-9]+\.workers\.dev' "$log_file" | head -1)"
+          url="$(grep -oE 'https://[a-z0-9-]+-eonmun\.[a-z0-9]+\.workers\.dev' "$log_file" | head -1)"
         fi
         if [ -n "$url" ]; then
           echo "preview_url=$url" >> "$GITHUB_OUTPUT"
