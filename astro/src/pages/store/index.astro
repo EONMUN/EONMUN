@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAvailableProducts, getAllCollections } from '../../db/queries';
+import { setEdgeCache } from '../../lib/cache';
+
+const env = Astro.locals.runtime.env;
+const [products, collections] = await Promise.all([
+	getAvailableProducts(env),
+	getAllCollections(env),
+]);
+
+// Store moves price/availability sporadically — use the shorter TTL so
+// sold-out / new-listing transitions don't lag the edge by 5 minutes.
+setEdgeCache(Astro, 'short');
+---
+<BaseLayout title="Shop — EONMUN" description="Shop original artworks by EONMUN.">
+	<main class="container mx-auto px-4 py-8">
+		<div class="mb-8">
+			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Shop</h1>
+			<p class="text-gray-600 dark:text-gray-400">Original artworks available for purchase.</p>
+		</div>
+
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+			<aside class="lg:col-span-1 space-y-6">
+				<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+					<h2 class="font-semibold mb-4 uppercase tracking-wider text-sm">Collections</h2>
+					<ul class="space-y-2 text-sm">
+						<li><a href="/store" class="underline">All Products</a></li>
+						{collections.map((c) => (
+							<li>
+								<a href={`/collections/${c.slug}`} class="text-gray-600 dark:text-gray-400 hover:underline">
+									{c.name}
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+			</aside>
+
+			<div class="lg:col-span-3">
+				{products.length > 0 ? (
+					<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+						{products.map((product) => {
+							const priceInDollars = product.price / 100;
+							const imageUrl = product.imageUrl ?? product.artwork?.defaultImageUrl;
+							return (
+								<div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+									<a href={`/store/${product.slug}`}>
+										<div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
+											{imageUrl ? (
+												<img src={imageUrl} alt={product.name} loading="lazy" class="w-full h-full object-cover" />
+											) : (
+												<div class="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+											)}
+										</div>
+									</a>
+									<div class="p-4 space-y-3">
+										<a href={`/store/${product.slug}`}>
+											<h3 class="font-semibold line-clamp-1">{product.name}</h3>
+											{product.artwork?.year && (
+												<p class="text-sm text-gray-500">{product.artwork.year}</p>
+											)}
+										</a>
+										<div class="flex items-center justify-between">
+											<span class="text-xl font-bold">${priceInDollars.toLocaleString()}</span>
+											<a
+												href={`/store/${product.slug}`}
+												class="px-3 py-1 border border-current text-sm rounded-md hover:bg-current hover:text-white dark:hover:text-gray-900 transition-colors"
+											>
+												View
+											</a>
+										</div>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				) : (
+					<div class="text-center py-12">
+						<p class="text-gray-600 dark:text-gray-400 text-lg mb-4">No products available at this time.</p>
+						<a href="/" class="underline">Return to Home</a>
+					</div>
+				)}
+			</div>
+		</div>
+	</main>
+</BaseLayout>
