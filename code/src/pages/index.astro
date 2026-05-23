@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { getArtworkCollectionHref } from '../lib/paths';
 
 // Prerendered. Snapshot of the live homepage carousel (admin-configurable
 // in the legacy app via getHomePageData). Once Turso Worker secrets are
@@ -107,7 +108,7 @@ const cycleSeconds = slides.length * slideSeconds;
 						<div class="label">{slide.collections.length > 1 ? 'Collections' : 'Collection'}</div>
 						<div class="values">
 							{slide.collections.map((c) => (
-								<a href={`/collections/${c.slug}`}>{c.name}</a>
+								<a href={getArtworkCollectionHref(c.slug)}>{c.name}</a>
 							))}
 						</div>
 					</div>

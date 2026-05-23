@@ -24,6 +24,16 @@ export interface ArtworkWithDefaultImage extends BaseSelectArtwork {
 	defaultImageUrl: string | null;
 }
 
+export interface ArtworkCollectionRef {
+	id: number;
+	slug: string;
+	name: string;
+}
+
+export interface ArtworkListItem extends ArtworkWithDefaultImage {
+	collections: ArtworkCollectionRef[];
+}
+
 export interface ArtworkDetail extends ArtworkWithDefaultImage {
 	collections: SelectCollection[];
 	images: { url: string; isDefault: boolean; caption: string | null }[];
@@ -113,7 +123,12 @@ export async function getPostBySlug(
 				collections,
 				eq(postsToCollections.collectionId, collections.id),
 			)
-			.where(eq(postsToCollections.postId, post.id)),
+			.where(
+				and(
+					eq(postsToCollections.postId, post.id),
+					isNotNull(collections.publishedAt),
+				),
+			),
 	]);
 
 	return {
@@ -134,7 +149,7 @@ export async function getPostBySlug(
 
 export async function getAllArtworks(
 	env: Env,
-): Promise<ArtworkWithDefaultImage[]> {
+): Promise<ArtworkListItem[]> {
 	const db = getDb(env);
 	const rows = await db
 		.select({
@@ -163,7 +178,45 @@ export async function getAllArtworks(
 			),
 		)
 		.where(isNotNull(artworks.publishedAt));
-	return rows;
+	if (rows.length === 0) return [];
+
+	const collectionRows = await db
+		.select({
+			artworkId: artworksToCollections.artworkId,
+			id: collections.id,
+			slug: collections.slug,
+			name: collections.name,
+		})
+		.from(artworksToCollections)
+		.innerJoin(
+			collections,
+			eq(artworksToCollections.collectionId, collections.id),
+		)
+		.where(
+			and(
+				inArray(
+					artworksToCollections.artworkId,
+					rows.map((row) => row.id),
+				),
+				isNotNull(collections.publishedAt),
+			),
+		);
+
+	const collectionsByArtworkId = new Map<number, ArtworkCollectionRef[]>();
+	for (const row of collectionRows) {
+		const current = collectionsByArtworkId.get(row.artworkId) ?? [];
+		current.push({
+			id: row.id,
+			slug: row.slug,
+			name: row.name,
+		});
+		collectionsByArtworkId.set(row.artworkId, current);
+	}
+
+	return rows.map((row) => ({
+		...row,
+		collections: collectionsByArtworkId.get(row.id) ?? [],
+	}));
 }
 
 export async function getArtworkBySlug(
@@ -189,7 +242,12 @@ export async function getArtworkBySlug(
 				collections,
 				eq(artworksToCollections.collectionId, collections.id),
 			)
-			.where(eq(artworksToCollections.artworkId, artwork.id)),
+			.where(
+				and(
+					eq(artworksToCollections.artworkId, artwork.id),
+					isNotNull(collections.publishedAt),
+				),
+			),
 		db
 			.select()
 			.from(products)

@@ -2,7 +2,6 @@ import { SITE_URL } from "../consts";
 import type { Env } from "../db";
 import {
 	getAllArtworks,
-	getAllCollections,
 	getAvailableProducts,
 	getPublishedPosts,
 } from "../db/queries";
@@ -16,9 +15,7 @@ const SITEMAP_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=600"
 
 const STATIC_PATHS = [
 	"/",
-	"/about",
 	"/artworks",
-	"/collections",
 	"/contact",
 	"/posts",
 	"/store",
@@ -60,9 +57,8 @@ export async function getSitemapEntries(env: Env, site?: URL): Promise<SitemapEn
 	}));
 
 	try {
-		const [artworks, collections, posts, products] = await Promise.all([
+		const [artworks, posts, products] = await Promise.all([
 			getAllArtworks(env),
-			getAllCollections(env),
 			getPublishedPosts(env),
 			getAvailableProducts(env),
 		]);
@@ -72,10 +68,6 @@ export async function getSitemapEntries(env: Env, site?: URL): Promise<SitemapEn
 			...artworks.map((artwork) => ({
 				loc: toAbsoluteUrl(baseUrl, `/artworks/${artwork.slug}`),
 				lastmod: toLastModified(artwork.updatedAt ?? artwork.publishedAt),
-			})),
-			...collections.map((collection) => ({
-				loc: toAbsoluteUrl(baseUrl, `/collections/${collection.slug}`),
-				lastmod: toLastModified(collection.updatedAt ?? collection.publishedAt),
 			})),
 			...posts.map((post) => ({
 				loc: toAbsoluteUrl(baseUrl, `/posts/${post.slug}`),

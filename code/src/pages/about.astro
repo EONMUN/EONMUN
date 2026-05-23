@@ -1,18 +1,5 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+export const prerender = false;
 
-// TODO: legacy /about is a placeholder ("Page temporarily unavailable.
-// Content will be added from database fixtures."). Reproduce that here
-// until real copy ships — keeps parity with the live site and avoids
-// inventing content.
-export const prerender = true;
+return Response.redirect(new URL('/', Astro.url), 301);
 ---
-<BaseLayout title="About — EONMUN" description="About the EONMUN studio.">
-	<div class="container mx-auto px-4 py-16 max-w-2xl">
-		<h1 class="text-4xl font-bold mb-4 uppercase tracking-wider">About</h1>
-		<p class="text-lg text-gray-600 dark:text-gray-400">
-			Page temporarily unavailable. Content will be added from database
-			fixtures.
-		</p>
-	</div>
-</BaseLayout>
