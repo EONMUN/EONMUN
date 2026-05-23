@@ -8,11 +8,11 @@ const path = require('path');
  *
  * Usage: npm run r2:manifest
  *
- * Scans data/uploads/ directory for JPEG files (originals) and creates/updates data/r2-manifest.json
+ * Scans data/uploads/ for source images and creates/updates data/r2-manifest.json
  * This manifest is used to track which files need to be uploaded to R2
  *
  * Filters:
- * - Only includes .jpg and .jpeg files (case-insensitive)
+ * - Includes common source image formats
  * - Excludes thumbnail/resized versions (small_, thumbnail_, medium_, large_, xlarge_)
  */
 
@@ -30,9 +30,20 @@ async function getAllFiles(dir, baseDir = dir) {
       const subFiles = await getAllFiles(fullPath, baseDir);
       files.push(...subFiles);
     } else if (item.isFile()) {
-      // Only include JPEG files (originals)
+      // Only include source image files
       const ext = path.extname(item.name).toLowerCase();
-      if (ext !== '.jpg' && ext !== '.jpeg') {
+      const allowedExtensions = new Set([
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.webp',
+        '.gif',
+        '.avif',
+        '.tif',
+        '.tiff',
+        '.heic'
+      ]);
+      if (!allowedExtensions.has(ext)) {
         continue;
       }
 
@@ -46,12 +57,15 @@ async function getAllFiles(dir, baseDir = dir) {
       const relativePath = path.relative(baseDir, fullPath);
       const stats = await fs.stat(fullPath);
 
+      const segments = relativePath.split(path.sep);
+      const category = segments.length > 1 ? segments[0] : 'root';
+
       files.push({
         name: item.name,
         localPath: relativePath,
         fullPath: fullPath,
         size: stats.size,
-        category: relativePath.split(path.sep)[0] || 'misc'
+        category
       });
     }
   }
@@ -75,10 +89,11 @@ async function generateManifest() {
   const files = await getAllFiles(UPLOADS_DIR);
   
   if (files.length === 0) {
-    console.error('❌ No JPEG files found in uploads directory');
-    console.log('Only .jpg and .jpeg files are included in the manifest');
+    console.error('❌ No source image files found in uploads directory');
     process.exit(1);
   }
+
+  await fs.ensureDir(path.dirname(MANIFEST_PATH));
 
   // Load existing manifest if it exists
   let existingManifest = null;
@@ -103,7 +118,7 @@ async function generateManifest() {
         size: file.size,
         uploaded: existing?.uploaded || false,
         r2Url: existing?.r2Url || null,
-        r2Key: file.localPath.replace(/\\/g, '/')
+        r2Key: existing?.r2Key || file.localPath.replace(/\\/g, '/')
       };
     }),
     stats: {
@@ -144,7 +159,7 @@ async function generateManifest() {
     console.log('2. Or upload manually via Cloudflare dashboard');
   }
   console.log('3. Verify uploads: npm run r2:verify');
-  console.log('4. Update fixture URLs: npm run fixtures:update-urls');
+  console.log('4. Update fixture URLs: npm run r2:update-fixtures');
 }
 
 // Run

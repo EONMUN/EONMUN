@@ -50,7 +50,10 @@ next-env.d.ts
 .dev.vars*
 
 # database files
-/data
+/data/*
+!/data/r2-manifest.json
+!/data/uploads/
+!/data/uploads/**
 *.db
 *.db-shm
 *.db-wal
@@ -58,6 +61,7 @@ next-env.d.ts
 # uploaded files (development)
 /public/uploads/*
 !/public/uploads/.gitkeep
+/data/backups/
 
 # planning files
 PLAN.md

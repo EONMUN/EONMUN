@@ -1,0 +1,112 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getProductBySlug } from '../../db/queries';
+import { setEdgeCache } from '../../lib/cache';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const { slug } = Astro.params;
+if (!slug) {
+	return new Response('Not found', { status: 404 });
+}
+
+const env = getRuntimeEnv();
+const product = await getProductBySlug(env, slug);
+
+if (!product) {
+	return new Response('Not found', { status: 404 });
+}
+
+setEdgeCache(Astro, 'short');
+
+const artwork = product.artwork;
+const imageUrl = product.imageUrl ?? artwork?.defaultImageUrl;
+const description = product.description ?? artwork?.description;
+const priceInDollars = product.price / 100;
+const dimensions = artwork ? [artwork.width, artwork.height, artwork.depth].filter(Boolean) : [];
+const isSold = product.soldAt !== null;
+---
+<BaseLayout
+	title={`${product.name} — Shop — EONMUN`}
+	description={product.description ?? `Purchase ${product.name} by EONMUN.`}
+	image={imageUrl ?? undefined}
+>
+	<main class="container mx-auto px-4 py-8">
+		<nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-8">
+			<a href="/" class="hover:underline">Home</a>
+			<span>/</span>
+			<a href="/store" class="hover:underline">Shop</a>
+			<span>/</span>
+			<span>{product.name}</span>
+		</nav>
+
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+			<div>
+				{imageUrl ? (
+					<div class="aspect-square rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800">
+						<img src={imageUrl} alt={product.name} class="w-full h-full object-contain" />
+					</div>
+				) : (
+					<div class="aspect-square bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-400">
+						No Image Available
+					</div>
+				)}
+			</div>
+
+			<div class="space-y-6">
+				<div>
+					<h1 class="text-3xl font-bold mb-2">{product.name}</h1>
+					{artwork?.artist && (
+						<p class="text-lg text-gray-500 dark:text-gray-400">by {artwork.artist}</p>
+					)}
+					{artwork?.year && (
+						<p class="text-gray-500 dark:text-gray-400">{artwork.year}</p>
+					)}
+				</div>
+
+				<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 space-y-4">
+					<p class="text-3xl font-bold">${priceInDollars.toLocaleString()}</p>
+
+					{isSold ? (
+						<p class="text-sm text-gray-500">Sold</p>
+					) : (
+						<form method="POST" action="/api/checkout" class="space-y-2">
+							<input type="hidden" name="productId" value={product.id} />
+							<input type="hidden" name="slug" value={product.slug} />
+							{/* SECURITY: stub-only — real checkout returns 501. Client-side
+							    redirect to Stripe lands in the next PR. */}
+							<button
+								type="submit"
+								class="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold uppercase tracking-wider rounded-lg hover:opacity-90 transition-opacity"
+							>
+								Buy now
+							</button>
+							<p class="text-xs text-gray-500 text-center">
+								Checkout integration is in progress — clicking will return a stub response for now.
+							</p>
+						</form>
+					)}
+				</div>
+
+				{description && (
+					<div>
+						<h2 class="text-lg font-semibold mb-3">Description</h2>
+						<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{description}</p>
+					</div>
+				)}
+
+				{dimensions.length > 0 && artwork && (
+					<div>
+						<h2 class="text-lg font-semibold mb-3">Dimensions</h2>
+						<p class="text-gray-600 dark:text-gray-400">
+							{dimensions.join(' x ')} {artwork.dimensionUnit ?? 'in'}
+						</p>
+					</div>
+				)}
+			</div>
+		</div>
+
+		<div class="mt-12 text-center">
+			<a href="/store" class="inline-flex items-center gap-2 hover:underline">&larr; Back to Shop</a>
+		</div>
+	</main>
+</BaseLayout>

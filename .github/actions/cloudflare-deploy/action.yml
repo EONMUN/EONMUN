@@ -1,5 +1,5 @@
 name: 'Deploy Astro to Cloudflare Workers'
-description: 'Build the Astro site under astro/ and deploy via @astrojs/cloudflare + wrangler'
+description: 'Build the Astro site under code/ and deploy via @astrojs/cloudflare + wrangler'
 
 inputs:
   mode:
@@ -49,14 +49,14 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.bun/install/cache
-        key: ${{ runner.os }}-bun-${{ hashFiles('astro/bun.lock') }}
+        key: ${{ runner.os }}-bun-${{ hashFiles('code/bun.lock') }}
         restore-keys: |
           ${{ runner.os }}-bun-
 
     - name: Install dependencies
       if: inputs.skip-setup != 'true'
       shell: bash
-      working-directory: astro
+      working-directory: code
       run: bun install --frozen-lockfile
 
     # Persist Astro's content-collection metadata cache so incremental
@@ -65,20 +65,20 @@ runs:
     - name: Cache Astro build
       uses: actions/cache@v4
       with:
-        path: astro/node_modules/.astro
-        key: ${{ runner.os }}-astro-${{ hashFiles('astro/bun.lock') }}-${{ hashFiles('astro/src/content/**/*', 'astro/src/content.config.ts') }}
+        path: code/node_modules/.astro
+        key: ${{ runner.os }}-astro-${{ hashFiles('code/bun.lock') }}-${{ hashFiles('code/src/content/**/*', 'code/src/content.config.ts') }}
         restore-keys: |
-          ${{ runner.os }}-astro-${{ hashFiles('astro/bun.lock') }}-
+          ${{ runner.os }}-astro-${{ hashFiles('code/bun.lock') }}-
 
     - name: Build Astro site
       shell: bash
-      working-directory: astro
+      working-directory: code
       run: bun run astro build
 
     - name: Deploy to Cloudflare (promote)
       if: inputs.mode == 'deploy'
       shell: bash
-      working-directory: astro
+      working-directory: code
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
@@ -92,7 +92,7 @@ runs:
       id: upload
       if: inputs.mode == 'upload'
       shell: bash
-      working-directory: astro
+      working-directory: code
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
@@ -113,15 +113,18 @@ runs:
         # 3. Generic regex for any workers.dev URL in the log — kept
         #    as a last-resort fallback in case wrangler changes its
         #    log prefixes in a future version.
-        url="$(grep -oE 'Version Preview Alias URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview Alias URL: //')"
+        url="$(grep -oE 'Version Preview Alias URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview Alias URL: //' || true)"
         if [ -z "$url" ]; then
-          url="$(grep -oE 'Version Preview URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview URL: //')"
+          url="$(grep -oE 'Version Preview URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview URL: //' || true)"
         fi
         if [ -z "$url" ]; then
-          url="$(grep -oE 'https://[a-z0-9-]+-eonmun-astro\.[a-z0-9]+\.workers\.dev' "$log_file" | head -1)"
+          url="$(grep -oE 'https://[a-z0-9-]+-eonmun-astro\.[a-z0-9]+\.workers\.dev' "$log_file" | head -1 || true)"
         fi
         if [ -n "$url" ]; then
           echo "preview_url=$url" >> "$GITHUB_OUTPUT"
           echo "## Preview URL" >> "$GITHUB_STEP_SUMMARY"
           echo "$url" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "Failed to capture a preview URL from wrangler output." >&2
+          exit 1
         fi

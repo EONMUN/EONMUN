@@ -6,7 +6,7 @@ const path = require('path');
 /**
  * Update fixture file paths to use R2 URLs
  * 
- * Usage: npm run fixtures:update-urls
+ * Usage: npm run r2:update-fixtures
  * 
  * Reads data/data.json and replaces local file paths with R2 CDN URLs
  * Uses r2-manifest.json to map local paths to R2 URLs

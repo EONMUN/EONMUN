@@ -3,12 +3,12 @@ name: Preview Astro
 on:
   pull_request:
     paths:
-      - 'astro/**'
+      - 'code/**'
       - '.github/workflows/preview.yml'
       - '.github/actions/cloudflare-deploy/**'
 
 concurrency:
-  group: astro-preview-${{ github.event.pull_request.number }}
+  group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Static contact form. Submission goes to `/api/contact`, which currently
+// validates + 200s without sending email. Email integration is a follow-up.
+export const prerender = true;
+
+const success = Astro.url.searchParams.get('success') === 'true';
+const error = Astro.url.searchParams.get('error');
+---
+<BaseLayout title="Contact — EONMUN" description="Get in touch with EONMUN.">
+	<div class="container mx-auto px-4 py-16 max-w-2xl">
+		<div class="text-center mb-12">
+			<h1 class="text-4xl md:text-5xl font-bold mb-4 tracking-wider uppercase">Contact</h1>
+			<p class="text-lg text-gray-600 dark:text-gray-400">
+				Get in touch. We'd love to hear from you.
+			</p>
+		</div>
+
+		<form method="POST" action="/api/contact" class="space-y-6">
+			<input
+				type="text"
+				name="name"
+				required
+				placeholder="Your Name"
+				class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-current"
+			/>
+			<input
+				type="email"
+				name="email"
+				required
+				placeholder="your@email.com"
+				class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-current"
+			/>
+			<textarea
+				name="message"
+				required
+				rows="6"
+				placeholder="Your message..."
+				class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-current resize-none"
+			></textarea>
+			<button
+				type="submit"
+				class="w-full py-3 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold tracking-wider uppercase rounded-lg hover:opacity-90 transition-opacity"
+			>
+				Send Message
+			</button>
+			{success && (
+				<div class="text-center text-green-600 dark:text-green-400 font-medium">
+					Thanks — your message has been received.
+				</div>
+			)}
+			{error && (
+				<div class="text-center text-red-600 dark:text-red-400 font-medium">
+					{error}
+				</div>
+			)}
+		</form>
+
+		<div class="mt-12 text-center text-gray-600 dark:text-gray-400">
+			<p>
+				Or email us directly at{' '}
+				<a href="mailto:contact@eonmun.com" class="underline hover:no-underline">contact@eonmun.com</a>
+			</p>
+		</div>
+	</div>
+</BaseLayout>
