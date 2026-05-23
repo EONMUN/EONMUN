@@ -8,8 +8,5 @@ if (!slug) {
 	return new Response('Not found', { status: 404 });
 }
 
-return Response.redirect(
-	new URL(getArtworkCollectionHref(slug), Astro.url).toString(),
-	301,
-);
+return Astro.redirect(getArtworkCollectionHref(slug), 301);
 ---
