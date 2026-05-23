@@ -32,5 +32,3 @@ jobs:
           mode: deploy
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          turso-database-url: ${{ secrets.TURSO_DATABASE_URL }}
-          turso-auth-token: ${{ secrets.TURSO_AUTH_TOKEN }}

@@ -23,14 +23,6 @@ inputs:
     description: 'DNS-safe alias for the preview URL (mode=upload only). When set, the preview URL becomes <alias>-eonmun-astro.<acct>.workers.dev instead of <version-id>-…. Sanitize before passing — only [a-z0-9-] survives in DNS.'
     required: false
     default: ''
-  turso-database-url:
-    description: 'Optional TURSO_DATABASE_URL secret to upload alongside the worker version.'
-    required: false
-    default: ''
-  turso-auth-token:
-    description: 'Optional TURSO_AUTH_TOKEN secret to upload alongside the worker version.'
-    required: false
-    default: ''
 
 outputs:
   preview_url:
@@ -83,30 +75,6 @@ runs:
       working-directory: code
       run: bun run astro build
 
-    - name: Prepare runtime secrets file
-      id: runtime-secrets
-      shell: bash
-      env:
-        TURSO_DATABASE_URL: ${{ inputs.turso-database-url }}
-        TURSO_AUTH_TOKEN: ${{ inputs.turso-auth-token }}
-      run: |
-        path="$RUNNER_TEMP/eonmun-astro-secrets.json"
-        node -e '
-          const fs = require("fs");
-          const path = process.argv[1];
-          const secrets = {};
-          for (const key of ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]) {
-            const value = process.env[key];
-            if (value) secrets[key] = value;
-          }
-          if (Object.keys(secrets).length > 0) {
-            fs.writeFileSync(path, JSON.stringify(secrets));
-          }
-        ' "$path"
-        if [ -f "$path" ]; then
-          echo "path=$path" >> "$GITHUB_OUTPUT"
-        fi
-
     - name: Deploy to Cloudflare (promote)
       if: inputs.mode == 'deploy'
       shell: bash
@@ -114,12 +82,7 @@ runs:
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
-      run: |
-        args=()
-        if [ -n "${{ steps.runtime-secrets.outputs.path }}" ]; then
-          args+=(--secrets-file "${{ steps.runtime-secrets.outputs.path }}")
-        fi
-        bunx wrangler deploy "${args[@]}"
+      run: bunx wrangler deploy
 
     # `wrangler versions upload` creates a versioned preview without
     # touching the production alias. `--preview-alias` gives it a
@@ -137,9 +100,6 @@ runs:
       run: |
         set -o pipefail
         passthrough=()
-        if [ -n "${{ steps.runtime-secrets.outputs.path }}" ]; then
-          passthrough+=(--secrets-file "${{ steps.runtime-secrets.outputs.path }}")
-        fi
         if [ -n "$PREVIEW_ALIAS" ]; then
           passthrough+=(--preview-alias "$PREVIEW_ALIAS")
         fi
