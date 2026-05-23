@@ -15,7 +15,6 @@ export * from "./schema";
 export type Env = {
 	TURSO_DATABASE_URL?: string;
 	TURSO_AUTH_TOKEN?: string;
-	[key: string]: unknown;
 };
 
 export function getDb(env: Env) {
