@@ -9,6 +9,7 @@ type CloudflareEnv = {
 	TURSO_AUTH_TOKEN?: string;
 	STRIPE_SECRET_KEY?: string;
 	CONTACT_EMAIL?: string;
+	ENABLE_DEBUG_ERRORS?: string;
 	[key: string]: unknown;
 };
 

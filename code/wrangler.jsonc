@@ -18,9 +18,6 @@
 		"global_fetch_strictly_public",
 		"nodejs_compat"
 	],
-	"secrets": {
-		"required": ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]
-	},
 	"assets": {
 		"directory": "./dist",
 		"binding": "ASSETS"

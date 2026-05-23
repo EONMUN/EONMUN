@@ -75,8 +75,8 @@ const publishedDate = post.publishedAt
 		{/*
 			TODO: Body is stored as markdown. The legacy app renders it via
 			react-markdown + rehype-sanitize. For this PR we render the raw
-			text inside a `<pre>` so links/images don't render as HTML strings
-			and so we avoid pulling a markdown lib + sanitizer into the worker
+			text with preserved whitespace so links/images don't render as HTML
+			strings and so we avoid pulling a markdown lib + sanitizer into the worker
 			bundle until the data-dump PR replaces this with MDX content
 			collections.
 		*/}

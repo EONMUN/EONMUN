@@ -10,6 +10,13 @@ import {
 
 export const prerender = false;
 
+const env = getRuntimeEnv();
+const debugErrorsEnabled = env.ENABLE_DEBUG_ERRORS === 'true';
+
+if (!debugErrorsEnabled) {
+	return new Response('Not found', { status: 404 });
+}
+
 Astro.response.headers.set('cache-control', 'no-store');
 
 function summarizeValue(value: unknown) {
@@ -67,7 +74,6 @@ async function runCheck(name: string, fn: () => Promise<unknown>) {
 	}
 }
 
-const env = getRuntimeEnv();
 const report = {
 	generatedAt: new Date().toISOString(),
 	url: Astro.url.toString(),
