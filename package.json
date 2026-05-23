@@ -23,6 +23,7 @@
     "db:seed": "tsx src/database/fixtures/load.ts",
     "db:fixtures:load": "tsx src/database/fixtures/load.ts",
     "r2:generate-credentials": "node ./scripts/generate-r2-credentials.js",
+    "r2:pull": "node ./scripts/pull-r2-assets.js",
     "r2:manifest": "node ./scripts/generate-r2-manifest.js",
     "r2:upload": "node ./scripts/upload-to-r2.js",
     "r2:verify": "node ./scripts/verify-r2-uploads.js",

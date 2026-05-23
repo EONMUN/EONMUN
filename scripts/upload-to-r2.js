@@ -127,7 +127,7 @@ async function uploadToR2() {
     console.log('\n✓ All files uploaded successfully!');
     console.log('\nNext steps:');
     console.log('1. Verify uploads: npm run r2:verify');
-    console.log('2. Update fixture URLs: npm run fixtures:update-urls');
+    console.log('2. Update fixture URLs: npm run r2:update-fixtures');
   }
 }
 

@@ -75,7 +75,7 @@ async function verifyR2Uploads() {
   } else {
     console.log('\n✓ All files are accessible!');
     console.log('\nNext step:');
-    console.log('  npm run fixtures:update-urls');
+  console.log('  npm run r2:update-fixtures');
   }
 }
 
