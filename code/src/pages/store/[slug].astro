@@ -2,13 +2,14 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getProductBySlug } from '../../db/queries';
 import { setEdgeCache } from '../../lib/cache';
+import { getRuntimeEnv } from '../../lib/runtime-env';
 
 const { slug } = Astro.params;
 if (!slug) {
 	return new Response('Not found', { status: 404 });
 }
 
-const env = Astro.locals.runtime.env;
+const env = getRuntimeEnv();
 const product = await getProductBySlug(env, slug);
 
 if (!product) {

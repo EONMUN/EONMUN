@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getPublishedPosts } from '../../db/queries';
 import { setEdgeCache } from '../../lib/cache';
 import type { PostType } from '../../db';
+import { getRuntimeEnv } from '../../lib/runtime-env';
 
 const VALID_TYPES: PostType[] = [
 	'announcement',
@@ -22,7 +23,7 @@ const postType = typeParam && VALID_TYPES.includes(typeParam as PostType)
 	? (typeParam as PostType)
 	: undefined;
 
-const env = Astro.locals.runtime.env;
+const env = getRuntimeEnv();
 const posts = await getPublishedPosts(env, postType);
 
 // Listings move more often than detail pages — use the shorter TTL.

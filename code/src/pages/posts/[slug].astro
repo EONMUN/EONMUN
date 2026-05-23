@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getPostBySlug } from '../../db/queries';
 import { setEdgeCache } from '../../lib/cache';
 import type { PostType } from '../../db';
+import { getRuntimeEnv } from '../../lib/runtime-env';
 
 const TYPE_LABELS: Record<PostType, string> = {
 	announcement: 'Announcement',
@@ -16,7 +17,7 @@ if (!slug) {
 	return new Response('Not found', { status: 404 });
 }
 
-const env = Astro.locals.runtime.env;
+const env = getRuntimeEnv();
 const post = await getPostBySlug(env, slug);
 
 if (!post) {

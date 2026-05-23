@@ -2,8 +2,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getAllCollections } from '../../db/queries';
 import { setEdgeCache } from '../../lib/cache';
+import { getRuntimeEnv } from '../../lib/runtime-env';
 
-const env = Astro.locals.runtime.env;
+const env = getRuntimeEnv();
 const collections = await getAllCollections(env);
 
 setEdgeCache(Astro);

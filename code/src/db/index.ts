@@ -2,7 +2,7 @@
 // module-scoped `db` singleton produced cross-request promise leaks under
 // CF Workers (see EONMUN wrangler.jsonc comment block on
 // `no_handle_cross_request_promise_resolution`). Each Astro request must
-// call `getDb(Astro.locals.runtime.env)` to construct a fresh client.
+// call `getDb(getRuntimeEnv())` to construct a fresh client.
 //
 // Read-only access — schema is copied from the legacy app, no migrations
 // are applied from this worker.

@@ -1,7 +1,6 @@
 // @ts-check
 
 import mdx from '@astrojs/mdx';
-import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -79,7 +78,11 @@ function doQueueStubIntegration() {
 export default defineConfig({
 	site: 'https://eonmun.com',
 	output: 'server',
-	integrations: [mdx(), sitemap(), doQueueStubIntegration()],
+	integrations: [mdx(), doQueueStubIntegration()],
+	server: {
+		host: true,
+		allowedHosts: true,
+	},
 
 	vite: {
 		plugins: [tailwindcss()],
