@@ -23,6 +23,14 @@ inputs:
     description: 'DNS-safe alias for the preview URL (mode=upload only). When set, the preview URL becomes <alias>-eonmun-astro.<acct>.workers.dev instead of <version-id>-…. Sanitize before passing — only [a-z0-9-] survives in DNS.'
     required: false
     default: ''
+  turso-database-url:
+    description: 'Optional TURSO_DATABASE_URL secret to upload alongside the worker version.'
+    required: false
+    default: ''
+  turso-auth-token:
+    description: 'Optional TURSO_AUTH_TOKEN secret to upload alongside the worker version.'
+    required: false
+    default: ''
 
 outputs:
   preview_url:
@@ -75,6 +83,30 @@ runs:
       working-directory: code
       run: bun run astro build
 
+    - name: Prepare runtime secrets file
+      id: runtime-secrets
+      shell: bash
+      env:
+        TURSO_DATABASE_URL: ${{ inputs.turso-database-url }}
+        TURSO_AUTH_TOKEN: ${{ inputs.turso-auth-token }}
+      run: |
+        path="$RUNNER_TEMP/eonmun-astro-secrets.json"
+        node -e '
+          const fs = require("fs");
+          const path = process.argv[1];
+          const secrets = {};
+          for (const key of ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]) {
+            const value = process.env[key];
+            if (value) secrets[key] = value;
+          }
+          if (Object.keys(secrets).length > 0) {
+            fs.writeFileSync(path, JSON.stringify(secrets));
+          }
+        ' "$path"
+        if [ -f "$path" ]; then
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Deploy to Cloudflare (promote)
       if: inputs.mode == 'deploy'
       shell: bash
@@ -82,21 +114,17 @@ runs:
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
-      run: bunx wrangler deploy
+      run: |
+        args=()
+        if [ -n "${{ steps.runtime-secrets.outputs.path }}" ]; then
+          args+=(--secrets-file "${{ steps.runtime-secrets.outputs.path }}")
+        fi
+        bunx wrangler deploy "${args[@]}"
 
     # `wrangler versions upload` creates a versioned preview without
     # touching the production alias. `--preview-alias` gives it a
-    # DNS-safe URL like <alias>-eonmun.<acct>.workers.dev
+    # DNS-safe URL like <alias>-eonmun-astro.<acct>.workers.dev
     # instead of the opaque <version-id>-… form.
-    #
-    # The worker name comes from code/wrangler.jsonc (`eonmun`) so the
-    # version uploads against the legacy Next.js worker and inherits its
-    # secrets (TURSO_*, STRIPE_*, SMTP_*). Production traffic on
-    # eonmun.com stays on whichever version is currently promoted —
-    # `wrangler versions upload` only creates a new non-promoted version.
-    # Combining `--name` with `--preview-alias` silently drops the alias
-    # in wrangler 4.92, so don't reintroduce the flag here; change the
-    # name in wrangler.jsonc instead if you need to retarget.
     - name: Upload versioned preview
       id: upload
       if: inputs.mode == 'upload'
@@ -109,6 +137,9 @@ runs:
       run: |
         set -o pipefail
         passthrough=()
+        if [ -n "${{ steps.runtime-secrets.outputs.path }}" ]; then
+          passthrough+=(--secrets-file "${{ steps.runtime-secrets.outputs.path }}")
+        fi
         if [ -n "$PREVIEW_ALIAS" ]; then
           passthrough+=(--preview-alias "$PREVIEW_ALIAS")
         fi
@@ -122,15 +153,18 @@ runs:
         # 3. Generic regex for any workers.dev URL in the log — kept
         #    as a last-resort fallback in case wrangler changes its
         #    log prefixes in a future version.
-        url="$(grep -oE 'Version Preview Alias URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview Alias URL: //')"
+        url="$(grep -oE 'Version Preview Alias URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview Alias URL: //' || true)"
         if [ -z "$url" ]; then
-          url="$(grep -oE 'Version Preview URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview URL: //')"
+          url="$(grep -oE 'Version Preview URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview URL: //' || true)"
         fi
         if [ -z "$url" ]; then
-          url="$(grep -oE 'https://[a-z0-9-]+-eonmun\.[a-z0-9]+\.workers\.dev' "$log_file" | head -1)"
+          url="$(grep -oE 'https://[a-z0-9-]+-eonmun-astro\.[a-z0-9]+\.workers\.dev' "$log_file" | head -1 || true)"
         fi
         if [ -n "$url" ]; then
           echo "preview_url=$url" >> "$GITHUB_OUTPUT"
           echo "## Preview URL" >> "$GITHUB_STEP_SUMMARY"
           echo "$url" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "Failed to capture a preview URL from wrangler output." >&2
+          exit 1
         fi

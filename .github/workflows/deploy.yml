@@ -22,22 +22,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Master push promotes astro to production on the `eonmun` worker
-      # (replacing whatever version is currently active — initially the
-      # Next.js + OpenNext build). The worker name is set in
-      # code/wrangler.jsonc, so the same target works for previews and
-      # production.
-      #
-      # After the first `wrangler deploy` lands, the worker is "claimed"
-      # for wrangler's deployment model and subsequent
-      # `wrangler versions upload --preview-alias` calls (used by
-      # preview.yml) start emitting branch-aliased preview URLs.
-      #
-      # Rollback to the prior Next.js version is one command:
-      #   bunx wrangler versions deploy --name eonmun <old-version-id>
-      - name: Deploy Astro to eonmun (production)
+      # Master pushes deploy the dedicated Astro worker defined in
+      # code/wrangler.jsonc. This keeps previews and production-candidate
+      # uploads isolated from the legacy OpenNext worker while the cutover
+      # plan is still in flux.
+      - name: Deploy Astro worker
         uses: ./.github/actions/cloudflare-deploy
         with:
           mode: deploy
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          turso-database-url: ${{ secrets.TURSO_DATABASE_URL }}
+          turso-auth-token: ${{ secrets.TURSO_AUTH_TOKEN }}

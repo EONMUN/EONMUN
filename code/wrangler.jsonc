@@ -8,21 +8,19 @@
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	// Name matches the legacy Next.js worker so previews upload as
-	// versions of it and inherit its secrets (TURSO_*, STRIPE_*, SMTP_*).
-	// Production traffic on eonmun.com stays on whichever version is
-	// currently promoted (the Next.js one); `wrangler versions upload`
-	// creates a new non-promoted version. CRITICAL: do not run plain
-	// `wrangler deploy` from this directory — that promotes astro to
-	// production. Use `wrangler versions deploy` only when the cutover
-	// is intentional.
-	"name": "eonmun",
+	// Use a dedicated worker so preview URLs can be generated without
+	// inheriting the legacy OpenNext worker's Durable Object surface.
+	"name": "eonmun-astro",
+	"preview_urls": true,
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"compatibility_date": "2026-05-13",
 	"compatibility_flags": [
 		"global_fetch_strictly_public",
 		"nodejs_compat"
 	],
+	"secrets": {
+		"required": ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]
+	},
 	"assets": {
 		"directory": "./dist",
 		"binding": "ASSETS"
@@ -35,8 +33,8 @@
 	},
 	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare
 	// adapter. Bound explicitly to the pre-provisioned `eonmun-session`
-	// namespace so `wrangler versions upload` doesn't try to auto-create
-	// it on every deploy (Cloudflare rejects duplicate-name creation).
+	// namespace so deploys reuse the same namespace instead of trying to
+	// auto-create a duplicate on each upload.
 	"kv_namespaces": [
 		{ "binding": "SESSION", "id": "bb7fb2ed056c45cbbed3751258005fe6" }
 	]
