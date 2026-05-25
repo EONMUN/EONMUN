@@ -86,3 +86,9 @@ export function getStaticProductDetails(): StaticProductDetail[] {
 export function getStaticHomepageSlides(): StaticArtwork[] {
 	return catalog.homepage;
 }
+
+export function getStaticProductBySlug(slug: string): StaticProductDetail | null {
+	return (
+		getStaticProductDetails().find((product) => product.slug === slug) ?? null
+	);
+}

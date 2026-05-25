@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 
 import { getProductAvailabilityBySlug } from "../../../db/queries";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
+import { getStaticProductBySlug } from "../../../lib/static-catalog";
 
 export const prerender = false;
 
@@ -11,13 +12,29 @@ export const GET: APIRoute = async ({ params }) => {
 		return new Response("Not found", { status: 404 });
 	}
 
-	const env = getRuntimeEnv();
-	const availability = await getProductAvailabilityBySlug(env, slug);
-	if (!availability) {
+	try {
+		const env = getRuntimeEnv();
+		const availability = await getProductAvailabilityBySlug(env, slug);
+		if (availability) {
+			return Response.json(availability, {
+				headers: {
+					"cache-control": "no-store",
+				},
+			});
+		}
+	} catch {}
+
+	const fallbackProduct = getStaticProductBySlug(slug);
+	if (!fallbackProduct) {
 		return new Response("Not found", { status: 404 });
 	}
 
-	return Response.json(availability, {
+	return Response.json({
+		slug: fallbackProduct.slug,
+		type: fallbackProduct.type,
+		available: true,
+		status: "available",
+	}, {
 		headers: {
 			"cache-control": "no-store",
 		},
