@@ -1,6 +1,6 @@
 // Query helpers for SSR routes. Read-only; no mutations from the Astro worker.
 // Distilled from `~/repos/EONMUN/EONMUN/src/models/*.ts`.
-import { and, eq, inArray, isNotNull, isNull, or, lte, desc } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
 import {
 	getDb,
 	type Env,
@@ -56,6 +56,13 @@ export interface PostWithRelations extends SelectPost {
 
 export interface ProductWithArtwork extends SelectProduct {
 	artwork: ArtworkWithDefaultImage | null;
+}
+
+export interface ProductAvailability {
+	slug: string;
+	type: string;
+	available: boolean;
+	status: "available" | "sold" | "out_of_stock";
 }
 
 function publishedCondition() {
@@ -327,7 +334,15 @@ export async function getAvailableProducts(
 	env: Env,
 ): Promise<ProductWithArtwork[]> {
 	const db = getDb(env);
-	const rows = await db.select().from(products).where(isNull(products.soldAt));
+	const rows = await db
+		.select()
+		.from(products)
+		.where(
+			or(
+				and(eq(products.type, "artwork"), isNull(products.soldAt)),
+				gt(products.quantity, 0),
+			),
+		);
 	if (rows.length === 0) return [];
 
 	const artworkIds = rows
@@ -371,6 +386,39 @@ export async function getAvailableProducts(
 		...p,
 		artwork: p.artworkId !== null ? (artworkById.get(p.artworkId) ?? null) : null,
 	}));
+}
+
+export async function getProductAvailabilityBySlug(
+	env: Env,
+	slug: string,
+): Promise<ProductAvailability | null> {
+	const db = getDb(env);
+	const [product] = await db
+		.select({
+			slug: products.slug,
+			type: products.type,
+			soldAt: products.soldAt,
+			quantity: products.quantity,
+		})
+		.from(products)
+		.where(eq(products.slug, slug));
+	if (!product) return null;
+
+	const isUniqueArtwork = product.type === "artwork";
+	const available = isUniqueArtwork
+		? product.soldAt === null
+		: (product.quantity ?? 0) > 0;
+
+	return {
+		slug: product.slug,
+		type: product.type,
+		available,
+		status: available
+			? "available"
+			: isUniqueArtwork
+				? "sold"
+				: "out_of_stock",
+	};
 }
 
 export async function getProductBySlug(

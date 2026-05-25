@@ -6,11 +6,12 @@
 		"node": ">=22.12.0"
 	},
 	"scripts": {
-		"dev": "astro dev",
-		"build": "astro build",
-		"preview": "astro build && astro preview",
+		"catalog:sync": "node ./scripts/sync-static-catalog.mjs",
+		"dev": "node ./scripts/sync-static-catalog.mjs && astro dev",
+		"build": "node ./scripts/sync-static-catalog.mjs && astro build",
+		"preview": "node ./scripts/sync-static-catalog.mjs && astro build && astro preview",
 		"astro": "astro",
-		"deploy": "astro build && wrangler deploy",
+		"deploy": "node ./scripts/sync-static-catalog.mjs && astro build && wrangler deploy",
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {

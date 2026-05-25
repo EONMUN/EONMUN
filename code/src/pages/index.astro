@@ -2,95 +2,21 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getArtworkCollectionHref } from '../lib/paths';
+import { getStaticHomepageSlides } from '../lib/static-catalog';
 
-// Prerendered. Snapshot of the live homepage carousel (admin-configurable
-// in the legacy app via getHomePageData). Once Turso Worker secrets are
-// set we can promote this to SSR-with-cache and read the live slide
-// configuration from the DB.
 export const prerender = true;
 
-interface CarouselSlide {
-	src: string;
-	title: string;
-	year: number;
-	collections: { slug: string; name: string }[];
-}
-
-// Hardcoded snapshot of the legacy homepage's admin-configured slides
-// (8 artworks). Mirrors the ArtworkInfo overlay's Name/Year/Collection(s)
-// structure rendered by HomePageArtworkCarousel in the legacy app.
-const slides: CarouselSlide[] = [
-	{
-		src: 'https://r2.eonmun.com/1775752300190-44673548e9cb29c8.jpeg',
-		title: 'Before the Eternal',
-		year: 2025,
-		collections: [
-			{ slug: 'oriental', name: 'Oriental' },
-			{ slug: '2025', name: '2025' },
-		],
-	},
-	{
-		src: 'https://r2.eonmun.com/1775751480745-23b12edb2a0730ae.jpeg',
-		title: 'Poppies',
-		year: 2026,
-		collections: [
-			{ slug: 'botanica', name: 'Botánica' },
-			{ slug: 'dorada', name: 'Dorada' },
-		],
-	},
-	{
-		src: 'https://r2.eonmun.com/1767296108544-1e9fc0562e8c704e.jpeg',
-		title: 'When Clouds Part',
-		year: 2025,
-		collections: [
-			{ slug: 'oriental', name: 'Oriental' },
-			{ slug: '2025', name: '2025' },
-		],
-	},
-	{
-		src: 'https://r2.eonmun.com/1775753048979-db1aaf6dbf2f2b27.jpeg',
-		title: 'Somewhere in West Texas',
-		year: 2026,
-		collections: [{ slug: 'dorada', name: 'Dorada' }],
-	},
-	{
-		src: 'https://r2.eonmun.com/1775753290453-8db9813ccc72ab26.jpeg',
-		title: 'Crane Beneath the Maple',
-		year: 2026,
-		collections: [
-			{ slug: 'oriental', name: 'Oriental' },
-			{ slug: 'dorada', name: 'Dorada' },
-		],
-	},
-	{
-		src: 'https://r2.eonmun.com/PERS_Int_b08c7cef7c.jpeg',
-		title: 'Persimmons del Oro',
-		year: 2025,
-		collections: [{ slug: 'dorada', name: 'Dorada' }],
-	},
-	{
-		src: 'https://r2.eonmun.com/LIM_Int_2b192a6609.jpeg',
-		title: 'Limones del Cobre',
-		year: 2025,
-		collections: [{ slug: 'dorada', name: 'Dorada' }],
-	},
-	{
-		src: 'https://r2.eonmun.com/quetzalcoatlin_tetl_e3a31b4836.jpeg',
-		title: 'Quetzalcōātlin tetl',
-		year: 2025,
-		collections: [{ slug: 'black-and-white', name: 'B&W' }],
-	},
-];
+const slides = getStaticHomepageSlides();
 
 const slideSeconds = 5;
 const cycleSeconds = slides.length * slideSeconds;
 ---
-<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0].src}>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0]?.defaultImageUrl ?? undefined}>
 	<div class="hero-carousel">
 		{slides.map((slide, i) => (
 			<figure class="slide" style={`animation-delay: ${i * slideSeconds}s;`}>
 				<img
-					src={slide.src}
+					src={slide.defaultImageUrl ?? ''}
 					alt={slide.title}
 					loading={i === 0 ? 'eager' : 'lazy'}
 					fetchpriority={i === 0 ? 'high' : 'auto'}
@@ -102,7 +28,7 @@ const cycleSeconds = slides.length * slideSeconds;
 					</div>
 					<div class="field">
 						<div class="label">Year</div>
-						<div class="value">{slide.year}</div>
+						<div class="value">{slide.year ?? 'Untitled'}</div>
 					</div>
 					<div class="field">
 						<div class="label">{slide.collections.length > 1 ? 'Collections' : 'Collection'}</div>

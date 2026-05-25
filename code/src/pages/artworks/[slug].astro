@@ -1,28 +1,26 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getArtworkBySlug } from '../../db/queries';
-import { setEdgeCache } from '../../lib/cache';
+import InventoryState from '../../components/InventoryState.astro';
 import { getArtworkCollectionHref } from '../../lib/paths';
-import { getRuntimeEnv } from '../../lib/runtime-env';
+import { getStaticArtworkDetails, type StaticArtworkDetail } from '../../lib/static-catalog';
 
-const { slug } = Astro.params;
-if (!slug) {
-	return new Response('Not found', { status: 404 });
+export const prerender = true;
+
+export function getStaticPaths() {
+	return getStaticArtworkDetails().map((artwork) => ({
+		params: { slug: artwork.slug },
+		props: { artwork },
+	}));
 }
 
-const env = getRuntimeEnv();
-const artwork = await getArtworkBySlug(env, slug);
-
-if (!artwork) {
-	return new Response('Not found', { status: 404 });
+interface Props {
+	artwork: StaticArtworkDetail;
 }
 
-setEdgeCache(Astro);
-
+const { artwork } = Astro.props as Props;
 const defaultImage = artwork.images.find((i) => i.isDefault) ?? artwork.images[0];
 const mainImage = defaultImage?.url ?? artwork.defaultImageUrl;
 const price = artwork.product ? artwork.product.price / 100 : null;
-const dimensions = [artwork.width, artwork.height, artwork.depth].filter(Boolean);
 ---
 <BaseLayout
 	title={`${artwork.title} — EONMUN`}
@@ -73,12 +71,14 @@ const dimensions = [artwork.width, artwork.height, artwork.depth].filter(Boolean
 
 				<div class="border-t border-b border-gray-200 dark:border-gray-700 py-6">
 					{artwork.product ? (
-						<a
-							href={`/store/${artwork.product.slug}`}
-							class="inline-flex items-center justify-center px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 transition-opacity font-medium"
-						>
-							View in Store {price !== null && `— $${price.toLocaleString()}`}
-						</a>
+						<div class="space-y-2">
+							{price !== null && (
+								<p class="text-sm text-gray-500 dark:text-gray-400">
+									Listed at ${price.toLocaleString()}
+								</p>
+							)}
+							<InventoryState productSlug={artwork.product.slug} variant="artwork" />
+						</div>
 					) : (
 						<p class="text-sm text-gray-500 dark:text-gray-400">Not currently available for purchase.</p>
 					)}
@@ -112,12 +112,6 @@ const dimensions = [artwork.width, artwork.height, artwork.depth].filter(Boolean
 					<dl class="space-y-2 text-sm">
 						{artwork.artist && (
 							<div class="flex justify-between"><dt class="text-gray-500">Artist</dt><dd>{artwork.artist}</dd></div>
-						)}
-						{dimensions.length > 0 && (
-							<div class="flex justify-between">
-								<dt class="text-gray-500">Dimensions</dt>
-								<dd>{dimensions.join(' x ')} {artwork.dimensionUnit ?? 'in'}</dd>
-							</div>
 						)}
 					</dl>
 				</div>
