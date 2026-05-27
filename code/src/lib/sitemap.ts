@@ -3,8 +3,11 @@ import type { Env } from "../db";
 import {
 	getAllArtworks,
 	getAvailableProducts,
-	getPublishedPosts,
 } from "../db/queries";
+import {
+	getPostPublishedTime,
+	getPublishedPostEntries,
+} from "./post-content";
 
 export interface SitemapEntry {
 	loc: string;
@@ -55,23 +58,24 @@ export async function getSitemapEntries(env: Env, site?: URL): Promise<SitemapEn
 	const staticEntries = STATIC_PATHS.map((pathname) => ({
 		loc: toAbsoluteUrl(baseUrl, pathname),
 	}));
+	const posts = await getPublishedPostEntries();
+	const postEntries = posts.map((post) => ({
+		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
+		lastmod: getPostPublishedTime(post),
+	}));
 
 	try {
-		const [artworks, posts, products] = await Promise.all([
+		const [artworks, products] = await Promise.all([
 			getAllArtworks(env),
-			getPublishedPosts(env),
 			getAvailableProducts(env),
 		]);
 
 		return [
 			...staticEntries,
+			...postEntries,
 			...artworks.map((artwork) => ({
 				loc: toAbsoluteUrl(baseUrl, `/artworks/${artwork.slug}`),
 				lastmod: toLastModified(artwork.updatedAt ?? artwork.publishedAt),
-			})),
-			...posts.map((post) => ({
-				loc: toAbsoluteUrl(baseUrl, `/posts/${post.slug}`),
-				lastmod: toLastModified(post.updatedAt ?? post.publishedAt ?? post.scheduledAt),
 			})),
 			...products.map((product) => ({
 				loc: toAbsoluteUrl(baseUrl, `/store/${product.slug}`),
@@ -80,10 +84,10 @@ export async function getSitemapEntries(env: Env, site?: URL): Promise<SitemapEn
 		];
 	} catch (error) {
 		if (error instanceof Error && error.message.includes("TURSO_DATABASE_URL is not set")) {
-			return staticEntries;
+			return [...staticEntries, ...postEntries];
 		}
 		console.error("Error generating sitemap:", error);
-		return staticEntries;
+		return [...staticEntries, ...postEntries];
 	}
 }
 

@@ -66,6 +66,10 @@ const artworkBySlug = new Map(
 	catalog.artworks.map((artwork) => [artwork.slug, artwork]),
 );
 
+const collectionBySlug = new Map(
+	catalog.collections.map((collection) => [collection.slug, collection]),
+);
+
 export function getStaticArtworkDetails(): StaticArtworkDetail[] {
 	return catalog.artworks.map((artwork) => ({
 		...artwork,
@@ -91,4 +95,24 @@ export function getStaticProductBySlug(slug: string): StaticProductDetail | null
 	return (
 		getStaticProductDetails().find((product) => product.slug === slug) ?? null
 	);
+}
+
+export function getStaticArtworkBySlug(slug: string): StaticArtwork | null {
+	return artworkBySlug.get(slug) ?? null;
+}
+
+export function getStaticArtworksBySlugs(slugs: string[]) {
+	return slugs
+		.map((slug) => getStaticArtworkBySlug(slug))
+		.filter((artwork): artwork is StaticArtwork => artwork !== null);
+}
+
+export function getStaticCollectionBySlug(slug: string): StaticCollectionRef | null {
+	return collectionBySlug.get(slug) ?? null;
+}
+
+export function getStaticCollectionsBySlugs(slugs: string[]) {
+	return slugs
+		.map((slug) => getStaticCollectionBySlug(slug))
+		.filter((collection): collection is StaticCollectionRef => collection !== null);
 }

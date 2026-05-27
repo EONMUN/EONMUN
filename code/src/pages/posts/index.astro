@@ -1,33 +1,21 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPublishedPosts } from '../../db/queries';
-import { setEdgeCache } from '../../lib/cache';
 import type { PostType } from '../../db';
-import { getRuntimeEnv } from '../../lib/runtime-env';
+import {
+	getPostCoverImage,
+	getPublishedPostEntries,
+	TYPE_LABELS,
+	VALID_POST_TYPES,
+} from '../../lib/post-content';
 
-const VALID_TYPES: PostType[] = [
-	'announcement',
-	'educational',
-	'behind_the_scenes',
-	'general',
-];
-const TYPE_LABELS: Record<PostType, string> = {
-	announcement: 'Announcements',
-	educational: 'Educational',
-	behind_the_scenes: 'Behind the Scenes',
-	general: 'General',
-};
+export const prerender = true;
 
 const typeParam = Astro.url.searchParams.get('type');
-const postType = typeParam && VALID_TYPES.includes(typeParam as PostType)
+const postType = typeParam && VALID_POST_TYPES.includes(typeParam as PostType)
 	? (typeParam as PostType)
 	: undefined;
 
-const env = getRuntimeEnv();
-const posts = await getPublishedPosts(env, postType);
-
-// Listings move more often than detail pages — use the shorter TTL.
-setEdgeCache(Astro, 'short');
+const posts = await getPublishedPostEntries(postType);
 ---
 <BaseLayout
 	title={postType ? `${TYPE_LABELS[postType]} — Posts — EONMUN` : 'Posts — EONMUN'}
@@ -47,12 +35,12 @@ setEdgeCache(Astro, 'short');
 					!postType ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500',
 				]}
 			>
-				All
-			</a>
-			{VALID_TYPES.map((t) => (
-				<a
-					href={`/posts?type=${t}`}
-					class:list={[
+					All
+				</a>
+				{VALID_POST_TYPES.map((t) => (
+					<a
+						href={`/posts?type=${t}`}
+						class:list={[
 						'px-3 py-1 rounded-full text-sm font-medium border transition-colors',
 						postType === t ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500',
 					]}
@@ -62,33 +50,33 @@ setEdgeCache(Astro, 'short');
 			))}
 		</div>
 
-		{posts.length > 0 ? (
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{posts.map((post) => (
-					<a
-						href={`/posts/${post.slug}`}
-						class="block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
-					>
-						{post.coverImageUrl && (
-							<div class="aspect-video bg-gray-100 dark:bg-gray-800 overflow-hidden">
-								<img
-									src={post.coverImageUrl}
-									alt={post.title}
-									loading="lazy"
-									class="w-full h-full object-cover"
-								/>
-							</div>
-						)}
-						<div class="p-4">
-							<p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-								{TYPE_LABELS[post.postType as PostType] ?? post.postType}
-							</p>
-							<h2 class="text-lg font-semibold mb-2">{post.title}</h2>
-							{post.excerpt && (
-								<p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">{post.excerpt}</p>
+			{posts.length > 0 ? (
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{posts.map((post) => (
+						<a
+							href={`/posts/${post.id}`}
+							class="block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+						>
+							{getPostCoverImage(post) && (
+								<div class="aspect-video bg-gray-100 dark:bg-gray-800 overflow-hidden">
+									<img
+										src={getPostCoverImage(post) ?? undefined}
+										alt={post.data.title}
+										loading="lazy"
+										class="w-full h-full object-cover"
+									/>
+								</div>
 							)}
-						</div>
-					</a>
+							<div class="p-4">
+								<p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+									{TYPE_LABELS[post.data.postType as PostType] ?? post.data.postType}
+								</p>
+								<h2 class="text-lg font-semibold mb-2">{post.data.title}</h2>
+								{post.data.excerpt && (
+									<p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">{post.data.excerpt}</p>
+								)}
+							</div>
+						</a>
 				))}
 			</div>
 		) : (

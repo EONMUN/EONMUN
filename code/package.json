@@ -7,11 +7,13 @@
 	},
 	"scripts": {
 		"catalog:sync": "node ./scripts/sync-static-catalog.mjs",
-		"dev": "node ./scripts/sync-static-catalog.mjs && astro dev",
-		"build": "node ./scripts/sync-static-catalog.mjs && astro build",
-		"preview": "node ./scripts/sync-static-catalog.mjs && astro build && astro preview",
+		"posts:sync": "node ./scripts/sync-posts-content.mjs",
+		"content:sync": "node ./scripts/sync-static-catalog.mjs && node ./scripts/sync-posts-content.mjs",
+		"dev": "npm run content:sync && astro dev",
+		"build": "npm run content:sync && astro build",
+		"preview": "npm run content:sync && astro build && astro preview",
 		"astro": "astro",
-		"deploy": "node ./scripts/sync-static-catalog.mjs && astro build && wrangler deploy",
+		"deploy": "npm run content:sync && astro build && wrangler deploy",
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
