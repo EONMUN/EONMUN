@@ -3,6 +3,8 @@ import Google, { type GoogleProfile } from "@auth/core/providers/google";
 
 export interface AuthEnv {
 	ADMIN_EMAILS?: string;
+	AUTH_GOOGLE_ID?: string;
+	AUTH_GOOGLE_SECRET?: string;
 	AUTH_SECRET?: string;
 	AUTH_REDIRECT_PROXY_URL?: string;
 	GOOGLE_CLIENT_ID?: string;
@@ -48,10 +50,25 @@ export function isAllowedAdminEmail(email: string | null | undefined, env: AuthE
 	return getAllowedAdminEmails(env).has(email.toLowerCase());
 }
 
+export function getAuthConfigIssues(env: AuthEnv) {
+	const issues: string[] = [];
+	const googleClientId = getStringEnv(env, "GOOGLE_CLIENT_ID") ?? getStringEnv(env, "AUTH_GOOGLE_ID");
+	const googleClientSecret =
+		getStringEnv(env, "GOOGLE_CLIENT_SECRET") ?? getStringEnv(env, "AUTH_GOOGLE_SECRET");
+
+	if (!getStringEnv(env, "AUTH_SECRET")) issues.push("AUTH_SECRET");
+	if (!googleClientId) issues.push("GOOGLE_CLIENT_ID or AUTH_GOOGLE_ID");
+	if (!googleClientSecret) issues.push("GOOGLE_CLIENT_SECRET or AUTH_GOOGLE_SECRET");
+	if (getAllowedAdminEmails(env).size === 0) issues.push("ADMIN_EMAILS");
+
+	return issues;
+}
+
 export function getAuthConfig(env: AuthEnv): AuthConfig {
 	const allowedAdminEmails = getAllowedAdminEmails(env);
-	const googleClientId = getStringEnv(env, "GOOGLE_CLIENT_ID");
-	const googleClientSecret = getStringEnv(env, "GOOGLE_CLIENT_SECRET");
+	const googleClientId = getStringEnv(env, "GOOGLE_CLIENT_ID") ?? getStringEnv(env, "AUTH_GOOGLE_ID");
+	const googleClientSecret =
+		getStringEnv(env, "GOOGLE_CLIENT_SECRET") ?? getStringEnv(env, "AUTH_GOOGLE_SECRET");
 
 	return {
 		basePath: "/api/auth",

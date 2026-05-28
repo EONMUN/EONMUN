@@ -6,6 +6,8 @@
 // on `cloudflare:workers` env at request time.
 type CloudflareEnv = {
 	ADMIN_EMAILS?: string;
+	AUTH_GOOGLE_ID?: string;
+	AUTH_GOOGLE_SECRET?: string;
 	AUTH_REDIRECT_PROXY_URL?: string;
 	AUTH_SECRET?: string;
 	GOOGLE_CLIENT_ID?: string;

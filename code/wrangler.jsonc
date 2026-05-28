@@ -5,8 +5,8 @@
 //   TURSO_DATABASE_URL   — libsql connection URL to the production Turso DB
 //   TURSO_AUTH_TOKEN     — Turso auth token
 //   AUTH_SECRET          — Auth.js JWT/session encryption secret
-//   GOOGLE_CLIENT_ID     — Google OAuth client ID for `/api/auth`
-//   GOOGLE_CLIENT_SECRET — Google OAuth client secret for `/api/auth`
+//   AUTH_GOOGLE_ID       — Google OAuth client ID for `/api/auth`
+//   AUTH_GOOGLE_SECRET   — Google OAuth client secret for `/api/auth`
 //   STRIPE_SECRET_KEY    — only when `/api/checkout` is implemented (later PR)
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 {
@@ -29,7 +29,7 @@
 		"enabled": true
 	},
 	"vars": {
-		"ADMIN_EMAILS": "",
+		"ADMIN_EMAILS": "ncrmro@gmail.com",
 		"R2_PUBLIC_URL": "https://r2.eonmun.com"
 	},
 	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare
