@@ -29,11 +29,13 @@ export const GET: APIRoute = async ({ params }) => {
 		return new Response("Not found", { status: 404 });
 	}
 
+	const available = fallbackProduct.data.quantity !== 0;
+
 	return Response.json({
 		slug: fallbackProduct.id,
 		type: fallbackProduct.data.type,
-		available: true,
-		status: "available",
+		available,
+		status: available ? "available" : "sold",
 	}, {
 		headers: {
 			"cache-control": "no-store",

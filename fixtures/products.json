@@ -3,6 +3,7 @@
     "type": "artwork",
     "artworkSlug": "soleil-et-montagnes",
     "price": 100000,
+    "quantity": 0,
     "description": "Original watercolor artwork with certificate of authenticity"
   },
   {
@@ -51,6 +52,7 @@
     "type": "artwork",
     "artworkSlug": "quetzalcoatlin-tetl",
     "price": 145000,
+    "quantity": 0,
     "description": "Original watercolor artwork with certificate of authenticity"
   },
   {
