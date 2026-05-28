@@ -5,6 +5,11 @@
 // build does not fail in CI. Worker secrets like TURSO_DATABASE_URL surface
 // on `cloudflare:workers` env at request time.
 type CloudflareEnv = {
+	ADMIN_EMAILS?: string;
+	AUTH_REDIRECT_PROXY_URL?: string;
+	AUTH_SECRET?: string;
+	GOOGLE_CLIENT_ID?: string;
+	GOOGLE_CLIENT_SECRET?: string;
 	TURSO_DATABASE_URL?: string;
 	TURSO_AUTH_TOKEN?: string;
 	STRIPE_SECRET_KEY?: string;
