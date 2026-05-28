@@ -14,6 +14,7 @@
 	// Use a dedicated worker so preview URLs can be generated without
 	// inheriting the legacy OpenNext worker's Durable Object surface.
 	"name": "eonmun-astro",
+	"workers_dev": true,
 	"preview_urls": true,
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"compatibility_date": "2026-05-13",
@@ -28,6 +29,9 @@
 	"observability": {
 		"enabled": true
 	},
+	"routes": [
+		{ "pattern": "eonmun.com", "custom_domain": true }
+	],
 	"vars": {
 		"ADMIN_EMAILS": "ncrmro@gmail.com",
 		"R2_PUBLIC_URL": "https://r2.eonmun.com"
