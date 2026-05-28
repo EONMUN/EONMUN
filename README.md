@@ -1,37 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EONMUN
 
-## Getting Started
+EONMUN is the public portfolio and storefront for the artist EONMUN.
 
-First, run the development server:
+The production site is an Astro application deployed to Cloudflare Workers at `https://eonmun.com`. Most public pages are built from Astro content collections so portfolio, artwork, store, post, and sitemap pages can be served statically. Small dynamic endpoints remain for runtime-only behavior such as inventory checks, contact handling, checkout, debug output, and Auth.js admin access.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Project shape
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `code/` is the active Astro workspace and Bun package root.
+- `code/src/content/artworks/` contains artwork MDX entries.
+- `code/src/content/products/` contains store product MDX entries.
+- `code/src/content/posts/` contains post MDX entries.
+- `code/src/content/collections/` contains collection metadata.
+- `code/src/pages/` contains Astro routes and API endpoints.
+- `code/wrangler.jsonc` defines the `eonmun-astro` Cloudflare Worker.
+- `data/uploads/` tracks R2-backed media pointers through Git LFS.
+- `src/`, `drizzle/`, `hardhat/`, and other legacy root app directories are retained for history or follow-up migration work, but the live website is under `code/`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Live routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/` homepage
+- `/artworks` and `/artworks/[slug]`
+- `/store` and `/store/[slug]`
+- `/posts` and `/posts/[slug]`
+- `/contact`
+- `/admin`, protected by Auth.js and an allowed email list
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
+See [CONTRIBUTOR.md](./CONTRIBUTOR.md) for setup, development, validation, and deploy notes.

@@ -11,11 +11,11 @@
 		"products:sync": "node ./scripts/sync-products-content.mjs",
 		"posts:sync": "node ./scripts/sync-posts-content.mjs",
 		"content:sync": "node ./scripts/sync-collections-content.mjs && node ./scripts/sync-artworks-content.mjs && node ./scripts/sync-products-content.mjs && node ./scripts/sync-posts-content.mjs",
-		"dev": "npm run content:sync && astro dev",
-		"build": "npm run content:sync && astro build",
-		"preview": "npm run content:sync && astro build && astro preview",
+		"dev": "bun run content:sync && astro dev",
+		"build": "bun run content:sync && astro build",
+		"preview": "bun run content:sync && astro build && astro preview",
 		"astro": "astro",
-		"deploy": "npm run content:sync && astro build && wrangler deploy",
+		"deploy": "bun run content:sync && astro build && wrangler deploy",
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {

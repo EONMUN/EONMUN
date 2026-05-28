@@ -1,5 +1,5 @@
 {
-  description = "KS Systems Web development environment";
+  description = "EONMUN Astro development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -20,9 +20,6 @@
 
         packages = with pkgs; [
           nodejs_22
-          pnpm
-          # bun powers the Astro scaffold under astro/. Kept alongside pnpm so
-          # the Next.js app and the Astro subdir each use their native toolchain.
           bun
           sqld
           playwright-mcp
@@ -34,17 +31,16 @@
           export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
           export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$(find $PLAYWRIGHT_BROWSERS_PATH -name chrome | head -n 1)
-          echo "KS Systems Web development shell"
+          echo "EONMUN Astro development shell"
           echo ""
-          echo "Service Ports (Defaults):"
-          echo "  Next.js App: http://localhost:''${WEB_PORT:-6789}"
-          echo "  libSQL DB:   http://localhost:''${DB_PORT:-8080}"
-          echo "  Storybook:   http://localhost:6006"
+          echo "Common paths:"
+          echo "  Astro app: code/"
+          echo "  Dev server: http://localhost:4321"
           echo ""
           echo "Commands:"
-          echo "  make up          - Start libSQL + Next.js dev server"
-          echo "  pnpm dev         - Start Next.js only"
-          echo "  pnpm storybook   - Start Storybook"
+          echo "  cd code && bun install --frozen-lockfile"
+          echo "  cd code && bun run dev"
+          echo "  cd code && bun run build"
           echo ""
         '';
       };
