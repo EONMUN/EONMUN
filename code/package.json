@@ -7,8 +7,9 @@
 	},
 	"scripts": {
 		"catalog:sync": "node ./scripts/sync-static-catalog.mjs",
+		"artworks:sync": "node ./scripts/sync-artworks-content.mjs",
 		"posts:sync": "node ./scripts/sync-posts-content.mjs",
-		"content:sync": "node ./scripts/sync-static-catalog.mjs && node ./scripts/sync-posts-content.mjs",
+		"content:sync": "node ./scripts/sync-static-catalog.mjs && node ./scripts/sync-artworks-content.mjs && node ./scripts/sync-posts-content.mjs",
 		"dev": "npm run content:sync && astro dev",
 		"build": "npm run content:sync && astro build",
 		"preview": "npm run content:sync && astro build && astro preview",

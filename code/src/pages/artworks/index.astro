@@ -1,87 +1,64 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getAllArtworks, getAllCollections } from '../../db/queries';
-import { setEdgeCache } from '../../lib/cache';
+import {
+	getArtworkCollectionFilterOptions,
+	getPublishedArtworkEntries,
+} from '../../lib/artwork-content';
 import { getArtworkCollectionHref } from '../../lib/paths';
-import { getRuntimeEnv } from '../../lib/runtime-env';
 
-const env = getRuntimeEnv();
-const [artworks, collections] = await Promise.all([
-	getAllArtworks(env),
-	getAllCollections(env),
-]);
+export const prerender = true;
 
-const requestedCollectionSlug = Astro.url.searchParams.get('collection')?.trim() ?? null;
-const activeCollection = requestedCollectionSlug
-	? collections.find((collection) => collection.slug === requestedCollectionSlug) ?? null
-	: null;
-const hasUnknownCollectionFilter = Boolean(requestedCollectionSlug && !activeCollection);
-const filteredArtworks = hasUnknownCollectionFilter
-	? []
-	: activeCollection
-		? artworks.filter((artwork) =>
-			artwork.collections.some((collection) => collection.slug === activeCollection.slug),
-		)
-		: artworks;
-const title = activeCollection ? `${activeCollection.name} Artwork — EONMUN` : 'Artworks — EONMUN';
-const description = activeCollection
-	? `Browse ${filteredArtworks.length} work${filteredArtworks.length !== 1 ? 's' : ''} in the ${activeCollection.name} collection.`
-	: `Browse ${artworks.length} artworks from the EONMUN studio.`;
-
-setEdgeCache(Astro);
+const artworks = await getPublishedArtworkEntries();
+const collections = getArtworkCollectionFilterOptions(artworks);
+const description = `Browse ${artworks.length} artworks from the EONMUN studio.`;
 ---
-<BaseLayout title={title} description={description}>
-	<div class="container mx-auto px-4 py-8">
+<BaseLayout title="Artworks — EONMUN" description={description}>
+	<div class="container mx-auto px-4 py-8" data-artworks-root>
 		<div class="mb-8 space-y-4">
 			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Artworks</h1>
-			<p class="text-gray-600 dark:text-gray-400">
-				{activeCollection
-					? `Filtered to ${activeCollection.name}.`
-					: 'Explore the complete collection of artworks.'}
+			<p class="text-gray-600 dark:text-gray-400" data-filter-description>
+				Explore the complete collection of artworks.
 			</p>
 			<div class="flex flex-wrap gap-2">
 				<a
 					href="/artworks"
-					class:list={[
-						'inline-flex items-center rounded-full border px-3 py-1 text-sm transition-colors',
-						!requestedCollectionSlug
-							? 'border-white bg-white text-gray-900'
-							: 'border-gray-300 text-gray-600 hover:border-gray-500 dark:border-gray-600 dark:text-gray-300',
-					]}
+					class="filter-chip is-active"
+					data-filter-link
+					data-collection=""
+					data-collection-name="All"
 				>
 					All
 				</a>
 				{collections.map((collection) => (
 					<a
 						href={getArtworkCollectionHref(collection.slug)}
-						class:list={[
-							'inline-flex items-center rounded-full border px-3 py-1 text-sm transition-colors',
-							activeCollection?.slug === collection.slug
-								? 'border-white bg-white text-gray-900'
-								: 'border-gray-300 text-gray-600 hover:border-gray-500 dark:border-gray-600 dark:text-gray-300',
-						]}
+						class="filter-chip"
+						data-filter-link
+						data-collection={collection.slug}
+						data-collection-name={collection.name}
 					>
 						{collection.name}
 					</a>
 				))}
 			</div>
-			{filteredArtworks.length > 0 && (
-				<p class="text-sm text-gray-500 mt-2">
-					{filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? 's' : ''}
-					{activeCollection && ` in ${activeCollection.name}`}
-				</p>
-			)}
+			<p class="text-sm text-gray-500 mt-2" data-filter-count>
+				{artworks.length} artwork{artworks.length !== 1 ? 's' : ''}
+			</p>
 		</div>
 
-		{filteredArtworks.length > 0 ? (
-			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-				{filteredArtworks.map((artwork) => (
-					<a href={`/artworks/${artwork.slug}`} class="group block">
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" data-artwork-grid>
+			{artworks.map(({ artwork, collections: artworkCollections, defaultImageUrl }) => (
+					<a
+						href={`/artworks/${artwork.id}`}
+						class="group block"
+						data-artwork-card
+						data-collection-slugs={artworkCollections.map((collection) => collection.slug).join(',')}
+					>
 						<div class="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-4">
-							{artwork.defaultImageUrl ? (
+							{defaultImageUrl ? (
 								<img
-									src={artwork.defaultImageUrl}
-									alt={artwork.title}
+									src={defaultImageUrl}
+									alt={artwork.data.title}
 									loading="lazy"
 									class="w-full h-full object-cover transition-transform group-hover:scale-105"
 								/>
@@ -90,27 +67,156 @@ setEdgeCache(Astro);
 							)}
 						</div>
 						<div class="text-center">
-							<h3 class="text-lg font-medium mb-1">{artwork.title}</h3>
-							{artwork.year && <p class="text-sm text-gray-500">{artwork.year}</p>}
+							<h3 class="text-lg font-medium mb-1">{artwork.data.title}</h3>
+							{artwork.data.year && <p class="text-sm text-gray-500">{artwork.data.year}</p>}
 						</div>
 					</a>
-				))}
-			</div>
-		) : (
-			<div class="text-center py-12">
-				<p class="text-gray-600 dark:text-gray-400 text-lg">
-					{hasUnknownCollectionFilter
-						? `No published collection matches “${requestedCollectionSlug}”.`
-						: activeCollection
-							? `No artworks found in ${activeCollection.name}.`
-							: 'No artworks found.'}
-				</p>
-				{requestedCollectionSlug && (
-					<p class="mt-4">
-						<a href="/artworks" class="underline">Clear filter</a>
-					</p>
-				)}
-			</div>
-		)}
+			))}
+		</div>
+
+		<div class="text-center py-12" data-empty-state hidden>
+			<p class="text-gray-600 dark:text-gray-400 text-lg" data-empty-message>No artworks found.</p>
+			<p class="mt-4">
+				<a href="/artworks" class="underline">Clear filter</a>
+			</p>
+		</div>
 	</div>
 </BaseLayout>
+
+<script is:inline>
+	const initArtworkFilters = () => {
+		const root = document.querySelector("[data-artworks-root]");
+		if (!root || root.dataset.filtersReady === "true") return;
+		root.dataset.filtersReady = "true";
+
+		const cards = Array.from(root.querySelectorAll("[data-artwork-card]"));
+		const links = Array.from(root.querySelectorAll("[data-filter-link]"));
+		const description = root.querySelector("[data-filter-description]");
+		const count = root.querySelector("[data-filter-count]");
+		const emptyState = root.querySelector("[data-empty-state]");
+		const emptyMessage = root.querySelector("[data-empty-message]");
+
+		const updateFilterState = () => {
+			const requestedCollectionSlug =
+				new URL(window.location.href).searchParams.get("collection")?.trim() ?? "";
+			const activeLink =
+				links.find((link) => link.dataset.collection === requestedCollectionSlug) ?? null;
+			const hasUnknownCollectionFilter =
+				Boolean(requestedCollectionSlug) && activeLink === null;
+			const activeCollectionName =
+				hasUnknownCollectionFilter || !activeLink || !requestedCollectionSlug
+					? null
+					: activeLink.dataset.collectionName ?? null;
+
+			let visibleCount = 0;
+
+			for (const link of links) {
+				const isActive = requestedCollectionSlug === ""
+					? link.dataset.collection === ""
+					: link === activeLink;
+				link.classList.toggle("is-active", isActive);
+			}
+
+			for (const card of cards) {
+				const cardCollectionSlugs = (card.dataset.collectionSlugs ?? "")
+					.split(",")
+					.map((value) => value.trim())
+					.filter(Boolean);
+				const matchesCollection = requestedCollectionSlug === ""
+					? true
+					: hasUnknownCollectionFilter
+						? false
+						: cardCollectionSlugs.includes(requestedCollectionSlug);
+
+				card.hidden = !matchesCollection;
+				if (matchesCollection) {
+					visibleCount += 1;
+				}
+			}
+
+			if (description) {
+				description.textContent = hasUnknownCollectionFilter
+					? `No published collection matches "${requestedCollectionSlug}".`
+					: activeCollectionName
+						? `Filtered to ${activeCollectionName}.`
+						: "Explore the complete collection of artworks.";
+			}
+
+			if (count) {
+				count.textContent = visibleCount === 0 && hasUnknownCollectionFilter
+					? "0 artworks"
+					: `${visibleCount} artwork${visibleCount === 1 ? "" : "s"}${activeCollectionName ? ` in ${activeCollectionName}` : ""}`;
+			}
+
+			if (emptyState) {
+				emptyState.hidden = visibleCount > 0;
+			}
+
+			if (emptyMessage) {
+				emptyMessage.textContent = hasUnknownCollectionFilter
+					? `No published collection matches "${requestedCollectionSlug}".`
+					: activeCollectionName
+						? `No artworks found in ${activeCollectionName}.`
+						: "No artworks found.";
+			}
+		};
+
+		updateFilterState();
+		window.addEventListener("popstate", updateFilterState);
+
+		for (const link of links) {
+			link.addEventListener("click", () => {
+				queueMicrotask(updateFilterState);
+			});
+		}
+	};
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", initArtworkFilters, {
+			once: true,
+		});
+	} else {
+		initArtworkFilters();
+	}
+</script>
+
+<style>
+	.filter-chip {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid rgb(209 213 219);
+		border-radius: 9999px;
+		padding: 0.25rem 0.75rem;
+		font-size: 0.875rem;
+		color: rgb(75 85 99);
+		transition:
+			border-color 150ms,
+			background-color 150ms,
+			color 150ms;
+	}
+
+	.filter-chip:hover {
+		border-color: rgb(107 114 128);
+	}
+
+	.filter-chip.is-active {
+		border-color: rgb(17 24 39);
+		background: rgb(17 24 39);
+		color: rgb(255 255 255);
+	}
+
+	:global(.dark) .filter-chip {
+		border-color: rgb(75 85 99);
+		color: rgb(209 213 219);
+	}
+
+	:global(.dark) .filter-chip:hover {
+		border-color: rgb(156 163 175);
+	}
+
+	:global(.dark) .filter-chip.is-active {
+		border-color: rgb(255 255 255);
+		background: rgb(255 255 255);
+		color: rgb(17 24 39);
+	}
+</style>

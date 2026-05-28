@@ -1,9 +1,9 @@
 import { SITE_URL } from "../consts";
-import type { Env } from "../db";
 import {
-	getAllArtworks,
-	getAvailableProducts,
-} from "../db/queries";
+	getArtworkPublishedTime,
+	getPublishedArtworkEntries,
+} from "./artwork-content";
+import { getStaticProductDetails } from "./static-catalog";
 import {
 	getPostPublishedTime,
 	getPublishedPostEntries,
@@ -53,42 +53,35 @@ export function getSiteUrl(site?: URL) {
 	return site ?? new URL(SITE_URL);
 }
 
-export async function getSitemapEntries(env: Env, site?: URL): Promise<SitemapEntry[]> {
+export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	const baseUrl = getSiteUrl(site);
 	const staticEntries = STATIC_PATHS.map((pathname) => ({
 		loc: toAbsoluteUrl(baseUrl, pathname),
 	}));
+	const artworks = await getPublishedArtworkEntries();
 	const posts = await getPublishedPostEntries();
+	const products = getStaticProductDetails();
 	const postEntries = posts.map((post) => ({
 		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
 		lastmod: getPostPublishedTime(post),
 	}));
 
-	try {
-		const [artworks, products] = await Promise.all([
-			getAllArtworks(env),
-			getAvailableProducts(env),
-		]);
-
-		return [
-			...staticEntries,
-			...postEntries,
-			...artworks.map((artwork) => ({
-				loc: toAbsoluteUrl(baseUrl, `/artworks/${artwork.slug}`),
-				lastmod: toLastModified(artwork.updatedAt ?? artwork.publishedAt),
-			})),
-			...products.map((product) => ({
-				loc: toAbsoluteUrl(baseUrl, `/store/${product.slug}`),
-				lastmod: toLastModified(product.updatedAt ?? product.createdAt),
-			})),
-		];
-	} catch (error) {
-		if (error instanceof Error && error.message.includes("TURSO_DATABASE_URL is not set")) {
-			return [...staticEntries, ...postEntries];
-		}
-		console.error("Error generating sitemap:", error);
-		return [...staticEntries, ...postEntries];
-	}
+	return [
+		...staticEntries,
+		...postEntries,
+		...artworks.map(({ artwork }) => ({
+			loc: toAbsoluteUrl(baseUrl, `/artworks/${artwork.id}`),
+			lastmod: getArtworkPublishedTime(artwork),
+		})),
+		...products.map((product) => ({
+			loc: toAbsoluteUrl(baseUrl, `/store/${product.slug}`),
+			lastmod: product.artworkSlug
+				? toLastModified(
+					artworks.find(({ artwork }) => artwork.id === product.artworkSlug)?.artwork.data.publishedAt,
+				)
+				: undefined,
+		})),
+	];
 }
 
 export function renderSitemapXml(entries: SitemapEntry[]) {
