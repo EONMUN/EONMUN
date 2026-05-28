@@ -16,6 +16,12 @@ const postType = typeParam && VALID_POST_TYPES.includes(typeParam as PostType)
 	: undefined;
 
 const posts = await getPublishedPostEntries(postType);
+const postCards = await Promise.all(
+	posts.map(async (post) => ({
+		post,
+		coverImage: await getPostCoverImage(post),
+	})),
+);
 ---
 <BaseLayout
 	title={postType ? `${TYPE_LABELS[postType]} — Posts — EONMUN` : 'Posts — EONMUN'}
@@ -50,17 +56,17 @@ const posts = await getPublishedPostEntries(postType);
 			))}
 		</div>
 
-			{posts.length > 0 ? (
+			{postCards.length > 0 ? (
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{posts.map((post) => (
+					{postCards.map(({ post, coverImage }) => (
 						<a
 							href={`/posts/${post.id}`}
 							class="block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
 						>
-							{getPostCoverImage(post) && (
+							{coverImage && (
 								<div class="aspect-video bg-gray-100 dark:bg-gray-800 overflow-hidden">
 									<img
-										src={getPostCoverImage(post) ?? undefined}
+										src={coverImage}
 										alt={post.data.title}
 										loading="lazy"
 										class="w-full h-full object-cover"

@@ -1,19 +1,24 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getAvailableProducts, getAllCollections } from '../../db/queries';
-import { setEdgeCache } from '../../lib/cache';
+import { getPublishedArtworkDetailBySlug } from '../../lib/artwork-content';
+import { getPublishedCollectionRefs } from '../../lib/collection-content';
 import { getArtworkCollectionHref } from '../../lib/paths';
-import { getRuntimeEnv } from '../../lib/runtime-env';
+import { getPublishedProductEntries } from '../../lib/product-content';
 
-const env = getRuntimeEnv();
+export const prerender = true;
+
 const [products, collections] = await Promise.all([
-	getAvailableProducts(env),
-	getAllCollections(env),
+	getPublishedProductEntries(),
+	getPublishedCollectionRefs(),
 ]);
-
-// Store moves price/availability sporadically — use the shorter TTL so
-// sold-out / new-listing transitions don't lag the edge by 5 minutes.
-setEdgeCache(Astro, 'short');
+const productCards = await Promise.all(
+	products.map(async (product) => ({
+		product,
+		artwork: product.data.artworkSlug
+			? await getPublishedArtworkDetailBySlug(product.data.artworkSlug)
+			: null,
+	})),
+);
 ---
 <BaseLayout title="Shop — EONMUN" description="Shop original artworks by EONMUN.">
 	<main class="container mx-auto px-4 py-8">
@@ -40,33 +45,33 @@ setEdgeCache(Astro, 'short');
 			</aside>
 
 			<div class="lg:col-span-3">
-				{products.length > 0 ? (
+				{productCards.length > 0 ? (
 					<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-						{products.map((product) => {
-							const priceInDollars = product.price / 100;
-							const imageUrl = product.imageUrl ?? product.artwork?.defaultImageUrl;
+						{productCards.map(({ product, artwork }) => {
+							const priceInDollars = product.data.price / 100;
+							const imageUrl = product.data.imageUrl ?? artwork?.defaultImageUrl;
 							return (
 								<div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-									<a href={`/store/${product.slug}`}>
+									<a href={`/store/${product.id}`}>
 										<div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
 											{imageUrl ? (
-												<img src={imageUrl} alt={product.name} loading="lazy" class="w-full h-full object-cover" />
+												<img src={imageUrl} alt={product.data.name} loading="lazy" class="w-full h-full object-cover" />
 											) : (
 												<div class="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
 											)}
 										</div>
 									</a>
 									<div class="p-4 space-y-3">
-										<a href={`/store/${product.slug}`}>
-											<h3 class="font-semibold line-clamp-1">{product.name}</h3>
-											{product.artwork?.year && (
-												<p class="text-sm text-gray-500">{product.artwork.year}</p>
+										<a href={`/store/${product.id}`}>
+											<h3 class="font-semibold line-clamp-1">{product.data.name}</h3>
+											{artwork?.artwork.data.year && (
+												<p class="text-sm text-gray-500">{artwork.artwork.data.year}</p>
 											)}
 										</a>
 										<div class="flex items-center justify-between">
 											<span class="text-xl font-bold">${priceInDollars.toLocaleString()}</span>
 											<a
-												href={`/store/${product.slug}`}
+												href={`/store/${product.id}`}
 												class="px-3 py-1 border border-current text-sm rounded-md hover:bg-current hover:text-white dark:hover:text-gray-900 transition-colors"
 											>
 												View

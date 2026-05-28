@@ -6,10 +6,11 @@
 		"node": ">=22.12.0"
 	},
 	"scripts": {
-		"catalog:sync": "node ./scripts/sync-static-catalog.mjs",
 		"artworks:sync": "node ./scripts/sync-artworks-content.mjs",
+		"collections:sync": "node ./scripts/sync-collections-content.mjs",
+		"products:sync": "node ./scripts/sync-products-content.mjs",
 		"posts:sync": "node ./scripts/sync-posts-content.mjs",
-		"content:sync": "node ./scripts/sync-static-catalog.mjs && node ./scripts/sync-artworks-content.mjs && node ./scripts/sync-posts-content.mjs",
+		"content:sync": "node ./scripts/sync-collections-content.mjs && node ./scripts/sync-artworks-content.mjs && node ./scripts/sync-products-content.mjs && node ./scripts/sync-posts-content.mjs",
 		"dev": "npm run content:sync && astro dev",
 		"build": "npm run content:sync && astro build",
 		"preview": "npm run content:sync && astro build && astro preview",

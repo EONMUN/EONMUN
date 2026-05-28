@@ -2,11 +2,13 @@ import { getCollection, type CollectionEntry } from "astro:content";
 
 import type { PostType } from "../db";
 import {
-	getStaticArtworksBySlugs,
-	getStaticCollectionsBySlugs,
-	type StaticArtwork,
-	type StaticCollectionRef,
-} from "./static-catalog";
+	getPublishedArtworkEntries,
+	type PublishedArtworkDetail,
+} from "./artwork-content";
+import {
+	getPublishedCollectionsBySlugs,
+	type PublicCollectionRef,
+} from "./collection-content";
 
 export const VALID_POST_TYPES: PostType[] = [
 	"announcement",
@@ -26,8 +28,8 @@ export type PostEntry = CollectionEntry<"posts">;
 
 export interface PublishedPostDetail {
 	post: PostEntry;
-	artworks: StaticArtwork[];
-	collections: StaticCollectionRef[];
+	artworks: PublishedArtworkDetail[];
+	collections: PublicCollectionRef[];
 }
 
 function parseEntryDate(value: string | null | undefined) {
@@ -52,16 +54,19 @@ export function isPublishedPost(post: PostEntry, now = new Date()) {
 	return scheduledAt ? scheduledAt <= now : false;
 }
 
-export function getPostRelatedArtworks(post: PostEntry) {
-	return getStaticArtworksBySlugs(post.data.artworkSlugs);
+export async function getPostRelatedArtworks(post: PostEntry) {
+	const requestedSlugs = new Set(post.data.artworkSlugs);
+	const artworks = await getPublishedArtworkEntries();
+	return artworks.filter((detail) => requestedSlugs.has(detail.artwork.id));
 }
 
 export function getPostRelatedCollections(post: PostEntry) {
-	return getStaticCollectionsBySlugs(post.data.collectionSlugs);
+	return getPublishedCollectionsBySlugs(post.data.collectionSlugs);
 }
 
-export function getPostCoverImage(post: PostEntry) {
-	return post.data.coverImageUrl ?? getPostRelatedArtworks(post)[0]?.defaultImageUrl ?? null;
+export async function getPostCoverImage(post: PostEntry) {
+	const relatedArtworks = await getPostRelatedArtworks(post);
+	return post.data.coverImageUrl ?? relatedArtworks[0]?.defaultImageUrl ?? null;
 }
 
 export async function getPublishedPostEntries(postType?: PostType) {
@@ -85,7 +90,7 @@ export async function getPublishedPostDetailBySlug(
 
 	return {
 		post,
-		artworks: getPostRelatedArtworks(post),
-		collections: getPostRelatedCollections(post),
+		artworks: await getPostRelatedArtworks(post),
+		collections: await getPostRelatedCollections(post),
 	};
 }

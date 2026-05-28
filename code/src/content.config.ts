@@ -48,4 +48,39 @@ const artworks = defineCollection({
 	}),
 });
 
-export const collections = { posts, artworks };
+const artworkCollections = defineCollection({
+	loader: glob({
+		base: "./src/content/collections",
+		pattern: "**/*.json",
+	}),
+	schema: z.object({
+		name: z.string(),
+		description: z.string().nullable().optional(),
+		publishedAt: z.string().datetime().nullable().optional(),
+		locale: z.string().default("en"),
+	}),
+});
+
+const products = defineCollection({
+	loader: glob({
+		base: "./src/content/products",
+		pattern: "**/*.{md,mdx}",
+	}),
+	schema: z.object({
+		type: z.string(),
+		artworkSlug: z.string().nullable().optional(),
+		name: z.string(),
+		description: z.string().nullable().optional(),
+		imageUrl: z.string().url().nullable().optional(),
+		price: z.number().int().nonnegative(),
+		quantity: z.number().int().nullable().optional(),
+		publishedAt: z.string().datetime().nullable().optional(),
+	}),
+});
+
+export const collections = {
+	posts,
+	artworks,
+	collections: artworkCollections,
+	products,
+};

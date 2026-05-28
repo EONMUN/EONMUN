@@ -1,12 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { getHomepageSlides } from '../lib/homepage-content';
 import { getArtworkCollectionHref } from '../lib/paths';
-import { getStaticHomepageSlides } from '../lib/static-catalog';
 
 export const prerender = true;
 
-const slides = getStaticHomepageSlides();
+const slides = await getHomepageSlides();
 
 const slideSeconds = 5;
 const cycleSeconds = slides.length * slideSeconds;
@@ -24,11 +24,11 @@ const cycleSeconds = slides.length * slideSeconds;
 				<figcaption class="artwork-info">
 					<div class="field">
 						<div class="label">Name</div>
-						<div class="value">{slide.title}</div>
+						<div class="value">{slide.artwork.data.title}</div>
 					</div>
 					<div class="field">
 						<div class="label">Year</div>
-						<div class="value">{slide.year ?? 'Untitled'}</div>
+						<div class="value">{slide.artwork.data.year ?? 'Untitled'}</div>
 					</div>
 					<div class="field">
 						<div class="label">{slide.collections.length > 1 ? 'Collections' : 'Collection'}</div>

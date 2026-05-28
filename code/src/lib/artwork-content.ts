@@ -1,27 +1,22 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 
 import {
-	getStaticCollectionsBySlugs,
-	getStaticProductDetails,
-	type StaticCollectionRef,
-	type StaticProduct,
-} from "./static-catalog";
+	getPublishedCollectionsBySlugs,
+	type PublicCollectionRef,
+} from "./collection-content";
+import {
+	getPublishedProductByArtworkSlug,
+	type ProductEntry,
+} from "./product-content";
 
 export type ArtworkEntry = CollectionEntry<"artworks">;
 
 export interface PublishedArtworkDetail {
 	artwork: ArtworkEntry;
-	collections: StaticCollectionRef[];
-	product: StaticProduct | null;
+	collections: PublicCollectionRef[];
+	product: ProductEntry | null;
 	defaultImageUrl: string | null;
 }
-
-const productByArtworkSlug = new Map(
-	getStaticProductDetails()
-		.flatMap((product) =>
-			product.artworkSlug !== null ? [[product.artworkSlug, product] as const] : [],
-		),
-);
 
 function parseEntryDate(value: string | null | undefined) {
 	if (!value) return null;
@@ -42,23 +37,23 @@ export function isPublishedArtwork(artwork: ArtworkEntry, now = new Date()) {
 	return publishedAt ? publishedAt <= now : false;
 }
 
-export function getArtworkCollections(artwork: ArtworkEntry) {
-	return getStaticCollectionsBySlugs(artwork.data.collectionSlugs);
+export async function getArtworkCollections(artwork: ArtworkEntry) {
+	return getPublishedCollectionsBySlugs(artwork.data.collectionSlugs);
 }
 
 export function getArtworkDefaultImage(artwork: ArtworkEntry) {
 	return artwork.data.images.find((image) => image.isDefault)?.url ?? artwork.data.images[0]?.url ?? null;
 }
 
-export function getArtworkProduct(artwork: ArtworkEntry) {
-	return productByArtworkSlug.get(artwork.id) ?? null;
+export async function getArtworkProduct(artwork: ArtworkEntry) {
+	return getPublishedProductByArtworkSlug(artwork.id);
 }
 
-function toPublishedArtworkDetail(artwork: ArtworkEntry): PublishedArtworkDetail {
+async function toPublishedArtworkDetail(artwork: ArtworkEntry): Promise<PublishedArtworkDetail> {
 	return {
 		artwork,
-		collections: getArtworkCollections(artwork),
-		product: getArtworkProduct(artwork),
+		collections: await getArtworkCollections(artwork),
+		product: await getArtworkProduct(artwork),
 		defaultImageUrl: getArtworkDefaultImage(artwork),
 	};
 }
@@ -66,9 +61,13 @@ function toPublishedArtworkDetail(artwork: ArtworkEntry): PublishedArtworkDetail
 export async function getPublishedArtworkEntries(collectionSlug?: string) {
 	const artworks = await getCollection("artworks");
 
-	return artworks
+	const details = await Promise.all(
+		artworks
 		.filter((artwork) => isPublishedArtwork(artwork))
-		.map(toPublishedArtworkDetail)
+			.map(toPublishedArtworkDetail),
+	);
+
+	return details
 		.filter((detail) =>
 			collectionSlug
 				? detail.collections.some((collection) => collection.slug === collectionSlug)
@@ -94,7 +93,7 @@ export async function getPublishedArtworkDetailBySlug(
 }
 
 export function getArtworkCollectionFilterOptions(artworks: PublishedArtworkDetail[]) {
-	const collectionBySlug = new Map<string, StaticCollectionRef>();
+	const collectionBySlug = new Map<string, PublicCollectionRef>();
 
 	for (const detail of artworks) {
 		for (const collection of detail.collections) {

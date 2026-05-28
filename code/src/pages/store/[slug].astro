@@ -1,30 +1,47 @@
 ---
+import { render } from 'astro:content';
+
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import InventoryState from '../../components/InventoryState.astro';
-import { getStaticProductDetails, type StaticProductDetail } from '../../lib/static-catalog';
+import { getPublishedArtworkDetailBySlug } from '../../lib/artwork-content';
+import {
+	getPublishedProductBySlug,
+	getPublishedProductEntries,
+} from '../../lib/product-content';
 
 export const prerender = true;
 
-export function getStaticPaths() {
-	return getStaticProductDetails().map((product) => ({
-		params: { slug: product.slug },
-		props: { product },
+export async function getStaticPaths() {
+	const products = await getPublishedProductEntries();
+	return products.map((product) => ({
+		params: { slug: product.id },
 	}));
 }
 
-interface Props {
-	product: StaticProductDetail;
+const slug = Astro.params.slug;
+
+if (!slug) {
+	return new Response('Not found', { status: 404 });
 }
 
-const { product } = Astro.props as Props;
-const artwork = product.artwork;
-const imageUrl = product.imageUrl ?? artwork?.defaultImageUrl;
-const description = product.description ?? artwork?.description;
-const priceInDollars = product.price / 100;
+const product = await getPublishedProductBySlug(slug);
+if (!product) {
+	return new Response('Not found', { status: 404 });
+}
+
+const artwork = product.data.artworkSlug
+	? await getPublishedArtworkDetailBySlug(product.data.artworkSlug)
+	: null;
+const productBody = typeof product.body === 'string' ? product.body.trim() : '';
+const renderedProduct = productBody ? await render(product) : null;
+const Content = renderedProduct?.Content ?? null;
+const imageUrl = product.data.imageUrl ?? artwork?.defaultImageUrl;
+const description = product.data.description ?? artwork?.artwork.data.description;
+const priceInDollars = product.data.price / 100;
 ---
 <BaseLayout
-	title={`${product.name} — Shop — EONMUN`}
-	description={product.description ?? `Purchase ${product.name} by EONMUN.`}
+	title={`${product.data.name} — Shop — EONMUN`}
+	description={product.data.description ?? `Purchase ${product.data.name} by EONMUN.`}
 	image={imageUrl ?? undefined}
 >
 	<main class="container mx-auto px-4 py-8">
@@ -33,14 +50,14 @@ const priceInDollars = product.price / 100;
 			<span>/</span>
 			<a href="/store" class="hover:underline">Shop</a>
 			<span>/</span>
-			<span>{product.name}</span>
+			<span>{product.data.name}</span>
 		</nav>
 
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
 			<div>
 				{imageUrl ? (
 					<div class="aspect-square rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800">
-						<img src={imageUrl} alt={product.name} class="w-full h-full object-contain" />
+						<img src={imageUrl} alt={product.data.name} class="w-full h-full object-contain" />
 					</div>
 				) : (
 					<div class="aspect-square bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-400">
@@ -51,24 +68,30 @@ const priceInDollars = product.price / 100;
 
 			<div class="space-y-6">
 				<div>
-					<h1 class="text-3xl font-bold mb-2">{product.name}</h1>
-					{artwork?.artist && (
-						<p class="text-lg text-gray-500 dark:text-gray-400">by {artwork.artist}</p>
+					<h1 class="text-3xl font-bold mb-2">{product.data.name}</h1>
+					{artwork?.artwork.data.artist && (
+						<p class="text-lg text-gray-500 dark:text-gray-400">by {artwork.artwork.data.artist}</p>
 					)}
-					{artwork?.year && (
-						<p class="text-gray-500 dark:text-gray-400">{artwork.year}</p>
+					{artwork?.artwork.data.year && (
+						<p class="text-gray-500 dark:text-gray-400">{artwork.artwork.data.year}</p>
 					)}
 				</div>
 
 				<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 space-y-4">
 					<p class="text-3xl font-bold">${priceInDollars.toLocaleString()}</p>
-					<InventoryState productSlug={product.slug} variant="store" />
+					<InventoryState productSlug={product.id} variant="store" />
 				</div>
 
-				{description && (
+				{(Content || description) && (
 					<div>
 						<h2 class="text-lg font-semibold mb-3">Description</h2>
-						<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{description}</p>
+						{Content ? (
+							<div class="prose prose-lg dark:prose-invert max-w-none">
+								<Content />
+							</div>
+						) : (
+							<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{description}</p>
+						)}
 					</div>
 				)}
 

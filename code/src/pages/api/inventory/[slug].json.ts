@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 
 import { getProductAvailabilityBySlug } from "../../../db/queries";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
-import { getStaticProductBySlug } from "../../../lib/static-catalog";
+import { getPublishedProductBySlug } from "../../../lib/product-content";
 
 export const prerender = false;
 
@@ -24,14 +24,14 @@ export const GET: APIRoute = async ({ params }) => {
 		}
 	} catch {}
 
-	const fallbackProduct = getStaticProductBySlug(slug);
+	const fallbackProduct = await getPublishedProductBySlug(slug);
 	if (!fallbackProduct) {
 		return new Response("Not found", { status: 404 });
 	}
 
 	return Response.json({
-		slug: fallbackProduct.slug,
-		type: fallbackProduct.type,
+		slug: fallbackProduct.id,
+		type: fallbackProduct.data.type,
 		available: true,
 		status: "available",
 	}, {

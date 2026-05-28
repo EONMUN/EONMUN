@@ -37,6 +37,7 @@ if (!postDetail) {
 
 const { artworks, collections } = postDetail;
 const { Content } = await render(post);
+const coverImage = await getPostCoverImage(post);
 
 const publishedDateValue = post.data.publishedAt ?? post.data.scheduledAt;
 const publishedDate = publishedDateValue
@@ -51,7 +52,7 @@ const publishedDate = publishedDateValue
 	title={`${post.data.title} — EONMUN`}
 	description={post.data.excerpt ?? `Read "${post.data.title}" on EONMUN`}
 	type="article"
-	image={getPostCoverImage(post) ?? undefined}
+	image={coverImage ?? undefined}
 	publishedTime={getPostPublishedTime(post)}
 >
 	<article class="container mx-auto px-4 py-8 max-w-3xl">
@@ -78,9 +79,9 @@ const publishedDate = publishedDateValue
 			)}
 		</header>
 
-		{getPostCoverImage(post) && (
+		{coverImage && (
 			<div class="mb-8 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-				<img src={getPostCoverImage(post) ?? undefined} alt={post.data.title} class="w-full h-auto object-cover" />
+				<img src={coverImage} alt={post.data.title} class="w-full h-auto object-cover" />
 			</div>
 		)}
 
@@ -93,15 +94,15 @@ const publishedDate = publishedDateValue
 				<h2 class="text-2xl font-bold mb-6">Featured Artworks</h2>
 				<div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
 					{artworks.map((a) => (
-						<a href={`/artworks/${a.slug}`} class="group block">
+						<a href={`/artworks/${a.artwork.id}`} class="group block">
 							<div class="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-2">
 								{a.defaultImageUrl ? (
-									<img src={a.defaultImageUrl} alt={a.title} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+									<img src={a.defaultImageUrl} alt={a.artwork.data.title} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
 								) : (
 									<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
 								)}
 							</div>
-							<p class="text-sm font-medium text-center">{a.title}</p>
+							<p class="text-sm font-medium text-center">{a.artwork.data.title}</p>
 						</a>
 					))}
 				</div>

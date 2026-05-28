@@ -3,11 +3,14 @@ import {
 	getArtworkPublishedTime,
 	getPublishedArtworkEntries,
 } from "./artwork-content";
-import { getStaticProductDetails } from "./static-catalog";
 import {
 	getPostPublishedTime,
 	getPublishedPostEntries,
 } from "./post-content";
+import {
+	getProductPublishedTime,
+	getPublishedProductEntries,
+} from "./product-content";
 
 export interface SitemapEntry {
 	loc: string;
@@ -42,13 +45,6 @@ function toAbsoluteUrl(site: URL, pathname: string) {
 	return new URL(pathname, site).toString();
 }
 
-function toLastModified(value: Date | string | null | undefined) {
-	if (!value) return undefined;
-	const date = value instanceof Date ? value : new Date(value);
-	if (Number.isNaN(date.getTime())) return undefined;
-	return date.toISOString();
-}
-
 export function getSiteUrl(site?: URL) {
 	return site ?? new URL(SITE_URL);
 }
@@ -60,7 +56,7 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	}));
 	const artworks = await getPublishedArtworkEntries();
 	const posts = await getPublishedPostEntries();
-	const products = getStaticProductDetails();
+	const products = await getPublishedProductEntries();
 	const postEntries = posts.map((post) => ({
 		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
 		lastmod: getPostPublishedTime(post),
@@ -74,12 +70,8 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 			lastmod: getArtworkPublishedTime(artwork),
 		})),
 		...products.map((product) => ({
-			loc: toAbsoluteUrl(baseUrl, `/store/${product.slug}`),
-			lastmod: product.artworkSlug
-				? toLastModified(
-					artworks.find(({ artwork }) => artwork.id === product.artworkSlug)?.artwork.data.publishedAt,
-				)
-				: undefined,
+			loc: toAbsoluteUrl(baseUrl, `/store/${product.id}`),
+			lastmod: getProductPublishedTime(product),
 		})),
 	];
 }
