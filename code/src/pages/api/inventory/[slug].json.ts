@@ -12,6 +12,20 @@ export const GET: APIRoute = async ({ params }) => {
 		return new Response("Not found", { status: 404 });
 	}
 
+	const fallbackProduct = await getPublishedProductBySlug(slug);
+	if (fallbackProduct?.data.quantity === 0) {
+		return Response.json({
+			slug: fallbackProduct.id,
+			type: fallbackProduct.data.type,
+			available: false,
+			status: "sold",
+		}, {
+			headers: {
+				"cache-control": "no-store",
+			},
+		});
+	}
+
 	try {
 		const env = getRuntimeEnv();
 		const availability = await getProductAvailabilityBySlug(env, slug);
@@ -24,7 +38,6 @@ export const GET: APIRoute = async ({ params }) => {
 		}
 	} catch {}
 
-	const fallbackProduct = await getPublishedProductBySlug(slug);
 	if (!fallbackProduct) {
 		return new Response("Not found", { status: 404 });
 	}
