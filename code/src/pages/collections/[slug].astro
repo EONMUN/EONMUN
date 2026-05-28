@@ -1,0 +1,12 @@
+---
+import { getArtworkCollectionHref } from '../../lib/paths';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+	return new Response('Not found', { status: 404 });
+}
+
+return Astro.redirect(getArtworkCollectionHref(slug), 301);
+---

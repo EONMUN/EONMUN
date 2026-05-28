@@ -1,0 +1,39 @@
+{
+	"name": "eonmun-astro",
+	"type": "module",
+	"version": "0.0.1",
+	"engines": {
+		"node": ">=22.12.0"
+	},
+	"scripts": {
+		"artworks:sync": "node ./scripts/sync-artworks-content.mjs",
+		"collections:sync": "node ./scripts/sync-collections-content.mjs",
+		"products:sync": "node ./scripts/sync-products-content.mjs",
+		"posts:sync": "node ./scripts/sync-posts-content.mjs",
+		"content:sync": "node ./scripts/sync-collections-content.mjs && node ./scripts/sync-artworks-content.mjs && node ./scripts/sync-products-content.mjs && node ./scripts/sync-posts-content.mjs",
+		"dev": "npm run content:sync && astro dev",
+		"build": "npm run content:sync && astro build",
+		"preview": "npm run content:sync && astro build && astro preview",
+		"astro": "astro",
+		"deploy": "npm run content:sync && astro build && wrangler deploy",
+		"cf-typegen": "wrangler types"
+	},
+	"dependencies": {
+		"@astrojs/cloudflare": "^13.5.0",
+		"@astrojs/mdx": "^5.0.4",
+		"@auth/core": "^0.34.3",
+		"@libsql/client": "^0.17.3",
+		"astro": "^6.3.1",
+		"drizzle-orm": "^0.45.2",
+		"sharp": "^0.34.3"
+	},
+	"devDependencies": {
+		"@tailwindcss/typography": "^0.5.19",
+		"@tailwindcss/vite": "^4.3.0",
+		"tailwindcss": "^4.3.0",
+		"wrangler": "^4.90.1"
+	},
+	"overrides": {
+		"vite": "^7"
+	}
+}

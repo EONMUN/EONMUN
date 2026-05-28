@@ -1,0 +1,94 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import type { PostType } from '../../db';
+import {
+	getPostCoverImage,
+	getPublishedPostEntries,
+	TYPE_LABELS,
+	VALID_POST_TYPES,
+} from '../../lib/post-content';
+
+export const prerender = true;
+
+const typeParam = Astro.url.searchParams.get('type');
+const postType = typeParam && VALID_POST_TYPES.includes(typeParam as PostType)
+	? (typeParam as PostType)
+	: undefined;
+
+const posts = await getPublishedPostEntries(postType);
+const postCards = await Promise.all(
+	posts.map(async (post) => ({
+		post,
+		coverImage: await getPostCoverImage(post),
+	})),
+);
+---
+<BaseLayout
+	title={postType ? `${TYPE_LABELS[postType]} — Posts — EONMUN` : 'Posts — EONMUN'}
+	description="News, insights, and stories from the EONMUN studio."
+>
+	<div class="container mx-auto px-4 py-8">
+		<div class="mb-8">
+			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Posts</h1>
+			<p class="text-gray-600 dark:text-gray-400">News, insights, and stories from the studio.</p>
+		</div>
+
+		<div class="flex flex-wrap gap-2 mb-8">
+			<a
+				href="/posts"
+				class:list={[
+					'px-3 py-1 rounded-full text-sm font-medium border transition-colors',
+					!postType ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500',
+				]}
+			>
+					All
+				</a>
+				{VALID_POST_TYPES.map((t) => (
+					<a
+						href={`/posts?type=${t}`}
+						class:list={[
+						'px-3 py-1 rounded-full text-sm font-medium border transition-colors',
+						postType === t ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500',
+					]}
+				>
+					{TYPE_LABELS[t]}
+				</a>
+			))}
+		</div>
+
+			{postCards.length > 0 ? (
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{postCards.map(({ post, coverImage }) => (
+						<a
+							href={`/posts/${post.id}`}
+							class="block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+						>
+							{coverImage && (
+								<div class="aspect-video bg-gray-100 dark:bg-gray-800 overflow-hidden">
+									<img
+										src={coverImage}
+										alt={post.data.title}
+										loading="lazy"
+										class="w-full h-full object-cover"
+									/>
+								</div>
+							)}
+							<div class="p-4">
+								<p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+									{TYPE_LABELS[post.data.postType as PostType] ?? post.data.postType}
+								</p>
+								<h2 class="text-lg font-semibold mb-2">{post.data.title}</h2>
+								{post.data.excerpt && (
+									<p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">{post.data.excerpt}</p>
+								)}
+							</div>
+						</a>
+				))}
+			</div>
+		) : (
+			<div class="text-center py-12">
+				<p class="text-gray-600 dark:text-gray-400 text-lg">No posts found.</p>
+			</div>
+		)}
+	</div>
+</BaseLayout>

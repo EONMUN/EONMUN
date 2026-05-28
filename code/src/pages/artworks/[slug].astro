@@ -1,0 +1,143 @@
+---
+import { render } from 'astro:content';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import InventoryState from '../../components/InventoryState.astro';
+import {
+	getPublishedArtworkDetailBySlug,
+	getPublishedArtworkEntries,
+} from '../../lib/artwork-content';
+import { getArtworkCollectionHref } from '../../lib/paths';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+	const artworks = await getPublishedArtworkEntries();
+	return artworks.map(({ artwork }) => ({
+		params: { slug: artwork.id },
+	}));
+}
+
+const slug = Astro.params.slug;
+
+if (!slug) {
+	return new Response('Not found', { status: 404 });
+}
+
+const artworkDetail = await getPublishedArtworkDetailBySlug(slug);
+if (!artworkDetail) {
+	return new Response('Not found', { status: 404 });
+}
+
+const { artwork, collections, product, defaultImageUrl } = artworkDetail;
+const artworkBody = typeof artwork.body === 'string' ? artwork.body.trim() : '';
+const renderedArtwork = artworkBody ? await render(artwork) : null;
+const Content = renderedArtwork?.Content ?? null;
+const images = artwork.data.images;
+const defaultImage = images.find((image) => image.isDefault) ?? images[0];
+const mainImage = defaultImage?.url ?? defaultImageUrl;
+const price = product ? product.price / 100 : null;
+---
+<BaseLayout
+	title={`${artwork.data.title} — EONMUN`}
+	description={artwork.data.description ?? `View ${artwork.data.title}${artwork.data.year ? ` from ${artwork.data.year}` : ''}`}
+	image={mainImage ?? undefined}
+>
+	<div class="container mx-auto px-4 py-8">
+		<nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-8">
+			<a href="/" class="hover:underline">Home</a>
+			<span>/</span>
+			<a href="/artworks" class="hover:underline">Artworks</a>
+			<span>/</span>
+			<span>{artwork.data.title}</span>
+		</nav>
+
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+			<div class="space-y-4">
+				{mainImage ? (
+					<div class="w-full rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800">
+						<img src={mainImage} alt={artwork.data.title} class="w-full h-auto object-contain" />
+					</div>
+				) : (
+					<div class="aspect-square bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-400">
+						No Image Available
+					</div>
+				)}
+				{images.length > 1 && (
+					<div class="grid grid-cols-4 gap-4">
+						{images.map((img) => (
+							<div
+								class:list={[
+									'aspect-square rounded-md overflow-hidden border',
+									img.url === mainImage ? 'border-current ring-2 ring-current/20' : 'border-gray-200 dark:border-gray-700',
+								]}
+							>
+								<img src={img.url} alt={img.caption ?? artwork.data.title} loading="lazy" class="w-full h-full object-cover" />
+							</div>
+						))}
+					</div>
+				)}
+			</div>
+
+			<div class="space-y-6">
+				<div>
+					<h1 class="text-4xl font-bold mb-2">{artwork.data.title}</h1>
+					{artwork.data.year && <p class="text-xl text-gray-500 dark:text-gray-400">{artwork.data.year}</p>}
+				</div>
+
+				<div class="border-t border-b border-gray-200 dark:border-gray-700 py-6">
+					{product ? (
+						<div class="space-y-2">
+							{price !== null && (
+								<p class="text-sm text-gray-500 dark:text-gray-400">
+									Listed at ${price.toLocaleString()}
+								</p>
+							)}
+							<InventoryState productSlug={product.slug} variant="artwork" />
+						</div>
+					) : (
+						<p class="text-sm text-gray-500 dark:text-gray-400">Not currently available for purchase.</p>
+					)}
+				</div>
+
+				{(Content || artwork.data.description) && (
+					<div>
+						<h2 class="text-lg font-semibold mb-3">Description</h2>
+						{Content ? (
+							<div class="prose prose-lg dark:prose-invert max-w-none">
+								<Content />
+							</div>
+						) : (
+							<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{artwork.data.description}</p>
+						)}
+					</div>
+				)}
+
+				{collections.length > 0 && (
+					<div>
+						<h2 class="text-lg font-semibold mb-3">Collection{collections.length > 1 ? 's' : ''}</h2>
+						<div class="flex flex-wrap gap-2">
+							{collections.map((c) => (
+								<a
+									href={getArtworkCollectionHref(c.slug)}
+									class="inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-full hover:border-gray-500"
+								>
+									{c.name}
+								</a>
+							))}
+						</div>
+					</div>
+				)}
+
+				<div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+					<h2 class="text-lg font-semibold mb-3">Details</h2>
+					<dl class="space-y-2 text-sm">
+						{artwork.data.artist && (
+							<div class="flex justify-between"><dt class="text-gray-500">Artist</dt><dd>{artwork.data.artist}</dd></div>
+						)}
+					</dl>
+				</div>
+			</div>
+		</div>
+	</div>
+</BaseLayout>

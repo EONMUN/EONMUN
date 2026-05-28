@@ -33,6 +33,7 @@
   "exclude": [
     "node_modules",
     "tests",
+    "code",
     "src/database/index.ts",
     "hardhat",
     "drizzle.config.ts"

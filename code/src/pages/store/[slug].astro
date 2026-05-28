@@ -1,0 +1,105 @@
+---
+import { render } from 'astro:content';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import InventoryState from '../../components/InventoryState.astro';
+import { getPublishedArtworkDetailBySlug } from '../../lib/artwork-content';
+import {
+	getPublishedProductBySlug,
+	getPublishedProductEntries,
+} from '../../lib/product-content';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+	const products = await getPublishedProductEntries();
+	return products.map((product) => ({
+		params: { slug: product.id },
+	}));
+}
+
+const slug = Astro.params.slug;
+
+if (!slug) {
+	return new Response('Not found', { status: 404 });
+}
+
+const product = await getPublishedProductBySlug(slug);
+if (!product) {
+	return new Response('Not found', { status: 404 });
+}
+
+const artwork = product.data.artworkSlug
+	? await getPublishedArtworkDetailBySlug(product.data.artworkSlug)
+	: null;
+const productBody = typeof product.body === 'string' ? product.body.trim() : '';
+const renderedProduct = productBody ? await render(product) : null;
+const Content = renderedProduct?.Content ?? null;
+const imageUrl = product.data.imageUrl ?? artwork?.defaultImageUrl;
+const description = product.data.description ?? artwork?.artwork.data.description;
+const priceInDollars = product.data.price / 100;
+---
+<BaseLayout
+	title={`${product.data.name} — Shop — EONMUN`}
+	description={product.data.description ?? `Purchase ${product.data.name} by EONMUN.`}
+	image={imageUrl ?? undefined}
+>
+	<main class="container mx-auto px-4 py-8">
+		<nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-8">
+			<a href="/" class="hover:underline">Home</a>
+			<span>/</span>
+			<a href="/store" class="hover:underline">Shop</a>
+			<span>/</span>
+			<span>{product.data.name}</span>
+		</nav>
+
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+			<div>
+				{imageUrl ? (
+					<div class="aspect-square rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800">
+						<img src={imageUrl} alt={product.data.name} class="w-full h-full object-contain" />
+					</div>
+				) : (
+					<div class="aspect-square bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-400">
+						No Image Available
+					</div>
+				)}
+			</div>
+
+			<div class="space-y-6">
+				<div>
+					<h1 class="text-3xl font-bold mb-2">{product.data.name}</h1>
+					{artwork?.artwork.data.artist && (
+						<p class="text-lg text-gray-500 dark:text-gray-400">by {artwork.artwork.data.artist}</p>
+					)}
+					{artwork?.artwork.data.year && (
+						<p class="text-gray-500 dark:text-gray-400">{artwork.artwork.data.year}</p>
+					)}
+				</div>
+
+				<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 space-y-4">
+					<p class="text-3xl font-bold">${priceInDollars.toLocaleString()}</p>
+					<InventoryState productSlug={product.id} variant="store" />
+				</div>
+
+				{(Content || description) && (
+					<div>
+						<h2 class="text-lg font-semibold mb-3">Description</h2>
+						{Content ? (
+							<div class="prose prose-lg dark:prose-invert max-w-none">
+								<Content />
+							</div>
+						) : (
+							<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{description}</p>
+						)}
+					</div>
+				)}
+
+			</div>
+		</div>
+
+		<div class="mt-12 text-center">
+			<a href="/store" class="inline-flex items-center gap-2 hover:underline">&larr; Back to Shop</a>
+		</div>
+	</main>
+</BaseLayout>

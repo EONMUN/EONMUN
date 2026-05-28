@@ -1,0 +1,34 @@
+name: Deploy Astro
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'code/**'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/cloudflare-deploy/**'
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Master pushes deploy the dedicated Astro worker defined in
+      # code/wrangler.jsonc. This keeps previews and production-candidate
+      # uploads isolated from the legacy OpenNext worker while the cutover
+      # plan is still in flux.
+      - name: Deploy Astro worker
+        uses: ./.github/actions/cloudflare-deploy
+        with:
+          mode: deploy
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { getHomepageSlides } from '../lib/homepage-content';
+import { getArtworkCollectionHref } from '../lib/paths';
+
+export const prerender = true;
+
+const slides = await getHomepageSlides();
+
+const slideSeconds = 5;
+const cycleSeconds = slides.length * slideSeconds;
+---
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0]?.defaultImageUrl ?? undefined}>
+	<div class="hero-carousel">
+		{slides.map((slide, i) => (
+			<figure class="slide" style={`animation-delay: ${i * slideSeconds}s;`}>
+				<img
+					src={slide.defaultImageUrl ?? ''}
+					alt={slide.title}
+					loading={i === 0 ? 'eager' : 'lazy'}
+					fetchpriority={i === 0 ? 'high' : 'auto'}
+				/>
+				<figcaption class="artwork-info">
+					<div class="field">
+						<div class="label">Name</div>
+						<div class="value">{slide.artwork.data.title}</div>
+					</div>
+					<div class="field">
+						<div class="label">Year</div>
+						<div class="value">{slide.artwork.data.year ?? 'Untitled'}</div>
+					</div>
+					<div class="field">
+						<div class="label">{slide.collections.length > 1 ? 'Collections' : 'Collection'}</div>
+						<div class="values">
+							{slide.collections.map((c) => (
+								<a href={getArtworkCollectionHref(c.slug)}>{c.name}</a>
+							))}
+						</div>
+					</div>
+				</figcaption>
+			</figure>
+		))}
+	</div>
+</BaseLayout>
+
+<style is:global>
+	/* Homepage is a fullscreen carousel — the page is itself the hero. Hide
+	   the layout footer here only; other routes keep theirs. */
+	body > footer { display: none; }
+</style>
+
+<style define:vars={{ cycleSeconds: `${cycleSeconds}s` }}>
+	.hero-carousel {
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		background: #000;
+	}
+	.slide {
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		opacity: 0;
+		animation: hero-fade var(--cycleSeconds) linear infinite;
+	}
+	.slide img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+	/* ArtworkInfo box — frosted-glass card bottom-right, matches legacy. */
+	.artwork-info {
+		position: absolute;
+		right: 1rem;
+		bottom: 1.25rem;
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		text-align: right;
+		color: #fff;
+		background: rgba(0, 0, 0, 0.3);
+		border: 1px solid rgba(107, 114, 128, 0.3);
+		border-radius: 0.5rem;
+		backdrop-filter: blur(16px);
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+		letter-spacing: 0.025em;
+	}
+	.artwork-info .label {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		color: rgba(255, 255, 255, 0.7);
+		font-weight: 500;
+	}
+	.artwork-info .value,
+	.artwork-info .values a {
+		display: block;
+		font-size: 1rem;
+		font-weight: 500;
+		color: #fff;
+	}
+	.artwork-info .values a {
+		text-decoration: none;
+		transition: color 150ms;
+	}
+	.artwork-info .values a:hover {
+		color: rgb(229, 231, 235);
+	}
+	/* Each slide visible for 5 of 40s (12.5% of cycle). Fade in 0%→1.25%,
+	   hold to 12.5%, fade out 12.5%→13.75%. */
+	@keyframes hero-fade {
+		0%, 100% { opacity: 0; }
+		1.25%, 12.5% { opacity: 1; }
+		13.75% { opacity: 0; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.slide { animation: none; }
+		.slide:first-child { opacity: 1; }
+	}
+</style>

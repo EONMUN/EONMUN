@@ -1,0 +1,106 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import {
+	getAllArtworks,
+	getAllCollections,
+	getAvailableProducts,
+	getPublishedPosts,
+} from '../../db/queries';
+
+export const prerender = false;
+
+const env = getRuntimeEnv();
+const debugErrorsEnabled = env.ENABLE_DEBUG_ERRORS === 'true';
+
+if (!debugErrorsEnabled) {
+	return new Response('Not found', { status: 404 });
+}
+
+Astro.response.headers.set('cache-control', 'no-store');
+
+function summarizeValue(value: unknown) {
+	if (Array.isArray(value)) {
+		return {
+			kind: 'array',
+			count: value.length,
+			first: value[0] ?? null,
+		};
+	}
+	if (value && typeof value === 'object') {
+		return {
+			kind: 'object',
+			keys: Object.keys(value as Record<string, unknown>),
+		};
+	}
+	return {
+		kind: typeof value,
+		value,
+	};
+}
+
+function serializeError(error: unknown) {
+	if (error instanceof Error) {
+		return {
+			name: error.name,
+			message: error.message,
+			stack: error.stack ?? null,
+			cause: error.cause ?? null,
+		};
+	}
+
+	return {
+		name: 'NonError',
+		message: String(error),
+		stack: null,
+		cause: null,
+	};
+}
+
+async function runCheck(name: string, fn: () => Promise<unknown>) {
+	try {
+		const value = await fn();
+		return {
+			name,
+			ok: true,
+			summary: summarizeValue(value),
+		};
+	} catch (error) {
+		return {
+			name,
+			ok: false,
+			error: serializeError(error),
+		};
+	}
+}
+
+const report = {
+	generatedAt: new Date().toISOString(),
+	url: Astro.url.toString(),
+	env: {
+		hasTursoDatabaseUrl: Boolean(env.TURSO_DATABASE_URL),
+		hasTursoAuthToken: Boolean(env.TURSO_AUTH_TOKEN),
+		tursoDatabaseHost: env.TURSO_DATABASE_URL
+			? new URL(env.TURSO_DATABASE_URL).host
+			: null,
+	},
+	checks: await Promise.all([
+		runCheck('getAllArtworks', () => getAllArtworks(env)),
+		runCheck('getAllCollections', () => getAllCollections(env)),
+		runCheck('getPublishedPosts', () => getPublishedPosts(env)),
+		runCheck('getAvailableProducts', () => getAvailableProducts(env)),
+	]),
+};
+---
+<BaseLayout
+	title="Debug Errors — EONMUN"
+	description="Runtime diagnostics for the Astro preview worker."
+>
+	<div class="container mx-auto px-4 py-8">
+		<h1 class="text-3xl font-bold mb-6">Debug Errors</h1>
+		<p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+			This page runs the same Turso-backed query helpers as the failing routes and prints the caught results.
+		</p>
+		<pre class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 text-xs leading-6">{JSON.stringify(report, null, 2)}</pre>
+	</div>
+</BaseLayout>

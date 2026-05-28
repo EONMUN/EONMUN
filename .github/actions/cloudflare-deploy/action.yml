@@ -1,0 +1,130 @@
+name: 'Deploy Astro to Cloudflare Workers'
+description: 'Build the Astro site under code/ and deploy via @astrojs/cloudflare + wrangler'
+
+inputs:
+  mode:
+    description: '"deploy" promotes to production; "upload" pushes a versioned preview URL only'
+    required: true
+  cloudflare-api-token:
+    description: 'Cloudflare API token with Workers Scripts:Edit'
+    required: true
+  cloudflare-account-id:
+    description: 'Cloudflare account ID'
+    required: true
+  node-version:
+    description: 'Node.js version'
+    required: false
+    default: '22'
+  skip-setup:
+    description: 'When "true", skip Node + bun setup and dependency install (caller already did it).'
+    required: false
+    default: 'false'
+  preview-alias:
+    description: 'DNS-safe alias for the preview URL (mode=upload only). When set, the preview URL becomes <alias>-eonmun-astro.<acct>.workers.dev instead of <version-id>-…. Sanitize before passing — only [a-z0-9-] survives in DNS.'
+    required: false
+    default: ''
+
+outputs:
+  preview_url:
+    description: 'Preview URL captured from `wrangler versions upload`. Only set when mode=upload.'
+    value: ${{ steps.upload.outputs.preview_url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      if: inputs.skip-setup != 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Setup bun
+      if: inputs.skip-setup != 'true'
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Cache bun install
+      if: inputs.skip-setup != 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('code/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+    - name: Install dependencies
+      if: inputs.skip-setup != 'true'
+      shell: bash
+      working-directory: code
+      run: bun install --frozen-lockfile
+
+    # Persist Astro's content-collection metadata cache so incremental
+    # rebuilds skip re-parsing unchanged MDX. Key on lockfile + content
+    # source; restore-key falls back when only content changes.
+    - name: Cache Astro build
+      uses: actions/cache@v4
+      with:
+        path: code/node_modules/.astro
+        key: ${{ runner.os }}-astro-${{ hashFiles('code/bun.lock') }}-${{ hashFiles('code/src/content/**/*', 'code/src/content.config.ts') }}
+        restore-keys: |
+          ${{ runner.os }}-astro-${{ hashFiles('code/bun.lock') }}-
+
+    - name: Build Astro site
+      shell: bash
+      working-directory: code
+      run: bun run astro build
+
+    - name: Deploy to Cloudflare (promote)
+      if: inputs.mode == 'deploy'
+      shell: bash
+      working-directory: code
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+      run: bunx wrangler deploy
+
+    # `wrangler versions upload` creates a versioned preview without
+    # touching the production alias. `--preview-alias` gives it a
+    # DNS-safe URL like <alias>-eonmun-astro.<acct>.workers.dev
+    # instead of the opaque <version-id>-… form.
+    - name: Upload versioned preview
+      id: upload
+      if: inputs.mode == 'upload'
+      shell: bash
+      working-directory: code
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        PREVIEW_ALIAS: ${{ inputs.preview-alias }}
+      run: |
+        set -o pipefail
+        passthrough=()
+        if [ -n "$PREVIEW_ALIAS" ]; then
+          passthrough+=(--preview-alias "$PREVIEW_ALIAS")
+        fi
+        log_file="$(mktemp)"
+        bunx wrangler versions upload "${passthrough[@]}" 2>&1 | tee "$log_file"
+        # Extraction strategy (most → least preferred):
+        # 1. "Version Preview Alias URL: …" — wrangler's branch-named
+        #    output when --preview-alias is passed.
+        # 2. "Version Preview URL: …" — wrangler's default versioned
+        #    URL (the <version-id>-<worker>.workers.dev form).
+        # 3. Generic regex for any workers.dev URL in the log — kept
+        #    as a last-resort fallback in case wrangler changes its
+        #    log prefixes in a future version.
+        url="$(grep -oE 'Version Preview Alias URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview Alias URL: //' || true)"
+        if [ -z "$url" ]; then
+          url="$(grep -oE 'Version Preview URL: https://[^ ]+' "$log_file" | head -1 | sed 's/^Version Preview URL: //' || true)"
+        fi
+        if [ -z "$url" ]; then
+          url="$(grep -oE 'https://[a-z0-9-]+-eonmun-astro\.[a-z0-9]+\.workers\.dev' "$log_file" | head -1 || true)"
+        fi
+        if [ -n "$url" ]; then
+          echo "preview_url=$url" >> "$GITHUB_OUTPUT"
+          echo "## Preview URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "Failed to capture a preview URL from wrangler output." >&2
+          exit 1
+        fi

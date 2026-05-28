@@ -1,0 +1,42 @@
+// Required Worker secrets — set via `wrangler secret put <NAME> --name eonmun-astro`
+// after the first deploy. These are distinct from the GitHub Actions
+// `CLOUDFLARE_API_TOKEN` / account ID used by the deploy workflow.
+//
+//   TURSO_DATABASE_URL   — libsql connection URL to the production Turso DB
+//   TURSO_AUTH_TOKEN     — Turso auth token
+//   AUTH_SECRET          — Auth.js JWT/session encryption secret
+//   AUTH_GOOGLE_ID       — Google OAuth client ID for `/api/auth`
+//   AUTH_GOOGLE_SECRET   — Google OAuth client secret for `/api/auth`
+//   STRIPE_SECRET_KEY    — only when `/api/checkout` is implemented (later PR)
+//   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// Use a dedicated worker so preview URLs can be generated without
+	// inheriting the legacy OpenNext worker's Durable Object surface.
+	"name": "eonmun-astro",
+	"preview_urls": true,
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"compatibility_date": "2026-05-13",
+	"compatibility_flags": [
+		"global_fetch_strictly_public",
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"vars": {
+		"ADMIN_EMAILS": "ncrmro@gmail.com",
+		"R2_PUBLIC_URL": "https://r2.eonmun.com"
+	},
+	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare
+	// adapter. Bound explicitly to the pre-provisioned `eonmun-session`
+	// namespace so deploys reuse the same namespace instead of trying to
+	// auto-create a duplicate on each upload.
+	"kv_namespaces": [
+		{ "binding": "SESSION", "id": "bb7fb2ed056c45cbbed3751258005fe6" }
+	]
+}
