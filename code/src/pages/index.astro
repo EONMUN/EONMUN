@@ -8,8 +8,8 @@ export const prerender = true;
 
 const slides = await getHomepageSlides();
 
-const slideSeconds = 8;
-const fadeSeconds = 1.6;
+const slideSeconds = 12;
+const fadeSeconds = 3;
 const cycleSeconds = slides.length * slideSeconds;
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0]?.defaultImageUrl ?? undefined}>
@@ -43,11 +43,43 @@ const cycleSeconds = slides.length * slideSeconds;
 			</figure>
 		))}
 	</div>
+	<div class="home-sections" aria-label="Featured artworks">
+		{slides.map((slide, i) => (
+			<section class="home-section" aria-labelledby={`home-artwork-${slide.artwork.id}`}>
+				<div class="section-card">
+					<p class="section-kicker">Featured artwork {i + 1} / {slides.length}</p>
+					<h2 id={`home-artwork-${slide.artwork.id}`}>{slide.artwork.data.title}</h2>
+					<p class="section-meta">
+						{slide.artwork.data.year ?? 'Untitled year'}
+						{slide.collections.length > 0 ? ' · ' : ''}
+						{slide.collections.map((c, index) => (
+							<>
+								<a href={getArtworkCollectionHref(c.slug)}>{c.name}</a>
+								{index < slide.collections.length - 1 ? ', ' : ''}
+							</>
+						))}
+					</p>
+					{slide.artwork.data.description && (
+						<p class="section-description">{slide.artwork.data.description}</p>
+					)}
+					<div class="section-actions">
+						<a href={`/artworks/${slide.artwork.id}`}>View artwork</a>
+						{slide.collections[0] && (
+							<a href={getArtworkCollectionHref(slide.collections[0].slug)}>
+								View collection
+							</a>
+						)}
+					</div>
+				</div>
+			</section>
+		))}
+	</div>
 </BaseLayout>
 
 <style is:global>
-	/* Homepage is a fullscreen carousel — the page is itself the hero. Hide
-	   the layout footer here only; other routes keep theirs. */
+	html { scroll-snap-type: y proximity; }
+	/* Homepage uses full-screen artwork sections over the hero background.
+	   Hide the layout footer here only; other routes keep theirs. */
 	body > footer { display: none; }
 </style>
 
@@ -57,6 +89,15 @@ const cycleSeconds = slides.length * slideSeconds;
 		inset: 0;
 		z-index: 0;
 		background: #000;
+	}
+	.hero-carousel::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background:
+			linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.12) 52%, rgba(0, 0, 0, 0.34)),
+			linear-gradient(180deg, rgba(0, 0, 0, 0.48), transparent 35%, rgba(0, 0, 0, 0.5));
+		pointer-events: none;
 	}
 	.slide {
 		position: absolute;
@@ -110,15 +151,99 @@ const cycleSeconds = slides.length * slideSeconds;
 	.artwork-info .values a:hover {
 		color: rgb(229, 231, 235);
 	}
+	.home-sections {
+		position: relative;
+		z-index: 10;
+	}
+	.home-section {
+		min-height: 100vh;
+		display: flex;
+		align-items: flex-end;
+		padding: 8rem 1rem 4rem;
+		scroll-snap-align: start;
+	}
+	.section-card {
+		width: min(100%, 42rem);
+		padding: clamp(1.25rem, 3vw, 2rem);
+		color: #fff;
+		background: rgba(0, 0, 0, 0.38);
+		border: 1px solid rgba(255, 255, 255, 0.18);
+		border-radius: 1rem;
+		backdrop-filter: blur(18px);
+		box-shadow: 0 30px 90px rgba(0, 0, 0, 0.32);
+	}
+	.section-kicker {
+		margin: 0 0 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: rgba(255, 255, 255, 0.68);
+	}
+	.section-card h2 {
+		margin: 0;
+		font-size: clamp(2.5rem, 10vw, 6.5rem);
+		line-height: 0.9;
+		letter-spacing: -0.07em;
+	}
+	.section-meta,
+	.section-description {
+		max-width: 34rem;
+		margin: 1rem 0 0;
+		font-size: clamp(1rem, 2vw, 1.2rem);
+		color: rgba(255, 255, 255, 0.82);
+		white-space: pre-line;
+	}
+	.section-meta a,
+	.section-actions a {
+		color: #fff;
+		text-decoration-thickness: 0.08em;
+		text-underline-offset: 0.24em;
+	}
+	.section-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 1.5rem;
+	}
+	.section-actions a {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.75rem 1rem;
+		border: 1px solid rgba(255, 255, 255, 0.32);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.1);
+		text-decoration: none;
+		font-size: 0.85rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		transition:
+			background-color 180ms,
+			border-color 180ms;
+	}
+	.section-actions a:hover {
+		background: rgba(255, 255, 255, 0.2);
+		border-color: rgba(255, 255, 255, 0.58);
+	}
 	/* Four-slide carousel: each slide owns 25% of the cycle and overlaps
-	   the next slide with a 1.6s crossfade so the hero never drops to black. */
+	   the next slide with a 3s crossfade so the hero never drops to black. */
 	@keyframes hero-fade {
 		0%, 100% { opacity: 0; }
-		5%, 25% { opacity: 1; }
-		30% { opacity: 0; }
+		6.25%, 25% { opacity: 1; }
+		31.25% { opacity: 0; }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.slide { animation: none; }
 		.slide:first-child { opacity: 1; }
+	}
+	@media (min-width: 768px) {
+		.home-section {
+			padding-inline: clamp(2rem, 7vw, 7rem);
+		}
+		.home-section:nth-child(even) {
+			justify-content: flex-end;
+		}
 	}
 </style>
