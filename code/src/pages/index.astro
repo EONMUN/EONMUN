@@ -8,7 +8,7 @@ export const prerender = true;
 
 const slides = await getHomepageSlides();
 
-const slideSeconds = 5;
+const slideSeconds = 8;
 const cycleSeconds = slides.length * slideSeconds;
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0]?.defaultImageUrl ?? undefined}>
@@ -109,12 +109,12 @@ const cycleSeconds = slides.length * slideSeconds;
 	.artwork-info .values a:hover {
 		color: rgb(229, 231, 235);
 	}
-	/* Each slide visible for 5 of 40s (12.5% of cycle). Fade in 0%→1.25%,
-	   hold to 12.5%, fade out 12.5%→13.75%. */
+	/* Each slide holds for 8s. Fade spans 20% of each slide interval,
+	   keeping the background movement slower without leaving black gaps. */
 	@keyframes hero-fade {
 		0%, 100% { opacity: 0; }
-		1.25%, 12.5% { opacity: 1; }
-		13.75% { opacity: 0; }
+		2.5%, 12.5% { opacity: 1; }
+		15% { opacity: 0; }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.slide { animation: none; }
