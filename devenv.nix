@@ -20,6 +20,15 @@ in
     NIX_SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
   };
 
+  tasks."db:migrate".exec = ''
+    if [ ! -d node_modules ]; then
+      echo "Installing root legacy dependencies for Drizzle migration tooling..."
+      bun install
+    fi
+
+    exec bun run db:migrate
+  '';
+
   enterShell = ''
     export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$(find "$PLAYWRIGHT_BROWSERS_PATH" -name chrome | head -n 1)
     echo "EONMUN Astro devenv shell"
@@ -32,6 +41,7 @@ in
     echo "  cd code && bun install --frozen-lockfile"
     echo "  cd code && bun run dev"
     echo "  cd code && bun run build"
+    echo "  devenv tasks run db:migrate"
     echo ""
   '';
 
