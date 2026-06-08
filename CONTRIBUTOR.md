@@ -1,6 +1,6 @@
 # Contributor guide
 
-This repo uses Nix for a reproducible shell and Bun for the active Astro workspace.
+This repo uses devenv for a reproducible shell and Bun for the active Astro workspace.
 
 ## Setup
 
@@ -20,19 +20,33 @@ cd code
 bun install --frozen-lockfile
 ```
 
+The local database is managed by devenv. `devenv up` automatically runs `db:setup`, which applies migrations and seeds fixture/mock data into `.devenv/state/eonmun-dev.db`. The setup task unsets Turso credentials so it cannot mutate production.
+
 ## Development server
 
-Run the Astro dev server from `code/`:
+Start the local stack from the repo root:
 
 ```bash
-bun run dev
+devenv up
 ```
 
-Astro prints the local URL, usually `http://localhost:4321`.
+This runs `db:setup` first, then starts Astro at `http://localhost:4321`. Stop it with:
+
+```bash
+devenv processes down
+```
 
 ## Common commands
 
-Run these from `code/`:
+Run stack and database tasks from the repo root:
+
+```bash
+devenv up
+devenv processes down
+devenv tasks run db:setup
+```
+
+Run validation and Cloudflare commands from `code/`:
 
 ```bash
 bun run content:sync

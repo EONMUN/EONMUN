@@ -8,7 +8,7 @@ This file is for agent-specific operating rules. Project overview and human cont
 ## Current application
 
 - Treat `code/` as the active website workspace.
-- Use Bun in `code/`; do not add npm, pnpm, Docker Compose, or database setup for the active Astro site unless the task explicitly requires legacy code.
+- Use Bun in `code/`; do not add npm, pnpm, Docker Compose, or ad hoc database setup for the active Astro site. Use the checked-in devenv tasks instead.
 - Public content should prefer Astro content collections and static pages.
 - Keep database access isolated to small runtime endpoints when static content is not sufficient.
 - The production Worker is `eonmun-astro`; the legacy `eonmun` OpenNext worker should not receive new website work.
@@ -26,7 +26,9 @@ This file is for agent-specific operating rules. Project overview and human cont
 ## Commands
 
 - Enter the dev shell with `devenv shell <cmd>` or use a direnv-activated shell.
-- Run active website commands from `code/`.
+- Start the local stack with `devenv up`; it automatically runs `db:setup` before the Astro web process.
+- Use `devenv tasks run db:setup` for local migrations plus seeded fixture/mock data; it forces a local `.devenv/state/eonmun-dev.db` and unsets Turso secrets.
+- Run active website validation commands from `code/`.
 - Prefer `bun run build` for validation.
 - Use `bunx wrangler` or `./node_modules/.bin/wrangler` from `code/` for Cloudflare operations.
 - Never run `playwright install`; the Nix dev shell provides browser binaries through `playwright-driver.browsers`.
