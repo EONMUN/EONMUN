@@ -7,7 +7,7 @@ This repo uses Nix for a reproducible shell and Bun for the active Astro workspa
 From the repo root:
 
 ```bash
-nix develop
+devenv shell
 cd code
 bun install --frozen-lockfile
 ```
@@ -15,7 +15,6 @@ bun install --frozen-lockfile
 If using direnv:
 
 ```bash
-echo "use flake" > .envrc
 direnv allow
 cd code
 bun install --frozen-lockfile

@@ -25,7 +25,7 @@ This file is for agent-specific operating rules. Project overview and human cont
 
 ## Commands
 
-- Enter the dev shell with `nix develop -c <cmd>` or use a direnv-activated shell.
+- Enter the dev shell with `devenv shell <cmd>` or use a direnv-activated shell.
 - Run active website commands from `code/`.
 - Prefer `bun run build` for validation.
 - Use `bunx wrangler` or `./node_modules/.bin/wrangler` from `code/` for Cloudflare operations.
