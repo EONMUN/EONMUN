@@ -68,6 +68,6 @@ in
 
   processes.web = {
     cwd = "code";
-    exec = ''exec bun run dev -- --host 0.0.0.0 --port "''${WEB_PORT:-4321}"'';
+    exec = ''exec bun run dev -- --port "''${WEB_PORT:-4321}"'';
   };
 }
