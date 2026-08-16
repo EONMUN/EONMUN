@@ -33,7 +33,7 @@
 		{ "pattern": "eonmun.com", "custom_domain": true }
 	],
 	"vars": {
-		"ADMIN_EMAILS": "ncrmro@gmail.com",
+		"ADMIN_EMAILS": "ncrmro@gmail.com,1e1104k4@gmail.com",
 		"R2_PUBLIC_URL": "https://r2.eonmun.com"
 	},
 	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare
