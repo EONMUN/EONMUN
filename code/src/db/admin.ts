@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { ArtworkAdminInput, CollectionAdminInput } from "../lib/admin-input";
 import {
@@ -217,6 +217,179 @@ export async function getAdminArtwork(env: Env, slug: string) {
 		db.select().from(products).where(and(eq(products.artworkId, artwork.id), eq(products.type, "artwork"))),
 	]);
 	return { ...artwork, images, collectionIds: memberships.map((row) => row.collectionId), product: productRows[0] ?? null };
+}
+
+// Dashboard shapes. The dashboard is the only admin surface that reads every
+// entity at once, so it keeps its own narrow projections instead of loading the
+// full rows the editors need.
+export interface DashboardArtwork {
+	slug: string;
+	title: string;
+	year: number | null;
+	publishedAt: Date | null;
+	imageUrl: string | null;
+}
+
+export interface DashboardCollection {
+	slug: string;
+	name: string;
+	publishedAt: Date | null;
+	artworkCount: number;
+	coverUrls: string[];
+}
+
+export interface DashboardProduct {
+	slug: string;
+	name: string;
+	priceCents: number;
+	imageUrl: string | null;
+	artworkSlug: string | null;
+	soldAt: Date | null;
+	quantity: number | null;
+}
+
+export interface DashboardTally {
+	total: number;
+	published: number;
+}
+
+export interface AdminDashboard {
+	artworks: { recent: DashboardArtwork[]; tally: DashboardTally };
+	collections: { recent: DashboardCollection[]; tally: DashboardTally };
+	store: {
+		recent: DashboardProduct[];
+		tally: { total: number; available: number; sold: number };
+	};
+}
+
+const DASHBOARD_LIMIT = 3;
+
+const publishedTally = (column: typeof artworks.publishedAt | typeof collections.publishedAt) => ({
+	total: sql<number>`count(*)`,
+	published: sql<number>`sum(case when ${column} is not null then 1 else 0 end)`,
+});
+
+// One artwork can carry several images; the dashboard needs exactly one, and it
+// must agree with the cover the public catalog shows.
+function defaultImageOf(images: { url: string; isDefault: boolean }[]) {
+	return images.find((image) => image.isDefault)?.url ?? images[0]?.url ?? null;
+}
+
+export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<AdminDashboard> {
+	const [artworkRows, collectionRows, productRows, artworkTally, collectionTally, storeTally] =
+		await Promise.all([
+			db.select().from(artworks).orderBy(desc(artworks.createdAt)).limit(DASHBOARD_LIMIT),
+			db.select().from(collections).orderBy(desc(collections.createdAt)).limit(DASHBOARD_LIMIT),
+			db.select().from(products).orderBy(desc(products.createdAt)).limit(DASHBOARD_LIMIT),
+			db.select(publishedTally(artworks.publishedAt)).from(artworks),
+			db.select(publishedTally(collections.publishedAt)).from(collections),
+			db
+				.select({
+					total: sql<number>`count(*)`,
+					available: sql<number>`sum(case when ${products.soldAt} is null and coalesce(${products.quantity}, 0) > 0 then 1 else 0 end)`,
+					sold: sql<number>`sum(case when ${products.soldAt} is not null then 1 else 0 end)`,
+				})
+				.from(products),
+		]);
+
+	const artworkIds = artworkRows.map((artwork) => artwork.id);
+	const collectionIds = collectionRows.map((collection) => collection.id);
+	// A product is edited through its artwork, so each card needs the artwork slug.
+	const productArtworkIds = productRows
+		.map((product) => product.artworkId)
+		.filter((id): id is number => id !== null);
+
+	const [imageRows, membershipRows, productArtworkRows] = await Promise.all([
+		artworkIds.length
+			? db.select().from(artworkImages).where(inArray(artworkImages.artworkId, artworkIds))
+			: Promise.resolve([] as (typeof artworkImages.$inferSelect)[]),
+		collectionIds.length
+			? db
+					.select({
+						collectionId: artworksToCollections.collectionId,
+						artworkId: artworksToCollections.artworkId,
+						isCover: artworksToCollections.isDefaultForCollection,
+						url: artworkImages.url,
+						isDefault: artworkImages.isDefault,
+					})
+					.from(artworksToCollections)
+					.leftJoin(artworkImages, eq(artworkImages.artworkId, artworksToCollections.artworkId))
+					.where(inArray(artworksToCollections.collectionId, collectionIds))
+			: Promise.resolve([] as { collectionId: number; artworkId: number; isCover: boolean; url: string | null; isDefault: boolean | null }[]),
+		productArtworkIds.length
+			? db
+					.select({ id: artworks.id, slug: artworks.slug })
+					.from(artworks)
+					.where(inArray(artworks.id, productArtworkIds))
+			: Promise.resolve([] as { id: number; slug: string }[]),
+	]);
+
+	const artworkSlugById = new Map(productArtworkRows.map((row) => [row.id, row.slug]));
+
+	const imagesByArtwork = new Map<number, { url: string; isDefault: boolean }[]>();
+	for (const image of imageRows) {
+		const bucket = imagesByArtwork.get(image.artworkId) ?? [];
+		bucket.push({ url: image.url, isDefault: image.isDefault });
+		imagesByArtwork.set(image.artworkId, bucket);
+	}
+
+	// The join fans out one row per (artwork, image) pair, so members are folded
+	// back per artwork before the cover artwork is promoted to the front.
+	const membersByCollection = new Map<
+		number,
+		Map<number, { isCover: boolean; images: { url: string; isDefault: boolean }[] }>
+	>();
+	for (const row of membershipRows) {
+		const members = membersByCollection.get(row.collectionId) ?? new Map();
+		const member = members.get(row.artworkId) ?? { isCover: false, images: [] };
+		member.isCover = member.isCover || row.isCover;
+		if (row.url) member.images.push({ url: row.url, isDefault: row.isDefault ?? false });
+		members.set(row.artworkId, member);
+		membersByCollection.set(row.collectionId, members);
+	}
+
+	return {
+		artworks: {
+			recent: artworkRows.map((artwork) => ({
+				slug: artwork.slug,
+				title: artwork.title,
+				year: artwork.year,
+				publishedAt: artwork.publishedAt,
+				imageUrl: defaultImageOf(imagesByArtwork.get(artwork.id) ?? []),
+			})),
+			tally: artworkTally[0] ?? { total: 0, published: 0 },
+		},
+		collections: {
+			recent: collectionRows.map((collection) => {
+				const members = Array.from(membersByCollection.get(collection.id)?.values() ?? []);
+				const coverUrls = members
+					.sort((left, right) => Number(right.isCover) - Number(left.isCover))
+					.map((member) => defaultImageOf(member.images))
+					.filter((url): url is string => url !== null)
+					.slice(0, DASHBOARD_LIMIT);
+				return {
+					slug: collection.slug,
+					name: collection.name,
+					publishedAt: collection.publishedAt,
+					artworkCount: members.length,
+					coverUrls,
+				};
+			}),
+			tally: collectionTally[0] ?? { total: 0, published: 0 },
+		},
+		store: {
+			recent: productRows.map((product) => ({
+				slug: product.slug,
+				name: product.name,
+				priceCents: product.price,
+				imageUrl: product.imageUrl,
+				artworkSlug: product.artworkId === null ? null : artworkSlugById.get(product.artworkId) ?? null,
+				soldAt: product.soldAt,
+				quantity: product.quantity,
+			})),
+			tally: storeTally[0] ?? { total: 0, available: 0, sold: 0 },
+		},
+	};
 }
 
 export async function getAdminCollection(env: Env, slug: string) {

@@ -1,45 +1,612 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAdminDashboard } from '../db/admin';
 import { requireAdminPage } from '../lib/admin-guard';
 import { getRuntimeEnv } from '../lib/runtime-env';
 
 export const prerender = false;
 
-const access = await requireAdminPage(Astro.request, getRuntimeEnv(), '/admin');
+const env = getRuntimeEnv();
+const access = await requireAdminPage(Astro.request, env, '/admin');
 if ('response' in access) return access.response;
 const { session } = access;
+
+const dashboard = await getAdminDashboard(env);
+
+// Posts still live in content files, so the console lists them without an
+// in-browser create action. Drafts sort first: they are the rows an editor came
+// here to finish.
+const postEntries = await getCollection('posts');
+const posts = postEntries
+	.map((post) => {
+		const stamp = post.data.publishedAt ?? post.data.scheduledAt ?? null;
+		const date = stamp ? new Date(stamp) : null;
+		return {
+			slug: post.id,
+			title: post.data.title,
+			coverImageUrl: post.data.coverImageUrl ?? null,
+			postType: post.data.postType,
+			date: date && !Number.isNaN(date.getTime()) ? date : null,
+		};
+	})
+	.sort((left, right) => (right.date?.getTime() ?? Infinity) - (left.date?.getTime() ?? Infinity))
+	.slice(0, 3);
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const priceFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const formatDate = (value: Date | null) => (value ? dateFormatter.format(value) : null);
+const formatPrice = (cents: number) => priceFormatter.format(cents / 100);
+
+const { artworks, collections, store } = dashboard;
+const postTypeLabels: Record<string, string> = {
+	announcement: 'Announcement',
+	educational: 'Educational',
+	behind_the_scenes: 'Behind the scenes',
+	general: 'General',
+};
 ---
-<BaseLayout title="Admin — EONMUN" description="EONMUN administration.">
-	<main class="container mx-auto px-4 py-8">
-		<div class="mb-8">
-			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Admin</h1>
-			<p class="text-gray-600 dark:text-gray-400">
-				Signed in as {session.user.email}.
-			</p>
-		</div>
+<BaseLayout title="Admin — EONMUN" description="EONMUN studio console.">
+	<div class="console">
+		<div class="ground" aria-hidden="true"></div>
+		<div class="wrap">
+			<header class="masthead">
+				<div>
+					<p class="eyebrow">Studio console</p>
+					<h1 class="title">Admin</h1>
+				</div>
+				<div class="identity">
+					<span class="email">{session.user.email}</span>
+					<a class="signout" href="/api/auth/signout">Sign out</a>
+				</div>
+			</header>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-			<a href="/admin/artworks" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
-				<h2 class="text-xl font-semibold mb-2">Artwork</h2>
-				<p class="text-sm text-gray-600 dark:text-gray-400">Create, edit, and publish artwork.</p>
-			</a>
-			<a href="/posts" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
-				<h2 class="text-xl font-semibold mb-2">Posts</h2>
-				<p class="text-sm text-gray-600 dark:text-gray-400">Review published studio posts.</p>
-			</a>
-			<a href="/admin/collections" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
-				<h2 class="text-xl font-semibold mb-2">Collections</h2>
-				<p class="text-sm text-gray-600 dark:text-gray-400">Manage artwork collections.</p>
-			</a>
-		</div>
+			<div class="actions">
+				<a class="action reveal" href="/admin/artworks/new" style="animation-delay: 60ms">
+					<span class="seal" aria-hidden="true">+</span>
+					<span class="action-copy">
+						<span class="action-title">New artwork</span>
+						<span class="action-note">Images, dimensions, collections, private price.</span>
+					</span>
+					<span class="action-arrow" aria-hidden="true">&rarr;</span>
+				</a>
+				<a class="action reveal" href="/admin/collections/new" style="animation-delay: 120ms">
+					<span class="seal" aria-hidden="true">+</span>
+					<span class="action-copy">
+						<span class="action-title">New collection</span>
+						<span class="action-note">Group artwork and choose the cover piece.</span>
+					</span>
+					<span class="action-arrow" aria-hidden="true">&rarr;</span>
+				</a>
+			</div>
 
-		<div class="mt-8">
-			<a
-				href="/api/auth/signout"
-				class="inline-flex px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:border-gray-500"
-			>
-				Sign out
-			</a>
+			<section class="entity reveal" style="animation-delay: 180ms">
+				<div class="entity-head">
+					<h2><span class="index">01</span> Artwork</h2>
+					<p class="tally">
+						{artworks.tally.total} total &middot; {artworks.tally.published} published &middot;
+						{artworks.tally.total - artworks.tally.published} draft
+					</p>
+					<div class="entity-links">
+						<a class="ghost" href="/admin/artworks/new">New</a>
+						<a class="ghost" href="/admin/artworks">All artwork &rarr;</a>
+					</div>
+				</div>
+				{artworks.recent.length === 0 ? (
+					<a class="empty" href="/admin/artworks/new">No artwork yet. Add the first piece &rarr;</a>
+				) : (
+					<ul class="grid">
+						{artworks.recent.map((artwork) => (
+							<li>
+								<a class="card" href={`/admin/artworks/${artwork.slug}`}>
+									<span class="frame portrait">
+										{artwork.imageUrl ? (
+											<img src={artwork.imageUrl} alt="" loading="lazy" />
+										) : (
+											<span class="no-image">No image</span>
+										)}
+										<span class:list={['status', artwork.publishedAt ? 'is-live' : 'is-draft']}>
+											{artwork.publishedAt ? 'Published' : 'Draft'}
+										</span>
+									</span>
+									<span class="card-body">
+										<span class="card-title">{artwork.title}</span>
+										<span class="card-meta">{artwork.year ?? 'Year unset'}</span>
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+
+			<section class="entity reveal" style="animation-delay: 240ms">
+				<div class="entity-head">
+					<h2><span class="index">02</span> Collections</h2>
+					<p class="tally">
+						{collections.tally.total} total &middot; {collections.tally.published} published &middot;
+						{collections.tally.total - collections.tally.published} draft
+					</p>
+					<div class="entity-links">
+						<a class="ghost" href="/admin/collections/new">New</a>
+						<a class="ghost" href="/admin/collections">All collections &rarr;</a>
+					</div>
+				</div>
+				{collections.recent.length === 0 ? (
+					<a class="empty" href="/admin/collections/new">No collections yet. Group your first pieces &rarr;</a>
+				) : (
+					<ul class="grid">
+						{collections.recent.map((collection) => (
+							<li>
+								<a class="card" href={`/admin/collections/${collection.slug}`}>
+									<span class="frame stack">
+										{collection.coverUrls.length === 0 ? (
+											<span class="no-image">No artwork</span>
+										) : (
+											collection.coverUrls.map((url, index) => (
+												<img class={`layer layer-${index}`} src={url} alt="" loading="lazy" />
+											))
+										)}
+										<span class:list={['status', collection.publishedAt ? 'is-live' : 'is-draft']}>
+											{collection.publishedAt ? 'Published' : 'Draft'}
+										</span>
+									</span>
+									<span class="card-body">
+										<span class="card-title">{collection.name}</span>
+										<span class="card-meta">
+											{collection.artworkCount} {collection.artworkCount === 1 ? 'artwork' : 'artworks'}
+										</span>
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+
+			<section class="entity reveal" style="animation-delay: 300ms">
+				<div class="entity-head">
+					<h2><span class="index">03</span> Private sales</h2>
+					<p class="tally">
+						{store.tally.total} listed &middot; {store.tally.available} available &middot; {store.tally.sold} sold
+					</p>
+					<div class="entity-links">
+						<a class="ghost" href="/admin/artworks/new">New</a>
+						<a class="ghost" href="/admin/artworks">All artwork &rarr;</a>
+					</div>
+				</div>
+				{store.recent.length === 0 ? (
+					<a class="empty" href="/admin/artworks/new">Nothing listed. Give an artwork a price &rarr;</a>
+				) : (
+					<ul class="grid">
+						{store.recent.map((product) => (
+							<li>
+								<a
+									class="card"
+									href={product.artworkSlug ? `/admin/artworks/${product.artworkSlug}` : '/admin/artworks'}
+								>
+									<span class="frame landscape">
+										{product.imageUrl ? (
+											<img src={product.imageUrl} alt="" loading="lazy" />
+										) : (
+											<span class="no-image">No image</span>
+										)}
+										<span
+											class:list={[
+												'status',
+												product.soldAt ? 'is-sold' : (product.quantity ?? 0) > 0 ? 'is-live' : 'is-draft',
+											]}
+										>
+											{product.soldAt ? 'Sold' : (product.quantity ?? 0) > 0 ? 'Available' : 'Reserved'}
+										</span>
+									</span>
+									<span class="card-body">
+										<span class="card-title">{product.name}</span>
+										<span class="card-meta price">{formatPrice(product.priceCents)}</span>
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+
+			<section class="entity reveal" style="animation-delay: 360ms">
+				<div class="entity-head">
+					<h2><span class="index">04</span> Posts</h2>
+					<p class="tally">{postEntries.length} written &middot; edited in the repository</p>
+					<div class="entity-links">
+						<a class="ghost" href="/posts">All posts &rarr;</a>
+					</div>
+				</div>
+				{posts.length === 0 ? (
+					<p class="empty is-static">No posts yet.</p>
+				) : (
+					<ul class="grid">
+						{posts.map((post) => (
+							<li>
+								<a class="card" href={`/posts/${post.slug}`}>
+									<span class="frame landscape">
+										{post.coverImageUrl ? (
+											<img src={post.coverImageUrl} alt="" loading="lazy" />
+										) : (
+											<span class="no-image">{postTypeLabels[post.postType] ?? 'Post'}</span>
+										)}
+									</span>
+									<span class="card-body">
+										<span class="card-title">{post.title}</span>
+										<span class="card-meta">{formatDate(post.date) ?? 'Unscheduled'}</span>
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
 		</div>
-	</main>
+	</div>
 </BaseLayout>
+
+<style>
+	/* The console commits to dark: the shared navbar draws its wordmark in white,
+	   and the artwork reads correctly against an unlit gallery wall. */
+	.console {
+		--ink: #08080a;
+		--paper: #ece7dd;
+		--muted: rgba(236, 231, 221, 0.55);
+		--hair: rgba(236, 231, 221, 0.16);
+		--seal: #c1452c;
+		position: relative;
+		min-height: 100vh;
+		margin-top: -4.5rem;
+		padding: 4.5rem 0 6rem;
+		color: var(--paper);
+	}
+
+	.ground {
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		background:
+			radial-gradient(120% 80% at 50% -10%, #17161a 0%, var(--ink) 55%, #050506 100%);
+	}
+
+	.ground::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		opacity: 0.28;
+		mix-blend-mode: overlay;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	}
+
+	.wrap {
+		width: min(88rem, 100%);
+		margin: 0 auto;
+		padding: 0 clamp(1rem, 4vw, 3.5rem);
+	}
+
+	.masthead {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1.5rem;
+		padding: clamp(2.5rem, 7vw, 5rem) 0 2rem;
+		border-bottom: 1px solid var(--hair);
+	}
+
+	.eyebrow {
+		margin: 0 0 0.75rem;
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.42em;
+		color: var(--seal);
+	}
+
+	.title {
+		margin: 0;
+		font-size: clamp(3rem, 11vw, 7rem);
+		line-height: 0.85;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+
+	.identity {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		font-size: 0.78rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+
+	.email {
+		color: var(--muted);
+	}
+
+	.signout {
+		padding: 0.5rem 1.1rem;
+		border: 1px solid var(--hair);
+		color: var(--paper);
+		transition: border-color 200ms, color 200ms;
+	}
+
+	.signout:hover {
+		border-color: var(--seal);
+		color: var(--seal);
+	}
+
+	.actions {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+		gap: 1px;
+		margin: 2.5rem 0 4rem;
+		background: var(--hair);
+		border: 1px solid var(--hair);
+	}
+
+	.action {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		padding: clamp(1.5rem, 3vw, 2.25rem);
+		background: rgba(8, 8, 10, 0.75);
+		transition: background 250ms;
+	}
+
+	.action:hover {
+		background: rgba(193, 69, 44, 0.09);
+	}
+
+	.seal {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 3rem;
+		height: 3rem;
+		font-size: 1.5rem;
+		line-height: 1;
+		color: var(--paper);
+		background: var(--seal);
+		transition: transform 250ms cubic-bezier(0.2, 0.7, 0.2, 1);
+	}
+
+	.action:hover .seal {
+		transform: rotate(-6deg) scale(1.06);
+	}
+
+	.action-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.action-title {
+		font-size: 1.4rem;
+		text-transform: uppercase;
+		letter-spacing: 0.16em;
+	}
+
+	.action-note {
+		font-size: 0.85rem;
+		color: var(--muted);
+	}
+
+	.action-arrow {
+		margin-left: auto;
+		font-size: 1.4rem;
+		color: var(--muted);
+		transition: transform 250ms, color 250ms;
+	}
+
+	.action:hover .action-arrow {
+		transform: translateX(0.35rem);
+		color: var(--seal);
+	}
+
+	.entity {
+		margin-bottom: 4rem;
+	}
+
+	.entity-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.75rem 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--hair);
+	}
+
+	.entity-head h2 {
+		margin: 0;
+		font-size: 1.5rem;
+		text-transform: uppercase;
+		letter-spacing: 0.2em;
+	}
+
+	.index {
+		margin-right: 0.75rem;
+		font-size: 0.75rem;
+		letter-spacing: 0.2em;
+		color: var(--seal);
+		vertical-align: 0.35em;
+	}
+
+	.tally {
+		margin: 0;
+		font-size: 0.78rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.entity-links {
+		display: flex;
+		gap: 1.25rem;
+		margin-left: auto;
+	}
+
+	.ghost {
+		font-size: 0.78rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--muted);
+		transition: color 200ms;
+	}
+
+	.ghost:hover {
+		color: var(--seal);
+	}
+
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+		gap: clamp(1rem, 2.5vw, 2rem);
+		margin: 1.75rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.card {
+		display: block;
+	}
+
+	.frame {
+		position: relative;
+		display: block;
+		overflow: hidden;
+		background: #101013;
+		border: 1px solid var(--hair);
+	}
+
+	.portrait { aspect-ratio: 4 / 5; }
+	.landscape { aspect-ratio: 3 / 2; }
+	.stack { aspect-ratio: 3 / 2; }
+
+	.frame img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		filter: saturate(0.75) brightness(0.86);
+		transition: transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 400ms;
+	}
+
+	.card:hover .frame img {
+		transform: scale(1.04);
+		filter: saturate(1) brightness(1);
+	}
+
+	.card:hover .frame {
+		border-color: rgba(236, 231, 221, 0.4);
+	}
+
+	/* Collections hold artwork rather than a single image, so their cover is a
+	   stack of member pieces fanned out like prints on a table. */
+	.stack .layer {
+		position: absolute;
+		inset: 0 0 0 auto;
+		width: 62%;
+		border-left: 1px solid rgba(8, 8, 10, 0.85);
+		transition: transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 400ms;
+	}
+
+	.stack .layer-0 { left: 0; right: auto; width: 100%; z-index: 1; }
+	.stack .layer-1 { right: 0; width: 46%; z-index: 2; transform: translateX(18%); }
+	.stack .layer-2 { right: 0; width: 30%; z-index: 3; transform: translateX(36%); }
+
+	.card:hover .stack .layer-1 { transform: translateX(0); }
+	.card:hover .stack .layer-2 { transform: translateX(0); }
+
+	.no-image {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		font-size: 0.75rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: rgba(236, 231, 221, 0.32);
+	}
+
+	.status {
+		position: absolute;
+		top: 0.75rem;
+		left: 0.75rem;
+		z-index: 4;
+		padding: 0.25rem 0.6rem;
+		font-size: 0.62rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		backdrop-filter: blur(6px);
+		background: rgba(8, 8, 10, 0.6);
+		border: 1px solid var(--hair);
+	}
+
+	.status.is-live { color: var(--paper); border-color: rgba(236, 231, 221, 0.45); }
+	.status.is-draft { color: var(--seal); border-color: rgba(193, 69, 44, 0.6); }
+	.status.is-sold { color: rgba(236, 231, 221, 0.5); }
+
+	.card-body {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		padding-top: 0.85rem;
+	}
+
+	.card-title {
+		font-size: 1.05rem;
+		letter-spacing: 0.04em;
+	}
+
+	.card-meta {
+		font-size: 0.75rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.price { color: var(--seal); }
+
+	.empty {
+		display: block;
+		margin-top: 1.75rem;
+		padding: 2.5rem;
+		border: 1px dashed var(--hair);
+		font-size: 0.9rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+		text-align: center;
+		transition: border-color 200ms, color 200ms;
+	}
+
+	.empty:hover {
+		border-color: var(--seal);
+		color: var(--paper);
+	}
+
+	.empty.is-static:hover {
+		border-color: var(--hair);
+		color: var(--muted);
+	}
+
+	.reveal {
+		animation: rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+	}
+
+	@keyframes rise {
+		from { opacity: 0; transform: translateY(1.25rem); }
+		to { opacity: 1; transform: none; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.reveal { animation: none; }
+		.frame img,
+		.stack .layer,
+		.seal,
+		.action-arrow { transition: none; }
+	}
+</style>
