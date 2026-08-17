@@ -247,6 +247,15 @@ const postTypeLabels: Record<string, string> = {
 	</div>
 </BaseLayout>
 
+<style is:global>
+	/* The console commits to dark on this route only, so the footer and any
+	   overscroll stay in the same room as the page. */
+	body:has(.console) {
+		background: #050506;
+		color: #ece7dd;
+	}
+</style>
+
 <style>
 	/* The console commits to dark: the shared navbar draws its wordmark in white,
 	   and the artwork reads correctly against an unlit gallery wall. */
@@ -517,6 +526,16 @@ const postTypeLabels: Record<string, string> = {
 
 	.card:hover .stack .layer-1 { transform: translateX(0); }
 	.card:hover .stack .layer-2 { transform: translateX(0); }
+
+	/* An empty frame is common for posts, which usually carry no cover. Hatching
+	   reads as a prepared surface rather than a hole in the page. */
+	.frame:has(> .no-image) {
+		background-image: repeating-linear-gradient(
+			-45deg,
+			rgba(236, 231, 221, 0.05) 0 1px,
+			transparent 1px 9px
+		);
+	}
 
 	.no-image {
 		position: absolute;
