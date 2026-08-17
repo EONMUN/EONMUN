@@ -58,14 +58,31 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		<div data-image-list class="image-list"></div>
 	</FormFieldset>
 
-	<FormFieldset legend="Collections" layout="columns">
-		{collections.length === 0 ? (
-			<p class="hint">No collections yet.</p>
-		) : (
-			collections.map((collection) => (
-				<label><input type="checkbox" name="collectionIds" value={collection.id} checked={artwork?.collectionIds.includes(collection.id)} /> {collection.name}</label>
-			))
-		)}
+	<FormFieldset legend="Collections">
+		<div class="collection-list" data-collection-list>
+			{collections.length === 0 ? (
+				<p class="hint" data-collection-empty>No collections yet.</p>
+			) : (
+				collections.map((collection) => (
+					<label><input type="checkbox" name="collectionIds" value={collection.id} checked={artwork?.collectionIds.includes(collection.id)} /> {collection.name}</label>
+				))
+			)}
+		</div>
+		<div class="new-collection">
+			<label for="new-collection-name">New collection</label>
+			<div class="new-collection-row">
+				<input
+					class="admin-input"
+					id="new-collection-name"
+					type="text"
+					autocomplete="off"
+					placeholder="Collection name"
+					data-new-collection-name
+				/>
+				<button type="button" class="add-collection" data-new-collection-add>+ New</button>
+			</div>
+			<p id="new-collection-status" class="hint" role="status" aria-live="polite" data-new-collection-status></p>
+		</div>
 	</FormFieldset>
 
 	<FormFieldset legend="Private sale">
@@ -155,6 +172,15 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 	}
 </script>
 
+<script>
+	// Bundled, not `is:inline`: an inline script cannot import, and the inline
+	// collection creator is covered by a test that imports the same module.
+	import { attachInlineCollectionCreator } from '../../lib/inline-collection-creator';
+
+	const artworkForm = document.querySelector('[data-admin-artwork-form]');
+	if (artworkForm instanceof HTMLFormElement) attachInlineCollectionCreator(artworkForm);
+</script>
+
 <style>
 	form {
 		display: flex;
@@ -165,6 +191,66 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 
 	.span-all {
 		grid-column: 1 / -1;
+	}
+
+	/* Matches FormFieldset's `columns` layout. The checkboxes need a container of
+	   their own so the script has one insertion point on both the populated and
+	   the empty state. */
+	.collection-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+		gap: 1rem;
+	}
+
+	.new-collection-row {
+		display: flex;
+		align-items: stretch;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.new-collection-row .admin-input {
+		margin-top: 0;
+	}
+
+	.add-collection {
+		flex: none;
+		padding: 0 1.1rem;
+		font: inherit;
+		font-size: 0.72rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		color: var(--paper);
+		background: transparent;
+		/* A control boundary owes 3:1 against the console ground; --hair does not
+		   reach it. */
+		border: 1px solid rgba(236, 231, 221, 0.45);
+		cursor: pointer;
+		transition: background 200ms, border-color 200ms, color 200ms;
+	}
+
+	.add-collection:hover:not([aria-disabled='true']) {
+		background: var(--seal-fill);
+		border-color: var(--seal-fill);
+	}
+
+	/* The in-flight state is `aria-disabled`, not `disabled`, so the button keeps
+	   its place in the focus order. The handler refuses the second activation. */
+	.add-collection[aria-disabled='true'] {
+		color: var(--muted);
+		cursor: progress;
+	}
+
+	/* The live region stays in the layout at all times. A region that is hidden
+	   until it has text is not reliably announced when the text arrives. */
+	.new-collection .hint {
+		min-height: 1.2em;
+		margin-top: 0.5rem;
+	}
+
+	.new-collection .hint.is-error {
+		color: var(--seal-text);
 	}
 
 	.image-list {

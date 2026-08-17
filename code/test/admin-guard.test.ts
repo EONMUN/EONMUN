@@ -49,4 +49,22 @@ describe("admin request guards", () => {
 		expect(response.status).toBe(409);
 		expect(await response.json()).toEqual({ error: "Slug already exists" });
 	});
+
+	test("finds the collision inside the query wrapper the driver error is nested in", async () => {
+		const response = mutationError(new Error(
+			'Failed query: insert into "collections" ("id", "name", "slug") values (null, ?, ?)\nparams: Winter Studies,winter-studies',
+			{ cause: new Error("SQLITE_CONSTRAINT_UNIQUE: UNIQUE constraint failed: collections.slug") },
+		));
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({ error: "Slug already exists" });
+	});
+
+	test("never reports the query wrapper, which repeats the submitted values", async () => {
+		const response = mutationError(new Error(
+			'Failed query: insert into "collections" ("id") values (null)\nparams: Winter Studies',
+			{ cause: new Error("SQLITE_FULL: database or disk is full") },
+		));
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "SQLITE_FULL: database or disk is full" });
+	});
 });

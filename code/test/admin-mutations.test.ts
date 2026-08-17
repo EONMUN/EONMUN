@@ -113,6 +113,25 @@ describe("admin mutations", () => {
 		expect(membership.isDefaultForCollection).toBe(true);
 	});
 
+	test("files an artwork into a collection created empty from a name only", async () => {
+		const artwork = await createArtworkAdmin(env, artworkInput(), db);
+		// What the artwork editor's inline creator sends: a name, no slug, and no
+		// membership. The artwork's own save is the single writer of membership.
+		const collection = await createCollectionAdmin(env, parseCollectionInput({ name: "Winter Studies" }, { deriveSlug: true }), db);
+		expect(collection.slug).toBe("winter-studies");
+		expect(await db.select().from(artworksToCollections).where(eq(artworksToCollections.collectionId, collection.id))).toHaveLength(0);
+
+		await updateArtworkAdmin(env, artwork.slug, artworkInput({ collectionIds: [collection.id] }), db);
+
+		const memberships = await db.select().from(artworksToCollections).where(eq(artworksToCollections.collectionId, collection.id));
+		expect(memberships.map((row) => row.artworkId)).toEqual([artwork.id]);
+	});
+
+	test("rejects a second collection whose derived slug already exists", async () => {
+		await createCollectionAdmin(env, parseCollectionInput({ name: "Winter Studies" }, { deriveSlug: true }), db);
+		await expect(createCollectionAdmin(env, parseCollectionInput({ name: "winter studies" }, { deriveSlug: true }), db)).rejects.toThrow();
+	});
+
 	test("rolls back artwork creation if its product write fails", async () => {
 		const now = Math.floor(Date.now() / 1000);
 		await client.execute({ sql: "INSERT INTO products (type, name, slug, price, quantity, listed_at, created_at, updated_at) VALUES ('artwork', 'Collision', 'rollback', 1, 0, ?, ?, ?)", args: [now, now, now] });
