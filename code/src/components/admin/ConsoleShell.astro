@@ -244,11 +244,39 @@ const {
 		border: 1px solid var(--seal);
 	}
 
+	/* WCAG 3.3.2: mark required fields visibly and say what the mark means once,
+	   at the top of the form. The `required` attribute already carries the fact
+	   to assistive technology, so the glyph is decorative. */
+	.console .req {
+		color: var(--seal-text);
+		font-size: 0.9em;
+	}
+
+	.console .required-note {
+		font-size: 0.8rem;
+		letter-spacing: normal;
+		text-transform: none;
+		color: var(--muted);
+	}
+
+	/* :user-invalid, not :invalid -- an empty required field is invalid from the
+	   moment it renders, and flagging it before the user has touched it reads as
+	   an error they have not made yet. */
+	.console .admin-input:user-invalid {
+		border-color: var(--seal-text);
+	}
+
 	.console .hint {
 		font-size: 0.8rem;
 		letter-spacing: normal;
 		text-transform: none;
 		color: var(--muted);
+	}
+
+	/* A hint inside a label sits under its control, not beside the label text. */
+	.console label .hint {
+		display: block;
+		margin-top: 0.4rem;
 	}
 
 	/* One row per stored image, built by ArtworkForm's script. */

@@ -1,5 +1,7 @@
 ---
 import ErrorBanner from './ErrorBanner.astro';
+import RequiredMark from './RequiredMark.astro';
+import RequiredNote from './RequiredNote.astro';
 import FormFieldset from './FormFieldset.astro';
 import SubmitButton from './SubmitButton.astro';
 import type { SelectArtwork, SelectCollection } from '../../db';
@@ -14,10 +16,22 @@ const { action, collection, artworks } = Astro.props;
 ---
 <form data-admin-collection-form data-action={action}>
 	<ErrorBanner />
+	<RequiredNote />
 
 	<FormFieldset legend="Collection" layout="columns">
-		<label>Name <input class="admin-input" name="name" required value={collection?.name ?? ''} /></label>
-		<label>Slug <input class="admin-input" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={collection?.slug ?? ''} /></label>
+		<label>Name <RequiredMark /> <input class="admin-input" name="name" required value={collection?.name ?? ''} /></label>
+		<label>Slug <RequiredMark />
+			<input
+				class="admin-input"
+				name="slug"
+				required
+				pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+				title="Lowercase letters, numbers, and single hyphens between them."
+				aria-describedby="collection-slug-format"
+				value={collection?.slug ?? ''}
+			/>
+			<span id="collection-slug-format" class="hint">Lowercase letters, numbers, and hyphens. It becomes the page address.</span>
+		</label>
 		<label class="span-all">Description <textarea class="admin-input" name="description">{collection?.description ?? ''}</textarea></label>
 	</FormFieldset>
 
