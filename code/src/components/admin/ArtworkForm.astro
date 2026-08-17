@@ -75,7 +75,7 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		let images = JSON.parse(form.dataset.images || '[]');
 		const list = form.querySelector('[data-image-list]');
 		const errorBox = form.querySelector('[data-error]');
-		const showError = (message) => { errorBox.textContent = message; errorBox.hidden = false; };
+		const showError = (message) => { errorBox.hidden = false; errorBox.textContent = message; };
 		const renderImages = () => {
 			list.replaceChildren();
 			images.forEach((image, index) => {

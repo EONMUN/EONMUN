@@ -63,6 +63,12 @@ const {
 		--muted: rgba(236, 231, 221, 0.55);
 		--hair: rgba(236, 231, 221, 0.16);
 		--seal: #c1452c;
+		/* The accent needs three values, not one: #c1452c reads as a border or a
+		   large glyph, but paper on it is 4.10:1 and it on the ground is 4.03:1 --
+		   both under AA for the small text that uses them. Darken to fill, lighten
+		   to write. */
+		--seal-fill: #a93b24;
+		--seal-text: #d4523a;
 	}
 
 	/* The console paints its own near-black ground, so it owes the keyboard a
@@ -150,13 +156,14 @@ const {
 		text-transform: none;
 		color: var(--paper);
 		background: rgba(8, 8, 10, 0.6);
-		border: 1px solid var(--hair);
+		/* A control's boundary owes 3:1; --hair is a decorative edge at 1.4:1. */
+		border: 1px solid rgba(236, 231, 221, 0.45);
 		border-radius: 0;
 		transition: border-color 200ms;
 	}
 
 	.console .admin-input:hover {
-		border-color: rgba(236, 231, 221, 0.32);
+		border-color: rgba(236, 231, 221, 0.7);
 	}
 
 	.console .admin-input:focus-visible {
@@ -179,7 +186,7 @@ const {
 		font-size: 0.72rem;
 		letter-spacing: 0.28em;
 		text-transform: uppercase;
-		color: var(--seal);
+		color: var(--seal-text);
 	}
 
 	/* A label wrapping a checkbox or radio reads as one line with its control;
@@ -218,15 +225,15 @@ const {
 		letter-spacing: 0.22em;
 		text-transform: uppercase;
 		color: var(--paper);
-		background: var(--seal);
-		border: 1px solid var(--seal);
+		background: var(--seal-fill);
+		border: 1px solid var(--seal-fill);
 		cursor: pointer;
 		transition: background 200ms, color 200ms;
 	}
 
 	.console .submit:hover {
 		background: transparent;
-		color: var(--seal);
+		color: var(--seal-text);
 	}
 
 	.console .error-banner {
@@ -272,7 +279,7 @@ const {
 	}
 
 	.console .link-button:hover {
-		color: var(--seal);
+		color: var(--seal-text);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -328,7 +335,7 @@ const {
 		font-size: 0.7rem;
 		text-transform: uppercase;
 		letter-spacing: 0.42em;
-		color: var(--seal);
+		color: var(--seal-text);
 	}
 
 	.back {

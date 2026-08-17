@@ -52,7 +52,7 @@ const { action, collection, artworks } = Astro.props;
 		try {
 			const response = await fetch(form.dataset.action, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
 			const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Save failed'); window.location.assign(result.redirect);
-		} catch (error) { errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; errorBox.hidden = false; }
+		} catch (error) { errorBox.hidden = false; errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; }
 	});
 </script>
 
