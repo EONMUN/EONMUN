@@ -52,6 +52,7 @@ describe("checkout", () => {
 		);
 		expect(receivedPrice).toBe(125000);
 		expect(response.status).toBe(303);
+		expect(response.headers.get("location")).toBe("https://checkout.stripe.com/c/pay/test");
 	});
 
 	test("refuses checkout for an unavailable artwork", async () => {
