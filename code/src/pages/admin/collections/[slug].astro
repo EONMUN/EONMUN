@@ -1,16 +1,27 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
 import CollectionForm from '../../../components/admin/CollectionForm.astro';
+import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
 import { getAdminArtworks, getAdminCollection } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+
 export const prerender = false;
+
 const env = getRuntimeEnv();
 const access = await requireAdminPage(Astro.request, env, Astro.url.pathname);
 if ('response' in access) return access.response;
+const { session } = access;
 const slug = Astro.params.slug;
 if (!slug) return new Response('Not found', { status: 404 });
 const [collection, artworks] = await Promise.all([getAdminCollection(env, slug), getAdminArtworks(env)]);
 if (!collection) return new Response('Not found', { status: 404 });
 ---
-<BaseLayout title={`Edit ${collection.name} — EONMUN`}><main class="container mx-auto px-4 py-8"><h1 class="text-4xl font-bold mb-8">Edit collection</h1><CollectionForm action={`/api/admin/collections/${slug}`} collection={collection} artworks={artworks} /></main></BaseLayout>
+<ConsoleShell
+	title={`Edit ${collection.name} — EONMUN admin`}
+	heading={collection.name}
+	email={session.user.email}
+	backHref="/admin/collections"
+	backLabel="Collections"
+>
+	<CollectionForm action={`/api/admin/collections/${slug}`} collection={collection} artworks={artworks} />
+</ConsoleShell>
