@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
+import { SLUG_PATTERN, slugify } from "../src/lib/slug";
 
 const artwork = {
 	title: "New work",
@@ -30,6 +31,27 @@ describe("admin input", () => {
 
 	test("validates collection cover membership", () => {
 		expect(() => parseCollectionInput({ name: "Group", slug: "group", artworkIds: [1], defaultArtworkId: 2 })).toThrow("cover");
+	});
+
+	test("derives a collection slug when the caller sends a name only", () => {
+		const result = parseCollectionInput({ name: "  Winter Étude 2026!  ", artworkIds: [] });
+		expect(result.slug).toBe("winter-etude-2026");
+		expect(result.name).toBe("Winter Étude 2026!");
+		expect(SLUG_PATTERN.test(result.slug)).toBe(true);
+	});
+
+	test("still requires a slug the caller sent as an empty string", () => {
+		expect(() => parseCollectionInput({ name: "Group", slug: "", artworkIds: [] })).toThrow("Slug is required");
+	});
+
+	test("rejects a name that cannot produce a slug", () => {
+		expect(() => parseCollectionInput({ name: "!!!", artworkIds: [] })).toThrow("Name must contain letters or numbers");
+	});
+
+	test("slugify keeps the shape the slug pattern demands", () => {
+		expect(slugify("Two  --  Words")).toBe("two-words");
+		expect(slugify("-leading and trailing-")).toBe("leading-and-trailing");
+		expect(slugify("")).toBe("");
 	});
 
 	test("normalizes one default image", () => {

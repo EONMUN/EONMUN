@@ -1,5 +1,5 @@
 import { R2_PUBLIC_ORIGIN } from "./media";
-import { SLUG_PATTERN } from "./slug";
+import { SLUG_PATTERN, slugify } from "./slug";
 
 function text(value: unknown, field: string, required = false) {
 	if (typeof value !== "string") {
@@ -95,7 +95,14 @@ export interface CollectionAdminInput {
 export function parseCollectionInput(value: unknown): CollectionAdminInput {
 	if (!value || typeof value !== "object") throw new Error("Invalid collection payload");
 	const input = value as Record<string, unknown>;
-	const slug = text(input.slug, "Slug", true)!;
+	const name = text(input.name, "Name", true)!;
+	// A caller that omits the slug key entirely -- the artwork editor's inline
+	// creator, which asks for a name only -- gets one derived from the name. An
+	// empty slug string is still an error, so the collection form keeps telling
+	// an editor who cleared the field that it is required.
+	const derived = input.slug === undefined || input.slug === null;
+	const slug = derived ? slugify(name) : text(input.slug, "Slug", true)!;
+	if (derived && !slug) throw new Error("Name must contain letters or numbers");
 	if (!SLUG_PATTERN.test(slug)) throw new Error("Slug must use lowercase letters, numbers, and hyphens");
 	const artworkIds = ids(input.artworkIds ?? [], "Artworks");
 	const defaultArtworkId = input.defaultArtworkId == null || input.defaultArtworkId === ""
@@ -105,7 +112,7 @@ export function parseCollectionInput(value: unknown): CollectionAdminInput {
 		throw new Error("The collection cover must be an artwork in the collection");
 	}
 	return {
-		name: text(input.name, "Name", true)!,
+		name,
 		slug,
 		description: text(input.description, "Description"),
 		published: input.published === true,
