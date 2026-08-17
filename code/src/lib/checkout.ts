@@ -1,4 +1,5 @@
 import { SLUG_PATTERN } from "./slug";
+import { redirectResponse } from "./redirect";
 
 export interface CheckoutItem {
 	artworkSlug: string;
@@ -78,7 +79,7 @@ export async function handleCheckoutRequest(
 		const item = await lookup(artworkSlug);
 		if (!item) return Response.json({ error: "Artwork is not available" }, { status: 409 });
 		const url = await createSession(secretKey, item, new URL(request.url).origin);
-		return Response.redirect(url, 303);
+		return redirectResponse(url, 303);
 	} catch (error) {
 		if (error instanceof CheckoutValidationError) {
 			return Response.json({ error: error.message }, { status: 400 });

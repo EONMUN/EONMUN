@@ -30,6 +30,14 @@ describe("admin request guards", () => {
 		}
 	});
 
+	test("sends an unauthenticated dashboard request to sign-in", async () => {
+		const result = await requireAdminPage(new Request("https://eonmun.test/admin"), env, "/admin");
+		expect("response" in result).toBe(true);
+		const response = ("response" in result ? result.response : null)!;
+		expect(response.status).toBe(302);
+		expect(response.headers.get("location")).toContain("/api/auth/signin");
+	});
+
 	test("keeps invalid slug syntax as a validation error", async () => {
 		const response = mutationError(new Error("Slug must use lowercase letters, numbers, and hyphens"));
 		expect(response.status).toBe(400);

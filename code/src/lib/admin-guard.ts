@@ -1,4 +1,5 @@
 import { getSession, getSignInUrl, type AdminSession, type AuthEnv } from "./auth";
+import { redirectResponse } from "./redirect";
 
 export function isSameOriginRequest(request: Request) {
 	const origin = request.headers.get("origin");
@@ -28,7 +29,7 @@ export async function requireAdminPage(request: Request, env: AuthEnv, callbackP
 	const session = await getSession(request, env);
 	return session
 		? { session }
-		: { response: Response.redirect(getSignInUrl(request, callbackPath), 302) };
+		: { response: redirectResponse(getSignInUrl(request, callbackPath), 302) };
 }
 
 export function mutationError(error: unknown) {
