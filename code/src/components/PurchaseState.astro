@@ -1,0 +1,25 @@
+---
+interface Props { artworkSlug: string }
+const { artworkSlug } = Astro.props;
+---
+<div data-purchase-state data-artwork-slug={artworkSlug} class="space-y-2">
+	<form method="POST" action="/api/checkout" hidden data-buy-form>
+		<input type="hidden" name="artworkSlug" value={artworkSlug} />
+		<button type="submit" class="px-6 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-lg font-medium">Buy</button>
+	</form>
+	<p data-purchase-status class="text-sm text-gray-500 dark:text-gray-400">Checking availability…</p>
+</div>
+<script is:inline>
+	for (const root of document.querySelectorAll('[data-purchase-state]')) {
+		const slug = root.dataset.artworkSlug;
+		const form = root.querySelector('[data-buy-form]');
+		const status = root.querySelector('[data-purchase-status]');
+		fetch(`/api/inventory/${encodeURIComponent(slug)}.json`, { headers: { accept: 'application/json' } })
+			.then((response) => response.ok ? response.json() : Promise.reject(new Error('inventory unavailable')))
+			.then((inventory) => {
+				if (inventory.available === true) { form.hidden = false; status.hidden = true; return; }
+				form.hidden = true; status.textContent = inventory.status === 'sold' ? 'Sold' : 'Not currently available for purchase.';
+			})
+			.catch(() => { form.hidden = true; status.textContent = 'Purchasing is temporarily unavailable.'; });
+	}
+</script>

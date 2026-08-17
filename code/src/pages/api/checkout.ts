@@ -1,21 +1,14 @@
 import type { APIRoute } from "astro";
+import { getCheckoutItemByArtworkSlug } from "../../db/checkout";
+import { handleCheckoutRequest } from "../../lib/checkout";
+import { getRuntimeEnv } from "../../lib/runtime-env";
 
 export const prerender = false;
-
-// TODO(checkout-pr): Stripe Checkout integration. Will create a session
-// via stripe.checkout.sessions.create() using the productId in the body
-// and redirect to session.url. Requires `STRIPE_SECRET_KEY` Worker secret.
-// See legacy `src/app/api/checkout/` for reference shape.
-export const POST: APIRoute = async () => {
-	return new Response(
-		JSON.stringify({
-			error: "Not implemented",
-			message:
-				"Checkout is being migrated. See the follow-up PR that wires up Stripe Checkout sessions.",
-		}),
-		{
-			status: 501,
-			headers: { "content-type": "application/json" },
-		},
+export const POST: APIRoute = async ({ request }) => {
+	const env = getRuntimeEnv();
+	return handleCheckoutRequest(
+		request,
+		env.STRIPE_SECRET_KEY,
+		(slug) => getCheckoutItemByArtworkSlug(env, slug),
 	);
 };
