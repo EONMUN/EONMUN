@@ -33,19 +33,28 @@ describe("admin input", () => {
 		expect(() => parseCollectionInput({ name: "Group", slug: "group", artworkIds: [1], defaultArtworkId: 2 })).toThrow("cover");
 	});
 
-	test("derives a collection slug when the caller sends a name only", () => {
-		const result = parseCollectionInput({ name: "  Winter Étude 2026!  ", artworkIds: [] });
+	test("derives a collection slug when the caller asks for it and sends a name only", () => {
+		const result = parseCollectionInput({ name: "  Winter Étude 2026!  ", artworkIds: [] }, { deriveSlug: true });
 		expect(result.slug).toBe("winter-etude-2026");
 		expect(result.name).toBe("Winter Étude 2026!");
 		expect(SLUG_PATTERN.test(result.slug)).toBe(true);
 	});
 
+	test("never derives a slug unless the caller opts in", () => {
+		// The update route parses without the flag. A body that renames a
+		// collection and omits the slug key must be rejected, not quietly given a
+		// new public address.
+		expect(() => parseCollectionInput({ name: "Renamed group", artworkIds: [] })).toThrow("Slug must be text");
+		expect(parseCollectionInput({ name: "Renamed group", slug: "original-group", artworkIds: [] }).slug).toBe("original-group");
+	});
+
 	test("still requires a slug the caller sent as an empty string", () => {
+		expect(() => parseCollectionInput({ name: "Group", slug: "", artworkIds: [] }, { deriveSlug: true })).toThrow("Slug is required");
 		expect(() => parseCollectionInput({ name: "Group", slug: "", artworkIds: [] })).toThrow("Slug is required");
 	});
 
 	test("rejects a name that cannot produce a slug", () => {
-		expect(() => parseCollectionInput({ name: "!!!", artworkIds: [] })).toThrow("Name must contain letters or numbers");
+		expect(() => parseCollectionInput({ name: "!!!", artworkIds: [] }, { deriveSlug: true })).toThrow("Name must contain letters or numbers");
 	});
 
 	test("slugify keeps the shape the slug pattern demands", () => {
