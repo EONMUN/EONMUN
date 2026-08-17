@@ -58,14 +58,32 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		<div data-image-list class="image-list"></div>
 	</FormFieldset>
 
-	<FormFieldset legend="Collections" layout="columns">
-		{collections.length === 0 ? (
-			<p class="hint">No collections yet.</p>
-		) : (
-			collections.map((collection) => (
-				<label><input type="checkbox" name="collectionIds" value={collection.id} checked={artwork?.collectionIds.includes(collection.id)} /> {collection.name}</label>
-			))
-		)}
+	<FormFieldset legend="Collections">
+		<div class="collection-list" data-collection-list>
+			{collections.length === 0 ? (
+				<p class="hint" data-collection-empty>No collections yet.</p>
+			) : (
+				collections.map((collection) => (
+					<label><input type="checkbox" name="collectionIds" value={collection.id} checked={artwork?.collectionIds.includes(collection.id)} /> {collection.name}</label>
+				))
+			)}
+		</div>
+		<div class="new-collection">
+			<label for="new-collection-name">New collection</label>
+			<div class="new-collection-row">
+				<input
+					class="admin-input"
+					id="new-collection-name"
+					type="text"
+					autocomplete="off"
+					placeholder="Collection name"
+					aria-describedby="new-collection-status"
+					data-new-collection-name
+				/>
+				<button type="button" class="add-collection" data-new-collection-add>+ New</button>
+			</div>
+			<p id="new-collection-status" class="hint" role="status" aria-live="polite" data-new-collection-status></p>
+		</div>
 	</FormFieldset>
 
 	<FormFieldset legend="Private sale">
@@ -108,6 +126,59 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		const syncPriceRequirement = () => { price.required = available.checked; };
 		available.addEventListener('change', syncPriceRequirement);
 		syncPriceRequirement();
+
+		// Inline collection creation. The artwork's own save is the only writer of
+		// membership, so the new collection is created empty and its checkbox is
+		// ticked here; saving the artwork attaches it.
+		const collectionList = form.querySelector('[data-collection-list]');
+		const newName = form.querySelector('[data-new-collection-name]');
+		const newButton = form.querySelector('[data-new-collection-add]');
+		const newStatus = form.querySelector('[data-new-collection-status]');
+		const setCollectionStatus = (message, failed) => {
+			newStatus.textContent = message;
+			newStatus.classList.toggle('is-error', Boolean(failed));
+		};
+		const createCollection = async () => {
+			const name = newName.value.trim();
+			if (!name) { setCollectionStatus('Type a collection name first.', true); newName.focus(); return; }
+			newButton.disabled = true;
+			setCollectionStatus('Creating the collection.', false);
+			try {
+				const response = await fetch('/api/admin/collections', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ name, published: false, artworkIds: [] }),
+				});
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error || 'Could not create the collection');
+				// CRITICAL: the endpoint also answers with a redirect target for the
+				// collection form. Following it here would throw away every unsaved
+				// edit on this artwork.
+				const empty = collectionList.querySelector('[data-collection-empty]');
+				if (empty) empty.remove();
+				const label = document.createElement('label');
+				const checkbox = document.createElement('input');
+				checkbox.type = 'checkbox'; checkbox.name = 'collectionIds'; checkbox.value = String(result.collection.id); checkbox.checked = true;
+				label.append(checkbox, ' ' + result.collection.name);
+				collectionList.append(label);
+				newName.value = '';
+				setCollectionStatus(result.collection.name + ' is added and ticked. Save the artwork to file it.', false);
+				checkbox.focus();
+			} catch (error) {
+				setCollectionStatus(error instanceof Error ? error.message : 'Could not create the collection', true);
+				newName.focus();
+			} finally {
+				newButton.disabled = false;
+			}
+		};
+		newButton.addEventListener('click', createCollection);
+		// The field sits inside the artwork form, so Enter would otherwise submit
+		// and save the whole artwork.
+		newName.addEventListener('keydown', (event) => {
+			if (event.key !== 'Enter') return;
+			event.preventDefault();
+			createCollection();
+		});
 
 		const renderImages = () => {
 			list.replaceChildren();
@@ -165,6 +236,64 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 
 	.span-all {
 		grid-column: 1 / -1;
+	}
+
+	/* Matches FormFieldset's `columns` layout. The checkboxes need a container of
+	   their own so the script has one insertion point on both the populated and
+	   the empty state. */
+	.collection-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+		gap: 1rem;
+	}
+
+	.new-collection-row {
+		display: flex;
+		align-items: stretch;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.new-collection-row .admin-input {
+		margin-top: 0;
+	}
+
+	.add-collection {
+		flex: none;
+		padding: 0 1.1rem;
+		font: inherit;
+		font-size: 0.72rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		color: var(--paper);
+		background: transparent;
+		/* A control boundary owes 3:1 against the console ground; --hair does not
+		   reach it. */
+		border: 1px solid rgba(236, 231, 221, 0.45);
+		cursor: pointer;
+		transition: background 200ms, border-color 200ms, color 200ms;
+	}
+
+	.add-collection:hover:not(:disabled) {
+		background: var(--seal-fill);
+		border-color: var(--seal-fill);
+	}
+
+	.add-collection:disabled {
+		color: var(--muted);
+		cursor: progress;
+	}
+
+	/* The live region stays in the layout at all times. A region that is hidden
+	   until it has text is not reliably announced when the text arrives. */
+	.new-collection .hint {
+		min-height: 1.2em;
+		margin-top: 0.5rem;
+	}
+
+	.new-collection .hint.is-error {
+		color: var(--seal-text);
 	}
 
 	.image-list {
