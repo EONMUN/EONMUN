@@ -1,13 +1,24 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
 import ArtworkForm from '../../../components/admin/ArtworkForm.astro';
+import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
 import { getAdminCollections } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+
 export const prerender = false;
+
 const env = getRuntimeEnv();
 const access = await requireAdminPage(Astro.request, env, '/admin/artworks/new');
 if ('response' in access) return access.response;
+const { session } = access;
 const collections = await getAdminCollections(env);
 ---
-<BaseLayout title="New artwork — EONMUN"><main class="container mx-auto px-4 py-8"><h1 class="text-4xl font-bold mb-8">New artwork</h1><ArtworkForm action="/api/admin/artworks" collections={collections} /></main></BaseLayout>
+<ConsoleShell
+	title="New artwork — EONMUN admin"
+	heading="New artwork"
+	email={session.user.email}
+	backHref="/admin/artworks"
+	backLabel="Artwork"
+>
+	<ArtworkForm action="/api/admin/artworks" collections={collections} />
+</ConsoleShell>

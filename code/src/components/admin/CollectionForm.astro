@@ -1,31 +1,48 @@
 ---
+import ErrorBanner from './ErrorBanner.astro';
+import FormFieldset from './FormFieldset.astro';
+import SubmitButton from './SubmitButton.astro';
 import type { SelectArtwork, SelectCollection } from '../../db';
+
 interface Props {
 	action: string;
 	collection?: SelectCollection & { artworkIds: number[]; defaultArtworkId: number | null };
 	artworks: SelectArtwork[];
 }
+
 const { action, collection, artworks } = Astro.props;
 ---
-<form data-admin-collection-form data-action={action} class="space-y-6 max-w-3xl">
-	<div data-error hidden class="border border-red-500 p-3 rounded text-red-700"></div>
-	<div class="grid sm:grid-cols-2 gap-4">
+<form data-admin-collection-form data-action={action}>
+	<ErrorBanner />
+
+	<FormFieldset legend="Collection" layout="columns">
 		<label>Name <input class="admin-input" name="name" required value={collection?.name ?? ''} /></label>
 		<label>Slug <input class="admin-input" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={collection?.slug ?? ''} /></label>
-	</div>
-	<label class="block">Description <textarea class="admin-input min-h-32" name="description">{collection?.description ?? ''}</textarea></label>
-	<fieldset class="border rounded p-4 space-y-2">
-		<legend class="px-2">Artwork membership and cover</legend>
-		{artworks.map((artwork) => (
-			<div class="grid grid-cols-[1fr_auto] gap-4">
-				<label><input type="checkbox" name="artworkIds" value={artwork.id} checked={collection?.artworkIds.includes(artwork.id)} /> {artwork.title}</label>
-				<label><input type="radio" name="defaultArtworkId" value={artwork.id} checked={collection?.defaultArtworkId === artwork.id} /> Cover</label>
-			</div>
-		))}
-	</fieldset>
-	{collection ? <label class="block"><input type="checkbox" name="published" checked={collection.publishedAt !== null} /> Published</label> : <p class="text-sm">New collections are saved as drafts.</p>}
-	<button class="px-5 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded" type="submit">Save collection</button>
+		<label class="span-all">Description <textarea class="admin-input" name="description">{collection?.description ?? ''}</textarea></label>
+	</FormFieldset>
+
+	<FormFieldset legend="Artwork membership and cover">
+		{artworks.length === 0 ? (
+			<p class="hint">No artwork yet. Add a piece before grouping one.</p>
+		) : (
+			artworks.map((artwork) => (
+				<div class="member">
+					<label><input type="checkbox" name="artworkIds" value={artwork.id} checked={collection?.artworkIds.includes(artwork.id)} /> {artwork.title}</label>
+					<label><input type="radio" name="defaultArtworkId" value={artwork.id} checked={collection?.defaultArtworkId === artwork.id} /> Cover</label>
+				</div>
+			))
+		)}
+	</FormFieldset>
+
+	{collection ? (
+		<label class="inline-label"><input type="checkbox" name="published" checked={collection.publishedAt !== null} /> Published</label>
+	) : (
+		<p class="hint">A new collection is saved as a draft.</p>
+	)}
+
+	<SubmitButton label="Save collection" />
 </form>
+
 <script is:inline>
 	const form = document.querySelector('[data-admin-collection-form]');
 	if (form) form.addEventListener('submit', async (event) => {
@@ -35,7 +52,30 @@ const { action, collection, artworks } = Astro.props;
 		try {
 			const response = await fetch(form.dataset.action, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
 			const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Save failed'); window.location.assign(result.redirect);
-		} catch (error) { errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; errorBox.hidden = false; }
+		} catch (error) { errorBox.hidden = false; errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; }
 	});
 </script>
-<style>.admin-input { display:block; width:100%; border:1px solid #9ca3af; border-radius:.375rem; padding:.5rem; background:transparent; }</style>
+
+<style>
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.75rem;
+		margin-top: 2.5rem;
+	}
+
+	.member {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 1rem;
+		padding: 0.35rem 0;
+	}
+
+	.member + .member {
+		border-top: 1px solid rgba(236, 231, 221, 0.08);
+	}
+
+	.span-all {
+		grid-column: 1 / -1;
+	}
+</style>

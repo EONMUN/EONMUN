@@ -63,6 +63,12 @@ const {
 		--muted: rgba(236, 231, 221, 0.55);
 		--hair: rgba(236, 231, 221, 0.16);
 		--seal: #c1452c;
+		/* The accent needs three values, not one: #c1452c reads as a border or a
+		   large glyph, but paper on it is 4.10:1 and it on the ground is 4.03:1 --
+		   both under AA for the small text that uses them. Darken to fill, lighten
+		   to write. */
+		--seal-fill: #a93b24;
+		--seal-text: #d4523a;
 	}
 
 	/* The console paints its own near-black ground, so it owes the keyboard a
@@ -125,6 +131,157 @@ const {
 		color: var(--muted);
 	}
 
+	/* Form chrome is global rather than scoped because ArtworkForm builds its
+	   image rows in a script, and script-created elements carry no scope id. */
+	.console form {
+		max-width: 56rem;
+	}
+
+	.console label {
+		display: block;
+		font-size: 0.72rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.console .admin-input {
+		display: block;
+		width: 100%;
+		margin-top: 0.5rem;
+		padding: 0.7rem 0.85rem;
+		font: inherit;
+		font-size: 0.95rem;
+		letter-spacing: normal;
+		text-transform: none;
+		color: var(--paper);
+		background: rgba(8, 8, 10, 0.6);
+		/* A control's boundary owes 3:1; --hair is a decorative edge at 1.4:1. */
+		border: 1px solid rgba(236, 231, 221, 0.45);
+		border-radius: 0;
+		transition: border-color 200ms;
+	}
+
+	.console .admin-input:hover {
+		border-color: rgba(236, 231, 221, 0.7);
+	}
+
+	.console .admin-input:focus-visible {
+		border-color: var(--seal);
+	}
+
+	.console textarea.admin-input {
+		min-height: 8rem;
+		resize: vertical;
+	}
+
+	.console fieldset {
+		margin: 0;
+		padding: clamp(1rem, 2.5vw, 1.75rem);
+		border: 1px solid var(--hair);
+	}
+
+	.console legend {
+		padding: 0 0.75rem;
+		font-size: 0.72rem;
+		letter-spacing: 0.28em;
+		text-transform: uppercase;
+		color: var(--seal-text);
+	}
+
+	/* A label wrapping a checkbox or radio reads as one line with its control;
+	   a label wrapping a text field stacks above it. */
+	.console label:has(input[type="checkbox"]),
+	.console label:has(input[type="radio"]),
+	.console .inline-label {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 0.85rem;
+		letter-spacing: 0.06em;
+		text-transform: none;
+		color: var(--paper);
+	}
+
+	.console input[type="checkbox"],
+	.console input[type="radio"] {
+		accent-color: var(--seal);
+		width: 1rem;
+		height: 1rem;
+		flex: none;
+	}
+
+	.console input[type="file"] {
+		font-size: 0.85rem;
+		color: var(--muted);
+		text-transform: none;
+		letter-spacing: normal;
+	}
+
+	.console .submit {
+		padding: 0.9rem 2rem;
+		font: inherit;
+		font-size: 0.85rem;
+		letter-spacing: 0.22em;
+		text-transform: uppercase;
+		color: var(--paper);
+		background: var(--seal-fill);
+		border: 1px solid var(--seal-fill);
+		cursor: pointer;
+		transition: background 200ms, color 200ms;
+	}
+
+	.console .submit:hover {
+		background: transparent;
+		color: var(--seal-text);
+	}
+
+	.console .error-banner {
+		padding: 0.9rem 1.1rem;
+		font-size: 0.85rem;
+		color: var(--paper);
+		background: rgba(193, 69, 44, 0.16);
+		border: 1px solid var(--seal);
+	}
+
+	.console .hint {
+		font-size: 0.8rem;
+		letter-spacing: normal;
+		text-transform: none;
+		color: var(--muted);
+	}
+
+	/* One row per stored image, built by ArtworkForm's script. */
+	.console .image-row {
+		display: grid;
+		grid-template-columns: 5rem 1fr auto auto;
+		gap: 1rem;
+		align-items: center;
+	}
+
+	.console .image-thumb {
+		width: 5rem;
+		height: 5rem;
+		object-fit: cover;
+		border: 1px solid var(--hair);
+	}
+
+	.console .link-button {
+		font: inherit;
+		font-size: 0.72rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--muted);
+		background: none;
+		border: 0;
+		cursor: pointer;
+		transition: color 200ms;
+	}
+
+	.console .link-button:hover {
+		color: var(--seal-text);
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.console .wrap > * { animation: none; }
 	}
@@ -178,7 +335,7 @@ const {
 		font-size: 0.7rem;
 		text-transform: uppercase;
 		letter-spacing: 0.42em;
-		color: var(--seal);
+		color: var(--seal-text);
 	}
 
 	.back {

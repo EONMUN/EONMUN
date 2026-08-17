@@ -1,4 +1,7 @@
 ---
+import ErrorBanner from './ErrorBanner.astro';
+import FormFieldset from './FormFieldset.astro';
+import SubmitButton from './SubmitButton.astro';
 import type { SelectArtwork, SelectArtworkImage, SelectCollection, SelectProduct } from '../../db';
 
 interface Props {
@@ -6,47 +9,64 @@ interface Props {
 	artwork?: SelectArtwork & { images: SelectArtworkImage[]; collectionIds: number[]; product: SelectProduct | null };
 	collections: SelectCollection[];
 }
+
 const { action, artwork, collections } = Astro.props;
 const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, caption, isDefault })) ?? [];
 ---
-<form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)} class="space-y-6 max-w-3xl">
-	<div data-error hidden class="border border-red-500 p-3 rounded text-red-700"></div>
-	<div class="grid sm:grid-cols-2 gap-4">
-		<label class="space-y-1">Title <input class="admin-input" name="title" required value={artwork?.title ?? ''} /></label>
-		<label class="space-y-1">Slug <input class="admin-input" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={artwork?.slug ?? ''} /></label>
-		<label class="space-y-1">Artist <input class="admin-input" name="artist" value={artwork?.artist ?? 'EONMUN'} /></label>
-		<label class="space-y-1">Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
-	</div>
-	<label class="block space-y-1">Description <textarea class="admin-input min-h-32" name="description">{artwork?.description ?? ''}</textarea></label>
-	<fieldset class="border rounded p-4">
-		<legend class="px-2">Dimensions</legend>
-		<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-			<label>Width <input class="admin-input" name="width" type="number" min="0" step="any" value={artwork?.width ?? ''} /></label>
-			<label>Height <input class="admin-input" name="height" type="number" min="0" step="any" value={artwork?.height ?? ''} /></label>
-			<label>Depth <input class="admin-input" name="depth" type="number" min="0" step="any" value={artwork?.depth ?? ''} /></label>
-			<label>Unit <select class="admin-input" name="dimensionUnit"><option selected={(artwork?.dimensionUnit ?? 'in') === 'in'}>in</option><option selected={artwork?.dimensionUnit === 'cm'}>cm</option></select></label>
-		</div>
-	</fieldset>
-	<fieldset class="border rounded p-4 space-y-3">
-		<legend class="px-2">Images</legend>
-		<input name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
-		<p class="text-sm text-gray-500">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each.</p>
-		<div data-image-list class="space-y-3"></div>
-	</fieldset>
-	<fieldset class="border rounded p-4 grid sm:grid-cols-2 gap-2">
-		<legend class="px-2">Collections</legend>
-		{collections.map((collection) => (
-			<label><input type="checkbox" name="collectionIds" value={collection.id} checked={artwork?.collectionIds.includes(collection.id)} /> {collection.name}</label>
-		))}
-	</fieldset>
-	<fieldset class="border rounded p-4 space-y-3">
-		<legend class="px-2">Private sale settings</legend>
-		<label class="block"><input type="checkbox" name="available" checked={(artwork?.product?.quantity ?? 0) > 0 && artwork?.product?.soldAt === null} /> Available for purchase</label>
-		<label class="block space-y-1">Private price (cents) <input class="admin-input" name="priceCents" type="number" min="1" step="1" value={artwork?.product?.price ?? ''} /></label>
-		<p class="text-sm text-gray-500">Prices are visible only in administration and Stripe Checkout.</p>
-	</fieldset>
-	{artwork ? <label class="block"><input type="checkbox" name="published" checked={artwork.publishedAt !== null} /> Published</label> : <p class="text-sm">New artwork is saved as a draft.</p>}
-	<button class="px-5 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded" type="submit">Save artwork</button>
+<form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)}>
+	<ErrorBanner />
+
+	<FormFieldset legend="Piece" layout="columns">
+		<label>Title <input class="admin-input" name="title" required value={artwork?.title ?? ''} /></label>
+		<label>Slug <input class="admin-input" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={artwork?.slug ?? ''} /></label>
+		<label>Artist <input class="admin-input" name="artist" value={artwork?.artist ?? 'EONMUN'} /></label>
+		<label>Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
+		<label class="span-all">Description <textarea class="admin-input" name="description">{artwork?.description ?? ''}</textarea></label>
+	</FormFieldset>
+
+	<FormFieldset legend="Dimensions" layout="columns">
+		<label>Width <input class="admin-input" name="width" type="number" min="0" step="any" value={artwork?.width ?? ''} /></label>
+		<label>Height <input class="admin-input" name="height" type="number" min="0" step="any" value={artwork?.height ?? ''} /></label>
+		<label>Depth <input class="admin-input" name="depth" type="number" min="0" step="any" value={artwork?.depth ?? ''} /></label>
+		<label>Unit
+			<select class="admin-input" name="dimensionUnit">
+				<option selected={(artwork?.dimensionUnit ?? 'in') === 'in'}>in</option>
+				<option selected={artwork?.dimensionUnit === 'cm'}>cm</option>
+			</select>
+		</label>
+	</FormFieldset>
+
+	<FormFieldset legend="Images">
+		<label class="upload">Add images
+			<input class="admin-input" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
+		</label>
+		<p class="hint">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each. The piece marked Default is the cover shown everywhere else.</p>
+		<div data-image-list class="image-list"></div>
+	</FormFieldset>
+
+	<FormFieldset legend="Collections" layout="columns">
+		{collections.length === 0 ? (
+			<p class="hint">No collections yet.</p>
+		) : (
+			collections.map((collection) => (
+				<label><input type="checkbox" name="collectionIds" value={collection.id} checked={artwork?.collectionIds.includes(collection.id)} /> {collection.name}</label>
+			))
+		)}
+	</FormFieldset>
+
+	<FormFieldset legend="Private sale">
+		<label class="inline-label"><input type="checkbox" name="available" checked={(artwork?.product?.quantity ?? 0) > 0 && artwork?.product?.soldAt === null} /> Available for purchase</label>
+		<label>Private price (cents) <input class="admin-input" name="priceCents" type="number" min="1" step="1" value={artwork?.product?.price ?? ''} /></label>
+		<p class="hint">Prices are visible only in administration and Stripe Checkout.</p>
+	</FormFieldset>
+
+	{artwork ? (
+		<label class="inline-label"><input type="checkbox" name="published" checked={artwork.publishedAt !== null} /> Published</label>
+	) : (
+		<p class="hint">A new artwork is saved as a draft.</p>
+	)}
+
+	<SubmitButton label="Save artwork" />
 </form>
 
 <script is:inline>
@@ -55,19 +75,19 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		let images = JSON.parse(form.dataset.images || '[]');
 		const list = form.querySelector('[data-image-list]');
 		const errorBox = form.querySelector('[data-error]');
-		const showError = (message) => { errorBox.textContent = message; errorBox.hidden = false; };
+		const showError = (message) => { errorBox.hidden = false; errorBox.textContent = message; };
 		const renderImages = () => {
 			list.replaceChildren();
 			images.forEach((image, index) => {
 				const row = document.createElement('div');
-				row.className = 'grid grid-cols-[5rem_1fr_auto_auto] gap-3 items-center';
-				const preview = document.createElement('img'); preview.src = image.url; preview.alt = ''; preview.className = 'w-20 h-20 object-cover rounded';
+				row.className = 'image-row';
+				const preview = document.createElement('img'); preview.src = image.url; preview.alt = ''; preview.className = 'image-thumb';
 				const caption = document.createElement('input'); caption.className = 'admin-input'; caption.placeholder = 'Caption'; caption.value = image.caption || '';
 				caption.addEventListener('input', () => { image.caption = caption.value || null; });
 				const label = document.createElement('label'); const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'defaultImage'; radio.checked = image.isDefault;
 				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); renderImages(); });
 				label.append(radio, ' Default');
-				const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'underline';
+				const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
 				remove.addEventListener('click', () => { images.splice(index, 1); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); });
 				row.append(preview, caption, label, remove); list.append(row);
 			});
@@ -102,4 +122,33 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 	}
 </script>
 
-<style>.admin-input { display:block; width:100%; border:1px solid #9ca3af; border-radius:.375rem; padding:.5rem; background:transparent; }</style>
+<style>
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.75rem;
+		margin-top: 2.5rem;
+	}
+
+	.span-all {
+		grid-column: 1 / -1;
+	}
+
+	.image-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.image-list:empty::after {
+		content: 'No images yet.';
+		font-size: 0.8rem;
+		color: var(--muted);
+	}
+
+	.upload :global(.admin-input) {
+		padding: 0.6rem 0;
+		background: none;
+		border: 0;
+	}
+</style>
