@@ -1,0 +1,34 @@
+---
+// The state badge both card types wear. It sits over user-uploaded artwork, so
+// the ground is near-opaque and every tone carries readable type: the seal
+// survives only as a border, never as the text colour.
+export type StatusTone = 'live' | 'draft' | 'sold';
+
+interface Props {
+	label: string;
+	tone: StatusTone;
+}
+
+const { label, tone } = Astro.props;
+---
+<span class:list={['status', `is-${tone}`]}>{label}</span>
+
+<style>
+	.status {
+		position: absolute;
+		top: 0.75rem;
+		left: 0.75rem;
+		z-index: 4;
+		padding: 0.25rem 0.6rem;
+		font-size: 0.68rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--paper);
+		background: rgba(8, 8, 10, 0.88);
+		border: 1px solid var(--hair);
+	}
+
+	.status.is-live { border-color: rgba(236, 231, 221, 0.45); }
+	.status.is-draft { border-color: rgba(193, 69, 44, 0.85); }
+	.status.is-sold { border-color: rgba(236, 231, 221, 0.25); }
+</style>

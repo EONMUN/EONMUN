@@ -1,4 +1,5 @@
 ---
+import ActionBar from '../../../components/admin/ActionBar.astro';
 import CardGrid from '../../../components/admin/CardGrid.astro';
 import ConsoleSection from '../../../components/admin/ConsoleSection.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
@@ -27,16 +28,15 @@ const tally = `${collections.length} total · ${published} published · ${collec
 	backHref="/admin"
 	backLabel="Console"
 >
-	<div class="actions">
+	<ActionBar>
 		<CreateAction
 			href="/admin/collections/new"
 			title="New collection"
 			note="Group artwork and choose the cover piece."
-			delay={60}
 		/>
-	</div>
+	</ActionBar>
 
-	<ConsoleSection title="Every collection" tally={tally} links={[{ href: '/admin/artworks', label: 'Artwork →' }]} delay={120}>
+	<ConsoleSection title="Every collection" tally={tally} links={[{ href: '/admin/artworks', label: 'Artwork →' }]}>
 		{collections.length === 0 ? (
 			<EmptyState href="/admin/collections/new" label="No collections yet. Group your first pieces →" />
 		) : (
@@ -60,13 +60,3 @@ const tally = `${collections.length} total · ${published} published · ${collec
 	</ConsoleSection>
 </ConsoleShell>
 
-<style>
-	.actions {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-		gap: 1px;
-		margin: 2.5rem 0 4rem;
-		background: var(--hair);
-		border: 1px solid var(--hair);
-	}
-</style>

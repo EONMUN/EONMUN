@@ -3,6 +3,7 @@ import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { unlink } from "node:fs/promises";
 import * as schema from "../src/db/schema";
+import { createCatalogSchema } from "./schema-fixture";
 import { getAdminArtworkCards, getAdminCollectionCards, getAdminDashboard } from "../src/db/admin";
 
 const env = { TURSO_DATABASE_URL: "https://unused.test" };
@@ -33,15 +34,7 @@ beforeEach(async () => {
 	databasePath = `/tmp/eonmun-dashboard-test-${crypto.randomUUID()}.db`;
 	client = createClient({ url: `file:${databasePath}` });
 	db = drizzle(client, { schema });
-	await client.executeMultiple(`
-		CREATE TABLE collections (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, description TEXT, published_at INTEGER, locale TEXT NOT NULL DEFAULT 'en', created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-		CREATE TABLE artworks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, description TEXT, artist TEXT, year INTEGER, width REAL, height REAL, depth REAL, dimension_unit TEXT DEFAULT 'in', published_at INTEGER, locale TEXT NOT NULL DEFAULT 'en', created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-		CREATE TABLE artwork_images (id INTEGER PRIMARY KEY AUTOINCREMENT, artwork_id INTEGER NOT NULL REFERENCES artworks(id) ON DELETE CASCADE, url TEXT NOT NULL, caption TEXT, is_default INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-		CREATE UNIQUE INDEX artwork_images_one_default_per_artwork ON artwork_images(artwork_id) WHERE is_default = 1;
-		CREATE TABLE artworks_to_collections (artwork_id INTEGER NOT NULL REFERENCES artworks(id) ON DELETE CASCADE, collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE, is_default_for_collection INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, PRIMARY KEY(artwork_id, collection_id));
-		CREATE UNIQUE INDEX artwork_collection_one_default_per_collection ON artworks_to_collections(collection_id) WHERE is_default_for_collection = 1;
-		CREATE TABLE products (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, artwork_id INTEGER REFERENCES artworks(id) ON DELETE SET NULL, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, description TEXT, image_url TEXT, price INTEGER NOT NULL, quantity INTEGER, listed_at INTEGER NOT NULL, sold_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
-	`);
+	await createCatalogSchema(client);
 });
 
 afterEach(async () => {
@@ -74,6 +67,24 @@ describe("admin dashboard", () => {
 		expect(card.imageUrl).toBe("https://r2.eonmun.com/cover.jpeg");
 	});
 
+	// The partial unique index caps defaults at one but never requires one, so
+	// this state is representable by direct SQL. admin-input.ts:67 promotes the
+	// first image on every application write, which is what keeps it unreachable
+	// in production — if that promotion is ever removed, these covers go blank.
+	test("shows no cover for an artwork whose images carry no default flag", async () => {
+		const id = await insertArtwork("Unflagged", "unflagged", true);
+		await insertImage(id, "https://r2.eonmun.com/first.jpeg", false);
+		await insertImage(id, "https://r2.eonmun.com/second.jpeg", false);
+
+		const [card] = await getAdminArtworkCards(env, db);
+		expect(card.imageUrl).toBeNull();
+	});
+
+	test("returns empty lists to the list pages for a new catalog", async () => {
+		expect(await getAdminArtworkCards(env, db)).toEqual([]);
+		expect(await getAdminCollectionCards(env, db)).toEqual([]);
+	});
+
 	test("counts every member and leads the cover fan with the collection's cover piece", async () => {
 		const plain = await insertArtwork("Plain", "plain", true);
 		const cover = await insertArtwork("Cover", "cover", true);
@@ -91,7 +102,16 @@ describe("admin dashboard", () => {
 			});
 		}
 
-		const [collection] = await getAdminCollectionCards(env, db);
+		await client.execute({
+			sql: "INSERT INTO collections (name, slug, published_at, created_at, updated_at) VALUES ('Alpha', 'alpha', ?, ?, ?)",
+			args: [STAMP, STAMP, STAMP],
+		});
+
+		const cards = await getAdminCollectionCards(env, db);
+		// The collections page lists alphabetically.
+		expect(cards.map((card) => card.slug)).toEqual(["alpha", "botanica"]);
+
+		const collection = cards.find((card) => card.slug === "botanica")!;
 		// Three members, but only two carry an image, and the cover piece leads.
 		expect(collection.artworkCount).toBe(3);
 		expect(collection.coverUrls).toEqual([

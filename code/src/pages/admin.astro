@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import ActionBar from '../components/admin/ActionBar.astro';
 import CardGrid from '../components/admin/CardGrid.astro';
 import ConsoleSection from '../components/admin/ConsoleSection.astro';
 import ConsoleShell from '../components/admin/ConsoleShell.astro';
@@ -59,27 +60,24 @@ const draftTally = (tally: { total: number; published: number }) =>
 	`${tally.total} total · ${tally.published} published · ${tally.total - tally.published} draft`;
 ---
 <ConsoleShell title="Admin — EONMUN" heading="Admin" email={session.user.email}>
-	<div class="actions">
+	<ActionBar>
 		<CreateAction
 			href="/admin/artworks/new"
 			title="New artwork"
 			note="Images, dimensions, collections, private price."
-			delay={60}
 		/>
 		<CreateAction
 			href="/admin/collections/new"
 			title="New collection"
 			note="Group artwork and choose the cover piece."
-			delay={120}
 		/>
-	</div>
+	</ActionBar>
 
 	<ConsoleSection
 		index="01"
 		title="Artwork"
 		tally={draftTally(artworks.tally)}
-		links={[{ href: '/admin/artworks/new', label: 'New' }, { href: '/admin/artworks', label: 'All artwork →' }]}
-		delay={180}
+		links={[{ href: '/admin/artworks/new', label: 'New artwork' }, { href: '/admin/artworks', label: 'All artwork →' }]}
 	>
 		{artworks.recent.length === 0 ? (
 			<EmptyState href="/admin/artworks/new" label="No artwork yet. Add the first piece →" />
@@ -107,8 +105,7 @@ const draftTally = (tally: { total: number; published: number }) =>
 		index="02"
 		title="Collections"
 		tally={draftTally(collections.tally)}
-		links={[{ href: '/admin/collections/new', label: 'New' }, { href: '/admin/collections', label: 'All collections →' }]}
-		delay={240}
+		links={[{ href: '/admin/collections/new', label: 'New collection' }, { href: '/admin/collections', label: 'All collections →' }]}
 	>
 		{collections.recent.length === 0 ? (
 			<EmptyState href="/admin/collections/new" label="No collections yet. Group your first pieces →" />
@@ -137,7 +134,6 @@ const draftTally = (tally: { total: number; published: number }) =>
 		title="Private sales"
 		tally={`${store.tally.total} listed · ${store.tally.available} available · ${store.tally.sold} sold`}
 		links={[{ href: '/admin/artworks/new', label: 'New artwork' }, { href: '/admin/artworks', label: 'All artwork →' }]}
-		delay={300}
 	>
 		{store.recent.length === 0 ? (
 			<EmptyState href="/admin/artworks/new" label="Nothing listed. Give an artwork a price →" />
@@ -168,7 +164,6 @@ const draftTally = (tally: { total: number; published: number }) =>
 		title="Posts"
 		tally={`${postEntries.length} written · edited in the repository`}
 		links={[{ href: '/posts', label: 'All posts →' }]}
-		delay={360}
 	>
 		{posts.length === 0 ? (
 			<EmptyState label="No posts yet." />
@@ -192,13 +187,3 @@ const draftTally = (tally: { total: number; published: number }) =>
 	</ConsoleSection>
 </ConsoleShell>
 
-<style>
-	.actions {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-		gap: 1px;
-		margin: 2.5rem 0 4rem;
-		background: var(--hair);
-		border: 1px solid var(--hair);
-	}
-</style>

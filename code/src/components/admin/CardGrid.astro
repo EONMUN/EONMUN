@@ -1,7 +1,8 @@
 ---
 // The console's one grid rhythm, shared by every section that lists items.
+// role="list" keeps the semantics VoiceOver drops from list-style: none.
 ---
-<ul class="grid"><slot /></ul>
+<ul class="grid" role="list"><slot /></ul>
 
 <style>
 	.grid {
