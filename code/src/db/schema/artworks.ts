@@ -1,7 +1,5 @@
-// Read-only schema copy of `~/repos/EONMUN/EONMUN/src/database/schema.artworks.ts`.
-// CRITICAL: keep this in sync with the legacy app's schema until the data
-// dump lands. Drizzle reads from these definitions only — no migrations
-// originate from this Astro worker.
+// Active schema for the Astro Worker. Migrations live in the repository-level
+// drizzle directory and are applied by the checked-in devenv database task.
 import {
 	sqliteTable,
 	text,

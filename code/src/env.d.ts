@@ -15,6 +15,8 @@ type CloudflareEnv = {
 	TURSO_DATABASE_URL?: string;
 	TURSO_AUTH_TOKEN?: string;
 	STRIPE_SECRET_KEY?: string;
+	STRIPE_WEBHOOK_SECRET?: string;
+	R2_BUCKET?: R2Bucket;
 	CONTACT_EMAIL?: string;
 	ENABLE_DEBUG_ERRORS?: string;
 	[key: string]: unknown;
