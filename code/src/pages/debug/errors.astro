@@ -4,7 +4,6 @@ import { getRuntimeEnv } from '../../lib/runtime-env';
 import {
 	getAllArtworks,
 	getAllCollections,
-	getAvailableProducts,
 	getPublishedPosts,
 } from '../../db/queries';
 
@@ -88,7 +87,6 @@ const report = {
 		runCheck('getAllArtworks', () => getAllArtworks(env)),
 		runCheck('getAllCollections', () => getAllCollections(env)),
 		runCheck('getPublishedPosts', () => getPublishedPosts(env)),
-		runCheck('getAvailableProducts', () => getAvailableProducts(env)),
 	]),
 };
 ---

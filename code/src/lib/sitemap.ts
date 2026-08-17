@@ -7,10 +7,7 @@ import {
 	getPostPublishedTime,
 	getPublishedPostEntries,
 } from "./post-content";
-import {
-	getProductPublishedTime,
-	getPublishedProductEntries,
-} from "./product-content";
+import { createArtworkSitemapEntries } from "./public-catalog";
 
 export interface SitemapEntry {
 	loc: string;
@@ -19,13 +16,7 @@ export interface SitemapEntry {
 
 const SITEMAP_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=600";
 
-const STATIC_PATHS = [
-	"/",
-	"/artworks",
-	"/contact",
-	"/posts",
-	"/store",
-];
+const STATIC_PATHS = ["/", "/artworks", "/contact", "/posts"];
 
 export const SITEMAP_HEADERS = {
 	"content-type": "application/xml; charset=utf-8",
@@ -54,9 +45,10 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	const staticEntries = STATIC_PATHS.map((pathname) => ({
 		loc: toAbsoluteUrl(baseUrl, pathname),
 	}));
-	const artworks = await getPublishedArtworkEntries();
-	const posts = await getPublishedPostEntries();
-	const products = await getPublishedProductEntries();
+	const [artworks, posts] = await Promise.all([
+		getPublishedArtworkEntries(),
+		getPublishedPostEntries(),
+	]);
 	const postEntries = posts.map((post) => ({
 		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
 		lastmod: getPostPublishedTime(post),
@@ -65,14 +57,12 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	return [
 		...staticEntries,
 		...postEntries,
-		...artworks.map(({ artwork }) => ({
-			loc: toAbsoluteUrl(baseUrl, `/artworks/${artwork.id}`),
-			lastmod: getArtworkPublishedTime(artwork),
-		})),
-		...products.map((product) => ({
-			loc: toAbsoluteUrl(baseUrl, `/store/${product.id}`),
-			lastmod: getProductPublishedTime(product),
-		})),
+		...createArtworkSitemapEntries(
+			baseUrl,
+			artworks,
+			({ artwork }) => artwork.id,
+			({ artwork }) => getArtworkPublishedTime(artwork),
+		),
 	];
 }
 

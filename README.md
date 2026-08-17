@@ -1,16 +1,14 @@
 # EONMUN
 
-EONMUN is the public portfolio and storefront for the artist EONMUN.
+EONMUN is the public portfolio and artwork checkout site for the artist EONMUN.
 
-The production site is an Astro application deployed to Cloudflare Workers at `https://eonmun.com`. Most public pages are built from Astro content collections so portfolio, artwork, store, post, and sitemap pages can be served statically. Small dynamic endpoints remain for runtime-only behavior such as inventory checks, contact handling, checkout, debug output, and Auth.js admin access.
+The production site is an Astro application deployed to Cloudflare Workers at `https://eonmun.com`. Turso is the runtime source for artwork, collections, relationships, products, prices, and availability. Repository content collections contain posts, while runtime endpoints handle inventory, checkout, contact, debug output, and Auth.js administration.
 
 ## Project shape
 
 - `code/` is the active Astro workspace and Bun package root.
-- `code/src/content/artworks/` contains artwork MDX entries.
-- `code/src/content/products/` contains store product MDX entries.
 - `code/src/content/posts/` contains post MDX entries.
-- `code/src/content/collections/` contains collection metadata.
+- `fixtures/` contains development seed data, not production publishing data.
 - `code/src/pages/` contains Astro routes and API endpoints.
 - `code/wrangler.jsonc` defines the `eonmun-astro` Cloudflare Worker.
 - `data/uploads/` tracks R2-backed media pointers through Git LFS.
@@ -20,9 +18,10 @@ The production site is an Astro application deployed to Cloudflare Workers at `h
 
 - `/` homepage
 - `/artworks` and `/artworks/[slug]`
-- `/store` and `/store/[slug]`
 - `/posts` and `/posts/[slug]`
 - `/contact`
-- `/admin`, protected by Auth.js and an allowed email list
+- `/admin`, `/admin/artworks`, and `/admin/collections`, protected by Auth.js and an allowed email list
+
+Available published artwork is purchased from its artwork page. Price data remains server-side until the buyer reaches Stripe Checkout.
 
 See [CONTRIBUTOR.md](./CONTRIBUTOR.md) for setup, development, validation, and deploy notes.
