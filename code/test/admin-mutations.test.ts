@@ -117,7 +117,7 @@ describe("admin mutations", () => {
 		const artwork = await createArtworkAdmin(env, artworkInput(), db);
 		// What the artwork editor's inline creator sends: a name, no slug, and no
 		// membership. The artwork's own save is the single writer of membership.
-		const collection = await createCollectionAdmin(env, parseCollectionInput({ name: "Winter Studies" }), db);
+		const collection = await createCollectionAdmin(env, parseCollectionInput({ name: "Winter Studies" }, { deriveSlug: true }), db);
 		expect(collection.slug).toBe("winter-studies");
 		expect(await db.select().from(artworksToCollections).where(eq(artworksToCollections.collectionId, collection.id))).toHaveLength(0);
 
@@ -128,8 +128,8 @@ describe("admin mutations", () => {
 	});
 
 	test("rejects a second collection whose derived slug already exists", async () => {
-		await createCollectionAdmin(env, parseCollectionInput({ name: "Winter Studies" }), db);
-		await expect(createCollectionAdmin(env, parseCollectionInput({ name: "winter studies" }), db)).rejects.toThrow();
+		await createCollectionAdmin(env, parseCollectionInput({ name: "Winter Studies" }, { deriveSlug: true }), db);
+		await expect(createCollectionAdmin(env, parseCollectionInput({ name: "winter studies" }, { deriveSlug: true }), db)).rejects.toThrow();
 	});
 
 	test("rolls back artwork creation if its product write fails", async () => {

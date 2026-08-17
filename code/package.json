@@ -28,6 +28,7 @@
 	"devDependencies": {
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.3.0",
+		"happy-dom": "^20.11.2",
 		"tailwindcss": "^4.3.0",
 		"wrangler": "^4.90.1"
 	},

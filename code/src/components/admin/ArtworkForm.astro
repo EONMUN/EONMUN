@@ -77,7 +77,6 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 					type="text"
 					autocomplete="off"
 					placeholder="Collection name"
-					aria-describedby="new-collection-status"
 					data-new-collection-name
 				/>
 				<button type="button" class="add-collection" data-new-collection-add>+ New</button>
@@ -127,59 +126,6 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		available.addEventListener('change', syncPriceRequirement);
 		syncPriceRequirement();
 
-		// Inline collection creation. The artwork's own save is the only writer of
-		// membership, so the new collection is created empty and its checkbox is
-		// ticked here; saving the artwork attaches it.
-		const collectionList = form.querySelector('[data-collection-list]');
-		const newName = form.querySelector('[data-new-collection-name]');
-		const newButton = form.querySelector('[data-new-collection-add]');
-		const newStatus = form.querySelector('[data-new-collection-status]');
-		const setCollectionStatus = (message, failed) => {
-			newStatus.textContent = message;
-			newStatus.classList.toggle('is-error', Boolean(failed));
-		};
-		const createCollection = async () => {
-			const name = newName.value.trim();
-			if (!name) { setCollectionStatus('Type a collection name first.', true); newName.focus(); return; }
-			newButton.disabled = true;
-			setCollectionStatus('Creating the collection.', false);
-			try {
-				const response = await fetch('/api/admin/collections', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ name, published: false, artworkIds: [] }),
-				});
-				const result = await response.json();
-				if (!response.ok) throw new Error(result.error || 'Could not create the collection');
-				// CRITICAL: the endpoint also answers with a redirect target for the
-				// collection form. Following it here would throw away every unsaved
-				// edit on this artwork.
-				const empty = collectionList.querySelector('[data-collection-empty]');
-				if (empty) empty.remove();
-				const label = document.createElement('label');
-				const checkbox = document.createElement('input');
-				checkbox.type = 'checkbox'; checkbox.name = 'collectionIds'; checkbox.value = String(result.collection.id); checkbox.checked = true;
-				label.append(checkbox, ' ' + result.collection.name);
-				collectionList.append(label);
-				newName.value = '';
-				setCollectionStatus(result.collection.name + ' is added and ticked. Save the artwork to file it.', false);
-				checkbox.focus();
-			} catch (error) {
-				setCollectionStatus(error instanceof Error ? error.message : 'Could not create the collection', true);
-				newName.focus();
-			} finally {
-				newButton.disabled = false;
-			}
-		};
-		newButton.addEventListener('click', createCollection);
-		// The field sits inside the artwork form, so Enter would otherwise submit
-		// and save the whole artwork.
-		newName.addEventListener('keydown', (event) => {
-			if (event.key !== 'Enter') return;
-			event.preventDefault();
-			createCollection();
-		});
-
 		const renderImages = () => {
 			list.replaceChildren();
 			images.forEach((image, index) => {
@@ -224,6 +170,15 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		});
 		renderImages();
 	}
+</script>
+
+<script>
+	// Bundled, not `is:inline`: an inline script cannot import, and the inline
+	// collection creator is covered by a test that imports the same module.
+	import { attachInlineCollectionCreator } from '../../lib/inline-collection-creator';
+
+	const artworkForm = document.querySelector('[data-admin-artwork-form]');
+	if (artworkForm instanceof HTMLFormElement) attachInlineCollectionCreator(artworkForm);
 </script>
 
 <style>
@@ -275,12 +230,14 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		transition: background 200ms, border-color 200ms, color 200ms;
 	}
 
-	.add-collection:hover:not(:disabled) {
+	.add-collection:hover:not([aria-disabled='true']) {
 		background: var(--seal-fill);
 		border-color: var(--seal-fill);
 	}
 
-	.add-collection:disabled {
+	/* The in-flight state is `aria-disabled`, not `disabled`, so the button keeps
+	   its place in the focus order. The handler refuses the second activation. */
+	.add-collection[aria-disabled='true'] {
 		color: var(--muted);
 		cursor: progress;
 	}
