@@ -30,7 +30,7 @@ const { action, collection, artworks } = Astro.props;
 				aria-describedby="collection-slug-format"
 				value={collection?.slug ?? ''}
 			/>
-			<span id="collection-slug-format" class="hint">Lowercase letters, numbers, and hyphens. It becomes the page address.</span>
+			<span id="collection-slug-format" class="hint" aria-hidden="true">Lowercase letters, numbers, and hyphens. It becomes the page address.</span>
 		</label>
 		<label class="span-all">Description <textarea class="admin-input" name="description">{collection?.description ?? ''}</textarea></label>
 	</FormFieldset>

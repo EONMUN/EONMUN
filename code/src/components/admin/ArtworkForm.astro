@@ -31,7 +31,7 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 				aria-describedby="slug-format"
 				value={artwork?.slug ?? ''}
 			/>
-			<span id="slug-format" class="hint">Lowercase letters, numbers, and hyphens. It becomes the page address.</span>
+			<span id="slug-format" class="hint" aria-hidden="true">Lowercase letters, numbers, and hyphens. It becomes the page address.</span>
 		</label>
 		<label>Artist <input class="admin-input" name="artist" value={artwork?.artist ?? 'EONMUN'} /></label>
 		<label>Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
@@ -70,8 +70,18 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 
 	<FormFieldset legend="Private sale">
 		<label class="inline-label"><input type="checkbox" name="available" checked={(artwork?.product?.quantity ?? 0) > 0 && artwork?.product?.soldAt === null} /> Available for purchase</label>
-		<label>Private price (cents) <input class="admin-input" name="priceCents" type="number" min="1" step="1" value={artwork?.product?.price ?? ''} /></label>
-		<p class="hint">Prices are visible only in administration and Stripe Checkout.</p>
+		<label>Private price (cents)
+			<input
+				class="admin-input"
+				name="priceCents"
+				type="number"
+				min="1"
+				step="1"
+				aria-describedby="price-note"
+				value={artwork?.product?.price ?? ''}
+			/>
+		</label>
+		<p id="price-note" class="hint">Required when the piece is available for purchase. Prices are visible only in administration and Stripe Checkout.</p>
 	</FormFieldset>
 
 	{artwork ? (
@@ -90,6 +100,15 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		const list = form.querySelector('[data-image-list]');
 		const errorBox = form.querySelector('[data-error]');
 		const showError = (message) => { errorBox.hidden = false; errorBox.textContent = message; };
+		// parseArtworkInput rejects an available piece with no price. Mirror that
+		// here so the requirement is caught before a round trip, and so the field
+		// is only marked required while it actually is.
+		const available = form.elements.available;
+		const price = form.elements.priceCents;
+		const syncPriceRequirement = () => { price.required = available.checked; };
+		available.addEventListener('change', syncPriceRequirement);
+		syncPriceRequirement();
+
 		const renderImages = () => {
 			list.replaceChildren();
 			images.forEach((image, index) => {
