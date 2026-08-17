@@ -71,9 +71,9 @@ EONMUN is the official digital portfolio and e-commerce platform for the artist 
 
 ### Branching Strategy
 
-- Feature branches off `master`
+- Feature branches off `main`
 - Branch naming: `feature/[short-description]` or `deepwork/spec_driven_development-[instance]-YYYYMMDD` for spec-driven work
-- Pull requests required before merging to `master`
+- Pull requests required before merging to `main`
 
 ### Review Requirements
 
