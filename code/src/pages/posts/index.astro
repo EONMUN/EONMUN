@@ -2,13 +2,13 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import type { PostType } from '../../db';
 import {
-	getPostCoverImage,
+	getPostCoverImages,
 	getPublishedPostEntries,
 	TYPE_LABELS,
 	VALID_POST_TYPES,
 } from '../../lib/post-content';
 
-export const prerender = true;
+export const prerender = false;
 
 const typeParam = Astro.url.searchParams.get('type');
 const postType = typeParam && VALID_POST_TYPES.includes(typeParam as PostType)
@@ -16,12 +16,8 @@ const postType = typeParam && VALID_POST_TYPES.includes(typeParam as PostType)
 	: undefined;
 
 const posts = await getPublishedPostEntries(postType);
-const postCards = await Promise.all(
-	posts.map(async (post) => ({
-		post,
-		coverImage: await getPostCoverImage(post),
-	})),
-);
+const coverImages = await getPostCoverImages(posts);
+const postCards = posts.map((post, index) => ({ post, coverImage: coverImages[index] }));
 ---
 <BaseLayout
 	title={postType ? `${TYPE_LABELS[postType]} — Posts — EONMUN` : 'Posts — EONMUN'}

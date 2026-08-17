@@ -1,0 +1,41 @@
+---
+import type { SelectArtwork, SelectCollection } from '../../db';
+interface Props {
+	action: string;
+	collection?: SelectCollection & { artworkIds: number[]; defaultArtworkId: number | null };
+	artworks: SelectArtwork[];
+}
+const { action, collection, artworks } = Astro.props;
+---
+<form data-admin-collection-form data-action={action} class="space-y-6 max-w-3xl">
+	<div data-error hidden class="border border-red-500 p-3 rounded text-red-700"></div>
+	<div class="grid sm:grid-cols-2 gap-4">
+		<label>Name <input class="admin-input" name="name" required value={collection?.name ?? ''} /></label>
+		<label>Slug <input class="admin-input" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={collection?.slug ?? ''} /></label>
+	</div>
+	<label class="block">Description <textarea class="admin-input min-h-32" name="description">{collection?.description ?? ''}</textarea></label>
+	<fieldset class="border rounded p-4 space-y-2">
+		<legend class="px-2">Artwork membership and cover</legend>
+		{artworks.map((artwork) => (
+			<div class="grid grid-cols-[1fr_auto] gap-4">
+				<label><input type="checkbox" name="artworkIds" value={artwork.id} checked={collection?.artworkIds.includes(artwork.id)} /> {artwork.title}</label>
+				<label><input type="radio" name="defaultArtworkId" value={artwork.id} checked={collection?.defaultArtworkId === artwork.id} /> Cover</label>
+			</div>
+		))}
+	</fieldset>
+	{collection ? <label class="block"><input type="checkbox" name="published" checked={collection.publishedAt !== null} /> Published</label> : <p class="text-sm">New collections are saved as drafts.</p>}
+	<button class="px-5 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded" type="submit">Save collection</button>
+</form>
+<script is:inline>
+	const form = document.querySelector('[data-admin-collection-form]');
+	if (form) form.addEventListener('submit', async (event) => {
+		event.preventDefault(); const data = new FormData(form); const errorBox = form.querySelector('[data-error]'); errorBox.hidden = true;
+		const payload = Object.fromEntries(data); payload.published = data.has('published'); payload.artworkIds = data.getAll('artworkIds').map(Number);
+		payload.defaultArtworkId = data.get('defaultArtworkId') ? Number(data.get('defaultArtworkId')) : null;
+		try {
+			const response = await fetch(form.dataset.action, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
+			const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Save failed'); window.location.assign(result.redirect);
+		} catch (error) { errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; errorBox.hidden = false; }
+	});
+</script>
+<style>.admin-input { display:block; width:100%; border:1px solid #9ca3af; border-radius:.375rem; padding:.5rem; background:transparent; }</style>

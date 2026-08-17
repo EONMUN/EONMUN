@@ -4,8 +4,8 @@
 // `no_handle_cross_request_promise_resolution`). Each Astro request must
 // call `getDb(getRuntimeEnv())` to construct a fresh client.
 //
-// Read-only access — schema is copied from the legacy app, no migrations
-// are applied from this worker.
+// Migrations are applied by the repository-level drizzle directory, never
+// from this worker; admin writes go through `./admin`.
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client/web";
 import * as schema from "./schema";
@@ -15,6 +15,9 @@ export * from "./schema";
 export type Env = {
 	TURSO_DATABASE_URL?: string;
 	TURSO_AUTH_TOKEN?: string;
+	R2_BUCKET?: R2Bucket;
+	STRIPE_SECRET_KEY?: string;
+	STRIPE_WEBHOOK_SECRET?: string;
 };
 
 export function getDb(env: Env) {

@@ -6,17 +6,15 @@
 		"node": ">=22.12.0"
 	},
 	"scripts": {
-		"artworks:sync": "node ./scripts/sync-artworks-content.mjs",
-		"collections:sync": "node ./scripts/sync-collections-content.mjs",
-		"products:sync": "node ./scripts/sync-products-content.mjs",
 		"posts:sync": "node ./scripts/sync-posts-content.mjs",
-		"content:sync": "node ./scripts/sync-collections-content.mjs && node ./scripts/sync-artworks-content.mjs && node ./scripts/sync-products-content.mjs && node ./scripts/sync-posts-content.mjs",
+		"content:sync": "node ./scripts/sync-posts-content.mjs",
 		"dev": "bun run content:sync && astro dev --host 0.0.0.0",
 		"build": "bun run content:sync && astro build",
 		"preview": "bun run content:sync && astro build && astro preview",
 		"astro": "astro",
 		"deploy": "bun run content:sync && astro build && wrangler deploy",
-		"cf-typegen": "wrangler types"
+		"cf-typegen": "wrangler types",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "^13.5.0",

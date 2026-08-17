@@ -1,6 +1,6 @@
-// Query helpers for SSR routes. Read-only; no mutations from the Astro worker.
-// Distilled from `~/repos/EONMUN/EONMUN/src/models/*.ts`.
-import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
+// Read query helpers for public SSR routes. Admin mutations live in `./admin`
+// and checkout/inventory reads in `./checkout`.
+import { and, desc, eq, inArray, isNotNull, lte, or } from "drizzle-orm";
 import {
 	getDb,
 	type Env,
@@ -12,11 +12,9 @@ import {
 	posts,
 	postsToArtworks,
 	postsToCollections,
-	products,
 	type SelectArtwork as BaseSelectArtwork,
 	type SelectCollection,
 	type SelectPost,
-	type SelectProduct,
 	type PostType,
 } from "./index";
 
@@ -37,11 +35,6 @@ export interface ArtworkListItem extends ArtworkWithDefaultImage {
 export interface ArtworkDetail extends ArtworkWithDefaultImage {
 	collections: SelectCollection[];
 	images: { url: string; isDefault: boolean; caption: string | null }[];
-	product: SelectProduct | null;
-}
-
-export interface CollectionWithArtworks extends SelectCollection {
-	artworks: ArtworkWithDefaultImage[];
 }
 
 export interface PostWithRelations extends SelectPost {
@@ -52,17 +45,6 @@ export interface PostWithRelations extends SelectPost {
 		defaultImageUrl: string | null;
 	}[];
 	collections: { id: number; slug: string; name: string }[];
-}
-
-export interface ProductWithArtwork extends SelectProduct {
-	artwork: ArtworkWithDefaultImage | null;
-}
-
-export interface ProductAvailability {
-	slug: string;
-	type: string;
-	available: boolean;
-	status: "available" | "sold" | "out_of_stock";
 }
 
 function publishedCondition() {
@@ -156,8 +138,8 @@ export async function getPostBySlug(
 
 export async function getAllArtworks(
 	env: Env,
+	db = getDb(env),
 ): Promise<ArtworkListItem[]> {
-	const db = getDb(env);
 	const rows = await db
 		.select({
 			id: artworks.id,
@@ -229,15 +211,15 @@ export async function getAllArtworks(
 export async function getArtworkBySlug(
 	env: Env,
 	slug: string,
+	db = getDb(env),
 ): Promise<ArtworkDetail | null> {
-	const db = getDb(env);
 	const [artwork] = await db
 		.select()
 		.from(artworks)
-		.where(eq(artworks.slug, slug));
+		.where(and(eq(artworks.slug, slug), isNotNull(artworks.publishedAt)));
 	if (!artwork) return null;
 
-	const [imageRows, junctionRows, productRows] = await Promise.all([
+	const [imageRows, junctionRows] = await Promise.all([
 		db
 			.select()
 			.from(artworkImages)
@@ -255,12 +237,6 @@ export async function getArtworkBySlug(
 					isNotNull(collections.publishedAt),
 				),
 			),
-		db
-			.select()
-			.from(products)
-			.where(
-				and(eq(products.artworkId, artwork.id), eq(products.type, "artwork")),
-			),
 	]);
 
 	const defaultImage = imageRows.find((i) => i.isDefault) ?? imageRows[0];
@@ -273,204 +249,23 @@ export async function getArtworkBySlug(
 			caption: i.caption,
 		})),
 		collections: junctionRows.map((r) => r.collection),
-		product: productRows[0] ?? null,
 	};
 }
 
 export async function getAllCollections(
 	env: Env,
+	db = getDb(env),
 ): Promise<SelectCollection[]> {
-	const db = getDb(env);
 	return db
 		.select()
 		.from(collections)
 		.where(isNotNull(collections.publishedAt));
 }
 
-export async function getCollectionBySlug(
-	env: Env,
-	slug: string,
-): Promise<CollectionWithArtworks | null> {
-	const db = getDb(env);
-	const [collection] = await db
-		.select()
-		.from(collections)
-		.where(eq(collections.slug, slug));
-	if (!collection) return null;
-
-	const rows = await db
-		.select({
-			id: artworks.id,
-			title: artworks.title,
-			slug: artworks.slug,
-			description: artworks.description,
-			artist: artworks.artist,
-			year: artworks.year,
-			width: artworks.width,
-			height: artworks.height,
-			depth: artworks.depth,
-			dimensionUnit: artworks.dimensionUnit,
-			publishedAt: artworks.publishedAt,
-			locale: artworks.locale,
-			createdAt: artworks.createdAt,
-			updatedAt: artworks.updatedAt,
-			defaultImageUrl: artworkImages.url,
-		})
-		.from(artworksToCollections)
-		.innerJoin(artworks, eq(artworksToCollections.artworkId, artworks.id))
-		.leftJoin(
-			artworkImages,
-			and(
-				eq(artworks.id, artworkImages.artworkId),
-				eq(artworkImages.isDefault, true),
-			),
-		)
-		.where(eq(artworksToCollections.collectionId, collection.id));
-
-	return { ...collection, artworks: rows };
-}
-
-export async function getAvailableProducts(
-	env: Env,
-): Promise<ProductWithArtwork[]> {
-	const db = getDb(env);
-	const rows = await db
-		.select()
-		.from(products)
-		.where(
-			or(
-				and(eq(products.type, "artwork"), isNull(products.soldAt)),
-				gt(products.quantity, 0),
-			),
-		);
-	if (rows.length === 0) return [];
-
-	const artworkIds = rows
-		.map((p) => p.artworkId)
-		.filter((id): id is number => id !== null);
-
-	const artworkRows = artworkIds.length
-		? await db
-				.select({
-					id: artworks.id,
-					title: artworks.title,
-					slug: artworks.slug,
-					description: artworks.description,
-					artist: artworks.artist,
-					year: artworks.year,
-					width: artworks.width,
-					height: artworks.height,
-					depth: artworks.depth,
-					dimensionUnit: artworks.dimensionUnit,
-					publishedAt: artworks.publishedAt,
-					locale: artworks.locale,
-					createdAt: artworks.createdAt,
-					updatedAt: artworks.updatedAt,
-					defaultImageUrl: artworkImages.url,
-				})
-				.from(artworks)
-				.leftJoin(
-					artworkImages,
-					and(
-						eq(artworks.id, artworkImages.artworkId),
-						eq(artworkImages.isDefault, true),
-					),
-				)
-				.where(inArray(artworks.id, artworkIds))
-		: [];
-
-	const artworkById = new Map<number, ArtworkWithDefaultImage>();
-	for (const a of artworkRows) artworkById.set(a.id, a);
-
-	return rows.map((p) => ({
-		...p,
-		artwork: p.artworkId !== null ? (artworkById.get(p.artworkId) ?? null) : null,
-	}));
-}
-
-export async function getProductAvailabilityBySlug(
-	env: Env,
-	slug: string,
-): Promise<ProductAvailability | null> {
-	const db = getDb(env);
-	const [product] = await db
-		.select({
-			slug: products.slug,
-			type: products.type,
-			soldAt: products.soldAt,
-			quantity: products.quantity,
-		})
-		.from(products)
-		.where(eq(products.slug, slug));
-	if (!product) return null;
-
-	const isUniqueArtwork = product.type === "artwork";
-	const available = isUniqueArtwork
-		? product.soldAt === null
-		: (product.quantity ?? 0) > 0;
-
-	return {
-		slug: product.slug,
-		type: product.type,
-		available,
-		status: available
-			? "available"
-			: isUniqueArtwork
-				? "sold"
-				: "out_of_stock",
-	};
-}
-
-export async function getProductBySlug(
-	env: Env,
-	slug: string,
-): Promise<ProductWithArtwork | null> {
-	const db = getDb(env);
-	const [product] = await db
-		.select()
-		.from(products)
-		.where(eq(products.slug, slug));
-	if (!product) return null;
-
-	let artwork: ArtworkWithDefaultImage | null = null;
-	if (product.artworkId !== null) {
-		const [row] = await db
-			.select({
-				id: artworks.id,
-				title: artworks.title,
-				slug: artworks.slug,
-				description: artworks.description,
-				artist: artworks.artist,
-				year: artworks.year,
-				width: artworks.width,
-				height: artworks.height,
-				depth: artworks.depth,
-				dimensionUnit: artworks.dimensionUnit,
-				publishedAt: artworks.publishedAt,
-				locale: artworks.locale,
-				createdAt: artworks.createdAt,
-				updatedAt: artworks.updatedAt,
-				defaultImageUrl: artworkImages.url,
-			})
-			.from(artworks)
-			.leftJoin(
-				artworkImages,
-				and(
-					eq(artworks.id, artworkImages.artworkId),
-					eq(artworkImages.isDefault, true),
-				),
-			)
-			.where(eq(artworks.id, product.artworkId));
-		artwork = row ?? null;
-	}
-
-	return { ...product, artwork };
-}
-
 export async function getHomepageSlides(
 	env: Env,
+	db = getDb(env),
 ): Promise<ArtworkWithDefaultImage[]> {
-	const db = getDb(env);
 	return db
 		.select({
 			id: artworks.id,
@@ -498,5 +293,6 @@ export async function getHomepageSlides(
 				eq(artworkImages.isDefault, true),
 			),
 		)
+		.where(isNotNull(artworks.publishedAt))
 		.orderBy(homepageArtworks.position);
 }

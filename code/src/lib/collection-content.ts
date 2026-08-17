@@ -1,8 +1,9 @@
-import { getCollection, type CollectionEntry } from "astro:content";
-
-export type CollectionEntryType = CollectionEntry<"collections">;
+import { getAllCollections } from "../db/queries";
+import { getRuntimeEnv } from "./runtime-env";
+import { selectRelatedBySlug } from "./public-catalog";
 
 export interface PublicCollectionRef {
+	id: number;
 	name: string;
 	slug: string;
 	description: string | null;
@@ -10,41 +11,20 @@ export interface PublicCollectionRef {
 	locale: string;
 }
 
-function parseEntryDate(value: string | null | undefined) {
-	if (!value) return null;
-	const date = new Date(value);
-	return Number.isNaN(date.getTime()) ? null : date;
-}
-
-export function isPublishedCollection(collection: CollectionEntryType, now = new Date()) {
-	const publishedAt = parseEntryDate(collection.data.publishedAt);
-	return publishedAt ? publishedAt <= now : false;
-}
-
-export function toPublicCollectionRef(collection: CollectionEntryType): PublicCollectionRef {
-	return {
-		name: collection.data.name,
-		slug: collection.id,
-		description: collection.data.description ?? null,
-		publishedAt: collection.data.publishedAt ?? "",
-		locale: collection.data.locale,
-	};
-}
-
-export async function getPublishedCollectionEntries() {
-	const collections = await getCollection("collections");
-	return collections
-		.filter((collection) => isPublishedCollection(collection))
-		.sort((left, right) => left.data.name.localeCompare(right.data.name));
-}
-
-export async function getPublishedCollectionRefs() {
-	const collections = await getPublishedCollectionEntries();
-	return collections.map(toPublicCollectionRef);
+export async function getPublishedCollectionRefs(): Promise<PublicCollectionRef[]> {
+	const rows = await getAllCollections(getRuntimeEnv());
+	return rows
+		.map((row) => ({
+			id: row.id,
+			name: row.name,
+			slug: row.slug,
+			description: row.description,
+			publishedAt: row.publishedAt?.toISOString() ?? "",
+			locale: row.locale,
+		}))
+		.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export async function getPublishedCollectionsBySlugs(slugs: string[]) {
-	const requestedSlugs = new Set(slugs);
-	const collections = await getPublishedCollectionRefs();
-	return collections.filter((collection) => requestedSlugs.has(collection.slug));
+	return selectRelatedBySlug(slugs, await getPublishedCollectionRefs(), (collection) => collection.slug);
 }

@@ -1,15 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getSession, getSignInUrl } from '../lib/auth';
+import { requireAdminPage } from '../lib/admin-guard';
 import { getRuntimeEnv } from '../lib/runtime-env';
 
 export const prerender = false;
 
-const session = await getSession(Astro.request, getRuntimeEnv());
-
-if (!session) {
-	return Astro.redirect(getSignInUrl(Astro.request).toString(), 302);
-}
+const access = await requireAdminPage(Astro.request, getRuntimeEnv(), '/admin');
+if ('response' in access) return access.response;
+const { session } = access;
 ---
 <BaseLayout title="Admin — EONMUN" description="EONMUN administration.">
 	<main class="container mx-auto px-4 py-8">
@@ -20,18 +18,18 @@ if (!session) {
 			</p>
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-			<a href="/artworks" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<a href="/admin/artworks" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
 				<h2 class="text-xl font-semibold mb-2">Artwork</h2>
-				<p class="text-sm text-gray-600 dark:text-gray-400">Review the static artwork collection.</p>
+				<p class="text-sm text-gray-600 dark:text-gray-400">Create, edit, and publish artwork.</p>
 			</a>
 			<a href="/posts" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
 				<h2 class="text-xl font-semibold mb-2">Posts</h2>
 				<p class="text-sm text-gray-600 dark:text-gray-400">Review published studio posts.</p>
 			</a>
-			<a href="/store" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
-				<h2 class="text-xl font-semibold mb-2">Store</h2>
-				<p class="text-sm text-gray-600 dark:text-gray-400">Review static products and live availability.</p>
+			<a href="/admin/collections" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:border-gray-500">
+				<h2 class="text-xl font-semibold mb-2">Collections</h2>
+				<p class="text-sm text-gray-600 dark:text-gray-400">Manage artwork collections.</p>
 			</a>
 		</div>
 

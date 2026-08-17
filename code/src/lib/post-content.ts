@@ -9,6 +9,7 @@ import {
 	getPublishedCollectionsBySlugs,
 	type PublicCollectionRef,
 } from "./collection-content";
+import { selectRelatedBySlug } from "./public-catalog";
 
 export const VALID_POST_TYPES: PostType[] = [
 	"announcement",
@@ -55,18 +56,26 @@ export function isPublishedPost(post: PostEntry, now = new Date()) {
 }
 
 export async function getPostRelatedArtworks(post: PostEntry) {
-	const requestedSlugs = new Set(post.data.artworkSlugs);
 	const artworks = await getPublishedArtworkEntries();
-	return artworks.filter((detail) => requestedSlugs.has(detail.artwork.id));
+	return selectRelatedBySlug(post.data.artworkSlugs, artworks, (detail) => detail.artwork.id);
 }
 
 export function getPostRelatedCollections(post: PostEntry) {
 	return getPublishedCollectionsBySlugs(post.data.collectionSlugs);
 }
 
-export async function getPostCoverImage(post: PostEntry) {
-	const relatedArtworks = await getPostRelatedArtworks(post);
-	return post.data.coverImageUrl ?? relatedArtworks[0]?.defaultImageUrl ?? null;
+// Listing pages resolve covers for many posts at once; fetching the artwork
+// catalog per post would be one query pair per row on every request.
+export async function getPostCoverImages(posts: PostEntry[]) {
+	const artworks = await getPublishedArtworkEntries();
+	return posts.map((post) => {
+		const related = selectRelatedBySlug(
+			post.data.artworkSlugs,
+			artworks,
+			(detail) => detail.artwork.id,
+		)[0];
+		return post.data.coverImageUrl ?? related?.defaultImageUrl ?? null;
+	});
 }
 
 export async function getPublishedPostEntries(postType?: PostType) {
@@ -88,9 +97,9 @@ export async function getPublishedPostDetailBySlug(
 	const post = posts.find((entry) => entry.id === slug);
 	if (!post) return null;
 
-	return {
-		post,
-		artworks: await getPostRelatedArtworks(post),
-		collections: await getPostRelatedCollections(post),
-	};
+	const [artworks, collections] = await Promise.all([
+		getPostRelatedArtworks(post),
+		getPostRelatedCollections(post),
+	]);
+	return { post, artworks, collections };
 }

@@ -1,109 +1,106 @@
-import { getCollection, type CollectionEntry } from "astro:content";
-
 import {
-	getPublishedCollectionsBySlugs,
-	type PublicCollectionRef,
-} from "./collection-content";
-import {
-	getPublishedProductByArtworkSlug,
-	type ProductEntry,
-} from "./product-content";
+	getAllArtworks,
+	getArtworkBySlug,
+	type ArtworkDetail,
+	type ArtworkListItem,
+} from "../db/queries";
+import { getRuntimeEnv } from "./runtime-env";
 
-export type ArtworkEntry = CollectionEntry<"artworks">;
+export type PublicCollectionRef = ArtworkListItem["collections"][number];
+
+export interface PublicArtworkEntry {
+	id: string;
+	body: string;
+	data: {
+		title: string;
+		description: string | null;
+		artist: string | null;
+		year: number | null;
+		width: number | null;
+		height: number | null;
+		depth: number | null;
+		dimensionUnit: string | null;
+		publishedAt: string;
+		locale: string;
+		images: { url: string; isDefault: boolean; caption: string | null }[];
+	};
+}
 
 export interface PublishedArtworkDetail {
-	artwork: ArtworkEntry;
+	artwork: PublicArtworkEntry;
 	collections: PublicCollectionRef[];
-	product: ProductEntry | null;
 	defaultImageUrl: string | null;
 }
 
-function parseEntryDate(value: string | null | undefined) {
-	if (!value) return null;
-	const date = new Date(value);
-	return Number.isNaN(date.getTime()) ? null : date;
-}
-
-export function getArtworkPublishedDate(artwork: ArtworkEntry) {
-	return parseEntryDate(artwork.data.publishedAt);
-}
-
-export function getArtworkPublishedTime(artwork: ArtworkEntry) {
-	return getArtworkPublishedDate(artwork)?.toISOString();
-}
-
-export function isPublishedArtwork(artwork: ArtworkEntry, now = new Date()) {
-	const publishedAt = getArtworkPublishedDate(artwork);
-	return publishedAt ? publishedAt <= now : false;
-}
-
-export async function getArtworkCollections(artwork: ArtworkEntry) {
-	return getPublishedCollectionsBySlugs(artwork.data.collectionSlugs);
-}
-
-export function getArtworkDefaultImage(artwork: ArtworkEntry) {
-	return artwork.data.images.find((image) => image.isDefault)?.url ?? artwork.data.images[0]?.url ?? null;
-}
-
-export async function getArtworkProduct(artwork: ArtworkEntry) {
-	return getPublishedProductByArtworkSlug(artwork.id);
-}
-
-async function toPublishedArtworkDetail(artwork: ArtworkEntry): Promise<PublishedArtworkDetail> {
+function toEntry(row: ArtworkListItem | ArtworkDetail): PublicArtworkEntry {
 	return {
-		artwork,
-		collections: await getArtworkCollections(artwork),
-		product: await getArtworkProduct(artwork),
-		defaultImageUrl: getArtworkDefaultImage(artwork),
+		id: row.slug,
+		body: "",
+		data: {
+			title: row.title,
+			description: row.description,
+			artist: row.artist,
+			year: row.year,
+			width: row.width,
+			height: row.height,
+			depth: row.depth,
+			dimensionUnit: row.dimensionUnit,
+			publishedAt: row.publishedAt?.toISOString() ?? "",
+			locale: row.locale,
+			images: "images" in row ? row.images : [],
+		},
+	};
+}
+
+function toListDetail(row: ArtworkListItem): PublishedArtworkDetail {
+	return {
+		artwork: toEntry(row),
+		collections: row.collections,
+		defaultImageUrl: row.defaultImageUrl,
 	};
 }
 
 export async function getPublishedArtworkEntries(collectionSlug?: string) {
-	const artworks = await getCollection("artworks");
-
-	const details = await Promise.all(
-		artworks
-		.filter((artwork) => isPublishedArtwork(artwork))
-			.map(toPublishedArtworkDetail),
-	);
-
-	return details
-		.filter((detail) =>
+	const rows = await getAllArtworks(getRuntimeEnv());
+	return rows
+		.filter((row) =>
 			collectionSlug
-				? detail.collections.some((collection) => collection.slug === collectionSlug)
+				? row.collections.some((collection) => collection.slug === collectionSlug)
 				: true,
 		)
-		.sort((left, right) => {
-			const leftTime = getArtworkPublishedDate(left.artwork)?.getTime() ?? 0;
-			const rightTime = getArtworkPublishedDate(right.artwork)?.getTime() ?? 0;
-
-			if (leftTime !== rightTime) {
-				return rightTime - leftTime;
-			}
-
-			return left.artwork.data.title.localeCompare(right.artwork.data.title);
-		});
+		.sort((left, right) =>
+			(right.publishedAt?.getTime() ?? 0) - (left.publishedAt?.getTime() ?? 0) ||
+			left.title.localeCompare(right.title),
+		)
+		.map(toListDetail);
 }
 
 export async function getPublishedArtworkDetailBySlug(
 	slug: string,
 ): Promise<PublishedArtworkDetail | null> {
-	const artworks = await getPublishedArtworkEntries();
-	return artworks.find((detail) => detail.artwork.id === slug) ?? null;
+	const row = await getArtworkBySlug(getRuntimeEnv(), slug);
+	if (!row || !row.publishedAt) return null;
+	return {
+		artwork: toEntry(row),
+		collections: row.collections.map(({ id, slug: collectionSlug, name }) => ({
+			id,
+			slug: collectionSlug,
+			name,
+		})),
+		defaultImageUrl: row.defaultImageUrl,
+	};
+}
+
+export function getArtworkPublishedTime(artwork: PublicArtworkEntry) {
+	return artwork.data.publishedAt || undefined;
 }
 
 export function getArtworkCollectionFilterOptions(artworks: PublishedArtworkDetail[]) {
 	const collectionBySlug = new Map<string, PublicCollectionRef>();
-
 	for (const detail of artworks) {
 		for (const collection of detail.collections) {
-			if (!collectionBySlug.has(collection.slug)) {
-				collectionBySlug.set(collection.slug, collection);
-			}
+			collectionBySlug.set(collection.slug, collection);
 		}
 	}
-
-	return Array.from(collectionBySlug.values()).sort((left, right) =>
-		left.name.localeCompare(right.name),
-	);
+	return [...collectionBySlug.values()].sort((left, right) => left.name.localeCompare(right.name));
 }

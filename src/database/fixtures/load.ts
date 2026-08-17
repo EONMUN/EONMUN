@@ -327,7 +327,7 @@ async function loadProducts(
       description: fixture.description || null,
       imageUrl,
       price: fixture.price,
-      quantity: fixture.quantity ?? null, // null for unique items
+      quantity: fixture.quantity ?? (fixture.type === "artwork" ? 1 : null),
       // listedAt is auto-set by schema default
     });
 

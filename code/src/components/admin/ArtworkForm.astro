@@ -1,0 +1,105 @@
+---
+import type { SelectArtwork, SelectArtworkImage, SelectCollection, SelectProduct } from '../../db';
+
+interface Props {
+	action: string;
+	artwork?: SelectArtwork & { images: SelectArtworkImage[]; collectionIds: number[]; product: SelectProduct | null };
+	collections: SelectCollection[];
+}
+const { action, artwork, collections } = Astro.props;
+const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, caption, isDefault })) ?? [];
+---
+<form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)} class="space-y-6 max-w-3xl">
+	<div data-error hidden class="border border-red-500 p-3 rounded text-red-700"></div>
+	<div class="grid sm:grid-cols-2 gap-4">
+		<label class="space-y-1">Title <input class="admin-input" name="title" required value={artwork?.title ?? ''} /></label>
+		<label class="space-y-1">Slug <input class="admin-input" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={artwork?.slug ?? ''} /></label>
+		<label class="space-y-1">Artist <input class="admin-input" name="artist" value={artwork?.artist ?? 'EONMUN'} /></label>
+		<label class="space-y-1">Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
+	</div>
+	<label class="block space-y-1">Description <textarea class="admin-input min-h-32" name="description">{artwork?.description ?? ''}</textarea></label>
+	<fieldset class="border rounded p-4">
+		<legend class="px-2">Dimensions</legend>
+		<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+			<label>Width <input class="admin-input" name="width" type="number" min="0" step="any" value={artwork?.width ?? ''} /></label>
+			<label>Height <input class="admin-input" name="height" type="number" min="0" step="any" value={artwork?.height ?? ''} /></label>
+			<label>Depth <input class="admin-input" name="depth" type="number" min="0" step="any" value={artwork?.depth ?? ''} /></label>
+			<label>Unit <select class="admin-input" name="dimensionUnit"><option selected={(artwork?.dimensionUnit ?? 'in') === 'in'}>in</option><option selected={artwork?.dimensionUnit === 'cm'}>cm</option></select></label>
+		</div>
+	</fieldset>
+	<fieldset class="border rounded p-4 space-y-3">
+		<legend class="px-2">Images</legend>
+		<input name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
+		<p class="text-sm text-gray-500">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each.</p>
+		<div data-image-list class="space-y-3"></div>
+	</fieldset>
+	<fieldset class="border rounded p-4 grid sm:grid-cols-2 gap-2">
+		<legend class="px-2">Collections</legend>
+		{collections.map((collection) => (
+			<label><input type="checkbox" name="collectionIds" value={collection.id} checked={artwork?.collectionIds.includes(collection.id)} /> {collection.name}</label>
+		))}
+	</fieldset>
+	<fieldset class="border rounded p-4 space-y-3">
+		<legend class="px-2">Private sale settings</legend>
+		<label class="block"><input type="checkbox" name="available" checked={(artwork?.product?.quantity ?? 0) > 0 && artwork?.product?.soldAt === null} /> Available for purchase</label>
+		<label class="block space-y-1">Private price (cents) <input class="admin-input" name="priceCents" type="number" min="1" step="1" value={artwork?.product?.price ?? ''} /></label>
+		<p class="text-sm text-gray-500">Prices are visible only in administration and Stripe Checkout.</p>
+	</fieldset>
+	{artwork ? <label class="block"><input type="checkbox" name="published" checked={artwork.publishedAt !== null} /> Published</label> : <p class="text-sm">New artwork is saved as a draft.</p>}
+	<button class="px-5 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded" type="submit">Save artwork</button>
+</form>
+
+<script is:inline>
+	const form = document.querySelector('[data-admin-artwork-form]');
+	if (form) {
+		let images = JSON.parse(form.dataset.images || '[]');
+		const list = form.querySelector('[data-image-list]');
+		const errorBox = form.querySelector('[data-error]');
+		const showError = (message) => { errorBox.textContent = message; errorBox.hidden = false; };
+		const renderImages = () => {
+			list.replaceChildren();
+			images.forEach((image, index) => {
+				const row = document.createElement('div');
+				row.className = 'grid grid-cols-[5rem_1fr_auto_auto] gap-3 items-center';
+				const preview = document.createElement('img'); preview.src = image.url; preview.alt = ''; preview.className = 'w-20 h-20 object-cover rounded';
+				const caption = document.createElement('input'); caption.className = 'admin-input'; caption.placeholder = 'Caption'; caption.value = image.caption || '';
+				caption.addEventListener('input', () => { image.caption = caption.value || null; });
+				const label = document.createElement('label'); const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'defaultImage'; radio.checked = image.isDefault;
+				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); renderImages(); });
+				label.append(radio, ' Default');
+				const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'underline';
+				remove.addEventListener('click', () => { images.splice(index, 1); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); });
+				row.append(preview, caption, label, remove); list.append(row);
+			});
+		};
+		const uploadSelected = async () => {
+			const input = form.elements.imageFiles;
+			if (!input.files.length) return;
+			const body = new FormData();
+			for (const file of input.files) body.append('images', file);
+			const response = await fetch('/api/admin/media', { method: 'POST', body });
+			const payload = await response.json();
+			if (!response.ok) throw new Error(payload.error || 'Upload failed');
+			for (const uploaded of payload.images) images.push({ url: uploaded.url, caption: null, isDefault: images.length === 0 });
+			input.value = ''; renderImages();
+		};
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault(); errorBox.hidden = true;
+			try {
+				await uploadSelected();
+				const data = new FormData(form);
+				const payload = Object.fromEntries(data);
+				payload.published = data.has('published'); payload.available = data.has('available');
+				payload.collectionIds = data.getAll('collectionIds').map(Number); payload.images = images;
+				delete payload.imageFiles; delete payload.defaultImage;
+				const response = await fetch(form.dataset.action, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error || 'Save failed');
+				window.location.assign(result.redirect);
+			} catch (error) { showError(error instanceof Error ? error.message : 'Save failed'); }
+		});
+		renderImages();
+	}
+</script>
+
+<style>.admin-input { display:block; width:100%; border:1px solid #9ca3af; border-radius:.375rem; padding:.5rem; background:transparent; }</style>

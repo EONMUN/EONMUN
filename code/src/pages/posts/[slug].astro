@@ -5,39 +5,23 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getArtworkCollectionHref } from '../../lib/paths';
 import type { PostType } from '../../db';
 import {
-	getPostCoverImage,
 	getPostPublishedTime,
 	getPublishedPostDetailBySlug,
-	getPublishedPostEntries,
 	TYPE_LABELS,
-	type PostEntry,
 } from '../../lib/post-content';
 
-export const prerender = true;
+export const prerender = false;
 
-export async function getStaticPaths() {
-	const posts = await getPublishedPostEntries();
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: {
-			post,
-		},
-	}));
-}
-
-interface Props {
-	post: PostEntry;
-}
-
-const { post } = Astro.props as Props;
-const postDetail = await getPublishedPostDetailBySlug(post.id);
+const slug = Astro.params.slug;
+if (!slug) return new Response('Not found', { status: 404 });
+const postDetail = await getPublishedPostDetailBySlug(slug);
 if (!postDetail) {
 	return new Response('Not found', { status: 404 });
 }
 
-const { artworks, collections } = postDetail;
+const { post, artworks, collections } = postDetail;
 const { Content } = await render(post);
-const coverImage = await getPostCoverImage(post);
+const coverImage = post.data.coverImageUrl ?? artworks[0]?.defaultImageUrl ?? null;
 
 const publishedDateValue = post.data.publishedAt ?? post.data.scheduledAt;
 const publishedDate = publishedDateValue

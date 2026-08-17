@@ -1,22 +1,12 @@
 ---
-import { render } from 'astro:content';
-
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import InventoryState from '../../components/InventoryState.astro';
+import PurchaseState from '../../components/PurchaseState.astro';
 import {
 	getPublishedArtworkDetailBySlug,
-	getPublishedArtworkEntries,
 } from '../../lib/artwork-content';
 import { getArtworkCollectionHref } from '../../lib/paths';
 
-export const prerender = true;
-
-export async function getStaticPaths() {
-	const artworks = await getPublishedArtworkEntries();
-	return artworks.map(({ artwork }) => ({
-		params: { slug: artwork.id },
-	}));
-}
+export const prerender = false;
 
 const slug = Astro.params.slug;
 
@@ -29,14 +19,10 @@ if (!artworkDetail) {
 	return new Response('Not found', { status: 404 });
 }
 
-const { artwork, collections, product, defaultImageUrl } = artworkDetail;
-const artworkBody = typeof artwork.body === 'string' ? artwork.body.trim() : '';
-const renderedArtwork = artworkBody ? await render(artwork) : null;
-const Content = renderedArtwork?.Content ?? null;
+const { artwork, collections, defaultImageUrl } = artworkDetail;
 const images = artwork.data.images;
 const defaultImage = images.find((image) => image.isDefault) ?? images[0];
 const mainImage = defaultImage?.url ?? defaultImageUrl;
-const price = product ? product.price / 100 : null;
 ---
 <BaseLayout
 	title={`${artwork.data.title} — EONMUN`}
@@ -86,30 +72,13 @@ const price = product ? product.price / 100 : null;
 				</div>
 
 				<div class="border-t border-b border-gray-200 dark:border-gray-700 py-6">
-					{product ? (
-						<div class="space-y-2">
-							{price !== null && (
-								<p class="text-sm text-gray-500 dark:text-gray-400">
-									Listed at ${price.toLocaleString()}
-								</p>
-							)}
-							<InventoryState productSlug={product.slug} variant="artwork" />
-						</div>
-					) : (
-						<p class="text-sm text-gray-500 dark:text-gray-400">Not currently available for purchase.</p>
-					)}
+					<PurchaseState artworkSlug={artwork.id} />
 				</div>
 
-				{(Content || artwork.data.description) && (
+				{artwork.data.description && (
 					<div>
 						<h2 class="text-lg font-semibold mb-3">Description</h2>
-						{Content ? (
-							<div class="prose prose-lg dark:prose-invert max-w-none">
-								<Content />
-							</div>
-						) : (
-							<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{artwork.data.description}</p>
-						)}
+						<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{artwork.data.description}</p>
 					</div>
 				)}
 
