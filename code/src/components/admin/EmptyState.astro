@@ -1,0 +1,32 @@
+---
+// The prompt shown where a section has nothing yet. With an href it is the
+// section's create action; without one it is a plain statement.
+interface Props {
+	href?: string | null;
+	label: string;
+}
+
+const { href, label } = Astro.props;
+const Tag = href ? 'a' : 'p';
+---
+<Tag class:list={['empty', { 'is-static': !href }]} href={href ?? undefined}>{label}</Tag>
+
+<style>
+	.empty {
+		display: block;
+		margin-top: 1.75rem;
+		padding: 2.5rem;
+		border: 1px dashed var(--hair);
+		font-size: 0.9rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+		text-align: center;
+		transition: border-color 200ms, color 200ms;
+	}
+
+	a.empty:hover {
+		border-color: var(--seal);
+		color: var(--paper);
+	}
+</style>

@@ -1,15 +1,72 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getAdminArtworks } from '../../../db/admin';
+import CardGrid from '../../../components/admin/CardGrid.astro';
+import ConsoleSection from '../../../components/admin/ConsoleSection.astro';
+import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
+import CreateAction from '../../../components/admin/CreateAction.astro';
+import EmptyState from '../../../components/admin/EmptyState.astro';
+import MediaCard from '../../../components/admin/MediaCard.astro';
+import { getAdminArtworkCards } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+
 export const prerender = false;
+
 const env = getRuntimeEnv();
 const access = await requireAdminPage(Astro.request, env, '/admin/artworks');
 if ('response' in access) return access.response;
-const artworks = await getAdminArtworks(env);
+const { session } = access;
+
+const artworks = await getAdminArtworkCards(env);
+const published = artworks.filter((artwork) => artwork.publishedAt !== null).length;
+const tally = `${artworks.length} total · ${published} published · ${artworks.length - published} draft`;
 ---
-<BaseLayout title="Artwork administration — EONMUN"><main class="container mx-auto px-4 py-8">
-	<div class="flex justify-between items-center mb-8"><h1 class="text-4xl font-bold">Artwork</h1><a class="underline" href="/admin/artworks/new">New artwork</a></div>
-	<div class="space-y-3">{artworks.map((artwork) => <a class="flex justify-between border rounded p-4" href={`/admin/artworks/${artwork.slug}`}><span>{artwork.title}</span><span>{artwork.publishedAt ? 'Published' : 'Draft'}</span></a>)}</div>
-</main></BaseLayout>
+<ConsoleShell
+	title="Artwork — EONMUN admin"
+	heading="Artwork"
+	email={session.user.email}
+	backHref="/admin"
+	backLabel="Console"
+>
+	<div class="actions">
+		<CreateAction
+			href="/admin/artworks/new"
+			title="New artwork"
+			note="Images, dimensions, collections, private price."
+			delay={60}
+		/>
+	</div>
+
+	<ConsoleSection title="Every piece" tally={tally} links={[{ href: '/admin/collections', label: 'Collections →' }]} delay={120}>
+		{artworks.length === 0 ? (
+			<EmptyState href="/admin/artworks/new" label="No artwork yet. Add the first piece →" />
+		) : (
+			<CardGrid>
+				{artworks.map((artwork) => (
+					<li>
+						<MediaCard
+							href={`/admin/artworks/${artwork.slug}`}
+							title={artwork.title}
+							meta={artwork.year ? String(artwork.year) : 'Year unset'}
+							imageUrl={artwork.imageUrl}
+							status={{
+								label: artwork.publishedAt ? 'Published' : 'Draft',
+								tone: artwork.publishedAt ? 'live' : 'draft',
+							}}
+						/>
+					</li>
+				))}
+			</CardGrid>
+		)}
+	</ConsoleSection>
+</ConsoleShell>
+
+<style>
+	.actions {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+		gap: 1px;
+		margin: 2.5rem 0 4rem;
+		background: var(--hair);
+		border: 1px solid var(--hair);
+	}
+</style>

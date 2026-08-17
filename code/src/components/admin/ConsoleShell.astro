@@ -1,0 +1,161 @@
+---
+// The admin console's frame: the dark ground, the palette every console
+// component reads through inherited custom properties, and the masthead.
+// Pages supply their own sections through the default slot.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+interface Props {
+	title: string;
+	eyebrow?: string;
+	heading: string;
+	email?: string;
+	description?: string;
+	backHref?: string;
+	backLabel?: string;
+}
+
+const {
+	title,
+	eyebrow = 'Studio console',
+	heading,
+	email,
+	description = 'EONMUN studio console.',
+	backHref,
+	backLabel,
+} = Astro.props;
+---
+<BaseLayout title={title} description={description}>
+	<div class="console">
+		<div class="ground" aria-hidden="true"></div>
+		<div class="wrap">
+			<header class="masthead">
+				<div>
+					{backHref ? (
+						<a class="back" href={backHref}>&larr; {backLabel ?? 'Back'}</a>
+					) : (
+						<p class="eyebrow">{eyebrow}</p>
+					)}
+					<h1 class="title">{heading}</h1>
+				</div>
+				<div class="identity">
+					{email && <span class="email">{email}</span>}
+					<a class="signout" href="/api/auth/signout">Sign out</a>
+				</div>
+			</header>
+			<slot />
+		</div>
+	</div>
+</BaseLayout>
+
+<style is:global>
+	/* The console commits to dark on its own routes, so the footer and any
+	   overscroll stay in the same room as the page. */
+	body:has(.console) {
+		background: #050506;
+		color: #ece7dd;
+	}
+
+	/* Tokens live on .console so every console component's scoped styles can
+	   read them through inheritance. */
+	.console {
+		--ink: #08080a;
+		--paper: #ece7dd;
+		--muted: rgba(236, 231, 221, 0.55);
+		--hair: rgba(236, 231, 221, 0.16);
+		--seal: #c1452c;
+	}
+</style>
+
+<style>
+	.console {
+		position: relative;
+		min-height: 100vh;
+		margin-top: -4.5rem;
+		padding: 4.5rem 0 6rem;
+		color: var(--paper);
+	}
+
+	.ground {
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		background: radial-gradient(120% 80% at 50% -10%, #17161a 0%, var(--ink) 55%, #050506 100%);
+	}
+
+	.ground::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		opacity: 0.28;
+		mix-blend-mode: overlay;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	}
+
+	.wrap {
+		width: min(88rem, 100%);
+		margin: 0 auto;
+		padding: 0 clamp(1rem, 4vw, 3.5rem);
+	}
+
+	.masthead {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1.5rem;
+		padding: clamp(2.5rem, 7vw, 5rem) 0 2rem;
+		border-bottom: 1px solid var(--hair);
+	}
+
+	.eyebrow,
+	.back {
+		display: inline-block;
+		margin: 0 0 0.75rem;
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.42em;
+		color: var(--seal);
+	}
+
+	.back {
+		letter-spacing: 0.24em;
+		transition: color 200ms;
+	}
+
+	.back:hover {
+		color: var(--paper);
+	}
+
+	.title {
+		margin: 0;
+		font-size: clamp(2.5rem, 9vw, 6rem);
+		line-height: 0.85;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+
+	.identity {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		font-size: 0.78rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+
+	.email {
+		color: var(--muted);
+	}
+
+	.signout {
+		padding: 0.5rem 1.1rem;
+		border: 1px solid var(--hair);
+		color: var(--paper);
+		transition: border-color 200ms, color 200ms;
+	}
+
+	.signout:hover {
+		border-color: var(--seal);
+		color: var(--seal);
+	}
+</style>

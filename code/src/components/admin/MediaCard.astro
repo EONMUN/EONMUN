@@ -1,0 +1,143 @@
+---
+// One catalog item: a framed image, a status pill, a title, and one line of
+// meta. An item with nowhere to go renders as a div rather than a dead link.
+interface Props {
+	href?: string | null;
+	title: string;
+	meta?: string | null;
+	metaTone?: 'default' | 'seal';
+	imageUrl?: string | null;
+	imageAlt?: string;
+	placeholder?: string;
+	shape?: 'portrait' | 'landscape';
+	status?: { label: string; tone: 'live' | 'draft' | 'sold' } | null;
+}
+
+const {
+	href,
+	title,
+	meta,
+	metaTone = 'default',
+	imageUrl,
+	imageAlt = '',
+	placeholder = 'No image',
+	shape = 'portrait',
+	status,
+} = Astro.props;
+
+const Card = href ? 'a' : 'div';
+---
+<Card class="card" href={href ?? undefined}>
+	<span class:list={['frame', shape, { 'is-empty': !imageUrl }]}>
+		{imageUrl ? (
+			<img src={imageUrl} alt={imageAlt} loading="lazy" />
+		) : (
+			<span class="no-image">{placeholder}</span>
+		)}
+		{status && <span class:list={['status', `is-${status.tone}`]}>{status.label}</span>}
+	</span>
+	<span class="card-body">
+		<span class="card-title">{title}</span>
+		{meta && <span class:list={['card-meta', { seal: metaTone === 'seal' }]}>{meta}</span>}
+	</span>
+</Card>
+
+<style>
+	.card {
+		display: block;
+	}
+
+	.frame {
+		position: relative;
+		display: block;
+		overflow: hidden;
+		background: #101013;
+		border: 1px solid var(--hair);
+	}
+
+	.portrait { aspect-ratio: 4 / 5; }
+	.landscape { aspect-ratio: 3 / 2; }
+
+	/* An empty frame is common for posts, which usually carry no cover.
+	   Hatching reads as a prepared surface rather than a hole in the page. */
+	.frame.is-empty {
+		background-image: repeating-linear-gradient(
+			-45deg,
+			rgba(236, 231, 221, 0.05) 0 1px,
+			transparent 1px 9px
+		);
+	}
+
+	.frame img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		filter: saturate(0.75) brightness(0.86);
+		transition: transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 400ms;
+	}
+
+	a.card:hover .frame img {
+		transform: scale(1.04);
+		filter: saturate(1) brightness(1);
+	}
+
+	a.card:hover .frame {
+		border-color: rgba(236, 231, 221, 0.4);
+	}
+
+	.no-image {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		font-size: 0.75rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.status {
+		position: absolute;
+		top: 0.75rem;
+		left: 0.75rem;
+		z-index: 4;
+		padding: 0.25rem 0.6rem;
+		font-size: 0.62rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		backdrop-filter: blur(6px);
+		background: rgba(8, 8, 10, 0.6);
+		border: 1px solid var(--hair);
+	}
+
+	.status.is-live { color: var(--paper); border-color: rgba(236, 231, 221, 0.45); }
+	.status.is-draft { color: var(--seal); border-color: rgba(193, 69, 44, 0.6); }
+	.status.is-sold { color: rgba(236, 231, 221, 0.5); }
+
+	.card-body {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		padding-top: 0.85rem;
+	}
+
+	.card-title {
+		font-size: 1.05rem;
+		letter-spacing: 0.04em;
+	}
+
+	.card-meta {
+		font-size: 0.75rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.card-meta.seal { color: var(--seal); }
+
+	@media (prefers-reduced-motion: reduce) {
+		.frame img { transition: none; }
+	}
+</style>

@@ -222,14 +222,6 @@ export async function getAdminArtwork(env: Env, slug: string) {
 // Dashboard shapes. The dashboard is the only admin surface that reads every
 // entity at once, so it keeps its own narrow projections instead of loading the
 // full rows the editors need.
-export interface DashboardArtwork {
-	slug: string;
-	title: string;
-	year: number | null;
-	publishedAt: Date | null;
-	imageUrl: string | null;
-}
-
 export interface DashboardCollection {
 	slug: string;
 	name: string;
@@ -254,7 +246,7 @@ export interface DashboardTally {
 }
 
 export interface AdminDashboard {
-	artworks: { recent: DashboardArtwork[]; tally: DashboardTally };
+	artworks: { recent: AdminArtworkCard[]; tally: DashboardTally };
 	collections: { recent: DashboardCollection[]; tally: DashboardTally };
 	store: {
 		recent: DashboardProduct[];
@@ -263,6 +255,8 @@ export interface AdminDashboard {
 }
 
 const DASHBOARD_LIMIT = 3;
+// CoverStack.astro styles exactly three fanned layers.
+const COLLECTION_COVER_LAYERS = 3;
 
 // sum() over zero rows is NULL in SQLite, and an ungrouped aggregate always
 // returns a row, so every conditional count needs its own coalesce.
@@ -271,10 +265,85 @@ const publishedTally = (column: typeof artworks.publishedAt | typeof collections
 	published: sql<number>`coalesce(sum(case when ${column} is not null then 1 else 0 end), 0)`,
 });
 
-// One artwork can carry several images; the dashboard needs exactly one, and it
-// must agree with the cover the public catalog shows.
-function defaultImageOf(images: { url: string; isDefault: boolean }[]) {
-	return images.find((image) => image.isDefault)?.url ?? images[0]?.url ?? null;
+// admin-input.ts rejects a second default and promotes the first image when no
+// image is flagged, so an artwork with images has exactly one default row.
+// Joining on that flag returns one row per artwork, which is why nothing below
+// folds images together in JavaScript.
+const onDefaultImage = (artworkId: typeof artworks.id | typeof artworksToCollections.artworkId) =>
+	and(eq(artworkImages.artworkId, artworkId), eq(artworkImages.isDefault, true));
+
+const artworkCardColumns = {
+	slug: artworks.slug,
+	title: artworks.title,
+	year: artworks.year,
+	publishedAt: artworks.publishedAt,
+	imageUrl: artworkImages.url,
+};
+
+export type AdminArtworkCard = {
+	slug: string;
+	title: string;
+	year: number | null;
+	publishedAt: Date | null;
+	imageUrl: string | null;
+};
+
+type CollectionRow = typeof collections.$inferSelect;
+type MemberRow = { collectionId: number; isCover: boolean; url: string | null };
+
+// A collection has no image of its own, so its cover comes from the artwork it
+// holds, with the collection's chosen cover piece promoted to the front.
+async function withCovers(db: Database, rows: CollectionRow[]): Promise<DashboardCollection[]> {
+	const collectionIds = rows.map((collection) => collection.id);
+	const members: MemberRow[] = collectionIds.length
+		? await db
+				.select({
+					collectionId: artworksToCollections.collectionId,
+					isCover: artworksToCollections.isDefaultForCollection,
+					url: artworkImages.url,
+				})
+				.from(artworksToCollections)
+				.leftJoin(artworkImages, onDefaultImage(artworksToCollections.artworkId))
+				.where(inArray(artworksToCollections.collectionId, collectionIds))
+		: [];
+
+	const byCollection = new Map<number, MemberRow[]>();
+	for (const member of members) {
+		const bucket = byCollection.get(member.collectionId) ?? [];
+		bucket.push(member);
+		byCollection.set(member.collectionId, bucket);
+	}
+
+	return rows.map((collection) => {
+		const memberRows = byCollection.get(collection.id) ?? [];
+		return {
+			slug: collection.slug,
+			name: collection.name,
+			publishedAt: collection.publishedAt,
+			artworkCount: memberRows.length,
+			coverUrls: memberRows
+				.slice()
+				.sort((left, right) => Number(right.isCover) - Number(left.isCover))
+				.map((member) => member.url)
+				.filter((url): url is string => url !== null)
+				.slice(0, COLLECTION_COVER_LAYERS),
+		};
+	});
+}
+
+// The list pages show every row with its cover; the dashboard shows the newest
+// few. Both read the same shapes.
+export async function getAdminArtworkCards(env: Env, db = getDb(env)): Promise<AdminArtworkCard[]> {
+	return db
+		.select(artworkCardColumns)
+		.from(artworks)
+		.leftJoin(artworkImages, onDefaultImage(artworks.id))
+		.orderBy(artworks.title);
+}
+
+export async function getAdminCollectionCards(env: Env, db = getDb(env)): Promise<DashboardCollection[]> {
+	const rows = await db.select().from(collections).orderBy(collections.name);
+	return withCovers(db, rows);
 }
 
 export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<AdminDashboard> {
@@ -282,7 +351,12 @@ export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<Admi
 		await Promise.all([
 			// created_at holds whole seconds, so rows written in the same second
 			// tie; the autoincrement id breaks the tie in insertion order.
-			db.select().from(artworks).orderBy(desc(artworks.createdAt), desc(artworks.id)).limit(DASHBOARD_LIMIT),
+			db
+				.select(artworkCardColumns)
+				.from(artworks)
+				.leftJoin(artworkImages, onDefaultImage(artworks.id))
+				.orderBy(desc(artworks.createdAt), desc(artworks.id))
+				.limit(DASHBOARD_LIMIT),
 			db.select().from(collections).orderBy(desc(collections.createdAt), desc(collections.id)).limit(DASHBOARD_LIMIT),
 			db.select().from(products).orderBy(desc(products.createdAt), desc(products.id)).limit(DASHBOARD_LIMIT),
 			db.select(publishedTally(artworks.publishedAt)).from(artworks),
@@ -296,30 +370,13 @@ export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<Admi
 				.from(products),
 		]);
 
-	const artworkIds = artworkRows.map((artwork) => artwork.id);
-	const collectionIds = collectionRows.map((collection) => collection.id);
 	// A product is edited through its artwork, so each card needs the artwork slug.
 	const productArtworkIds = productRows
 		.map((product) => product.artworkId)
 		.filter((id): id is number => id !== null);
 
-	const [imageRows, membershipRows, productArtworkRows] = await Promise.all([
-		artworkIds.length
-			? db.select().from(artworkImages).where(inArray(artworkImages.artworkId, artworkIds))
-			: Promise.resolve([] as (typeof artworkImages.$inferSelect)[]),
-		collectionIds.length
-			? db
-					.select({
-						collectionId: artworksToCollections.collectionId,
-						artworkId: artworksToCollections.artworkId,
-						isCover: artworksToCollections.isDefaultForCollection,
-						url: artworkImages.url,
-						isDefault: artworkImages.isDefault,
-					})
-					.from(artworksToCollections)
-					.leftJoin(artworkImages, eq(artworkImages.artworkId, artworksToCollections.artworkId))
-					.where(inArray(artworksToCollections.collectionId, collectionIds))
-			: Promise.resolve([] as { collectionId: number; artworkId: number; isCover: boolean; url: string | null; isDefault: boolean | null }[]),
+	const [recentCollections, productArtworkRows] = await Promise.all([
+		withCovers(db, collectionRows),
 		productArtworkIds.length
 			? db
 					.select({ id: artworks.id, slug: artworks.slug })
@@ -330,55 +387,13 @@ export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<Admi
 
 	const artworkSlugById = new Map(productArtworkRows.map((row) => [row.id, row.slug]));
 
-	const imagesByArtwork = new Map<number, { url: string; isDefault: boolean }[]>();
-	for (const image of imageRows) {
-		const bucket = imagesByArtwork.get(image.artworkId) ?? [];
-		bucket.push({ url: image.url, isDefault: image.isDefault });
-		imagesByArtwork.set(image.artworkId, bucket);
-	}
-
-	// The join fans out one row per (artwork, image) pair, so members are folded
-	// back per artwork before the cover artwork is promoted to the front.
-	const membersByCollection = new Map<
-		number,
-		Map<number, { isCover: boolean; images: { url: string; isDefault: boolean }[] }>
-	>();
-	for (const row of membershipRows) {
-		const members = membersByCollection.get(row.collectionId) ?? new Map();
-		const member = members.get(row.artworkId) ?? { isCover: false, images: [] };
-		member.isCover = member.isCover || row.isCover;
-		if (row.url) member.images.push({ url: row.url, isDefault: row.isDefault ?? false });
-		members.set(row.artworkId, member);
-		membersByCollection.set(row.collectionId, members);
-	}
-
 	return {
 		artworks: {
-			recent: artworkRows.map((artwork) => ({
-				slug: artwork.slug,
-				title: artwork.title,
-				year: artwork.year,
-				publishedAt: artwork.publishedAt,
-				imageUrl: defaultImageOf(imagesByArtwork.get(artwork.id) ?? []),
-			})),
+			recent: artworkRows,
 			tally: artworkTally[0] ?? { total: 0, published: 0 },
 		},
 		collections: {
-			recent: collectionRows.map((collection) => {
-				const members = Array.from(membersByCollection.get(collection.id)?.values() ?? []);
-				const coverUrls = members
-					.sort((left, right) => Number(right.isCover) - Number(left.isCover))
-					.map((member) => defaultImageOf(member.images))
-					.filter((url): url is string => url !== null)
-					.slice(0, DASHBOARD_LIMIT);
-				return {
-					slug: collection.slug,
-					name: collection.name,
-					publishedAt: collection.publishedAt,
-					artworkCount: members.length,
-					coverUrls,
-				};
-			}),
+			recent: recentCollections,
 			tally: collectionTally[0] ?? { total: 0, published: 0 },
 		},
 		store: {
