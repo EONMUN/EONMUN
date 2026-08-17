@@ -102,7 +102,7 @@ Collection pages are not a separate public section. Collections are used as artw
 
 ## Cloudflare
 
-Production deploys run through GitHub Actions on pushes to `master` that touch `code/**`, `.github/workflows/deploy.yml`, or `.github/actions/cloudflare-deploy/**`.
+Production deploys run through GitHub Actions on pushes to `main` that touch `code/**`, `.github/workflows/deploy.yml`, or `.github/actions/cloudflare-deploy/**`.
 
 Pull requests from branches in this repository get a versioned Cloudflare preview URL from the `Preview Astro` workflow.
 

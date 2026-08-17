@@ -7,7 +7,7 @@
 # - bin/README.md (if affecting secrets workflow)
 #
 # Triggers:
-# - Push to 'master' branch → Deploys to production (https://eonmun.com)
+# - Push to 'main' branch → Deploys to production (https://eonmun.com)
 # - Push to 'next' branch → Deploys to next (https://next.eonmun.com)
 #
 # Workflow:
@@ -23,13 +23,13 @@
 # Setup:
 # 1. Create .env files: .env.production, .env.preview
 # 2. Run: bin/gh-secrets
-# 3. Push to master or next branch
+# 3. Push to main or next branch
 
 name: Deploy Web to Cloudflare
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'src/**'
       - 'public/**'

@@ -2,7 +2,7 @@ name: Deploy Astro
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - 'code/**'
       - '.github/workflows/deploy.yml'

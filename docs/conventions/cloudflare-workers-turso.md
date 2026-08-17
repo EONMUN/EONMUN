@@ -227,7 +227,7 @@ The project uses **GitHub Actions** for automated deployments to three environme
 
 | Environment | Branch | URL | Database | Secrets Suffix |
 |-------------|--------|-----|----------|----------------|
-| **Production** | `master` | https://eonmun.com | Production | _(none)_ |
+| **Production** | `main` | https://eonmun.com | Production | _(none)_ |
 | **Next** | `next` | https://next.eonmun.com | Preview | `_PREVIEW` |
 | **Preview** | Pull Requests | https://pr-{number}.eonmun.com | Preview | `_PREVIEW` |
 
@@ -304,11 +304,11 @@ The project uses **GitHub Actions** for automated deployments to three environme
 
 The project uses **GitHub Actions** for automated deployments. No manual deployment commands are needed.
 
-#### Production Deployment (master branch)
+#### Production Deployment (main branch)
 
-1. **Push to master**:
+1. **Push to main**:
    ```bash
-   git push origin master
+   git push origin main
    ```
 
 2. **Automatic workflow** (`.github/workflows/deploy-web.yml`):
@@ -369,7 +369,7 @@ npx opennextjs-cloudflare deploy --env production
 #### GitHub Actions Workflow
 
 1. **Code Push/PR**:
-   - Developer pushes to `master`, `next`, or creates a PR
+   - Developer pushes to `main`, `next`, or creates a PR
    - GitHub Actions workflow triggers
 
 2. **Build Phase** (`.github/actions/deploy-cloudflare-worker`):
@@ -472,7 +472,7 @@ npm run db:migrate
 # 4. Deploy to production
 git add drizzle/
 git commit -m "feat: update database schema"
-git push origin master  # Auto-deploys via GitHub Actions
+git push origin main  # Auto-deploys via GitHub Actions
 ```
 
 ### Update Secrets
@@ -491,7 +491,7 @@ bin/gh-secrets
 # 3. Re-deploy to apply new secrets
 # Option A: Push a commit to trigger deployment
 git commit --allow-empty -m "chore: rotate secrets"
-git push origin master
+git push origin main
 
 # Option B: Manually re-run workflow in GitHub Actions UI
 ```
@@ -525,11 +525,11 @@ If deployment causes issues:
 ```bash
 # Option 1: Revert the commit and push
 git revert HEAD
-git push origin master  # Triggers auto-deployment
+git push origin main  # Triggers auto-deployment
 
 # Option 2: Deploy a specific commit
 git checkout {good-commit-sha}
-git push -f origin master  # Forces deployment of that commit
+git push -f origin main  # Forces deployment of that commit
 ```
 
 Cloudflare automatically keeps previous versions available. You can also rollback via the Cloudflare dashboard.
@@ -619,7 +619,7 @@ npm ls @libsql/client
 4. Trigger new deployment:
    ```bash
    git commit --allow-empty -m "chore: update secrets"
-   git push origin master
+   git push origin main
    ```
 
 5. Check GitHub Actions workflow logs for secret upload step
@@ -679,10 +679,10 @@ The project uses automated deployments via GitHub Actions:
 
 ### Production Deployment (`.github/workflows/deploy-web.yml`)
 
-**Triggers**: Push to `master` or `next` branch
+**Triggers**: Push to `main` or `next` branch
 
 **Jobs**:
-- `deploy-production`: Deploys to https://eonmun.com (master branch)
+- `deploy-production`: Deploys to https://eonmun.com (main branch)
   - Uses `environment: production` and `concurrency: production`
   - Uploads runtime secrets BEFORE build and deploy
 - `deploy-next`: Deploys to https://next.eonmun.com (next branch)
@@ -706,7 +706,7 @@ The project uses automated deployments via GitHub Actions:
 
 ### Preview Deployment (`.github/workflows/web.test.yml`)
 
-**Triggers**: Pull requests to `master` branch
+**Triggers**: Pull requests to `main` branch
 
 **Jobs**:
 1. `lint-and-typecheck`: Runs ESLint and TypeScript checks
