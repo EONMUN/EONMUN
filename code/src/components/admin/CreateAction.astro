@@ -1,0 +1,85 @@
+---
+// The console's primary call to action: a seal, what it makes, and what the
+// form will ask for.
+interface Props {
+	href: string;
+	title: string;
+	note: string;
+}
+
+const { href, title, note } = Astro.props;
+---
+<a class="action" href={href}>
+	<span class="seal" aria-hidden="true">+</span>
+	<span class="action-copy">
+		<span class="action-title">{title}</span>
+		<span class="action-note">{note}</span>
+	</span>
+	<span class="action-arrow" aria-hidden="true">&rarr;</span>
+</a>
+
+<style>
+	.action {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		padding: clamp(1.5rem, 3vw, 2.25rem);
+		background: rgba(8, 8, 10, 0.75);
+		transition: background 250ms;
+	}
+
+	.action:hover {
+		background: rgba(193, 69, 44, 0.09);
+	}
+
+	.seal {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 3rem;
+		height: 3rem;
+		font-size: 1.5rem;
+		line-height: 1;
+		color: var(--paper);
+		background: var(--seal);
+		transition: transform 250ms cubic-bezier(0.2, 0.7, 0.2, 1);
+	}
+
+	.action:hover .seal {
+		transform: rotate(-6deg) scale(1.06);
+	}
+
+	.action-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.action-title {
+		font-size: 1.4rem;
+		text-transform: uppercase;
+		letter-spacing: 0.16em;
+	}
+
+	.action-note {
+		font-size: 0.85rem;
+		color: var(--muted);
+	}
+
+	.action-arrow {
+		margin-left: auto;
+		font-size: 1.4rem;
+		color: var(--muted);
+		transition: transform 250ms, color 250ms;
+	}
+
+	.action:hover .action-arrow {
+		transform: translateX(0.35rem);
+		color: var(--seal);
+	}
+
+
+	@media (prefers-reduced-motion: reduce) {
+		.seal, .action-arrow { transition: none; }
+	}
+</style>

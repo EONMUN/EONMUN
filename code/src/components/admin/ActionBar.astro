@@ -1,0 +1,17 @@
+---
+// The band of primary create actions under the masthead. Hairline dividers come
+// from the 1px gap over the border colour, so the gap, background and border
+// have to stay together — which is why this is a component and not three copies.
+---
+<div class="actions"><slot /></div>
+
+<style>
+	.actions {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+		gap: 1px;
+		margin: 2.5rem 0 4rem;
+		background: var(--hair);
+		border: 1px solid var(--hair);
+	}
+</style>

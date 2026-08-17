@@ -1,0 +1,58 @@
+---
+// A collection holds artwork rather than an image of its own, so its cover is a
+// fan of member pieces that squares up on hover. Only three layers are styled,
+// so the component enforces that cap itself rather than trusting its caller.
+import CardCaption from './CardCaption.astro';
+import StatusPill, { type StatusTone } from './StatusPill.astro';
+
+interface Props {
+	href?: string | null;
+	name: string;
+	artworkCount: number;
+	coverUrls: string[];
+	status?: { label: string; tone: StatusTone } | null;
+}
+
+const { href, name, artworkCount, coverUrls, status } = Astro.props;
+const layers = coverUrls.slice(0, 3);
+const Card = href ? 'a' : 'div';
+---
+<Card class="card" href={href ?? undefined}>
+	<span class:list={['frame', 'stack', { 'is-empty': layers.length === 0 }]}>
+		{layers.length === 0 ? (
+			<span class="no-image">No artwork</span>
+		) : (
+			layers.map((url, index) => <img class={`layer layer-${index}`} src={url} alt="" loading="lazy" />)
+		)}
+		{status && <StatusPill label={status.label} tone={status.tone} />}
+	</span>
+	<CardCaption title={name} meta={`${artworkCount} ${artworkCount === 1 ? 'artwork' : 'artworks'}`} />
+</Card>
+
+<style>
+	.card { display: block; }
+
+	.stack { aspect-ratio: 3 / 2; }
+
+	.layer {
+		position: absolute;
+		inset: 0 0 0 auto;
+		height: 100%;
+		object-fit: cover;
+		filter: saturate(0.75) brightness(0.86);
+		border-left: 1px solid rgba(8, 8, 10, 0.85);
+		transition: transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 400ms;
+	}
+
+	.layer-0 { left: 0; right: auto; width: 100%; z-index: 1; }
+	.layer-1 { right: 0; width: 46%; z-index: 2; transform: translateX(18%); }
+	.layer-2 { right: 0; width: 30%; z-index: 3; transform: translateX(36%); }
+
+	a.card:hover .layer-1,
+	a.card:hover .layer-2 { transform: translateX(0); }
+	a.card:hover .layer { filter: saturate(1) brightness(1); }
+
+	@media (prefers-reduced-motion: reduce) {
+		.layer { transition: none; }
+	}
+</style>

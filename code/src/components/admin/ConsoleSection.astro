@@ -1,0 +1,81 @@
+---
+// A titled band of the console: numbered heading, a tally line, and the links
+// that act on that entity. The section owns the grid its slot content sits in.
+interface Props {
+	index?: string;
+	title: string;
+	tally?: string;
+	links?: { href: string; label: string }[];
+}
+
+const { index, title, tally, links = [] } = Astro.props;
+---
+<section class="entity">
+	<div class="entity-head">
+		<h2>{index && <span class="index">{index}</span>}{title}</h2>
+		{tally && <p class="tally">{tally}</p>}
+		{links.length > 0 && (
+			<div class="entity-links">
+				{links.map((link) => <a class="ghost" href={link.href}>{link.label}</a>)}
+			</div>
+		)}
+	</div>
+	<slot />
+</section>
+
+<style>
+	.entity {
+		margin-bottom: 4rem;
+	}
+
+	.entity-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.75rem 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--hair);
+	}
+
+	.entity-head h2 {
+		margin: 0;
+		font-size: 1.5rem;
+		text-transform: uppercase;
+		letter-spacing: 0.2em;
+	}
+
+	.index {
+		margin-right: 0.75rem;
+		font-size: 0.75rem;
+		letter-spacing: 0.2em;
+		color: var(--seal);
+		vertical-align: 0.35em;
+	}
+
+	.tally {
+		margin: 0;
+		font-size: 0.78rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.entity-links {
+		display: flex;
+		gap: 1.25rem;
+		margin-left: auto;
+	}
+
+	.ghost {
+		font-size: 0.78rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--muted);
+		transition: color 200ms;
+	}
+
+	.ghost:hover {
+		color: var(--seal);
+	}
+
+</style>

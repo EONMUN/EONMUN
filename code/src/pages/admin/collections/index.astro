@@ -1,15 +1,62 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getAdminCollections } from '../../../db/admin';
+import ActionBar from '../../../components/admin/ActionBar.astro';
+import CardGrid from '../../../components/admin/CardGrid.astro';
+import ConsoleSection from '../../../components/admin/ConsoleSection.astro';
+import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
+import CoverStack from '../../../components/admin/CoverStack.astro';
+import CreateAction from '../../../components/admin/CreateAction.astro';
+import EmptyState from '../../../components/admin/EmptyState.astro';
+import { getAdminCollectionCards } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+
 export const prerender = false;
+
 const env = getRuntimeEnv();
 const access = await requireAdminPage(Astro.request, env, '/admin/collections');
 if ('response' in access) return access.response;
-const collections = await getAdminCollections(env);
+const { session } = access;
+
+const collections = await getAdminCollectionCards(env);
+const published = collections.filter((collection) => collection.publishedAt !== null).length;
+const tally = `${collections.length} total · ${published} published · ${collections.length - published} draft`;
 ---
-<BaseLayout title="Collection administration — EONMUN"><main class="container mx-auto px-4 py-8">
-	<div class="flex justify-between items-center mb-8"><h1 class="text-4xl font-bold">Collections</h1><a class="underline" href="/admin/collections/new">New collection</a></div>
-	<div class="space-y-3">{collections.map((collection) => <a class="flex justify-between border rounded p-4" href={`/admin/collections/${collection.slug}`}><span>{collection.name}</span><span>{collection.publishedAt ? 'Published' : 'Draft'}</span></a>)}</div>
-</main></BaseLayout>
+<ConsoleShell
+	title="Collections — EONMUN admin"
+	heading="Collections"
+	email={session.user.email}
+	backHref="/admin"
+	backLabel="Console"
+>
+	<ActionBar>
+		<CreateAction
+			href="/admin/collections/new"
+			title="New collection"
+			note="Group artwork and choose the cover piece."
+		/>
+	</ActionBar>
+
+	<ConsoleSection title="Every collection" tally={tally} links={[{ href: '/admin/artworks', label: 'Artwork →' }]}>
+		{collections.length === 0 ? (
+			<EmptyState href="/admin/collections/new" label="No collections yet. Group your first pieces →" />
+		) : (
+			<CardGrid>
+				{collections.map((collection) => (
+					<li>
+						<CoverStack
+							href={`/admin/collections/${collection.slug}`}
+							name={collection.name}
+							artworkCount={collection.artworkCount}
+							coverUrls={collection.coverUrls}
+							status={{
+								label: collection.publishedAt ? 'Published' : 'Draft',
+								tone: collection.publishedAt ? 'live' : 'draft',
+							}}
+						/>
+					</li>
+				))}
+			</CardGrid>
+		)}
+	</ConsoleSection>
+</ConsoleShell>
+

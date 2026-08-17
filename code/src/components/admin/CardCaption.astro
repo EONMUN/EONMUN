@@ -1,0 +1,39 @@
+---
+// The line under a card: what the item is, and one fact about it.
+interface Props {
+	title: string;
+	meta?: string | null;
+	metaTone?: 'default' | 'seal';
+}
+
+const { title, meta, metaTone = 'default' } = Astro.props;
+---
+<span class="card-body">
+	<span class="card-title">{title}</span>
+	{meta && <span class:list={['card-meta', { seal: metaTone === 'seal' }]}>{meta}</span>}
+</span>
+
+<style>
+	.card-body {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		padding-top: 0.85rem;
+	}
+
+	.card-title {
+		font-size: 1.05rem;
+		letter-spacing: 0.04em;
+	}
+
+	.card-meta {
+		font-size: 0.75rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.card-meta.seal { color: var(--seal); }
+</style>
