@@ -26,6 +26,66 @@ describe("Stripe webhook", () => {
 		expect(calls).toBe(2);
 	});
 
+	test("records a paid event that marked nothing sold", async () => {
+		const now = Date.now();
+		const timestamp = Math.floor(now / 1000);
+		const body = JSON.stringify({ id: "evt_dup", type: "checkout.session.completed", data: { object: { payment_status: "paid", metadata: { artworkSlug: "work", productId: "7" } } } });
+		const header = `t=${timestamp},v1=${await signature("whsec_test", timestamp, body)}`;
+		const errors: string[] = [];
+		const original = console.error;
+		console.error = (line: string) => { errors.push(line); };
+		try {
+			const response = await handleStripeWebhook(
+				new Request("https://eonmun.test/api/webhooks/stripe", { method: "POST", headers: { "stripe-signature": header }, body }),
+				"whsec_test",
+				async () => false,
+				now,
+			);
+			expect(response.status).toBe(200);
+		} finally {
+			console.error = original;
+		}
+		expect(errors).toHaveLength(1);
+		expect(JSON.parse(errors[0])).toEqual({
+			message: "stripe paid event did not mark an artwork sold",
+			eventId: "evt_dup",
+			productId: 7,
+			artworkSlug: "work",
+		});
+	});
+
+	test("ignores an unpaid Checkout session", async () => {
+		const now = Date.now();
+		const timestamp = Math.floor(now / 1000);
+		const body = JSON.stringify({ id: "evt_unpaid", type: "checkout.session.completed", data: { object: { payment_status: "unpaid", metadata: { artworkSlug: "work", productId: "7" } } } });
+		const header = `t=${timestamp},v1=${await signature("whsec_test", timestamp, body)}`;
+		let calls = 0;
+		const response = await handleStripeWebhook(
+			new Request("https://eonmun.test/api/webhooks/stripe", { method: "POST", headers: { "stripe-signature": header }, body }),
+			"whsec_test",
+			async () => { calls += 1; return true; },
+			now,
+		);
+		expect(response.status).toBe(200);
+		expect(calls).toBe(0);
+	});
+
+	test("rejects a correctly signed event outside the tolerance window", async () => {
+		const now = Date.now();
+		const stale = Math.floor(now / 1000) - 400;
+		const body = JSON.stringify({ id: "evt_stale", type: "checkout.session.completed", data: { object: { payment_status: "paid", metadata: { artworkSlug: "work", productId: "7" } } } });
+		const header = `t=${stale},v1=${await signature("whsec_test", stale, body)}`;
+		let calls = 0;
+		const response = await handleStripeWebhook(
+			new Request("https://eonmun.test/api/webhooks/stripe", { method: "POST", headers: { "stripe-signature": header }, body }),
+			"whsec_test",
+			async () => { calls += 1; return true; },
+			now,
+		);
+		expect(response.status).toBe(400);
+		expect(calls).toBe(0);
+	});
+
 	test("rejects an invalid signature before mutation", async () => {
 		let calls = 0;
 		const response = await handleStripeWebhook(new Request("https://eonmun.test/api/webhooks/stripe", { method: "POST", headers: { "stripe-signature": "t=1,v1=bad" }, body: "{}" }), "whsec_test", async () => { calls += 1; return true; });

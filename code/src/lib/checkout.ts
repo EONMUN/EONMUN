@@ -7,12 +7,18 @@ export interface CheckoutItem {
 	productId: number;
 }
 
+export class CheckoutValidationError extends Error {}
+
 export function parseCheckoutArtworkSlug(value: unknown) {
-	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid checkout request");
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new CheckoutValidationError("Invalid checkout request");
+	}
 	const body = value as Record<string, unknown>;
-	if (Object.keys(body).some((key) => key !== "artworkSlug")) throw new Error("Checkout accepts only artworkSlug");
+	if (Object.keys(body).some((key) => key !== "artworkSlug")) {
+		throw new CheckoutValidationError("Checkout accepts only artworkSlug");
+	}
 	if (typeof body.artworkSlug !== "string" || !SLUG_PATTERN.test(body.artworkSlug)) {
-		throw new Error("Invalid artworkSlug");
+		throw new CheckoutValidationError("Invalid artworkSlug");
 	}
 	return body.artworkSlug;
 }
@@ -58,11 +64,15 @@ export async function handleCheckoutRequest(
 	try {
 		const contentType = request.headers.get("content-type") ?? "";
 		let input: Record<string, unknown>;
-		if (contentType.includes("application/json")) {
-			input = await request.json() as Record<string, unknown>;
-		} else {
-			const form = await request.formData();
-			input = Object.fromEntries(form.entries());
+		try {
+			if (contentType.includes("application/json")) {
+				input = await request.json() as Record<string, unknown>;
+			} else {
+				const form = await request.formData();
+				input = Object.fromEntries(form.entries());
+			}
+		} catch {
+			throw new CheckoutValidationError("Invalid checkout request");
 		}
 		const artworkSlug = parseCheckoutArtworkSlug(input);
 		const item = await lookup(artworkSlug);
@@ -70,7 +80,15 @@ export async function handleCheckoutRequest(
 		const url = await createSession(secretKey, item, new URL(request.url).origin);
 		return Response.redirect(url, 303);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "Checkout failed";
-		return Response.json({ error: message }, { status: /only artworkSlug|Invalid/.test(message) ? 400 : 503 });
+		if (error instanceof CheckoutValidationError) {
+			return Response.json({ error: error.message }, { status: 400 });
+		}
+		// SECURITY: /api/checkout is unauthenticated, so a lookup or Stripe failure must not
+		// relay driver, schema, or upstream detail to the caller.
+		console.error(JSON.stringify({
+			message: "checkout request failed",
+			error: error instanceof Error ? error.message : "Checkout failed",
+		}));
+		return Response.json({ error: "Checkout is temporarily unavailable" }, { status: 503 });
 	}
 }

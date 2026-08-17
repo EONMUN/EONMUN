@@ -54,6 +54,43 @@ describe("checkout", () => {
 		expect(response.status).toBe(303);
 	});
 
+	test("refuses checkout for an unavailable artwork", async () => {
+		const request = new Request("https://eonmun.test/api/checkout", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ artworkSlug: "work" }),
+		});
+		const response = await handleCheckoutRequest(request, "sk_test", async () => null);
+		expect(response.status).toBe(409);
+	});
+
+	test("reports malformed input as 400 and hides internal failure detail", async () => {
+		const malformed = new Request("https://eonmun.test/api/checkout", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: "{not json",
+		});
+		expect((await handleCheckoutRequest(malformed, "sk_test", async () => null)).status).toBe(400);
+
+		const request = new Request("https://eonmun.test/api/checkout", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ artworkSlug: "work" }),
+		});
+		const original = console.error;
+		console.error = () => {};
+		let response: Response;
+		try {
+			response = await handleCheckoutRequest(request, "sk_test", async () => {
+				throw new Error("libsql: connection to primary at db.turso.io failed");
+			});
+		} finally {
+			console.error = original;
+		}
+		expect(response.status).toBe(503);
+		expect(await response.json()).toEqual({ error: "Checkout is temporarily unavailable" });
+	});
+
 	test("sends the trusted amount to Stripe and keeps local URLs price-free", async () => {
 		let stripeBody = "";
 		await createStripeCheckoutSession("sk_test", { artworkSlug: "work", name: "Work", priceCents: 125000, productId: 7 }, "https://eonmun.test", async (_url, init) => {

@@ -74,7 +74,19 @@ export async function handleStripeWebhook(
 		if (!event.id || !artworkSlug || !Number.isInteger(productId) || productId <= 0) {
 			return Response.json({ error: "Invalid Stripe metadata" }, { status: 400 });
 		}
-		await markPaid(event.id, productId, artworkSlug);
+		// CRITICAL: checkout creates a Stripe session without reserving inventory, so two
+		// buyers can pay for the same one-of-a-kind artwork. markPaid only updates while
+		// soldAt IS NULL, so a false result is either a Stripe replay of an event already
+		// applied or a genuine second payment that now needs a refund. Both are invisible
+		// unless recorded here.
+		if (!await markPaid(event.id, productId, artworkSlug)) {
+			console.error(JSON.stringify({
+				message: "stripe paid event did not mark an artwork sold",
+				eventId: event.id,
+				productId,
+				artworkSlug,
+			}));
+		}
 	}
 	return Response.json({ received: true });
 }
