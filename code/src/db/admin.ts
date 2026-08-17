@@ -264,9 +264,11 @@ export interface AdminDashboard {
 
 const DASHBOARD_LIMIT = 3;
 
+// sum() over zero rows is NULL in SQLite, and an ungrouped aggregate always
+// returns a row, so every conditional count needs its own coalesce.
 const publishedTally = (column: typeof artworks.publishedAt | typeof collections.publishedAt) => ({
 	total: sql<number>`count(*)`,
-	published: sql<number>`sum(case when ${column} is not null then 1 else 0 end)`,
+	published: sql<number>`coalesce(sum(case when ${column} is not null then 1 else 0 end), 0)`,
 });
 
 // One artwork can carry several images; the dashboard needs exactly one, and it
@@ -278,16 +280,18 @@ function defaultImageOf(images: { url: string; isDefault: boolean }[]) {
 export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<AdminDashboard> {
 	const [artworkRows, collectionRows, productRows, artworkTally, collectionTally, storeTally] =
 		await Promise.all([
-			db.select().from(artworks).orderBy(desc(artworks.createdAt)).limit(DASHBOARD_LIMIT),
-			db.select().from(collections).orderBy(desc(collections.createdAt)).limit(DASHBOARD_LIMIT),
-			db.select().from(products).orderBy(desc(products.createdAt)).limit(DASHBOARD_LIMIT),
+			// created_at holds whole seconds, so rows written in the same second
+			// tie; the autoincrement id breaks the tie in insertion order.
+			db.select().from(artworks).orderBy(desc(artworks.createdAt), desc(artworks.id)).limit(DASHBOARD_LIMIT),
+			db.select().from(collections).orderBy(desc(collections.createdAt), desc(collections.id)).limit(DASHBOARD_LIMIT),
+			db.select().from(products).orderBy(desc(products.createdAt), desc(products.id)).limit(DASHBOARD_LIMIT),
 			db.select(publishedTally(artworks.publishedAt)).from(artworks),
 			db.select(publishedTally(collections.publishedAt)).from(collections),
 			db
 				.select({
 					total: sql<number>`count(*)`,
-					available: sql<number>`sum(case when ${products.soldAt} is null and coalesce(${products.quantity}, 0) > 0 then 1 else 0 end)`,
-					sold: sql<number>`sum(case when ${products.soldAt} is not null then 1 else 0 end)`,
+					available: sql<number>`coalesce(sum(case when ${products.soldAt} is null and coalesce(${products.quantity}, 0) > 0 then 1 else 0 end), 0)`,
+					sold: sql<number>`coalesce(sum(case when ${products.soldAt} is not null then 1 else 0 end), 0)`,
 				})
 				.from(products),
 		]);
