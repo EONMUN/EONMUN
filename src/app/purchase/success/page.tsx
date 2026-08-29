@@ -1,6 +1,7 @@
-import Link from 'next/link';
-import { getProductBySlug } from '@/actions/product';
-import Image from '@/components/Image';
+import Link from "next/link";
+import { getProductBySlug } from "@/actions/product";
+import Image from "@/components/Image";
+import PurchaseSuccessTracker from "@/components/PurchaseSuccessTracker";
 
 interface SuccessPageProps {
   searchParams: Promise<{
@@ -17,6 +18,14 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      {/* Client-side analytics: completes the purchase funnel started in PurchaseButton */}
+      <PurchaseSuccessTracker
+        sessionId={session_id}
+        productId={product?.id}
+        productName={product?.name}
+        productSlug={product?.slug}
+        priceCents={product?.price}
+      />
       <div className="max-w-2xl mx-auto text-center">
         {/* Success Icon */}
         <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
@@ -38,9 +47,10 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
         <h1 className="text-4xl font-bold text-on-background mb-4">
           Purchase Successful!
         </h1>
-        
+
         <p className="text-xl text-on-surface-variant mb-8">
-          Thank you for your purchase. Your payment has been processed successfully.
+          Thank you for your purchase. Your payment has been processed
+          successfully.
         </p>
 
         {/* Product Details */}
@@ -54,7 +64,9 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
               {(product.imageUrl || product.artwork?.defaultImageUrl) && (
                 <div className="w-24 h-24 rounded-lg overflow-hidden border border-outline">
                   <Image
-                    src={product.imageUrl || product.artwork?.defaultImageUrl || ''}
+                    src={
+                      product.imageUrl || product.artwork?.defaultImageUrl || ""
+                    }
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
@@ -66,10 +78,16 @@ export default async function PurchaseSuccessPage(props: SuccessPageProps) {
                   {product.name}
                 </h3>
                 {product.artwork?.year && (
-                  <p className="text-on-surface-variant">{product.artwork.year}</p>
+                  <p className="text-on-surface-variant">
+                    {product.artwork.year}
+                  </p>
                 )}
                 <p className="text-lg font-semibold text-green-600 mt-1">
-                  ${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  $
+                  {(product.price / 100).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             </div>
@@ -136,9 +154,9 @@ export async function generateMetadata({ searchParams }: SuccessPageProps) {
   const { product_slug } = await searchParams;
 
   return {
-    title: 'Purchase Successful - EONMUN',
+    title: "Purchase Successful - EONMUN",
     description: product_slug
       ? `Successfully purchased product. Thank you for your purchase!`
-      : 'Purchase completed successfully',
+      : "Purchase completed successfully",
   };
 }
