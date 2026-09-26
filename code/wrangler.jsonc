@@ -13,8 +13,7 @@
 // AUTH_GOOGLE_ID is a public OAuth client ID and is configured in `vars` below.
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	// Use a dedicated worker so preview URLs can be generated without
-	// inheriting the legacy OpenNext worker's Durable Object surface.
+	// Keep preview URLs on the same Worker as the production Astro site.
 	"name": "eonmun-astro",
 	"workers_dev": true,
 	"preview_urls": true,

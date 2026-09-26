@@ -11,8 +11,8 @@ The production site is an Astro application deployed to Cloudflare Workers at `h
 - `fixtures/` contains development seed data, not production publishing data.
 - `code/src/pages/` contains Astro routes and API endpoints.
 - `code/wrangler.jsonc` defines the `eonmun-astro` Cloudflare Worker.
+- `code/drizzle/` contains the catalog migrations; `code/e2e/` tests the live Astro flows.
 - `data/uploads/` tracks R2-backed media pointers through Git LFS.
-- `src/`, `drizzle/`, `hardhat/`, and other legacy root app directories are retained for history or follow-up migration work, but the live website is under `code/`.
 
 ## Live routes
 

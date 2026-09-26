@@ -1,6 +1,4 @@
-// Single source of truth for the SSR cache TTLs. The legacy Next.js app
-// uses `revalidate = 60` for fast-moving listings (posts and artwork) and
-// `revalidate = 300` for stable detail pages — replicate that here.
+// Single source of truth for the SSR cache TTLs.
 import type { AstroGlobal } from "astro";
 
 const STANDARD = "public, s-maxage=300, stale-while-revalidate=600";

@@ -1,4 +1,4 @@
-// Read-only schema copy of `~/repos/EONMUN/EONMUN/src/database/schema.posts.ts`.
+// Active post schema for the Astro Worker.
 import {
 	sqliteTable,
 	text,

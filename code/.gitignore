@@ -1,6 +1,8 @@
 # build output
 dist/
 .astro/
+test-results/
+playwright-report/
 
 # dependencies
 node_modules/
@@ -15,6 +17,8 @@ bun-debug.log*
 # environment variables
 .env
 .env.production
+.env.local
+.dev.vars*
 
 # macOS-specific files
 .DS_Store

@@ -21,6 +21,7 @@ export default defineConfig({
 
 	vite: {
 		plugins: [tailwindcss()],
+		server: { strictPort: true },
 	},
 
 	adapter: cloudflare({

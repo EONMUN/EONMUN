@@ -1,5 +1,4 @@
-// Active schema for the Astro Worker. Migrations live in the repository-level
-// drizzle directory and are applied by the checked-in devenv database task.
+// Active schema for the Astro Worker. Migrations live in code/drizzle.
 import {
 	sqliteTable,
 	text,

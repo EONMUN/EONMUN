@@ -30,12 +30,12 @@
         shellHook = ''
           export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-          export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$(find $PLAYWRIGHT_BROWSERS_PATH -name chrome | head -n 1)
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$(find -L $PLAYWRIGHT_BROWSERS_PATH -path '*/chromium-*/chrome-linux64/chrome' | head -n 1)
           echo "EONMUN Astro development shell"
           echo ""
           echo "Common paths:"
           echo "  Astro app: code/"
-          echo "  Dev server: http://localhost:4321"
+          echo "  Dev server: see code/.env.local after starting Astro"
           echo ""
           echo "Commands:"
           echo "  cd code && bun install --frozen-lockfile"
