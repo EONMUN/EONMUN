@@ -3,34 +3,40 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getHomepageSlides } from '../lib/homepage-content';
 import { getArtworkCollectionHref } from '../lib/paths';
-import { getCarouselTiming } from '../lib/carousel';
+import { getResponsiveImageSource } from '../lib/responsive-image';
 
 export const prerender = false;
 
 const slides = await getHomepageSlides();
-
-const timing = getCarouselTiming(slides.length);
-const keyframes = timing.animated
-	? `@keyframes hero-fade {
-		0%, 100% { opacity: 0; }
-		${timing.fadeInPercent}% { opacity: 1; }
-		${timing.visibleUntilPercent}% { opacity: 1; }
-		${timing.fadeOutPercent}% { opacity: 0; }
-	}`
-	: '';
+const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(slide.defaultImageUrl!, {
+	width: 1920,
+	height: 1200,
+	widths: [480, 960, 1920],
+	sizes: '100vw',
+})));
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0]?.defaultImageUrl ?? undefined}>
-	<div class="hero-carousel">
+	<div class="hero-carousel" data-hero-carousel data-slide-ms="8000" data-fade-ms="1600">
 		{slides.map((slide, i) => (
 			<figure
-				class:list={['slide', { 'is-static': !timing.animated }]}
-				style={timing.animated ? `animation-delay: ${timing.delays[i]}s;` : undefined}
+				class:list={['slide', { 'is-current': i === 0 }]}
+				aria-hidden={i === 0 ? undefined : 'true'}
+				inert={i === 0 ? undefined : true}
 			>
 				<img
-					src={slide.defaultImageUrl ?? ''}
+					src={i === 0 ? images[i].src : undefined}
+					srcset={i === 0 ? images[i].srcset : undefined}
+					sizes={i === 0 ? images[i].sizes : undefined}
+					data-src={i > 0 ? images[i].src : undefined}
+					data-srcset={i > 0 ? images[i].srcset : undefined}
+					data-sizes={i > 0 ? images[i].sizes : undefined}
+					data-fallback-src={images[i].fallback}
+					width={images[i].width}
+					height={images[i].height}
 					alt={slide.artwork.data.title}
-					loading={i === 0 ? 'eager' : 'lazy'}
-					fetchpriority={i === 0 ? 'high' : 'auto'}
+					loading="eager"
+					fetchpriority={i === 0 ? 'high' : 'low'}
+					decoding="async"
 				/>
 				<figcaption class="artwork-info">
 					<div class="field">
@@ -55,7 +61,81 @@ const keyframes = timing.animated
 	</div>
 </BaseLayout>
 
-{timing.animated && <style is:inline set:html={keyframes} />}
+<script>
+	const root = document.querySelector<HTMLElement>('[data-hero-carousel]');
+	if (root && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		const slides = Array.from(root.querySelectorAll<HTMLElement>('.slide'));
+		const pictures = slides.map((slide) => slide.querySelector('img')!);
+		const slideMs = Number(root.dataset.slideMs);
+		const fadeMs = Number(root.dataset.fadeMs);
+		let current = 0;
+		let timer: number | undefined;
+		const pending = new Map<number, Promise<boolean>>();
+
+		const load = (index: number): Promise<boolean> => {
+			if (pending.has(index)) return pending.get(index)!;
+			const image = pictures[index];
+			const promise = (async () => {
+				if (image.dataset.src) {
+					if (image.dataset.srcset) image.srcset = image.dataset.srcset;
+					if (image.dataset.sizes) image.sizes = image.dataset.sizes;
+					image.src = image.dataset.src;
+					delete image.dataset.src;
+				}
+				try {
+					await image.decode();
+					return image.naturalWidth > 0;
+				} catch {
+					const original = image.dataset.fallbackSrc;
+					if (!original || image.currentSrc === original) return false;
+					image.removeAttribute('srcset');
+					image.src = original;
+					try { await image.decode(); return image.naturalWidth > 0; } catch { return false; }
+				}
+			})();
+			pending.set(index, promise);
+			return promise;
+		};
+
+		const schedule = () => {
+			if (document.hidden || slides.length < 2) return;
+			window.clearTimeout(timer);
+			timer = window.setTimeout(async () => {
+				for (let offset = 1; offset < slides.length; offset++) {
+					const next = (current + offset) % slides.length;
+					if (!(await load(next))) continue;
+					if (document.hidden) return;
+					const previous = slides[current];
+					const incoming = slides[next];
+					incoming.classList.add('is-entering');
+					incoming.removeAttribute('inert');
+					incoming.removeAttribute('aria-hidden');
+					window.setTimeout(() => {
+						previous.classList.remove('is-current');
+						previous.setAttribute('inert', '');
+						previous.setAttribute('aria-hidden', 'true');
+						incoming.classList.remove('is-entering');
+						incoming.classList.add('is-current');
+					}, fadeMs);
+					current = next;
+					void load((next + 1) % slides.length);
+					schedule();
+					return;
+				}
+			}, slideMs);
+		};
+
+		void load(0).then((ready) => {
+			if (!ready || slides.length < 2) return;
+			void load(1);
+			schedule();
+		});
+		document.addEventListener('visibilitychange', () => {
+			window.clearTimeout(timer);
+			if (!document.hidden) schedule();
+		});
+	}
+</script>
 
 <style is:global>
 	/* Homepage is a fullscreen carousel — the page is itself the hero. Hide
@@ -63,7 +143,7 @@ const keyframes = timing.animated
 	body > footer { display: none; }
 </style>
 
-<style define:vars={{ cycleSeconds: `${timing.cycleSeconds}s` }}>
+<style>
 	.hero-carousel {
 		position: fixed;
 		inset: 0;
@@ -75,9 +155,10 @@ const keyframes = timing.animated
 		inset: 0;
 		margin: 0;
 		opacity: 0;
-		animation: hero-fade var(--cycleSeconds) linear infinite;
+		transition: opacity 1.6s linear;
 	}
-	.slide.is-static { opacity: 1; animation: none; }
+	.slide.is-current { opacity: 1; z-index: 1; }
+	.slide.is-entering { opacity: 1; z-index: 2; }
 	.slide img {
 		width: 100%;
 		height: 100%;
@@ -124,7 +205,6 @@ const keyframes = timing.animated
 		color: rgb(229, 231, 235);
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.slide { animation: none; }
-		.slide:first-child { opacity: 1; }
+		.slide { transition: none; }
 	}
 </style>

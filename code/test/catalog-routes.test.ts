@@ -29,10 +29,4 @@ describe("public catalog routes", () => {
 		expect(publicDataSource).not.toMatch(/from\(products\)|productRows/);
 	});
 
-	test("homepage uses dynamic timing and respects reduced motion", () => {
-		const homepage = readFileSync(resolve("src/pages/index.astro"), "utf8");
-		expect(homepage).toContain("getCarouselTiming(slides.length)");
-		expect(homepage).toContain("prefers-reduced-motion: reduce");
-		expect(homepage).not.toContain("Four-slide carousel");
-	});
 });

@@ -4,6 +4,7 @@
 // so the component enforces that cap itself rather than trusting its caller.
 import CardCaption from './CardCaption.astro';
 import StatusPill, { type StatusTone } from './StatusPill.astro';
+import ResponsiveImage from '../ResponsiveImage.astro';
 
 interface Props {
 	href?: string | null;
@@ -22,7 +23,7 @@ const Card = href ? 'a' : 'div';
 		{layers.length === 0 ? (
 			<span class="no-image">No artwork</span>
 		) : (
-			layers.map((url, index) => <img class={`layer layer-${index}`} src={url} alt="" loading="lazy" />)
+			layers.map((url, index) => <ResponsiveImage class={`layer layer-${index}`} src={url} alt="" width={960} height={640} widths={[480, 960]} sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 50vw" />)
 		)}
 		{status && <StatusPill label={status.label} tone={status.tone} />}
 	</span>
@@ -34,7 +35,7 @@ const Card = href ? 'a' : 'div';
 
 	.stack { aspect-ratio: 3 / 2; }
 
-	.layer {
+	:global(.layer) {
 		position: absolute;
 		inset: 0 0 0 auto;
 		height: 100%;
@@ -44,15 +45,15 @@ const Card = href ? 'a' : 'div';
 		transition: transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 400ms;
 	}
 
-	.layer-0 { left: 0; right: auto; width: 100%; z-index: 1; }
-	.layer-1 { right: 0; width: 46%; z-index: 2; transform: translateX(18%); }
-	.layer-2 { right: 0; width: 30%; z-index: 3; transform: translateX(36%); }
+	:global(.layer-0) { left: 0; right: auto; width: 100%; z-index: 1; }
+	:global(.layer-1) { right: 0; width: 46%; z-index: 2; transform: translateX(18%); }
+	:global(.layer-2) { right: 0; width: 30%; z-index: 3; transform: translateX(36%); }
 
-	a.card:hover .layer-1,
-	a.card:hover .layer-2 { transform: translateX(0); }
-	a.card:hover .layer { filter: saturate(1) brightness(1); }
+	a.card:hover :global(.layer-1),
+	a.card:hover :global(.layer-2) { transform: translateX(0); }
+	a.card:hover :global(.layer) { filter: saturate(1) brightness(1); }
 
 	@media (prefers-reduced-motion: reduce) {
-		.layer { transition: none; }
+		:global(.layer) { transition: none; }
 	}
 </style>
