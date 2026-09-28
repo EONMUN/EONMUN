@@ -1,0 +1,55 @@
+import { expect, test } from '@playwright/test';
+import { encode } from '@auth/core/jwt';
+
+async function visit(page: import('@playwright/test').Page, path: string) {
+	await expect(async () => { await page.goto(path, { waitUntil: 'domcontentloaded' }); }).toPass({ timeout: 10_000 });
+}
+
+test('admin creates, lists, edits, and publishes an artwork', async ({ page, context }) => {
+	const token = await encode({
+		token: { sub: 'playwright-admin', email: 'ncrmro@gmail.com', name: 'Playwright Admin' },
+		secret: 'eonmun-playwright-only-secret', salt: 'authjs.session-token',
+	});
+	await context.addCookies([{ name: 'authjs.session-token', value: token, url: 'http://127.0.0.1:' + process.env.EONMUN_E2E_PORT }]);
+
+	const slug = `playwright-artwork-${Date.now()}`;
+	await visit(page, '/admin/artworks/new');
+	await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork');
+	await page.getByRole('textbox', { name: 'Slug' }).fill(slug);
+	await page.getByRole('textbox', { name: 'Artist' }).fill('EONMUN');
+	await page.getByRole('button', { name: 'Save artwork' }).click();
+	await expect(page).toHaveURL(`/admin/artworks/${slug}`);
+
+	await visit(page, '/admin/artworks');
+	await expect(page.locator(`a[href="/admin/artworks/${slug}"]`)).toBeVisible();
+	await page.locator(`a[href="/admin/artworks/${slug}"]`).click();
+	await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork edited');
+	await page.getByRole('checkbox', { name: 'Published' }).check();
+	await page.getByRole('button', { name: 'Save artwork' }).click();
+	await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Playwright artwork edited');
+	await expect(page.getByRole('checkbox', { name: 'Published' })).toBeChecked();
+
+	await visit(page, '/artworks');
+	await expect(async () => {
+		await page.reload({ waitUntil: 'domcontentloaded' });
+		await expect(page.locator(`a[href="/artworks/${slug}"]`)).toBeVisible();
+	}).toPass({ timeout: 15_000 });
+	await visit(page, `/artworks/${slug}`);
+	await expect(page.getByRole('heading', { name: 'Playwright artwork edited' })).toBeVisible();
+});
+
+test('buyer can start checkout for available artwork without seeing its price', async ({ page }) => {
+	let submittedSlug: string | null = null;
+	await page.route('**/api/checkout', async (route) => {
+		const request = route.request();
+		expect(request.method()).toBe('POST');
+		submittedSlug = new URLSearchParams(request.postData() ?? '').get('artworkSlug');
+		await route.fulfill({ status: 303, headers: { location: '/artworks/limones-del-cobre?checkout=e2e' } });
+	});
+	await visit(page, '/artworks/limones-del-cobre');
+	await expect(page.getByRole('heading', { name: 'Limones del Cobre' })).toBeVisible();
+	await expect(page.getByText('$1,400')).toHaveCount(0);
+	await page.getByRole('button', { name: 'Buy' }).click();
+	await expect(page).toHaveURL(/checkout=e2e/);
+	expect(submittedSlug).toBe('limones-del-cobre');
+});

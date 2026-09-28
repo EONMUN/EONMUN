@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+preferred=$1
+dir=$(cd "${2:-.}" && pwd -P)
+envfile="$dir/.env.local"
+port_busy() { [ -n "$(ss -lntH "sport = :$1" 2>/dev/null)" ]; }
+port_owner() {
+	ss -lptnH "sport = :$1" 2>/dev/null |
+		sed -nE 's/.*pid=([0-9]+).*/\1/p' |
+		while read -r pid; do readlink "/proc/$pid/cwd" 2>/dev/null && break; done
+}
+usable() { ! port_busy "$1" || [ "$(port_owner "$1")" = "$dir" ]; }
+recorded=$(sed -n 's/^DEV_PORT=//p' "$envfile" 2>/dev/null | tail -1)
+port=""
+for candidate in ${recorded:-} "$preferred"; do
+	if usable "$candidate"; then port=$candidate; break; fi
+done
+if [ -z "$port" ]; then
+	port=$preferred
+	while ! usable "$port"; do port=$((port + 1)); done
+fi
+if [ "$recorded" = "$port" ] &&
+	[ "$(sed -n 's/^DEV_URL=//p' "$envfile" 2>/dev/null | tail -1)" = "http://127.0.0.1:$port" ]; then
+	echo "$port"
+	exit 0
+fi
+tmp=$(mktemp "$envfile.XXXXXX")
+{
+	grep -v '^DEV_\(PORT\|URL\)=' "$envfile" 2>/dev/null || :
+	printf 'DEV_PORT=%s\nDEV_URL=http://127.0.0.1:%s\n' "$port" "$port"
+} > "$tmp"
+mv "$tmp" "$envfile"
+echo "$port"

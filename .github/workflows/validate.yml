@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'code/**'
+      - 'fixtures/**'
+      - 'devenv.nix'
       - '.github/workflows/validate.yml'
 
 concurrency:
@@ -47,4 +49,33 @@ jobs:
       # a green/red signal without granting them deploy access.
       - name: Build
         working-directory: code
-        run: bun run astro build
+        run: bun run build
+
+      - name: Unit and integration tests
+        working-directory: code
+        run: bun test
+
+  browser:
+    name: Astro artwork browser tests
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
+    services:
+      libsql:
+        image: ghcr.io/tursodatabase/libsql-server:latest
+        options: --platform linux/amd64
+    env:
+      EONMUN_E2E_DATABASE_URL: http://libsql:8080
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bun setup prerequisite
+        run: apt-get update && apt-get install -y --no-install-recommends unzip
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        working-directory: code
+        run: bun install --frozen-lockfile
+      - name: Run Playwright
+        working-directory: code
+        run: bun run test:e2e

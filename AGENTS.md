@@ -27,7 +27,7 @@ This file is for agent-specific operating rules. Project overview and human cont
 
 - Enter the dev shell with `devenv shell <cmd>` or use a direnv-activated shell.
 - Start the local stack with `devenv up`; it automatically runs `db:setup` before the Astro web process.
-- Use `devenv tasks run db:setup` for local migrations plus seeded fixture/mock data; it forces a local `.devenv/state/eonmun-dev.db` and unsets Turso secrets.
+- Use `devenv tasks run db:setup` for local migrations plus seeded fixture data; it uses local sqld at `.devenv/state/eonmun-dev.sqld` and unsets Turso secrets.
 - Run active website validation commands from `code/`.
 - Prefer `bun run build` for validation.
 - Use `bunx wrangler` or `./node_modules/.bin/wrangler` from `code/` for Cloudflare operations.

@@ -20,7 +20,7 @@ cd code
 bun install --frozen-lockfile
 ```
 
-The local database is managed by devenv. `devenv up` automatically runs `db:setup`, which applies migrations and seeds fixture/mock data into `.devenv/state/eonmun-dev.db`. The setup task unsets Turso credentials so it cannot mutate production.
+The local database is managed by devenv. `devenv up` starts local sqld, applies migrations from `code/drizzle/`, seeds fixture data, then starts Astro. The database lives at `.devenv/state/eonmun-dev.sqld`. The setup task unsets Turso credentials so it cannot mutate production.
 
 ## Development server
 
@@ -30,7 +30,7 @@ Start the local stack from the repo root:
 devenv up
 ```
 
-This runs `db:setup` first, then starts Astro at `http://localhost:4321`. Stop it with:
+This runs `db:setup` first, then starts Astro. The selected URL is recorded in `code/.env.local` (usually `http://127.0.0.1:4321`). Stop it with:
 
 ```bash
 devenv processes down
@@ -52,6 +52,8 @@ Run validation and Cloudflare commands from `code/`:
 bun run content:sync
 bun run astro check
 bun run build
+bun test
+bun run test:e2e
 bun run preview
 bun run cf-typegen
 ```
@@ -126,6 +128,8 @@ Before opening or merging a PR, run:
 cd code
 bun install --frozen-lockfile
 bun run build
+bun test
+bun run test:e2e
 ```
 
-The PR validation workflow also runs an Astro build with Bun.
+The PR validation workflow runs the Astro build, Bun tests, and Playwright artwork flows. Playwright uses an isolated local database and a test Auth.js session; its purchase test mocks the checkout redirect while `code/test/checkout.test.ts` checks server-side Stripe session creation.
