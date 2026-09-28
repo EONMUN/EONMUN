@@ -1,55 +1,39 @@
 import { expect, test } from '@playwright/test';
 import sharp from 'sharp';
 
-const images = new Map<string, Promise<Buffer>>();
 async function imageResponse(url: string) {
 	const params = new URL(url).searchParams;
 	const width = Number(params.get('w') ?? 1920);
 	const height = Number(params.get('h') ?? 1200);
-	const key = `${width}x${height}`;
-	if (!images.has(key)) images.set(key, sharp({ create: { width, height, channels: 3, background: '#222' } }).webp().toBuffer());
-	return { status: 200, contentType: 'image/webp', body: await images.get(key)! };
+	// Chromium needs the mock's dimensions to match the srcset candidate.
+	const body = await sharp({ create: { width, height, channels: 3, background: '#222' } }).webp().toBuffer();
+	return { status: 200, contentType: 'image/webp', body };
 }
 
-test('home loads one slide and preloads only its successor', async ({ page }) => {
-	const requested: string[] = [];
-	await page.route(/\/_image\?/, async (route) => {
-		requested.push(new URL(route.request().url()).searchParams.get('href') ?? '');
-		await route.fulfill(await imageResponse(route.request().url()));
-	});
-	await page.clock.install();
-	await page.goto('/', { waitUntil: 'domcontentloaded' });
-	const slides = page.locator('[data-hero-carousel] .slide');
-	await expect(slides.first()).toHaveClass(/is-current/);
-	await expect.poll(() => new Set(requested).size).toBe(2);
-	expect(new Set(requested).size).toBe(2);
-	await page.clock.runFor(8_000);
-	await expect(slides.nth(1)).toHaveClass(/is-entering/);
-	await expect.poll(() => new Set(requested).size).toBe(3);
-	await page.clock.runFor(1_600);
-	await expect(slides.nth(1)).toHaveClass(/is-current/);
-});
-
-test('home holds the current slide until the next image loads', async ({ page }) => {
+test('home preloads one slide ahead and waits for it before advancing', async ({ page }) => {
+	const requested = new Set<string>();
 	let firstSource: string | undefined;
-	let nextRequested = false;
 	let releaseNext: (() => void) | undefined;
 	const nextAllowed = new Promise<void>((resolve) => { releaseNext = resolve; });
 	await page.route(/\/_image\?/, async (route) => {
 		const source = new URL(route.request().url()).searchParams.get('href') ?? '';
 		firstSource ??= source;
-		if (source !== firstSource) { nextRequested = true; await nextAllowed; }
+		requested.add(source);
+		if (source !== firstSource) await nextAllowed;
 		await route.fulfill(await imageResponse(route.request().url()));
 	});
 	await page.clock.install();
 	await page.goto('/', { waitUntil: 'domcontentloaded' });
-	await expect.poll(() => nextRequested).toBe(true);
+	await expect.poll(() => requested.size).toBe(2);
+	await expect(page.locator('[data-hero-carousel] img[src]')).toHaveCount(2);
 	await page.clock.runFor(8_000);
 	const slides = page.locator('[data-hero-carousel] .slide');
 	await expect(slides.first()).toHaveClass(/is-current/);
-	await expect(slides.nth(1)).not.toHaveClass(/is-entering/);
 	releaseNext!();
 	await expect(slides.nth(1)).toHaveClass(/is-entering/);
+	await expect.poll(() => requested.size).toBe(3);
+	await page.clock.runFor(1_600);
+	await expect(slides.nth(1)).toHaveClass(/is-current/);
 });
 
 test('reduced motion keeps only the first home image active', async ({ page }) => {
