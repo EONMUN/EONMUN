@@ -4,7 +4,7 @@
 // so the component enforces that cap itself rather than trusting its caller.
 import CardCaption from './CardCaption.astro';
 import StatusPill, { type StatusTone } from './StatusPill.astro';
-import ResponsiveImage from '../ResponsiveImage.astro';
+import { Image } from 'astro:assets';
 
 interface Props {
 	href?: string | null;
@@ -23,7 +23,7 @@ const Card = href ? 'a' : 'div';
 		{layers.length === 0 ? (
 			<span class="no-image">No artwork</span>
 		) : (
-			layers.map((url, index) => <ResponsiveImage class={`layer layer-${index}`} src={url} alt="" width={960} height={640} widths={[480, 960]} sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 50vw" />)
+			layers.map((url, index) => <Image data-fallback-src={url} format="webp" quality={75} fit="scale-down" class={`layer layer-${index}`} src={url} alt="" width={960} height={640} widths={[480, 960]} sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 50vw" />)
 		)}
 		{status && <StatusPill label={status.label} tone={status.tone} />}
 	</span>

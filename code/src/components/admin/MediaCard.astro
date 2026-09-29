@@ -5,7 +5,7 @@
 // one chrome.
 import CardCaption from './CardCaption.astro';
 import StatusPill, { type StatusTone } from './StatusPill.astro';
-import ResponsiveImage from '../ResponsiveImage.astro';
+import { Image } from 'astro:assets';
 
 interface Props {
 	href?: string | null;
@@ -36,7 +36,7 @@ const Card = href ? 'a' : 'div';
 <Card class="card" href={href ?? undefined}>
 	<span class:list={['frame', shape, { 'is-empty': !imageUrl }]}>
 		{imageUrl ? (
-			<ResponsiveImage src={imageUrl} alt={imageAlt} width={960} height={1200} widths={[480, 960]} sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 50vw" />
+			<Image data-fallback-src={imageUrl} format="webp" quality={75} fit="scale-down" src={imageUrl} alt={imageAlt} width={960} height={1200} widths={[480, 960]} sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 50vw" />
 		) : (
 			<span class="no-image">{placeholder}</span>
 		)}

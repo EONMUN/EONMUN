@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ResponsiveImage from '../../components/ResponsiveImage.astro';
+import { Image } from 'astro:assets';
 import type { PostType } from '../../db';
 import {
 	getPostCoverImages,
@@ -62,7 +62,9 @@ const postCards = posts.map((post, index) => ({ post, coverImage: coverImages[in
 						>
 							{coverImage && (
 								<div class="aspect-video bg-gray-100 dark:bg-gray-800 overflow-hidden">
-									<ResponsiveImage
+									<Image
+										data-fallback-src={coverImage}
+										format="webp" quality={75} fit="scale-down"
 										src={coverImage}
 										alt={post.data.title}
 										width={960}
