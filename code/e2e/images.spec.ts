@@ -24,12 +24,8 @@ test('home preloads one slide ahead and waits for it before advancing', async ({
 	});
 	await page.clock.install();
 	await page.goto('/', { waitUntil: 'domcontentloaded' });
-	const loading = page.locator('[data-loading-screen]');
-	await expect(loading).toBeVisible();
-	await page.clock.runFor(1_000);
-	await expect(loading).not.toHaveClass(/is-hidden/);
-	await page.clock.runFor(300);
-	await expect(loading).toHaveClass(/is-hidden/);
+	await page.clock.runFor(1_300);
+	await expect(page.locator('[data-loading-screen]')).toBeHidden();
 	await expect.poll(() => requested.size).toBe(2);
 	await expect(page.locator('[data-hero-carousel] img[src]')).toHaveCount(2);
 	await page.clock.runFor(8_000);
@@ -56,6 +52,43 @@ test('home keeps the loading screen until the first image is ready', async ({ pa
 	await expect(loading).toBeVisible();
 	releaseImage!();
 	await expect(loading).toHaveClass(/is-hidden/);
+});
+
+test('home keeps a shown loading screen for its minimum time', async ({ page }) => {
+	let releaseImage: (() => void) | undefined;
+	const imageAllowed = new Promise<void>((resolve) => { releaseImage = resolve; });
+	await page.route(/\/_image\?/, async (route) => {
+		await imageAllowed;
+		await route.fulfill(await imageResponse(route.request().url()));
+	});
+	await page.clock.install();
+	await page.goto('/', { waitUntil: 'domcontentloaded' });
+	const loading = page.locator('[data-loading-screen]');
+	await page.clock.runFor(100);
+	await expect(loading).toBeVisible();
+	releaseImage!();
+	await expect.poll(() => page.locator('[data-hero-carousel] .slide.is-current img').evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+	await page.clock.runFor(1_000);
+	await expect(loading).toBeVisible();
+	await page.clock.runFor(300);
+	await expect(loading).toBeHidden();
+});
+
+test('home skips the loading screen when the first image is already ready', async ({ page }) => {
+	const readyImage = 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%221%22%20height=%221%22/%3E';
+	await page.route('**/', async (route) => {
+		const response = await route.fetch();
+		const html = await response.text();
+		const firstImage = html.match(/<img\b[^>]*fetchpriority="high"[^>]*>/)?.[0];
+		expect(firstImage).toBeTruthy();
+		const body = html.replace(firstImage!, firstImage!.replace(/\bsrc="[^"]*"/, `src="${readyImage}"`).replace(/\bsrcset="[^"]*"/, ''));
+		await route.fulfill({ response, body });
+	});
+	await page.goto('/', { waitUntil: 'load' });
+	await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+	const loading = page.locator('[data-loading-screen]');
+	await expect(loading).toBeHidden();
+	await expect(loading).not.toHaveAttribute('data-started-at');
 });
 
 test('reduced motion keeps only the first home image active', async ({ page }) => {

@@ -16,11 +16,10 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 })));
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0]?.defaultImageUrl ?? undefined}>
-	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN">
+	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN" aria-hidden="true" hidden>
 		<span class="loading-wordmark" aria-hidden="true">EON<br />MUN</span>
 		<a class="loading-fallback" data-loading-fallback href="/artworks" hidden>View artworks</a>
 	</div>
-	<noscript><style>.loading-screen { display: none !important; }</style></noscript>
 	<div class="hero-carousel" data-hero-carousel data-slide-ms="8000" data-fade-ms="1600">
 		{slides.map((slide, i) => (
 			<figure
@@ -64,13 +63,23 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			</figure>
 		))}
 	</div>
+	<script is:inline>
+		requestAnimationFrame(() => {
+			const image = document.querySelector('[data-hero-carousel] .slide.is-current img');
+			if (!image || (image.complete && image.naturalWidth > 0)) return;
+			const loadingScreen = document.querySelector('[data-loading-screen]');
+			if (!loadingScreen) return;
+			loadingScreen.hidden = false;
+			loadingScreen.removeAttribute('aria-hidden');
+			loadingScreen.dataset.startedAt = String(performance.now());
+		});
+	</script>
 </BaseLayout>
 
 <script>
 	const root = document.querySelector<HTMLElement>('[data-hero-carousel]');
 	if (root) {
 		const loadingScreen = document.querySelector<HTMLElement>('[data-loading-screen]');
-		const loadingStarted = performance.now();
 		const minLoadingMs = Number(loadingScreen?.dataset.minMs ?? 0);
 		const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const slides = Array.from(root.querySelectorAll<HTMLElement>('.slide'));
@@ -137,9 +146,14 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 
 		void load(0).then(async (ready) => {
 			if (ready && !reducedMotion && slides.length > 1) void load(1);
-			const remaining = Math.max(0, minLoadingMs - (performance.now() - loadingStarted));
+			const shownAt = Number(loadingScreen?.dataset.startedAt ?? 0);
+			const remaining = shownAt ? Math.max(0, minLoadingMs - (performance.now() - shownAt)) : 0;
 			if (remaining) await new Promise<void>((resolve) => window.setTimeout(resolve, remaining));
 			if (!ready) {
+				if (loadingScreen) {
+					loadingScreen.hidden = false;
+					loadingScreen.removeAttribute('aria-hidden');
+				}
 				loadingScreen?.querySelector<HTMLElement>('[data-loading-fallback]')?.removeAttribute('hidden');
 				return;
 			}
@@ -175,6 +189,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		color: #f5f5f4;
 		transition: opacity 550ms ease, visibility 0s 550ms;
 	}
+	.loading-screen[hidden] { display: none; }
 	.loading-screen.is-hidden {
 		opacity: 0;
 		visibility: hidden;
