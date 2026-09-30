@@ -108,7 +108,7 @@ Production deploys run through GitHub Actions on pushes to `main` that touch `co
 
 Pull requests from branches in this repository get a versioned Cloudflare preview URL from the `Preview Astro` workflow.
 
-Astro 7 route rules cache the home page, artwork gallery and detail pages, posts, and sitemaps at the Cloudflare edge for five minutes, with one minute of stale-while-revalidate. Successful admin artwork and collection writes purge their shared `public-content` cache tag. Other runtime routes, including admin, checkout, auth, and inventory, are not cached. Post changes require a deploy; each Worker version starts with a separate cache.
+Astro 7 route rules cache the home page, artwork gallery and detail pages, posts, and sitemaps at the Cloudflare edge for five minutes, with one minute of stale-while-revalidate. Successful admin artwork and collection writes purge their shared `public-content` cache tag, then request the canonical public pages to fill the cache with the saved content before responding. Other runtime routes, including admin, checkout, auth, and inventory, are not cached. Post changes require a deploy; each Worker version starts with a separate cache.
 
 To check a preview deployment, request a public route twice and confirm `CF-Cache-Status` changes from `MISS` to `HIT`; subsequent hits include `Age`. Confirm admin and inventory routes show `BYPASS`. Cloudflare consumes the provider's cache control and tag headers, so they may not appear in client responses. A local Astro dev server does not cache responses; use a build and preview for local cache checks.
 
