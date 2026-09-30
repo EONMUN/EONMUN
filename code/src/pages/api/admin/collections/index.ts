@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 import { createCollectionAdmin } from "../../../../db/admin";
 import { mutationError, requireAdminMutation } from "../../../../lib/admin-guard";
 import { parseCollectionInput } from "../../../../lib/admin-input";
-import { refreshPublicContent } from "../../../../lib/cache";
 import { getRuntimeEnv } from "../../../../lib/runtime-env";
 
 export const prerender = false;
@@ -16,7 +15,6 @@ export const POST: APIRoute = async (context) => {
 		// would move a published collection's public address.
 		const input = parseCollectionInput(await request.json(), { deriveSlug: true });
 		const collection = await createCollectionAdmin(env, input);
-		await refreshPublicContent(context);
 		return Response.json({ collection, redirect: `/admin/collections/${collection.slug}` }, { status: 201 });
 	} catch (error) {
 		return mutationError(error);

@@ -53,3 +53,12 @@ test('buyer can start checkout for available artwork without seeing its price', 
 	await expect(page).toHaveURL(/checkout=e2e/);
 	expect(submittedSlug).toBe('limones-del-cobre');
 });
+
+test('inventory and payment endpoints are never cacheable', async ({ request }) => {
+	const inventory = await request.get('/api/inventory/limones-del-cobre.json');
+	const checkout = await request.post('/api/checkout', { data: { artworkSlug: 'invalid slug' } });
+	const webhook = await request.post('/api/webhooks/stripe', { data: '{}' });
+	for (const response of [inventory, checkout, webhook]) {
+		expect(response.headers()['cache-control']).toBe('no-store');
+	}
+});

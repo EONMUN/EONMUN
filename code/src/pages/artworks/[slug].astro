@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PurchaseState from '../../components/PurchaseState.astro';
+import { CACHE_TAGS } from '../../lib/cache';
 import { Image } from 'astro:assets';
 import {
 	getPublishedArtworkDetailBySlug,
@@ -17,10 +18,12 @@ if (!slug) {
 
 const artworkDetail = await getPublishedArtworkDetailBySlug(slug);
 if (!artworkDetail) {
+	Astro.cache.set(false);
 	return new Response('Not found', { status: 404 });
 }
 
 const { artwork, collections, defaultImageUrl } = artworkDetail;
+Astro.cache.set({ tags: [CACHE_TAGS.artwork(artwork.id), ...collections.map((c) => CACHE_TAGS.collection(c.slug))] });
 const images = artwork.data.images;
 const defaultImage = images.find((image) => image.isDefault) ?? images[0];
 const mainImage = defaultImage?.url ?? defaultImageUrl;

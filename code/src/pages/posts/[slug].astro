@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { Image } from 'astro:assets';
+import { CACHE_TAGS } from '../../lib/cache';
 import { getArtworkCollectionHref } from '../../lib/paths';
 import type { PostType } from '../../db';
 import {
@@ -17,10 +18,15 @@ const slug = Astro.params.slug;
 if (!slug) return new Response('Not found', { status: 404 });
 const postDetail = await getPublishedPostDetailBySlug(slug);
 if (!postDetail) {
+	Astro.cache.set(false);
 	return new Response('Not found', { status: 404 });
 }
 
 const { post, artworks, collections } = postDetail;
+Astro.cache.set({ tags: [
+	...post.data.artworkSlugs.map(CACHE_TAGS.artwork),
+	...post.data.collectionSlugs.map(CACHE_TAGS.collection),
+] });
 const { Content } = await render(post);
 const coverImage = post.data.coverImageUrl ?? artworks[0]?.defaultImageUrl ?? null;
 

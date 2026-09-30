@@ -8,6 +8,8 @@ import { createCatalogSchema } from "./schema-fixture";
 import {
 	createArtworkAdmin,
 	createCollectionAdmin,
+	getAdminArtwork,
+	getAdminCollection,
 	updateArtworkAdmin,
 	updateCollectionAdmin,
 } from "../src/db/admin";
@@ -15,6 +17,7 @@ import { getAllArtworks, getHomepageSlides } from "../src/db/queries";
 import { markArtworkPaid } from "../src/db/checkout";
 import { artworks, artworksToCollections, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
+import { artworkContentChanged, collectionContentChanged } from "../src/lib/cache";
 import { createArtworkSitemapEntries, selectRelatedBySlug } from "../src/lib/public-catalog";
 
 const env = { TURSO_DATABASE_URL: "https://unused.test" };
@@ -53,6 +56,30 @@ afterEach(async () => {
 });
 
 describe("admin mutations", () => {
+	test("billing-only edits and draft saves do not refresh public pages", async () => {
+		const artwork = await createArtworkAdmin(env, artworkInput(), db);
+		let before = await getAdminArtwork(env, artwork.slug, db);
+		expect(artworkContentChanged(before, artworkInput({ title: "Draft edit" }))).toBe(false);
+		await updateArtworkAdmin(env, artwork.slug, artworkInput({ published: true }), db);
+		before = await getAdminArtwork(env, artwork.slug, db);
+		expect(artworkContentChanged(before, artworkInput({ published: true, available: true, priceCents: 12000 }))).toBe(false);
+		expect(artworkContentChanged(before, artworkInput({ published: true, title: "Visible edit" }))).toBe(true);
+
+		const collection = await createCollectionAdmin(env, parseCollectionInput({
+			name: "Group", slug: "group", published: false, artworkIds: [], defaultArtworkId: null,
+		}), db);
+		let oldCollection = await getAdminCollection(env, collection.slug, db);
+		expect(collectionContentChanged(oldCollection, parseCollectionInput({
+			name: "Draft edit", slug: "group", published: false, artworkIds: [], defaultArtworkId: null,
+		}))).toBe(false);
+		await updateCollectionAdmin(env, collection.slug, parseCollectionInput({
+			name: "Group", slug: "group", published: true, artworkIds: [], defaultArtworkId: null,
+		}), db);
+		oldCollection = await getAdminCollection(env, collection.slug, db);
+		expect(collectionContentChanged(oldCollection, parseCollectionInput({
+			name: "Visible edit", slug: "group", published: true, artworkIds: [], defaultArtworkId: null,
+		}))).toBe(true);
+	});
 	test("creates drafts, edits, publishes, and unpublishes artwork", async () => {
 		const created = await createArtworkAdmin(env, artworkInput({ published: true }), db);
 		expect(created.publishedAt).toBeNull();
