@@ -10,40 +10,10 @@ const { href, active = false, filterValue, filterName } = Astro.props;
 ---
 <a
 	href={href}
-	class:list={['filter-chip', { 'is-active': active }]}
+	class:list={['pill-link', { 'is-active': active }]}
 	aria-current={active ? 'page' : undefined}
 	data-filter-chip
 	data-filter-link={filterValue !== undefined ? '' : undefined}
 	data-filter-value={filterValue}
 	data-filter-name={filterName}
 ><slot /></a>
-
-<style>
-	.filter-chip {
-		display: inline-flex;
-		align-items: center;
-		border: 1px solid #d1d5db;
-		border-radius: 9999px;
-		padding: 0.25rem 0.75rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: #374151;
-		transition: border-color 150ms, background-color 150ms, color 150ms;
-	}
-	.filter-chip:hover { border-color: #6b7280; }
-	.filter-chip:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-	.filter-chip.is-active {
-		border-color: #111827;
-		background: #111827;
-		color: #fff;
-	}
-	@media (prefers-color-scheme: dark) {
-		.filter-chip { border-color: #4b5563; color: #fff; }
-		.filter-chip:hover { border-color: #9ca3af; }
-		.filter-chip.is-active {
-			border-color: #fff;
-			background: #fff;
-			color: #111827;
-		}
-	}
-</style>

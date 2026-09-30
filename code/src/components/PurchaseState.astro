@@ -5,7 +5,7 @@ const { artworkSlug } = Astro.props;
 <div data-purchase-state data-artwork-slug={artworkSlug} class="space-y-2">
 	<form method="POST" action="/api/checkout" hidden data-buy-form>
 		<input type="hidden" name="artworkSlug" value={artworkSlug} />
-		<button type="submit" class="px-6 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-lg font-medium">Buy</button>
+		<button type="submit" class="primary-button">Buy</button>
 	</form>
 	<p data-purchase-status class="text-sm text-gray-500 dark:text-gray-400">Checking availability…</p>
 </div>
