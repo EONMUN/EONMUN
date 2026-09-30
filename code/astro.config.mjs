@@ -5,14 +5,22 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 
 import cloudflare from '@astrojs/cloudflare';
+import { cacheCloudflare } from '@astrojs/cloudflare/cache';
+import { CACHE_TAGS, PUBLIC_CONTENT_RULE, publicContentRule } from './src/lib/cache.ts';
 
-// `output: 'server'` makes routes SSR by default. Pages that should be
-// prerendered must opt in with `export const prerender = true` (the homepage,
-// /about, /contact). SSR routes set their own `Cache-Control` headers so
-// the Cloudflare edge can cache the response — see `src/lib/cache.ts`.
 export default defineConfig({
 	site: 'https://eonmun.com',
 	output: 'server',
+	cache: { provider: cacheCloudflare() },
+	routeRules: {
+		'/': publicContentRule(CACHE_TAGS.home),
+		'/artworks': publicContentRule(CACHE_TAGS.artworks),
+		'/artworks/[slug]': PUBLIC_CONTENT_RULE,
+		'/posts': publicContentRule(CACHE_TAGS.posts),
+		'/posts/[slug]': PUBLIC_CONTENT_RULE,
+		'/sitemap.xml': publicContentRule(CACHE_TAGS.sitemap),
+		'/sitemap-index.xml': PUBLIC_CONTENT_RULE,
+	},
 	image: { domains: ['r2.eonmun.com'] },
 	integrations: [mdx()],
 	server: {
@@ -27,8 +35,5 @@ export default defineConfig({
 
 	adapter: cloudflare({
 		imageService: 'cloudflare-binding',
-		platformProxy: {
-			enabled: true,
-		},
 	}),
 });

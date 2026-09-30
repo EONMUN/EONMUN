@@ -5,7 +5,8 @@ import { parseArtworkInput } from "../../../../lib/admin-input";
 import { getRuntimeEnv } from "../../../../lib/runtime-env";
 
 export const prerender = false;
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async (context) => {
+	const { request } = context;
 	const env = getRuntimeEnv();
 	const guard = await requireAdminMutation(request, env);
 	if ("response" in guard) return guard.response;

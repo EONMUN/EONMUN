@@ -14,13 +14,10 @@ export interface SitemapEntry {
 	lastmod?: string;
 }
 
-const SITEMAP_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=600";
-
 const STATIC_PATHS = ["/", "/artworks", "/contact", "/posts"];
 
 export const SITEMAP_HEADERS = {
 	"content-type": "application/xml; charset=utf-8",
-	"cache-control": SITEMAP_CACHE_CONTROL,
 };
 
 function escapeXml(value: string) {

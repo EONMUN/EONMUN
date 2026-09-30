@@ -75,6 +75,7 @@ EOF
   '';
 
   processes.web = {
+    # Astro 7 backgrounds itself under coding agents; keep this process attached.
     cwd = "code";
     exec = ''
       port=$(scripts/dev-port "''${WEB_PORT:-4321}" "${config.devenv.root}/code")

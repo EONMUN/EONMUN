@@ -207,8 +207,7 @@ export async function getAdminCollections(env: Env) {
 	return getDb(env).select().from(collections).orderBy(collections.name);
 }
 
-export async function getAdminArtwork(env: Env, slug: string) {
-	const db = getDb(env);
+export async function getAdminArtwork(env: Env, slug: string, db = getDb(env)) {
 	const [artwork] = await db.select().from(artworks).where(eq(artworks.slug, slug));
 	if (!artwork) return null;
 	const [images, memberships, productRows] = await Promise.all([
@@ -411,8 +410,7 @@ export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<Admi
 	};
 }
 
-export async function getAdminCollection(env: Env, slug: string) {
-	const db = getDb(env);
+export async function getAdminCollection(env: Env, slug: string, db = getDb(env)) {
 	const [collection] = await db.select().from(collections).where(eq(collections.slug, slug));
 	if (!collection) return null;
 	const memberships = await db.select().from(artworksToCollections).where(eq(artworksToCollections.collectionId, collection.id));
