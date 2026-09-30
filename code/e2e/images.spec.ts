@@ -24,6 +24,12 @@ test('home preloads one slide ahead and waits for it before advancing', async ({
 	});
 	await page.clock.install();
 	await page.goto('/', { waitUntil: 'domcontentloaded' });
+	const loading = page.locator('[data-loading-screen]');
+	await expect(loading).toBeVisible();
+	await page.clock.runFor(1_000);
+	await expect(loading).not.toHaveClass(/is-hidden/);
+	await page.clock.runFor(300);
+	await expect(loading).toHaveClass(/is-hidden/);
 	await expect.poll(() => requested.size).toBe(2);
 	await expect(page.locator('[data-hero-carousel] img[src]')).toHaveCount(2);
 	await page.clock.runFor(8_000);
@@ -36,6 +42,22 @@ test('home preloads one slide ahead and waits for it before advancing', async ({
 	await expect(slides.nth(1)).toHaveClass(/is-current/);
 });
 
+test('home keeps the loading screen until the first image is ready', async ({ page }) => {
+	let releaseImage: (() => void) | undefined;
+	const imageAllowed = new Promise<void>((resolve) => { releaseImage = resolve; });
+	await page.route(/\/_image\?/, async (route) => {
+		await imageAllowed;
+		await route.fulfill(await imageResponse(route.request().url()));
+	});
+	await page.clock.install();
+	await page.goto('/', { waitUntil: 'domcontentloaded' });
+	await page.clock.runFor(2_000);
+	const loading = page.locator('[data-loading-screen]');
+	await expect(loading).toBeVisible();
+	releaseImage!();
+	await expect(loading).toHaveClass(/is-hidden/);
+});
+
 test('reduced motion keeps only the first home image active', async ({ page }) => {
 	const requested = new Set<string>();
 	await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -46,6 +68,7 @@ test('reduced motion keeps only the first home image active', async ({ page }) =
 	await page.goto('/', { waitUntil: 'domcontentloaded' });
 	await expect(page.locator('[data-hero-carousel] img[src]')).toHaveCount(1);
 	await expect.poll(() => requested.size).toBe(1);
+	await expect(page.locator('[data-loading-screen]')).toHaveClass(/is-hidden/);
 });
 
 test('artwork cards use responsive image URLs', async ({ page }) => {

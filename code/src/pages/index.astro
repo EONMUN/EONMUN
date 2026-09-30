@@ -16,6 +16,11 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 })));
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} image={slides[0]?.defaultImageUrl ?? undefined}>
+	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN">
+		<span class="loading-wordmark" aria-hidden="true">EON<br />MUN</span>
+		<a class="loading-fallback" data-loading-fallback href="/artworks" hidden>View artworks</a>
+	</div>
+	<noscript><style>.loading-screen { display: none !important; }</style></noscript>
 	<div class="hero-carousel" data-hero-carousel data-slide-ms="8000" data-fade-ms="1600">
 		{slides.map((slide, i) => (
 			<figure
@@ -63,7 +68,11 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 
 <script>
 	const root = document.querySelector<HTMLElement>('[data-hero-carousel]');
-	if (root && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+	if (root) {
+		const loadingScreen = document.querySelector<HTMLElement>('[data-loading-screen]');
+		const loadingStarted = performance.now();
+		const minLoadingMs = Number(loadingScreen?.dataset.minMs ?? 0);
+		const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const slides = Array.from(root.querySelectorAll<HTMLElement>('.slide'));
 		const pictures = slides.map((slide) => slide.querySelector('img')!);
 		const slideMs = Number(root.dataset.slideMs);
@@ -75,6 +84,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		const load = (index: number): Promise<boolean> => {
 			if (pending.has(index)) return pending.get(index)!;
 			const image = pictures[index];
+			if (!image) return Promise.resolve(false);
 			const promise = (async () => {
 				if (image.dataset.src) {
 					if (image.dataset.srcset) image.srcset = image.dataset.srcset;
@@ -98,7 +108,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		};
 
 		const schedule = () => {
-			if (document.hidden || slides.length < 2) return;
+			if (reducedMotion || document.hidden || slides.length < 2) return;
 			window.clearTimeout(timer);
 			timer = window.setTimeout(async () => {
 				for (let offset = 1; offset < slides.length; offset++) {
@@ -125,14 +135,22 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			}, slideMs);
 		};
 
-		void load(0).then((ready) => {
-			if (!ready || slides.length < 2) return;
-			void load(1);
+		void load(0).then(async (ready) => {
+			if (ready && !reducedMotion && slides.length > 1) void load(1);
+			const remaining = Math.max(0, minLoadingMs - (performance.now() - loadingStarted));
+			if (remaining) await new Promise<void>((resolve) => window.setTimeout(resolve, remaining));
+			if (!ready) {
+				loadingScreen?.querySelector<HTMLElement>('[data-loading-fallback]')?.removeAttribute('hidden');
+				return;
+			}
+			loadingScreen?.classList.add('is-hidden');
+			loadingScreen?.setAttribute('aria-hidden', 'true');
+			if (reducedMotion) return;
 			schedule();
-		});
-		document.addEventListener('visibilitychange', () => {
-			window.clearTimeout(timer);
-			if (!document.hidden) schedule();
+			document.addEventListener('visibilitychange', () => {
+				window.clearTimeout(timer);
+				if (!document.hidden) schedule();
+			});
 		});
 	}
 </script>
@@ -144,6 +162,33 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 </style>
 
 <style>
+	.loading-screen {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2rem;
+		background: #050505;
+		color: #f5f5f4;
+		transition: opacity 550ms ease, visibility 0s 550ms;
+	}
+	.loading-screen.is-hidden {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+	}
+	.loading-wordmark {
+		font-size: clamp(3.5rem, 14vw, 8rem);
+		line-height: 0.9;
+		letter-spacing: 0.18em;
+		padding-left: 0.18em;
+		text-align: center;
+	}
+	.loading-fallback { color: inherit; text-decoration: underline; text-underline-offset: 0.25em; }
+	.loading-fallback[hidden] { display: none; }
 	.hero-carousel {
 		position: fixed;
 		inset: 0;
@@ -205,6 +250,6 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		color: rgb(229, 231, 235);
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.slide { transition: none; }
+		.loading-screen, .slide { transition: none; }
 	}
 </style>
