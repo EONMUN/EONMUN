@@ -62,3 +62,28 @@ test('inventory and payment endpoints are never cacheable', async ({ request }) 
 		expect(response.headers()['cache-control']).toBe('no-store');
 	}
 });
+
+test('artwork and post filters share legible light and dark styles', async ({ page }) => {
+	for (const colorScheme of ['light', 'dark'] as const) {
+		await page.emulateMedia({ colorScheme });
+		const colors = async (path: string) => {
+			await page.goto(path, { waitUntil: 'load' });
+			await expect(page.locator('[data-filter-chip]').nth(1)).toBeVisible();
+			return page.locator('[data-filter-chip]').evaluateAll((chips) =>
+				chips.slice(0, 2).map((chip) => ({
+					text: getComputedStyle(chip).color,
+					background: getComputedStyle(chip).backgroundColor,
+				})),
+			);
+		};
+		const artwork = await colors('/artworks');
+		const posts = await colors('/posts');
+		expect(artwork).toHaveLength(2);
+		expect(artwork).toEqual(posts);
+		if (colorScheme === 'dark') expect(artwork[1].text).toBe('rgb(255, 255, 255)');
+	}
+	await page.goto('/artworks?collection=botanica', { waitUntil: 'load' });
+	await expect(page.locator('[data-filter-chip][aria-current="page"]')).toHaveText('Botánica');
+	await page.goto('/posts?type=announcement', { waitUntil: 'load' });
+	await expect(page.locator('[data-filter-chip][aria-current="page"]')).toHaveText('Announcements');
+});
