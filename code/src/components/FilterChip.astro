@@ -1,0 +1,19 @@
+---
+interface Props {
+	href: string;
+	active?: boolean;
+	filterValue?: string;
+	filterName?: string;
+}
+
+const { href, active = false, filterValue, filterName } = Astro.props;
+---
+<a
+	href={href}
+	class:list={['pill-link', { 'is-active': active }]}
+	aria-current={active ? 'page' : undefined}
+	data-filter-chip
+	data-filter-link={filterValue !== undefined ? '' : undefined}
+	data-filter-value={filterValue}
+	data-filter-name={filterName}
+><slot /></a>

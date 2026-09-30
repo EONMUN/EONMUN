@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import FilterChip from '../../components/FilterChip.astro';
 import { Image } from 'astro:assets';
 import type { PostType } from '../../db';
 import {
@@ -31,25 +32,11 @@ const postCards = posts.map((post, index) => ({ post, coverImage: coverImages[in
 		</div>
 
 		<div class="flex flex-wrap gap-2 mb-8">
-			<a
-				href="/posts"
-				class:list={[
-					'px-3 py-1 rounded-full text-sm font-medium border transition-colors',
-					!postType ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500',
-				]}
-			>
-					All
-				</a>
+			<FilterChip href="/posts" active={!postType}>All</FilterChip>
 				{VALID_POST_TYPES.map((t) => (
-					<a
-						href={`/posts?type=${t}`}
-						class:list={[
-						'px-3 py-1 rounded-full text-sm font-medium border transition-colors',
-						postType === t ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500',
-					]}
-				>
-					{TYPE_LABELS[t]}
-				</a>
+					<FilterChip href={`/posts?type=${t}`} active={postType === t}>
+						{TYPE_LABELS[t]}
+					</FilterChip>
 			))}
 		</div>
 

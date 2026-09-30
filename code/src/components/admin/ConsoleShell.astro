@@ -24,7 +24,7 @@ const {
 	backLabel,
 } = Astro.props;
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} themeColor="#050506">
 	<div class="console">
 		<div class="ground" aria-hidden="true"></div>
 		<div class="wrap">
@@ -69,6 +69,11 @@ const {
 		   to write. */
 		--seal-fill: #a93b24;
 		--seal-text: #d4523a;
+		--button-bg: var(--seal-fill);
+		--button-text: var(--paper);
+		--button-hover-bg: transparent;
+		--button-hover-text: var(--seal-text);
+		--button-radius: 0;
 	}
 
 	/* The console paints its own near-black ground, so it owes the keyboard a
@@ -218,22 +223,11 @@ const {
 		letter-spacing: normal;
 	}
 
-	.console .submit {
+	.console .primary-button {
 		padding: 0.9rem 2rem;
-		font: inherit;
 		font-size: 0.85rem;
 		letter-spacing: 0.22em;
 		text-transform: uppercase;
-		color: var(--paper);
-		background: var(--seal-fill);
-		border: 1px solid var(--seal-fill);
-		cursor: pointer;
-		transition: background 200ms, color 200ms;
-	}
-
-	.console .submit:hover {
-		background: transparent;
-		color: var(--seal-text);
 	}
 
 	.console .error-banner {

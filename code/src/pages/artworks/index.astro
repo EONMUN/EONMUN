@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import FilterChip from '../../components/FilterChip.astro';
 import { Image } from 'astro:assets';
 import {
 	getArtworkCollectionFilterOptions,
@@ -21,25 +22,22 @@ const description = `Browse ${artworks.length} artworks from the EONMUN studio.`
 				Explore the complete collection of artworks.
 			</p>
 			<div class="flex flex-wrap gap-2">
-				<a
+				<FilterChip
 					href="/artworks"
-					class="filter-chip is-active"
-					data-filter-link
-					data-collection=""
-					data-collection-name="All"
+					active
+					filterValue=""
+					filterName="All"
 				>
 					All
-				</a>
+				</FilterChip>
 				{collections.map((collection) => (
-					<a
+					<FilterChip
 						href={getArtworkCollectionHref(collection.slug)}
-						class="filter-chip"
-						data-filter-link
-						data-collection={collection.slug}
-						data-collection-name={collection.name}
+						filterValue={collection.slug}
+						filterName={collection.name}
 					>
 						{collection.name}
-					</a>
+					</FilterChip>
 				))}
 			</div>
 			<p class="text-sm text-gray-500 mt-2" data-filter-count>
@@ -106,21 +104,23 @@ const description = `Browse ${artworks.length} artworks from the EONMUN studio.`
 			const requestedCollectionSlug =
 				new URL(window.location.href).searchParams.get("collection")?.trim() ?? "";
 			const activeLink =
-				links.find((link) => link.dataset.collection === requestedCollectionSlug) ?? null;
+				links.find((link) => link.dataset.filterValue === requestedCollectionSlug) ?? null;
 			const hasUnknownCollectionFilter =
 				Boolean(requestedCollectionSlug) && activeLink === null;
 			const activeCollectionName =
 				hasUnknownCollectionFilter || !activeLink || !requestedCollectionSlug
 					? null
-					: activeLink.dataset.collectionName ?? null;
+					: activeLink.dataset.filterName ?? null;
 
 			let visibleCount = 0;
 
 			for (const link of links) {
 				const isActive = requestedCollectionSlug === ""
-					? link.dataset.collection === ""
+					? link.dataset.filterValue === ""
 					: link === activeLink;
 				link.classList.toggle("is-active", isActive);
+				if (isActive) link.setAttribute("aria-current", "page");
+				else link.removeAttribute("aria-current");
 			}
 
 			for (const card of cards) {
@@ -185,44 +185,3 @@ const description = `Browse ${artworks.length} artworks from the EONMUN studio.`
 		initArtworkFilters();
 	}
 </script>
-
-<style>
-	.filter-chip {
-		display: inline-flex;
-		align-items: center;
-		border: 1px solid rgb(209 213 219);
-		border-radius: 9999px;
-		padding: 0.25rem 0.75rem;
-		font-size: 0.875rem;
-		color: rgb(75 85 99);
-		transition:
-			border-color 150ms,
-			background-color 150ms,
-			color 150ms;
-	}
-
-	.filter-chip:hover {
-		border-color: rgb(107 114 128);
-	}
-
-	.filter-chip.is-active {
-		border-color: rgb(17 24 39);
-		background: rgb(17 24 39);
-		color: rgb(255 255 255);
-	}
-
-	:global(.dark) .filter-chip {
-		border-color: rgb(75 85 99);
-		color: rgb(209 213 219);
-	}
-
-	:global(.dark) .filter-chip:hover {
-		border-color: rgb(156 163 175);
-	}
-
-	:global(.dark) .filter-chip.is-active {
-		border-color: rgb(255 255 255);
-		background: rgb(255 255 255);
-		color: rgb(17 24 39);
-	}
-</style>

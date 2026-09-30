@@ -9,9 +9,10 @@ interface Props {
 	image?: string;
 	type?: 'website' | 'article';
 	publishedTime?: string;
+	themeColor?: string;
 }
 
-const { title, description, image, type, publishedTime } = Astro.props;
+const { title, description, image, type, publishedTime, themeColor } = Astro.props;
 ---
 <!doctype html>
 <html lang="en" class="dark:bg-gray-900 dark:text-white">
@@ -22,6 +23,7 @@ const { title, description, image, type, publishedTime } = Astro.props;
 			image={image}
 			type={type}
 			publishedTime={publishedTime}
+			themeColor={themeColor}
 		/>
 	</head>
 	<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen flex flex-col">

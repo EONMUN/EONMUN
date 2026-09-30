@@ -8,3 +8,69 @@
 html, body {
 	font-family: var(--font-sans);
 }
+
+:root {
+	--button-bg: #111827;
+	--button-text: #fff;
+	--button-hover-bg: #374151;
+	--button-hover-text: #fff;
+	--button-radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--button-bg: #fff;
+		--button-text: #111827;
+		--button-hover-bg: #e5e7eb;
+		--button-hover-text: #111827;
+	}
+}
+
+.primary-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.75rem 1.5rem;
+	border: 1px solid var(--button-bg);
+	border-radius: var(--button-radius);
+	background: var(--button-bg);
+	color: var(--button-text);
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 200ms, color 200ms;
+}
+
+.primary-button:hover {
+	background: var(--button-hover-bg);
+	color: var(--button-hover-text);
+}
+
+.primary-button:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+.primary-button--wide { width: 100%; }
+
+.pill-link {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.25rem 0.75rem;
+	border: 1px solid #d1d5db;
+	border-radius: 9999px;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #374151;
+	transition: border-color 150ms, background-color 150ms, color 150ms;
+}
+
+.pill-link:hover { border-color: #6b7280; }
+.pill-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.pill-link.is-active { border-color: #111827; background: #111827; color: #fff; }
+
+@media (prefers-color-scheme: dark) {
+	.pill-link { border-color: #4b5563; color: #fff; }
+	.pill-link:hover { border-color: #9ca3af; }
+	.pill-link.is-active { border-color: #fff; background: #fff; color: #111827; }
+}
