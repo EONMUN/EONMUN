@@ -1,12 +1,20 @@
-// Single source of truth for the SSR cache TTLs.
-import type { AstroGlobal } from "astro";
+import type { APIContext } from "astro";
 
-const STANDARD = "public, s-maxage=300, stale-while-revalidate=600";
-const SHORT = "public, s-maxage=60, stale-while-revalidate=300";
+export const PUBLIC_CONTENT_TAG = "public-content";
 
-export function setEdgeCache(astro: AstroGlobal, variant: "standard" | "short" = "standard") {
-	astro.response.headers.set(
-		"Cache-Control",
-		variant === "short" ? SHORT : STANDARD,
-	);
+// A short lifetime bounds staleness if a purge fails after a database write.
+export const PUBLIC_CONTENT_RULE = {
+	maxAge: 300,
+	swr: 60,
+	tags: [PUBLIC_CONTENT_TAG],
+};
+
+export async function invalidatePublicContent(cache: APIContext["cache"]): Promise<void> {
+	if (!cache.enabled) return;
+	try {
+		await cache.invalidate({ tags: [PUBLIC_CONTENT_TAG] });
+	} catch (error) {
+		// The database write has already committed; reporting it as failed could make an admin repeat it.
+		console.error("Could not invalidate the public content cache", error);
+	}
 }

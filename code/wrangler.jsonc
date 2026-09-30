@@ -23,6 +23,7 @@
 		"global_fetch_strictly_public",
 		"nodejs_compat"
 	],
+	"cache": { "enabled": true },
 	"assets": {
 		"directory": "./dist",
 		"binding": "ASSETS"
