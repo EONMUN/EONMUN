@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { Image } from 'astro:assets';
 import type { PostType } from '../../db';
 import {
 	getPostCoverImages,
@@ -61,10 +62,15 @@ const postCards = posts.map((post, index) => ({ post, coverImage: coverImages[in
 						>
 							{coverImage && (
 								<div class="aspect-video bg-gray-100 dark:bg-gray-800 overflow-hidden">
-									<img
+									<Image
+										data-fallback-src={coverImage}
+										format="webp" quality={75} fit="scale-down"
 										src={coverImage}
 										alt={post.data.title}
-										loading="lazy"
+										width={960}
+										height={540}
+										widths={[480, 960]}
+										sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
 										class="w-full h-full object-cover"
 									/>
 								</div>

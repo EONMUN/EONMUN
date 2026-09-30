@@ -13,6 +13,7 @@ import cloudflare from '@astrojs/cloudflare';
 export default defineConfig({
 	site: 'https://eonmun.com',
 	output: 'server',
+	image: { domains: ['r2.eonmun.com'] },
 	integrations: [mdx()],
 	server: {
 		host: true,
@@ -25,6 +26,7 @@ export default defineConfig({
 	},
 
 	adapter: cloudflare({
+		imageService: 'cloudflare-binding',
 		platformProxy: {
 			enabled: true,
 		},

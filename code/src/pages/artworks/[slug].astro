@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PurchaseState from '../../components/PurchaseState.astro';
+import { Image } from 'astro:assets';
 import {
 	getPublishedArtworkDetailBySlug,
 } from '../../lib/artwork-content';
@@ -42,7 +43,7 @@ const mainImage = defaultImage?.url ?? defaultImageUrl;
 			<div class="space-y-4">
 				{mainImage ? (
 					<div class="w-full rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800">
-						<img src={mainImage} alt={artwork.data.title} class="w-full h-auto object-contain" />
+						<Image data-fallback-src={mainImage} format="webp" quality={75} fit="scale-down" src={mainImage} alt={artwork.data.title} width={1920} height={2560} widths={[960, 1920]} sizes="(min-width: 1024px) 50vw, 100vw" loading="eager" fetchpriority="high" class="w-full h-auto object-contain" />
 					</div>
 				) : (
 					<div class="aspect-square bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-400">
@@ -58,7 +59,7 @@ const mainImage = defaultImage?.url ?? defaultImageUrl;
 									img.url === mainImage ? 'border-current ring-2 ring-current/20' : 'border-gray-200 dark:border-gray-700',
 								]}
 							>
-								<img src={img.url} alt={img.caption ?? artwork.data.title} loading="lazy" class="w-full h-full object-cover" />
+								<Image data-fallback-src={img.url} format="webp" quality={75} fit="scale-down" src={img.url} alt={img.caption ?? artwork.data.title} width={480} height={480} widths={[480]} sizes="25vw" class="w-full h-full object-cover" />
 							</div>
 						))}
 					</div>

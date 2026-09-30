@@ -30,5 +30,15 @@ const { title, description, image, type, publishedTime } = Astro.props;
 			<slot />
 		</main>
 		<Footer />
+		<script>
+			document.addEventListener('error', (event) => {
+				const image = event.target;
+				if (!(image instanceof HTMLImageElement) || image.closest('[data-hero-carousel]')) return;
+				const fallback = image.dataset.fallbackSrc;
+				if (!fallback || image.src === fallback) return;
+				image.removeAttribute('srcset');
+				image.src = fallback;
+			}, true);
+		</script>
 	</body>
 </html>
