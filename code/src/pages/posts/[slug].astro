@@ -5,7 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import TagLink from '../../components/TagLink.astro';
 import { Image } from 'astro:assets';
 import { CACHE_TAGS } from '../../lib/cache';
-import { getArtworkCollectionHref } from '../../lib/paths';
+import { getCollectionHref } from '../../lib/paths';
 import { POST_DETAIL_IMAGE } from '../../lib/responsive-image';
 import type { PostType } from '../../db';
 import {
@@ -107,7 +107,7 @@ const publishedDate = publishedDateValue
 				<h2 class="text-2xl font-bold mb-4">Related Collections</h2>
 				<div class="flex flex-wrap gap-2">
 					{collections.map((c) => (
-						<TagLink href={getArtworkCollectionHref(c.slug)}>
+						<TagLink href={getCollectionHref(c.slug)}>
 							{c.name}
 						</TagLink>
 					))}

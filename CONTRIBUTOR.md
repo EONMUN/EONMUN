@@ -100,7 +100,7 @@ Allowed `postType` values are `announcement`, `educational`, `behind_the_scenes`
 
 Use `/admin/collections` to create collections, manage membership, and select the artwork whose default image is the collection cover.
 
-Collection pages are not a separate public section. Collections are used as artwork facets and relationships.
+Published collections have dedicated `/collections/[slug]` pages showing their published artwork. Artwork links from a collection carry `?collection=<slug>` for analytics attribution. Legacy `/artworks?collection=<slug>` links navigate to the dedicated page in the browser.
 
 ## Cloudflare
 
@@ -164,3 +164,5 @@ their stable Google account ID, and resets a previously identified visitor when
 the session is empty. Existing sessions must sign in again to replace the old
 random Auth.js ID with the stable Google ID. Session lookup failures leave the
 existing identity intact. Personal identity is never embedded in public HTML.
+
+Collection analytics records `collection_clicked` with `collection_slug`. Collection pageviews and artwork pageviews reached via `?collection=<slug>` include `collection_slug`, as do artwork-page checkout-start events. This URL parameter records navigation context, not verified membership or identity.

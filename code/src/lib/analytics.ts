@@ -3,9 +3,14 @@ import type { PostHog } from 'posthog-js';
 type AnalyticsClient = Pick<PostHog, 'capture' | 'identify' | 'reset' | 'get_property'>;
 
 export async function startAnalytics(client: AnalyticsClient) {
+	const collectionPath = location.pathname.match(/^\/collections\/([^/]+)\/?$/);
+	const collectionSlug = collectionPath ? decodeURIComponent(collectionPath[1])
+		: /^\/artworks\/[^/]+\/?$/.test(location.pathname) ? new URLSearchParams(location.search).get('collection') : null;
+	const context = collectionSlug ? { collection_slug: collectionSlug } : {};
+
 	const capture = (event: string, properties: Record<string, string>) => {
 		// Navigation must not discard the click or delay checkout submission.
-		client.capture(event, { source_path: location.pathname, ...properties }, {
+		client.capture(event, { source_path: location.pathname, ...context, ...properties }, {
 			transport: 'sendBeacon',
 			send_instantly: true,
 		});
@@ -17,12 +22,13 @@ export async function startAnalytics(client: AnalyticsClient) {
 		if (!(link instanceof HTMLAnchorElement)) return;
 		const target = new URL(link.href);
 		if (target.origin !== location.origin) return;
-		const match = target.pathname.match(/^\/(posts|artworks)\/([^/]+)\/?$/);
+		const match = target.pathname.match(/^\/(posts|artworks|collections)\/([^/]+)\/?$/);
 		if (!match) return;
-		const kind = match[1] === 'posts' ? 'post' : 'artwork';
+		const kind = match[1] === 'posts' ? 'post' : match[1] === 'collections' ? 'collection' : 'artwork';
 		capture(`${kind}_clicked`, {
 			[`${kind}_slug`]: decodeURIComponent(match[2]),
 			destination_path: target.pathname,
+			...(kind === 'artwork' && target.searchParams.get('collection') ? { collection_slug: target.searchParams.get('collection')! } : {}),
 		});
 	});
 
@@ -53,7 +59,7 @@ export async function startAnalytics(client: AnalyticsClient) {
 	} catch {
 		// A failed session lookup does not prove logout and must not split the visitor's identity.
 	}
-	client.capture('$pageview');
+	client.capture('$pageview', context);
 
 	const artwork = location.pathname.match(/^\/artworks\/([^/]+)\/?$/);
 	const checkout = new URLSearchParams(location.search).get('checkout');

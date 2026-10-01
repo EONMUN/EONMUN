@@ -79,12 +79,12 @@ export function planPublicContentRefresh(
 	}
 	return {
 		tags: [
-			CACHE_TAGS.home, CACHE_TAGS.artworks,
+			CACHE_TAGS.home, CACHE_TAGS.artworks, CACHE_TAGS.sitemap,
 			...affectedSlugs.map(CACHE_TAGS.collection),
 			...change.memberSlugs.map(CACHE_TAGS.artwork),
 		],
 		paths: [
-			"/", "/artworks",
+			"/", "/artworks", "/sitemap.xml",
 			...publishedMemberSlugs.map((slug) => `/artworks/${encodeURIComponent(slug)}`),
 			...postPaths,
 		],

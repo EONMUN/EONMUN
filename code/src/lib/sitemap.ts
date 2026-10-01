@@ -1,3 +1,5 @@
+import { getPublishedCollectionRefs } from "./collection-content";
+import { getCollectionHref } from "./paths";
 import { SITE_URL } from "../consts";
 import {
 	getArtworkPublishedTime,
@@ -42,9 +44,10 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	const staticEntries = STATIC_PATHS.map((pathname) => ({
 		loc: toAbsoluteUrl(baseUrl, pathname),
 	}));
-	const [artworks, posts] = await Promise.all([
+	const [artworks, posts, collections] = await Promise.all([
 		getPublishedArtworkEntries(),
 		getPublishedPostEntries(),
+		getPublishedCollectionRefs(),
 	]);
 	const postEntries = posts.map((post) => ({
 		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
@@ -54,6 +57,7 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	return [
 		...staticEntries,
 		...postEntries,
+		...collections.map((collection) => ({ loc: toAbsoluteUrl(baseUrl, getCollectionHref(collection.slug)), lastmod: collection.publishedAt || undefined })),
 		...createArtworkSitemapEntries(
 			baseUrl,
 			artworks,
