@@ -12,6 +12,7 @@ import {
 	posts,
 	postsToArtworks,
 	postsToCollections,
+	products,
 	type SelectArtwork as BaseSelectArtwork,
 	type SelectCollection,
 	type SelectPost,
@@ -35,6 +36,7 @@ export interface ArtworkListItem extends ArtworkWithDefaultImage {
 export interface ArtworkDetail extends ArtworkWithDefaultImage {
 	collections: SelectCollection[];
 	images: { url: string; isDefault: boolean; caption: string | null }[];
+	offer: { priceCents: number; available: boolean; sold: boolean } | null;
 }
 
 export interface PostWithRelations extends SelectPost {
@@ -219,7 +221,7 @@ export async function getArtworkBySlug(
 		.where(and(eq(artworks.slug, slug), isNotNull(artworks.publishedAt)));
 	if (!artwork) return null;
 
-	const [imageRows, junctionRows] = await Promise.all([
+	const [imageRows, junctionRows, productRows] = await Promise.all([
 		db
 			.select()
 			.from(artworkImages)
@@ -237,11 +239,21 @@ export async function getArtworkBySlug(
 					isNotNull(collections.publishedAt),
 				),
 			),
+		db.select({ priceCents: products.price, quantity: products.quantity, soldAt: products.soldAt })
+			.from(products)
+			.where(and(eq(products.artworkId, artwork.id), eq(products.type, "artwork")))
+			.limit(1),
 	]);
 
 	const defaultImage = imageRows.find((i) => i.isDefault) ?? imageRows[0];
+	const product = productRows[0];
 	return {
 		...artwork,
+		offer: product ? {
+			priceCents: product.priceCents,
+			available: (product.quantity ?? 0) > 0 && product.soldAt === null,
+			sold: product.soldAt !== null,
+		} : null,
 		defaultImageUrl: defaultImage?.url ?? null,
 		images: imageRows.map((i) => ({
 			url: i.url,

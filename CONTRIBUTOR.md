@@ -66,7 +66,7 @@ Turso is the production source for artwork, collections, relationships, products
 
 ### Add artwork
 
-Use `/admin/artworks` to create and publish artwork. Uploads go through the authenticated Worker endpoint to the bound R2 bucket. Prices are private and stored in cents.
+Use `/admin/artworks` to create and publish artwork. Uploads go through the authenticated Worker endpoint to the bound R2 bucket. Prices are stored in USD cents and shown on published artwork pages when a product exists.
 
 ### Add a post
 

@@ -85,9 +85,9 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		</div>
 	</FormFieldset>
 
-	<FormFieldset legend="Private sale">
+	<FormFieldset legend="Sale">
 		<label class="inline-label"><input type="checkbox" name="available" checked={(artwork?.product?.quantity ?? 0) > 0 && artwork?.product?.soldAt === null} /> Available for purchase</label>
-		<label>Private price (cents)
+		<label>Price (USD cents)
 			<input
 				class="admin-input"
 				name="priceCents"
@@ -98,7 +98,7 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 				value={artwork?.product?.price ?? ''}
 			/>
 		</label>
-		<p id="price-note" class="hint">Required when the piece is available for purchase. Prices are visible only in administration and Stripe Checkout.</p>
+		<p id="price-note" class="hint">Required when the piece is available for purchase. Published artwork prices appear on their public pages and in Stripe Checkout.</p>
 	</FormFieldset>
 
 	{artwork ? (

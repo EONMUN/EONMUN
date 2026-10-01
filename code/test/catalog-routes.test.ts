@@ -10,23 +10,4 @@ describe("public catalog routes", () => {
 		expect(navbar).not.toContain("/store");
 		expect(navbar).not.toContain("Store");
 	});
-
-	test("does not render a price in the public artwork page or purchase component", () => {
-		const publicSource = [
-			readFileSync(resolve("src/pages/artworks/[slug].astro"), "utf8"),
-			readFileSync(resolve("src/components/PurchaseState.astro"), "utf8"),
-		].join("\n");
-		expect(publicSource).not.toMatch(/price|amount|unit_amount/i);
-	});
-
-	test("keeps private products out of public artwork queries and debug output", () => {
-		const publicDataSource = [
-			readFileSync(resolve("src/db/queries.ts"), "utf8"),
-			readFileSync(resolve("src/lib/artwork-content.ts"), "utf8"),
-			readFileSync(resolve("src/pages/debug/errors.astro"), "utf8"),
-		].join("\n");
-		expect(publicDataSource).not.toMatch(/products?\.price|priceCents|SelectProduct|getAvailableProducts/);
-		expect(publicDataSource).not.toMatch(/from\(products\)|productRows/);
-	});
-
 });

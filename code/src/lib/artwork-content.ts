@@ -30,6 +30,7 @@ export interface PublishedArtworkDetail {
 	artwork: PublicArtworkEntry;
 	collections: PublicCollectionRef[];
 	defaultImageUrl: string | null;
+	offer: ArtworkDetail["offer"];
 }
 
 function toEntry(row: ArtworkListItem | ArtworkDetail): PublicArtworkEntry {
@@ -57,6 +58,7 @@ function toListDetail(row: ArtworkListItem): PublishedArtworkDetail {
 		artwork: toEntry(row),
 		collections: row.collections,
 		defaultImageUrl: row.defaultImageUrl,
+		offer: null,
 	};
 }
 
@@ -88,6 +90,7 @@ export async function getPublishedArtworkDetailBySlug(
 			name,
 		})),
 		defaultImageUrl: row.defaultImageUrl,
+		offer: row.offer,
 	};
 }
 

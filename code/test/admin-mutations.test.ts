@@ -13,7 +13,7 @@ import {
 	updateArtworkAdmin,
 	updateCollectionAdmin,
 } from "../src/db/admin";
-import { getAllArtworks, getHomepageSlides } from "../src/db/queries";
+import { getAllArtworks, getArtworkBySlug, getHomepageSlides } from "../src/db/queries";
 import { markArtworkPaid } from "../src/db/checkout";
 import { artworks, artworksToCollections, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
@@ -95,16 +95,21 @@ describe("admin mutations", () => {
 		await expect(createArtworkAdmin(env, artworkInput({ title: "Other" }), db)).rejects.toThrow();
 	});
 
-	test("uses quantity as the sale toggle and retains the private price", async () => {
+	test("publishes the checkout price and current stock on the artwork detail", async () => {
 		const artwork = await createArtworkAdmin(env, artworkInput({ available: true, priceCents: 125000 }), db);
 		let [product] = await db.select().from(products).where(eq(products.artworkId, artwork.id));
 		expect(product.quantity).toBe(1);
 		expect(product.price).toBe(125000);
+		expect(await getArtworkBySlug(env, artwork.slug, db)).toBeNull();
 
-		await updateArtworkAdmin(env, artwork.slug, artworkInput({ available: false, priceCents: "" }), db);
+		await updateArtworkAdmin(env, artwork.slug, artworkInput({ published: true, available: true, priceCents: 125000 }), db);
+		expect((await getArtworkBySlug(env, artwork.slug, db))?.offer).toEqual({ priceCents: 125000, available: true, sold: false });
+
+		await updateArtworkAdmin(env, artwork.slug, artworkInput({ published: true, available: false, priceCents: "" }), db);
 		[product] = await db.select().from(products).where(eq(products.artworkId, artwork.id));
 		expect(product.quantity).toBe(0);
 		expect(product.price).toBe(125000);
+		expect((await getArtworkBySlug(env, artwork.slug, db))?.offer).toEqual({ priceCents: 125000, available: false, sold: false });
 	});
 
 	test("updates collection membership and the derived cover relationship", async () => {

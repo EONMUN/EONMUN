@@ -34,8 +34,12 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await expect(page.getByRole('heading', { name: 'Playwright artwork edited' })).toBeVisible();
 });
 
-test('buyer can start checkout for available artwork without seeing its price', async ({ page }) => {
+test('buyer sees the checkout price and an initial offer before starting checkout', async ({ page, request }) => {
 	let submittedSlug: string | null = null;
+	const html = await (await request.get('/artworks/limones-del-cobre')).text();
+	expect(html).toContain('$1,400.00 USD');
+	expect(html).toContain('"priceCurrency":"USD","price":"1400.00","availability":"https://schema.org/InStock"');
+	expect(html).toMatch(/<form[^>]+data-buy-form/);
 	await page.route('**/api/checkout', async (route) => {
 		const request = route.request();
 		expect(request.method()).toBe('POST');
@@ -44,7 +48,7 @@ test('buyer can start checkout for available artwork without seeing its price', 
 	});
 	await visit(page, '/artworks/limones-del-cobre');
 	await expect(page.getByRole('heading', { name: 'Limones del Cobre' })).toBeVisible();
-	await expect(page.getByText('$1,400')).toHaveCount(0);
+	await expect(page.locator('[data-artwork-price]')).toHaveText('$1,400.00 USD');
 	await page.getByRole('button', { name: 'Buy' }).click();
 	await expect(page).toHaveURL(/checkout=e2e/);
 	expect(submittedSlug).toBe('limones-del-cobre');

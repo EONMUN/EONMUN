@@ -2,7 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PurchaseState from '../../components/PurchaseState.astro';
 import TagLink from '../../components/TagLink.astro';
-import { CACHE_TAGS } from '../../lib/cache';
 import { Image } from 'astro:assets';
 import {
 	getPublishedArtworkDetailBySlug,
@@ -24,17 +23,36 @@ if (!artworkDetail) {
 	return new Response('Not found', { status: 404 });
 }
 
-const { artwork, collections, defaultImageUrl } = artworkDetail;
-Astro.cache.set({ tags: [CACHE_TAGS.artwork(artwork.id), ...collections.map((c) => CACHE_TAGS.collection(c.slug))] });
+const { artwork, collections, defaultImageUrl, offer } = artworkDetail;
+// CRITICAL: product price and stock can change independently of artwork content.
+// Shopping crawlers must receive the current offer in the initial HTML.
+Astro.cache.set(false);
 const images = artwork.data.images;
 const defaultImage = images.find((image) => image.isDefault) ?? images[0];
 const mainImage = defaultImage?.url ?? defaultImageUrl;
+const price = offer ? (offer.priceCents / 100).toFixed(2) : null;
+const formattedPrice = offer ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(offer.priceCents / 100) : null;
+const productJsonLd = offer ? JSON.stringify({
+	'@context': 'https://schema.org',
+	'@type': 'Product',
+	name: artwork.data.title,
+	...(artwork.data.description ? { description: artwork.data.description } : {}),
+	...(mainImage ? { image: [mainImage] } : {}),
+	offers: {
+		'@type': 'Offer',
+		url: new URL(`/artworks/${artwork.id}`, Astro.site).toString(),
+		priceCurrency: 'USD',
+		price,
+		availability: `https://schema.org/${offer.available ? 'InStock' : 'OutOfStock'}`,
+	},
+}).replace(/</g, '\\u003c') : null;
 ---
 <BaseLayout
 	title={`${artwork.data.title} — EONMUN`}
 	description={artwork.data.description ?? `View ${artwork.data.title}${artwork.data.year ? ` from ${artwork.data.year}` : ''}`}
 	image={mainImage ?? undefined}
 >
+	{productJsonLd && <script type="application/ld+json" set:html={productJsonLd} />}
 	<div class="container mx-auto px-4 py-8">
 		<nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-8">
 			<a href="/" class="hover:underline">Home</a>
@@ -78,7 +96,8 @@ const mainImage = defaultImage?.url ?? defaultImageUrl;
 				</div>
 
 				<div class="border-t border-b border-gray-200 dark:border-gray-700 py-6">
-					<PurchaseState artworkSlug={artwork.id} />
+					{formattedPrice && <p class="mb-4 text-2xl font-semibold" data-artwork-price>{formattedPrice} USD</p>}
+					<PurchaseState artworkSlug={artwork.id} available={offer?.available ?? false} sold={offer?.sold ?? false} />
 				</div>
 
 				{artwork.data.description && (

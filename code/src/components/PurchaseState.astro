@@ -1,13 +1,13 @@
 ---
-interface Props { artworkSlug: string }
-const { artworkSlug } = Astro.props;
+interface Props { artworkSlug: string; available: boolean; sold: boolean }
+const { artworkSlug, available, sold } = Astro.props;
 ---
 <div data-purchase-state data-artwork-slug={artworkSlug} class="space-y-2">
-	<form method="POST" action="/api/checkout" hidden data-buy-form>
+	<form method="POST" action="/api/checkout" hidden={!available} data-buy-form>
 		<input type="hidden" name="artworkSlug" value={artworkSlug} />
 		<button type="submit" class="primary-button">Buy</button>
 	</form>
-	<p data-purchase-status class="text-sm text-gray-500 dark:text-gray-400">Checking availability…</p>
+	<p data-purchase-status hidden={available} class="text-sm text-gray-500 dark:text-gray-400">{sold ? 'Sold' : 'Not currently available for purchase.'}</p>
 </div>
 <script is:inline>
 	for (const root of document.querySelectorAll('[data-purchase-state]')) {
