@@ -8,7 +8,8 @@ type CloudflareEnv = {
 	ADMIN_EMAILS?: string;
 	AUTH_GOOGLE_ID?: string;
 	AUTH_GOOGLE_SECRET?: string;
-	AUTH_REDIRECT_PROXY_URL?: string;
+	AUTH_PROXY_URL?: string;
+	OAUTH_PROXY_SECRET?: string;
 	AUTH_SECRET?: string;
 	GOOGLE_CLIENT_ID?: string;
 	GOOGLE_CLIENT_SECRET?: string;

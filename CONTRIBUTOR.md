@@ -136,7 +136,7 @@ bun test
 bun run test:e2e
 ```
 
-The PR validation workflow runs the Astro build, Bun tests, and Playwright artwork flows. Playwright uses an isolated local database and a test Auth.js session; its purchase test mocks the checkout redirect while `code/test/checkout.test.ts` checks server-side Stripe session creation.
+The PR validation workflow runs the Astro build, Bun tests, and Playwright artwork flows. Playwright uses an isolated local database and a test Better Auth session; its purchase test mocks the checkout redirect while `code/test/checkout.test.ts` checks server-side Stripe session creation.
 
 ## Analytics
 
@@ -159,10 +159,41 @@ checkout funnel, filtered to `checkout_status = success` on the final step.
 A success return is **not** a verified purchase; payment confirmation remains in
 the Stripe webhook. `$pageview`, autocapture, and exception capture are enabled.
 
-The browser reads the uncached Auth.js session, identifies signed-in admins by
+The browser reads the uncached Better Auth session, identifies signed-in admins by
 their stable Google account ID, and resets a previously identified visitor when
 the session is empty. Existing sessions must sign in again to replace the old
 random Auth.js ID with the stable Google ID. Session lookup failures leave the
 existing identity intact. Personal identity is never embedded in public HTML.
 
 Collection analytics records `collection_clicked` with `collection_slug`. Collection pageviews and artwork pageviews reached via `?collection=<slug>` include `collection_slug`, as do artwork-page checkout-start events. This URL parameter records navigation context, not verified membership or identity.
+
+
+## Preview sign-in
+
+Better Auth uses the OAuth proxy plugin with `AUTH_PROXY_URL=https://eonmun.com`,
+checked into `code/wrangler.jsonc` for production and all preview versions.
+Google's authorized redirect URI remains
+`https://eonmun.com/api/auth/callback/google`. The preview starts sign-in, Google
+returns to production, and production sends the encrypted profile back to the
+preview to set its own host-only session cookies.
+
+Deploy the Better Auth migration to production before completing sign-in on its
+preview. Both ends must speak the same proxy protocol; an Auth.js production
+callback cannot process Better Auth state. Older preview branches must merge
+this change and redeploy. Existing Auth.js sessions are not migrated; sign in
+again after deployment.
+
+Versions of `eonmun-astro` inherit the same `AUTH_SECRET`, which supplies the
+shared proxy encryption key as well as session encryption. An optional Worker
+secret `OAUTH_PROXY_SECRET` can separate proxy encryption from session encryption;
+if configured, use the same value on every participating version. Never put
+secrets in `vars`. `AUTH_REDIRECT_PROXY_URL` belonged to Auth.js and is no longer
+used. Local proxy login also requires the shared proxy secret; local fixture
+tests do not contact Google or production.
+
+Only verified Google emails in `ADMIN_EMAILS` can create an admin session. Every
+admin request checks the current allowlist again. Sessions use encrypted cookies
+with a fixed 30-day expiry; no auth database migration is needed. Sign-out clears
+the browser cookies. As with the previous stateless sessions, signing out does
+not centrally revoke a copied cookie; removing an email from `ADMIN_EMAILS`
+blocks its admin access.

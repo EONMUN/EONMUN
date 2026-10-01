@@ -16,7 +16,7 @@ export default async function setup(databaseUrl: string) {
 	delete env.TURSO_AUTH_TOKEN;
 	execFileSync('bun', ['run', 'db:migrate'], { env, stdio: 'inherit' });
 	execFileSync('bun', ['run', 'db:seed'], { env, stdio: 'inherit' });
-	writeFileSync(varsPath, `${marker}\nTURSO_DATABASE_URL="${databaseUrl}"\nAUTH_SECRET="eonmun-playwright-only-secret"\nSTRIPE_SECRET_KEY="sk_test_playwright"\n`);
+	writeFileSync(varsPath, `${marker}\nTURSO_DATABASE_URL="${databaseUrl}"\nAUTH_SECRET="eonmun-playwright-only-secret-at-least-32"\nAUTH_GOOGLE_ID="playwright-google-client"\nAUTH_GOOGLE_SECRET="playwright-google-secret"\nSTRIPE_SECRET_KEY="sk_test_playwright"\n`);
 	return () => {
 		if (existsSync(varsPath) && readFileSync(varsPath, 'utf8').startsWith(marker)) unlinkSync(varsPath);
 		if (existsSync(backupPath)) renameSync(backupPath, varsPath);

@@ -39,7 +39,7 @@ const {
 				</div>
 				<div class="identity">
 					{email && <span class="email">{email}</span>}
-					<a class="signout" href="/api/auth/signout">Sign out</a>
+					<button class="signout" type="button" data-sign-out>Sign out</button>
 				</div>
 			</header>
 			<slot />
@@ -402,3 +402,11 @@ const {
 		color: var(--seal);
 	}
 </style>
+
+<script>
+	document.querySelector('[data-sign-out]')?.addEventListener('click', async () => {
+		const response = await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+		if (response.ok) location.assign('/');
+		else alert('Sign out failed. Please try again.');
+	});
+</script>

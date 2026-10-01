@@ -4,7 +4,7 @@
 //
 //   TURSO_DATABASE_URL   — libsql connection URL to the production Turso DB
 //   TURSO_AUTH_TOKEN     — Turso auth token
-//   AUTH_SECRET          — Auth.js JWT/session encryption secret
+//   AUTH_SECRET          — Better Auth session and OAuth proxy encryption secret
 //   AUTH_GOOGLE_SECRET   — Google OAuth client secret for `/api/auth`
 //   STRIPE_SECRET_KEY    — Stripe Checkout API secret
 //   STRIPE_WEBHOOK_SECRET — Stripe Checkout webhook signing secret
@@ -36,6 +36,7 @@
 	],
 	"vars": {
 		"AUTH_GOOGLE_ID": "155891318260-8svnveu1achtgut2oft9pmr31jpmlk2q.apps.googleusercontent.com",
+		"AUTH_PROXY_URL": "https://eonmun.com",
 		"ADMIN_EMAILS": "ncrmro@gmail.com,1e1104k4@gmail.com"
 	},
 	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare

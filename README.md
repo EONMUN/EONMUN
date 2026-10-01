@@ -2,7 +2,7 @@
 
 EONMUN is the public portfolio and artwork checkout site for the artist EONMUN.
 
-The production site is an Astro application deployed to Cloudflare Workers at `https://eonmun.com`. Turso is the runtime source for artwork, collections, relationships, products, prices, and availability. Repository content collections contain posts, while runtime endpoints handle inventory, checkout, contact, debug output, and Auth.js administration.
+The production site is an Astro application deployed to Cloudflare Workers at `https://eonmun.com`. Turso is the runtime source for artwork, collections, relationships, products, prices, and availability. Repository content collections contain posts, while runtime endpoints handle inventory, checkout, contact, debug output, and Better Auth administration.
 
 ## Project shape
 
@@ -21,7 +21,7 @@ The production site is an Astro application deployed to Cloudflare Workers at `h
 - `/collections` and `/collections/[slug]`
 - `/posts` and `/posts/[slug]`
 - `/contact`
-- `/admin`, `/admin/artworks`, and `/admin/collections`, protected by Auth.js and an allowed email list
+- `/admin`, `/admin/artworks`, and `/admin/collections`, protected by Better Auth and an allowed email list
 
 Available published artwork is purchased from its artwork page. Price data remains server-side until the buyer reaches Stripe Checkout.
 

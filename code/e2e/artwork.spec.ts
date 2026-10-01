@@ -1,16 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { encode } from '@auth/core/jwt';
+import { adminCookies } from '../test/helpers/auth';
 
 async function visit(page: import('@playwright/test').Page, path: string) {
 	await expect(async () => { await page.goto(path, { waitUntil: 'domcontentloaded' }); }).toPass({ timeout: 10_000 });
 }
 
 test('admin creates, lists, edits, and publishes an artwork', async ({ page, context }) => {
-	const token = await encode({
-		token: { sub: 'playwright-admin', email: 'ncrmro@gmail.com', name: 'Playwright Admin' },
-		secret: 'eonmun-playwright-only-secret', salt: 'authjs.session-token',
-	});
-	await context.addCookies([{ name: 'authjs.session-token', value: token, url: 'http://127.0.0.1:' + process.env.EONMUN_E2E_PORT }]);
+	await context.addCookies(await adminCookies('http://127.0.0.1:' + process.env.EONMUN_E2E_PORT));
 
 	const slug = `playwright-artwork-${Date.now()}`;
 	await visit(page, '/admin/artworks/new');

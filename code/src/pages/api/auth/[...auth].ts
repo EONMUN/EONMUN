@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
-import { Auth } from "@auth/core";
 
-import { getAuthConfig, getAuthConfigIssues } from "../../../lib/auth";
+import { createAuth, getAuthConfigIssues, getSession } from "../../../lib/auth";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
 
 export const prerender = false;
@@ -12,7 +11,7 @@ const handler: APIRoute = async ({ request }) => {
 
 	if (issues.length > 0) {
 		return new Response(
-			`Auth.js is not configured. Missing: ${issues.join(", ")}.`,
+			`Better Auth is not configured. Missing: ${issues.join(", ")}.`,
 			{
 				status: 503,
 				headers: {
@@ -23,7 +22,10 @@ const handler: APIRoute = async ({ request }) => {
 		);
 	}
 
-	return Auth(request, getAuthConfig(env));
+	if (new URL(request.url).pathname === "/api/auth/session" && request.method === "GET") {
+		return Response.json(await getSession(request, env), { headers: { "cache-control": "no-store" } });
+	}
+	return createAuth(env, request).handler(request);
 };
 
 export const GET = handler;
