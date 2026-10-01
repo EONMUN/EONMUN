@@ -30,9 +30,10 @@ Astro.cache.set(false);
 const images = artwork.data.images;
 const defaultImage = images.find((image) => image.isDefault) ?? images[0];
 const mainImage = defaultImage?.url ?? defaultImageUrl;
-const price = offer ? (offer.priceCents / 100).toFixed(2) : null;
-const formattedPrice = offer ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(offer.priceCents / 100) : null;
-const productJsonLd = offer ? JSON.stringify({
+const saleOffer = offer?.available ? offer : null;
+const price = saleOffer ? (saleOffer.priceCents / 100).toFixed(2) : null;
+const formattedPrice = saleOffer ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(saleOffer.priceCents / 100) : null;
+const productJsonLd = saleOffer ? JSON.stringify({
 	'@context': 'https://schema.org',
 	'@type': 'Product',
 	name: artwork.data.title,
@@ -43,7 +44,7 @@ const productJsonLd = offer ? JSON.stringify({
 		url: new URL(`/artworks/${artwork.id}`, Astro.site).toString(),
 		priceCurrency: 'USD',
 		price,
-		availability: `https://schema.org/${offer.available ? 'InStock' : 'OutOfStock'}`,
+		availability: 'https://schema.org/InStock',
 	},
 }).replace(/</g, '\\u003c') : null;
 ---

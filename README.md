@@ -23,6 +23,6 @@ The production site is an Astro application deployed to Cloudflare Workers at `h
 - `/contact`
 - `/admin`, `/admin/artworks`, and `/admin/collections`, protected by Better Auth and an allowed email list
 
-Available published artwork shows its USD price on the artwork page and is purchased through Stripe Checkout. The displayed price comes from the same product record used to create Checkout sessions.
+Available published artwork shows its USD price on the artwork page and is purchased through Stripe Checkout. Unavailable artwork hides its price. The displayed price comes from the same product record used to create Checkout sessions.
 
 See [CONTRIBUTOR.md](./CONTRIBUTOR.md) for setup, development, validation, and deploy notes.

@@ -98,7 +98,7 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 				value={artwork?.product?.price ?? ''}
 			/>
 		</label>
-		<p id="price-note" class="hint">Required when the piece is available for purchase. Published artwork prices appear on their public pages and in Stripe Checkout.</p>
+		<p id="price-note" class="hint">Required when the piece is available for purchase. The price appears publicly only while the piece is available.</p>
 	</FormFieldset>
 
 	{artwork ? (
