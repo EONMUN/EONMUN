@@ -1,0 +1,19 @@
+<script>
+	import posthog from 'posthog-js';
+	import { startAnalytics } from '../lib/analytics';
+
+	// Preview and local traffic must not enter the production project.
+	const production = ['eonmun.com', 'www.eonmun.com'].includes(location.hostname);
+	const key = import.meta.env.PUBLIC_POSTHOG_KEY || (production ? 'phc_N9CnYysToROM3hTzrt3dC4K12TaF616Z84t83aymTDp' : '');
+	if (key) {
+		posthog.init(key, {
+			api_host: 'https://us.i.posthog.com',
+			ui_host: 'https://us.posthog.com',
+			defaults: '2025-05-24',
+			capture_pageview: false,
+			capture_exceptions: true,
+			person_profiles: 'identified_only',
+			loaded: (client) => { void startAnalytics(client); },
+		});
+	}
+</script>
