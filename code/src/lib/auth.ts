@@ -14,6 +14,7 @@ export interface AuthEnv {
 
 export interface AdminSession {
 	user: {
+		id?: string;
 		email: string;
 		name?: string | null;
 		image?: string | null;
@@ -97,11 +98,17 @@ export function getAuthConfig(env: AuthEnv): AuthConfig {
 				const emailVerified = profile?.email_verified === true;
 				return Boolean(email && emailVerified && allowedAdminEmails.has(email));
 			},
-			session({ session }) {
+			jwt({ token, account }) {
+				// Auth.js creates a random user ID without an adapter; Google's account ID survives repeat logins.
+				if (account?.provider === "google") token.sub = account.providerAccountId;
+				return token;
+			},
+			session({ session, token }) {
 				if (session.user?.email && !allowedAdminEmails.has(session.user.email.toLowerCase())) {
 					return null;
 				}
 
+				if (session.user && token.sub) session.user.id = token.sub;
 				return session;
 			},
 		},

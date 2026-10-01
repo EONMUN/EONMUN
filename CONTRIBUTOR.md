@@ -137,3 +137,30 @@ bun run test:e2e
 ```
 
 The PR validation workflow runs the Astro build, Bun tests, and Playwright artwork flows. Playwright uses an isolated local database and a test Auth.js session; its purchase test mocks the checkout redirect while `code/test/checkout.test.ts` checks server-side Stripe session creation.
+
+## Analytics
+
+The Astro base layout loads PostHog into the existing US project on `eonmun.com`
+and `www.eonmun.com`. Local and preview hosts disable analytics by default. To
+validate against a separate test project, set `PUBLIC_POSTHOG_KEY` at build time.
+This is a public ingestion key, never a PostHog personal API key.
+
+Named events support PostHog breakdowns and funnels:
+
+| Event | Properties | Trigger |
+| --- | --- | --- |
+| `post_clicked` | `post_slug`, `destination_path`, `source_path` | A link to a post, including nested image/text clicks |
+| `artwork_clicked` | `artwork_slug`, `destination_path`, `source_path` | A link to an artwork, including related artwork links |
+| `checkout_started` | `artwork_slug`, `source_path` | Submission of the Buy form |
+| `checkout_returned` | `artwork_slug`, `checkout_status`, `source_path` | Return from Stripe with `success` or `cancelled` |
+
+Use `artwork_clicked → checkout_started → checkout_returned` for the browser
+checkout funnel, filtered to `checkout_status = success` on the final step.
+A success return is **not** a verified purchase; payment confirmation remains in
+the Stripe webhook. `$pageview`, autocapture, and exception capture are enabled.
+
+The browser reads the uncached Auth.js session, identifies signed-in admins by
+their stable Google account ID, and resets a previously identified visitor when
+the session is empty. Existing sessions must sign in again to replace the old
+random Auth.js ID with the stable Google ID. Session lookup failures leave the
+existing identity intact. Personal identity is never embedded in public HTML.
