@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+export const prerender = false;
+const requestedPath = Astro.url.searchParams.get('callbackUrl') ?? '/admin';
+const callback = new URL(requestedPath, Astro.url);
+const callbackURL = callback.origin === Astro.url.origin ? callback.href : new URL('/admin', Astro.url).href;
+---
+<BaseLayout title="Admin sign in" description="Sign in to the EONMUN studio console.">
+	<section class="mx-auto max-w-lg px-6 py-20">
+		<h1 class="text-3xl mb-6">Admin sign in</h1>
+		<button type="button" data-google-signin data-callback={callbackURL} class="border rounded px-5 py-3">Continue with Google</button>
+		<p role="status" class="mt-4"></p>
+	</section>
+</BaseLayout>
+<script>
+	const button = document.querySelector<HTMLButtonElement>('[data-google-signin]');
+	button?.addEventListener('click', async () => {
+		button.disabled = true;
+		try {
+			const response = await fetch('/api/auth/sign-in/social', {
+				method: 'POST', headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ provider: 'google', callbackURL: button.dataset.callback }),
+			});
+			if (!response.ok) throw new Error('Sign in failed');
+			const { url } = await response.json();
+			if (!url) throw new Error('Missing redirect');
+			location.assign(url);
+		} catch {
+			document.querySelector('[role="status"]')!.textContent = 'Sign in is unavailable. Please try again.';
+			button.disabled = false;
+		}
+	});
+</script>
