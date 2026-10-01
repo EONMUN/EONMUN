@@ -53,7 +53,7 @@ export async function getTrafficReport(env: AnalyticsConfig, days: number, now =
 		return rows(await response.json());
 	};
 	const [dailyRows, sourceRows, countryRows] = await Promise.all([
-		query('daily pageviews', `SELECT toString(toDate(timestamp, 'UTC')), count() FROM events WHERE ${filter(historyStart)} GROUP BY 1 ORDER BY 1 LIMIT 186`),
+		query('daily pageviews', `SELECT toString(toDate(timestamp)), count() FROM events WHERE ${filter(historyStart)} GROUP BY 1 ORDER BY 1 LIMIT 186`),
 		query('referring websites', `SELECT coalesce(nullIf(toString(properties.$referring_domain), ''), 'Direct / unknown'), count() FROM events WHERE ${filter(start)} GROUP BY 1 ORDER BY 2 DESC LIMIT 10`),
 		query('countries', `SELECT coalesce(nullIf(toString(properties.$geoip_country_name), ''), 'Unknown'), count() FROM events WHERE ${filter(start)} GROUP BY 1 ORDER BY 2 DESC LIMIT 10`),
 	]);
