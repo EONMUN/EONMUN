@@ -1,20 +1,29 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FilterChip from '../../components/FilterChip.astro';
+import DetailImagePrefetch from '../../components/DetailImagePrefetch.astro';
 import { Image } from 'astro:assets';
 import {
 	getArtworkCollectionFilterOptions,
 	getPublishedArtworkEntries,
 } from '../../lib/artwork-content';
 import { getArtworkCollectionHref } from '../../lib/paths';
+import { ARTWORK_DETAIL_IMAGE, getResponsiveImageSource } from '../../lib/responsive-image';
 
 export const prerender = false;
 
 const artworks = await getPublishedArtworkEntries();
 const collections = getArtworkCollectionFilterOptions(artworks);
 const description = `Browse ${artworks.length} artworks from the EONMUN studio.`;
+const cards = await Promise.all(artworks.map(async (entry) => ({
+	...entry,
+	detailImage: entry.defaultImageUrl
+		? await getResponsiveImageSource(entry.defaultImageUrl, ARTWORK_DETAIL_IMAGE)
+		: null,
+})));
 ---
 <BaseLayout title="Artworks — EONMUN" description={description}>
+	<DetailImagePrefetch />
 	<div class="container mx-auto px-4 py-8" data-artworks-root>
 		<div class="mb-8 space-y-4">
 			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Artworks</h1>
@@ -46,9 +55,13 @@ const description = `Browse ${artworks.length} artworks from the EONMUN studio.`
 		</div>
 
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" data-artwork-grid>
-			{artworks.map(({ artwork, collections: artworkCollections, defaultImageUrl }) => (
+			{cards.map(({ artwork, collections: artworkCollections, defaultImageUrl, detailImage }) => (
 					<a
 						href={`/artworks/${artwork.id}`}
+						data-astro-prefetch="viewport"
+						data-detail-image-src={detailImage?.fallback ? detailImage.src : undefined}
+						data-detail-image-srcset={detailImage?.srcset}
+						data-detail-image-sizes={detailImage?.sizes}
 						class="group block"
 						data-artwork-card
 						data-collection-slugs={artworkCollections.map((collection) => collection.slug).join(',')}

@@ -8,6 +8,7 @@ import {
 	getPublishedArtworkDetailBySlug,
 } from '../../lib/artwork-content';
 import { getArtworkCollectionHref } from '../../lib/paths';
+import { ARTWORK_DETAIL_IMAGE } from '../../lib/responsive-image';
 
 export const prerender = false;
 
@@ -47,7 +48,7 @@ const mainImage = defaultImage?.url ?? defaultImageUrl;
 			<div class="space-y-4">
 				{mainImage ? (
 					<div class="w-full rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800">
-						<Image data-fallback-src={mainImage} format="webp" quality={75} fit="scale-down" src={mainImage} alt={artwork.data.title} width={1920} height={2560} widths={[960, 1920]} sizes="(min-width: 1024px) 50vw, 100vw" loading="eager" fetchpriority="high" class="w-full h-auto object-contain" />
+						<Image data-fallback-src={mainImage} format="webp" quality={75} fit="scale-down" src={mainImage} alt={artwork.data.title} {...ARTWORK_DETAIL_IMAGE} loading="eager" fetchpriority="high" class="w-full h-auto object-contain" />
 					</div>
 				) : (
 					<div class="aspect-square bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-400">

@@ -6,6 +6,7 @@ import TagLink from '../../components/TagLink.astro';
 import { Image } from 'astro:assets';
 import { CACHE_TAGS } from '../../lib/cache';
 import { getArtworkCollectionHref } from '../../lib/paths';
+import { POST_DETAIL_IMAGE } from '../../lib/responsive-image';
 import type { PostType } from '../../db';
 import {
 	getPostPublishedTime,
@@ -73,7 +74,7 @@ const publishedDate = publishedDateValue
 
 		{coverImage && (
 			<div class="mb-8 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-				<Image data-fallback-src={coverImage} format="webp" quality={75} fit="scale-down" src={coverImage} alt={post.data.title} width={1920} height={2560} widths={[960, 1920]} sizes="(min-width: 768px) 768px, 100vw" loading="eager" fetchpriority="high" class="w-full h-auto object-cover" />
+				<Image data-fallback-src={coverImage} format="webp" quality={75} fit="scale-down" src={coverImage} alt={post.data.title} {...POST_DETAIL_IMAGE} loading="eager" fetchpriority="high" class="w-full h-auto object-cover" />
 			</div>
 		)}
 
