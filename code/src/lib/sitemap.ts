@@ -16,7 +16,7 @@ export interface SitemapEntry {
 	lastmod?: string;
 }
 
-const STATIC_PATHS = ["/", "/artworks", "/contact", "/posts"];
+const STATIC_PATHS = ["/", "/artworks", "/collections", "/contact", "/posts"];
 
 export const SITEMAP_HEADERS = {
 	"content-type": "application/xml; charset=utf-8",

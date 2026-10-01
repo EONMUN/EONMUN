@@ -1,6 +1,6 @@
 ---
 const links = [
-	{ href: '/', label: 'Home' },
+	{ href: '/collections', label: 'Collections' },
 	{ href: '/posts', label: 'Posts' },
 	{ href: '/artworks', label: 'Artwork' },
 	{ href: '/contact', label: 'Contact' },
@@ -15,10 +15,11 @@ const onDarkSurface = pathname === '/' || pathname.startsWith('/admin');
 	</a>
 	<div class="backdrop-blur-lg border shadow-xl bg-black/30 border-gray-500/30 flex flex-wrap gap-2 sm:gap-4 uppercase justify-between p-2 sm:p-4 rounded-lg font-bold tracking-wider sm:tracking-widest w-full sm:w-auto items-center">
 		{links.map(({ href, label }) => {
-			const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href);
+			const isActive = pathname === href || pathname.startsWith(`${href}/`);
 			return (
 				<a
 					href={href}
+					aria-current={isActive ? 'page' : undefined}
 					class:list={[
 						'text-xs sm:text-sm transition-colors',
 						isActive ? 'text-white underline underline-offset-4' : 'text-white/70 hover:text-white',
