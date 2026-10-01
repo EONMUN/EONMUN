@@ -167,6 +167,21 @@ existing identity intact. Personal identity is never embedded in public HTML.
 
 Collection analytics records `collection_clicked` with `collection_slug`. Collection pageviews and artwork pageviews reached via `?collection=<slug>` include `collection_slug`, as do artwork-page checkout-start events. This URL parameter records navigation context, not verified membership or identity.
 
+### Admin traffic panel
+
+The top of `/admin` shows public pageviews for 7, 30, or 90 complete UTC days,
+a seven-day moving average, the previous-period change, and top ten referring
+websites and countries. Missing days count as zero; a zero previous total shows
+“No prior baseline.” Referrers describe the pageview's referring domain, not
+first-touch marketing attribution. Admin/API routes and non-production hosts
+are excluded. Reports are cached internally for five minutes behind admin auth;
+browser responses remain `no-store`.
+
+Configure `POSTHOG_PROJECT_ID` and `POSTHOG_PERSONAL_API_KEY` on the
+`eonmun-astro` Worker. The personal API key needs `query:read` for that project.
+Keep it server-side; do not use a `PUBLIC_` prefix or the public ingestion key.
+The panel shows a disconnected state when these are missing and an unavailable
+state for query failures. No sample data is displayed as real traffic.
 
 ## Preview sign-in
 

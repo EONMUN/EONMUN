@@ -1,0 +1,118 @@
+<section class="analytics" aria-labelledby="traffic-heading" data-analytics-panel>
+	<header>
+		<div><p class="eyebrow">Audience</p><h2 id="traffic-heading">Website traffic</h2></div>
+		<label>Period <select data-period aria-label="Traffic period"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select></label>
+	</header>
+	<p data-status role="status">Loading analytics…</p>
+	<div data-report hidden>
+		<div class="summary">
+			<div><span>Pageviews</span><strong data-total></strong></div>
+			<div><span>Daily average</span><strong data-average></strong></div>
+			<div><span>Vs. previous period</span><strong data-change></strong></div>
+		</div>
+		<p data-range class="note"></p>
+		<svg viewBox="0 0 720 210" role="img" aria-label="Daily pageviews and seven-day moving average" data-chart></svg>
+		<div class="legend"><span>Daily views</span><span>— Seven-day average</span></div>
+		<div class="breakdowns">
+			<div><h3>Referring websites</h3><ol data-sources></ol></div>
+			<div><h3>Countries</h3><ol data-countries></ol></div>
+		</div>
+		<p class="note">Public pageviews · complete days in UTC · updates every five minutes. Sources and countries may be unknown.</p>
+	</div>
+	<noscript>Enable JavaScript to load traffic analytics.</noscript>
+</section>
+<script>
+	import type { TrafficReport } from '../../lib/admin-analytics';
+	const root = document.querySelector<HTMLElement>('[data-analytics-panel]');
+	if (root) {
+		const status = root.querySelector<HTMLElement>('[data-status]')!;
+		const report = root.querySelector<HTMLElement>('[data-report]')!;
+		const period = root.querySelector<HTMLSelectElement>('[data-period]')!;
+		const number = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
+		let active: AbortController | undefined;
+		const text = (selector: string, value: string) => { root.querySelector(selector)!.textContent = value; };
+		const list = (selector: string, rows: TrafficReport['sources']) => {
+			const items = rows.map(row => {
+				const item = document.createElement('li');
+				const label = document.createElement('span');
+				label.textContent = row.label;
+				const count = document.createElement('strong');
+				count.textContent = number.format(row.views);
+				item.append(label, count);
+				return item;
+			});
+			if (!items.length) { const item = document.createElement('li'); item.textContent = 'No data in this period.'; items.push(item); }
+			root.querySelector(selector)!.replaceChildren(...items);
+		};
+		const chart = (daily: TrafficReport['daily']) => {
+			const svg = root.querySelector<SVGElement>('[data-chart]')!;
+			svg.replaceChildren();
+			const add = (tag: string, attrs: Record<string, string>, value?: string) => {
+				const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+				for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+				if (value) node.textContent = value;
+				svg.append(node); return node;
+			};
+			const max = Math.max(1, ...daily.flatMap(day => [day.views, day.average]));
+			const width = 660 / daily.length;
+			const y = (value: number) => 180 - value / max * 150;
+			add('line', { x1: '40', y1: '180', x2: '700', y2: '180', stroke: '#56534f' });
+			add('text', { x: '0', y: '30', fill: '#a9a397', 'font-size': '12' }, number.format(max));
+			add('text', { x: '20', y: '180', fill: '#a9a397', 'font-size': '12' }, '0');
+			for (const [i, day] of daily.entries()) {
+				const bar = add('rect', { x: String(40 + i * width), y: String(y(day.views)), width: String(Math.max(1, width - 2)), height: String(180 - y(day.views)), fill: '#b4a285' });
+				const title = document.createElementNS(svg.namespaceURI, 'title');
+				title.textContent = `${day.date}: ${day.views} views; seven-day average ${number.format(day.average)}`;
+				bar.append(title);
+			}
+			add('polyline', { points: daily.map((day, i) => `${40 + (i + .5) * width},${y(day.average)}`).join(' '), fill: 'none', stroke: '#f0e7d7', 'stroke-width': '2' });
+			add('text', { x: '40', y: '205', fill: '#a9a397', 'font-size': '12' }, daily[0]?.date);
+			add('text', { x: '700', y: '205', fill: '#a9a397', 'font-size': '12', 'text-anchor': 'end' }, daily.at(-1)?.date);
+		};
+		const load = async () => {
+			active?.abort();
+			const controller = new AbortController(); active = controller;
+			status.textContent = 'Loading analytics…'; report.hidden = true;
+			try {
+				const response = await fetch(`/api/admin/analytics?days=${period.value}`, { signal: controller.signal, cache: 'no-store' });
+				if (!response.ok) {
+					status.textContent = response.status === 503 ? 'Analytics is not connected yet.' : 'Analytics is temporarily unavailable. Try again shortly.';
+					return;
+				}
+				const data: TrafficReport = await response.json();
+				if (controller.signal.aborted) return;
+				text('[data-total]', number.format(data.total));
+				text('[data-average]', number.format(data.average));
+				text('[data-change]', data.changePercent === null ? 'No prior baseline' : `${data.changePercent > 0 ? '+' : ''}${number.format(data.changePercent)}%`);
+				text('[data-range]', `${data.start} – ${data.end} (UTC)`);
+				chart(data.daily); list('[data-sources]', data.sources); list('[data-countries]', data.countries);
+				status.textContent = data.total ? '' : 'No pageviews recorded in this period.';
+				report.hidden = false;
+			} catch {
+				if (!controller.signal.aborted) status.textContent = 'Analytics is temporarily unavailable. Try again shortly.';
+			}
+		};
+		period.addEventListener('change', () => { void load(); });
+		void load();
+	}
+</script>
+<style>
+	.analytics { margin-bottom: 3rem; padding: 1.5rem; border: 1px solid var(--hair, #36332f); border-radius: .75rem; background: #0e0e10; }
+	header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+	h2 { font-size: 1.6rem; margin: 0; }
+	.eyebrow, .summary span, .note, label, [data-status] { color: #b5afa4; }
+	.eyebrow { text-transform: uppercase; letter-spacing: .15em; font-size: .75rem; }
+	select { margin-left: .5rem; background: #171719; color: #ece7dd; padding: .5rem; border: 1px solid #56534f; border-radius: .3rem; }
+	.summary { display: flex; flex-wrap: wrap; gap: 1.5rem 3rem; margin: 1.5rem 0; }
+	.summary span, .summary strong { display: block; }
+	.summary strong { font-size: 2rem; }
+	.note, .legend { font-size: .8rem; }
+	svg { width: 100%; height: auto; }
+	.legend { display: flex; gap: 1.5rem; color: #b4a285; }
+	.legend span:last-child { color: #f0e7d7; }
+	.breakdowns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; margin: 1.5rem 0; }
+	h3 { font-size: 1rem; }
+	ol { list-style: none; padding: 0; }
+	ol :global(li) { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #29272a; padding: .4rem 0; overflow-wrap: anywhere; }
+	@media (max-width: 600px) { .breakdowns { grid-template-columns: 1fr; gap: 1rem; } .analytics { padding: 1rem; } }
+</style>

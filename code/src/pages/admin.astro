@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import AnalyticsPanel from '../components/admin/AnalyticsPanel.astro';
 import ActionBar from '../components/admin/ActionBar.astro';
 import CardGrid from '../components/admin/CardGrid.astro';
 import ConsoleSection from '../components/admin/ConsoleSection.astro';
@@ -60,6 +61,7 @@ const draftTally = (tally: { total: number; published: number }) =>
 	`${tally.total} total · ${tally.published} published · ${tally.total - tally.published} draft`;
 ---
 <ConsoleShell title="Admin — EONMUN" heading="Admin" email={session.user.email}>
+	<AnalyticsPanel />
 	<ActionBar>
 		<CreateAction
 			href="/admin/artworks/new"
