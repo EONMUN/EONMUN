@@ -12,7 +12,7 @@ const cards = collections.map((collection) => {
 	return { collection, count: members.length, image: members.find((entry) => entry.defaultImageUrl)?.defaultImageUrl };
 });
 ---
-<BaseLayout title="Collections — EONMUN" description="Explore artwork collections from the EONMUN studio.">
+<BaseLayout title="Collections — EONMUN" description="Explore artwork collections from the EONMUN studio." image={cards.find((card) => card.image)?.image}>
 	<div class="container mx-auto px-4 py-8">
 		<div class="mb-8">
 			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Collections</h1>
@@ -23,7 +23,7 @@ const cards = collections.map((collection) => {
 				<a href={getCollectionHref(collection.slug)} class="group block" data-collection-card>
 					<div class="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-4">
 						{image ? (
-							<Image src={image} data-fallback-src={image} alt={collection.name} format="webp" quality={75} fit="scale-down" width={960} height={960} widths={[480, 960]} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" loading="lazy" class="w-full h-full object-cover transition-transform group-hover:scale-105" />
+							<Image src={image} data-fallback-src={image} alt={collection.name} format="webp" quality={75} fit="cover" width={960} height={960} widths={[480, 960]} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" loading="lazy" class="w-full h-full object-cover transition-transform group-hover:scale-105" />
 						) : <div class="w-full h-full flex items-center justify-center text-gray-500">{collection.name}</div>}
 					</div>
 					<h2 class="text-xl font-medium mb-1">{collection.name}</h2>

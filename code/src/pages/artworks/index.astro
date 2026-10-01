@@ -8,7 +8,7 @@ import { getCollectionHref } from '../../lib/paths';
 export const prerender = false;
 const [artworks, collections] = await Promise.all([getPublishedArtworkEntries(), getPublishedCollectionRefs()]);
 ---
-<BaseLayout title="Artworks — EONMUN" description={`Browse ${artworks.length} artworks from the EONMUN studio.`}>
+<BaseLayout title="Artworks — EONMUN" description={`Browse ${artworks.length} artworks from the EONMUN studio.`} image={artworks.find((entry) => entry.defaultImageUrl)?.defaultImageUrl ?? undefined}>
 	<div class="container mx-auto px-4 py-8">
 		<div class="mb-8 space-y-4">
 			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Artworks</h1>
