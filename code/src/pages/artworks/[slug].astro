@@ -7,7 +7,7 @@ import { Image } from 'astro:assets';
 import {
 	getPublishedArtworkDetailBySlug,
 } from '../../lib/artwork-content';
-import { getArtworkCollectionHref } from '../../lib/paths';
+import { getCollectionHref } from '../../lib/paths';
 import { ARTWORK_DETAIL_IMAGE } from '../../lib/responsive-image';
 
 export const prerender = false;
@@ -93,7 +93,7 @@ const mainImage = defaultImage?.url ?? defaultImageUrl;
 						<h2 class="text-lg font-semibold mb-3">Collection{collections.length > 1 ? 's' : ''}</h2>
 						<div class="flex flex-wrap gap-2">
 							{collections.map((c) => (
-								<TagLink href={getArtworkCollectionHref(c.slug)}>
+								<TagLink href={getCollectionHref(c.slug)}>
 									{c.name}
 								</TagLink>
 							))}

@@ -21,7 +21,7 @@ test("collection edits refresh only published member details and related posts",
 		["published"],
 	);
 	expect(plan.tags).toContain(CACHE_TAGS.artwork("draft"));
-	expect(plan.paths).toEqual(["/", "/artworks", "/artworks/published", "/posts/collection-post"]);
+	expect(plan.paths).toEqual(["/", "/artworks", "/sitemap.xml", "/artworks/published", "/posts/collection-post"]);
 });
 
 test("admin cache refresh purges only affected tags before filling affected pages", async () => {

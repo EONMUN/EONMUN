@@ -17,6 +17,8 @@ export default defineConfig({
 		'/': publicContentRule(CACHE_TAGS.home),
 		'/artworks': publicContentRule(CACHE_TAGS.artworks),
 		'/artworks/[slug]': PUBLIC_CONTENT_RULE,
+		'/collections': publicContentRule(CACHE_TAGS.artworks),
+		'/collections/[slug]': PUBLIC_CONTENT_RULE,
 		'/posts': publicContentRule(CACHE_TAGS.posts),
 		'/posts/[slug]': PUBLIC_CONTENT_RULE,
 		'/sitemap.xml': publicContentRule(CACHE_TAGS.sitemap),

@@ -1,12 +1,34 @@
 ---
-import { getArtworkCollectionHref } from '../../lib/paths';
-
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArtworkGrid from '../../components/ArtworkGrid.astro';
+import FilterChip from '../../components/FilterChip.astro';
+import { getPublishedArtworkEntries } from '../../lib/artwork-content';
+import { getPublishedCollectionRefs } from '../../lib/collection-content';
+import { getCollectionHref } from '../../lib/paths';
+import { CACHE_TAGS } from '../../lib/cache';
 export const prerender = false;
-
-const { slug } = Astro.params;
-if (!slug) {
+const collections = await getPublishedCollectionRefs();
+const collection = collections.find((item) => item.slug === Astro.params.slug);
+if (!collection) {
+	Astro.cache.set(false);
 	return new Response('Not found', { status: 404 });
 }
-
-return Astro.redirect(getArtworkCollectionHref(slug), 301);
+const artworks = await getPublishedArtworkEntries(collection.slug);
+// Membership and artwork publication changes must invalidate the collection's grid too.
+Astro.cache.set({ tags: [CACHE_TAGS.artworks, CACHE_TAGS.collection(collection.slug)] });
 ---
+<BaseLayout title={`${collection.name} — EONMUN`} description={collection.description || `Explore the ${collection.name} collection.`} image={artworks[0]?.defaultImageUrl ?? undefined}>
+	<div class="container mx-auto px-4 py-8">
+		<div class="mb-8 space-y-4">
+			<h1 class="text-4xl font-bold uppercase tracking-wider">{collection.name}</h1>
+			{collection.description && <p class="text-gray-600 dark:text-gray-400 whitespace-pre-line">{collection.description}</p>}
+			<div class="flex flex-wrap gap-2">
+				<FilterChip href="/artworks">All</FilterChip>
+				{collections.map((item) => <FilterChip href={getCollectionHref(item.slug)} active={item.slug === collection.slug}>{item.name}</FilterChip>)}
+			</div>
+			<p class="text-sm text-gray-500">{artworks.length} artwork{artworks.length !== 1 ? 's' : ''}</p>
+		</div>
+		<ArtworkGrid artworks={artworks} collectionSlug={collection.slug} />
+		{artworks.length === 0 && <p class="py-12 text-center text-gray-500">No artworks published in this collection yet.</p>}
+	</div>
+</BaseLayout>

@@ -18,6 +18,7 @@ The production site is an Astro application deployed to Cloudflare Workers at `h
 
 - `/` homepage
 - `/artworks` and `/artworks/[slug]`
+- `/collections` and `/collections/[slug]`
 - `/posts` and `/posts/[slug]`
 - `/contact`
 - `/admin`, `/admin/artworks`, and `/admin/collections`, protected by Auth.js and an allowed email list

@@ -17,6 +17,7 @@ This file is for agent-specific operating rules. Project overview and human cont
 
 - For issue-backed work, post `Work Started` and `Work Update` comments on the source issue.
 - Treat issues, pull requests, milestones, and boards as the canonical public record.
+- Always include the PR link and its preview URL in the final handoff for PR work. Retrieve the URL from the `Preview Astro` workflow or its PR comment, verify it responds, and link to the affected page when useful. Wait for a pending preview deployment; if it fails or is unavailable, state that explicitly instead of inventing a URL.
 - Implementation work belongs in git worktrees at `~/.worktrees/{owner}/{repo}/{branch}/` when starting new branch work. Main checkouts stay on the default branch.
 - Use `rg` and `rg --files` for repository search.
 - Use `jq` or `yq` to inspect JSON and YAML.

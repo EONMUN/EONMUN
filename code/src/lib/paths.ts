@@ -1,4 +1,8 @@
-export function getArtworkCollectionHref(slug: string) {
-	const params = new URLSearchParams({ collection: slug });
-	return `/artworks?${params.toString()}`;
+export function getCollectionHref(slug: string) {
+	return `/collections/${encodeURIComponent(slug)}`;
+}
+
+export function getArtworkHref(slug: string, collectionSlug?: string) {
+	const path = `/artworks/${encodeURIComponent(slug)}`;
+	return collectionSlug ? `${path}?${new URLSearchParams({ collection: collectionSlug })}` : path;
 }

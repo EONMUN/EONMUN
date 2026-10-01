@@ -1,0 +1,52 @@
+---
+import { Image } from 'astro:assets';
+import DetailImagePrefetch from './DetailImagePrefetch.astro';
+import type { PublishedArtworkDetail } from '../lib/artwork-content';
+import { getArtworkHref } from '../lib/paths';
+import { ARTWORK_DETAIL_IMAGE, getResponsiveImageSource } from '../lib/responsive-image';
+interface Props { artworks: PublishedArtworkDetail[]; collectionSlug?: string }
+const { artworks, collectionSlug } = Astro.props;
+const cards = await Promise.all(artworks.map(async (entry) => ({
+	...entry,
+	detailImage: entry.defaultImageUrl
+		? await getResponsiveImageSource(entry.defaultImageUrl, ARTWORK_DETAIL_IMAGE)
+		: null,
+})));
+---
+<DetailImagePrefetch />
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" data-artwork-grid>
+			{cards.map(({ artwork, collections: artworkCollections, defaultImageUrl, detailImage }) => (
+					<a
+						href={getArtworkHref(artwork.id, collectionSlug)}
+						data-astro-prefetch="viewport"
+						data-detail-image-src={detailImage?.fallback ? detailImage.src : undefined}
+						data-detail-image-srcset={detailImage?.srcset}
+						data-detail-image-sizes={detailImage?.sizes}
+						class="group block"
+						data-artwork-card
+						data-collection-slugs={artworkCollections.map((collection) => collection.slug).join(',')}
+					>
+						<div class="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-4">
+							{defaultImageUrl ? (
+								<Image
+									data-fallback-src={defaultImageUrl}
+									format="webp" quality={75} fit="scale-down"
+									src={defaultImageUrl}
+									alt={artwork.data.title}
+									width={960}
+									height={960}
+									widths={[480, 960]}
+									sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+									class="w-full h-full object-cover transition-transform group-hover:scale-105"
+								/>
+							) : (
+								<div class="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+							)}
+						</div>
+						<div class="text-center">
+							<h3 class="text-lg font-medium mb-1">{artwork.data.title}</h3>
+							{artwork.data.year && <p class="text-sm text-gray-500">{artwork.data.year}</p>}
+						</div>
+					</a>
+			))}
+		</div>
