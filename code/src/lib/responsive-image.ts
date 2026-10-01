@@ -16,6 +16,20 @@ export interface ResponsiveImageSource {
 	fallback?: string;
 }
 
+export const ARTWORK_DETAIL_IMAGE = {
+	width: 1920,
+	height: 2560,
+	widths: [960, 1920],
+	sizes: '(min-width: 1024px) 50vw, 100vw',
+} satisfies ResponsiveImageOptions;
+
+export const POST_DETAIL_IMAGE = {
+	width: 1920,
+	height: 2560,
+	widths: [960, 1920],
+	sizes: '(min-width: 768px) 768px, 100vw',
+} satisfies ResponsiveImageOptions;
+
 const MEDIA_ORIGIN = 'https://r2.eonmun.com';
 
 export async function getResponsiveImageSource(

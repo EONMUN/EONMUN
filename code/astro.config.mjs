@@ -11,6 +11,7 @@ import { CACHE_TAGS, PUBLIC_CONTENT_RULE, publicContentRule } from './src/lib/ca
 export default defineConfig({
 	site: 'https://eonmun.com',
 	output: 'server',
+	prefetch: true,
 	cache: { provider: cacheCloudflare() },
 	routeRules: {
 		'/': publicContentRule(CACHE_TAGS.home),

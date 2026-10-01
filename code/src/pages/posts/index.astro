@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FilterChip from '../../components/FilterChip.astro';
+import DetailImagePrefetch from '../../components/DetailImagePrefetch.astro';
 import { Image } from 'astro:assets';
 import type { PostType } from '../../db';
 import {
@@ -9,6 +10,7 @@ import {
 	TYPE_LABELS,
 	VALID_POST_TYPES,
 } from '../../lib/post-content';
+import { POST_DETAIL_IMAGE, getResponsiveImageSource } from '../../lib/responsive-image';
 
 export const prerender = false;
 
@@ -19,12 +21,20 @@ const postType = typeParam && VALID_POST_TYPES.includes(typeParam as PostType)
 
 const posts = await getPublishedPostEntries(postType);
 const coverImages = await getPostCoverImages(posts);
-const postCards = posts.map((post, index) => ({ post, coverImage: coverImages[index] }));
+const postCards = await Promise.all(posts.map(async (post, index) => {
+	const coverImage = coverImages[index];
+	return {
+		post,
+		coverImage,
+		detailImage: coverImage ? await getResponsiveImageSource(coverImage, POST_DETAIL_IMAGE) : null,
+	};
+}));
 ---
 <BaseLayout
 	title={postType ? `${TYPE_LABELS[postType]} — Posts — EONMUN` : 'Posts — EONMUN'}
 	description="News, insights, and stories from the EONMUN studio."
 >
+	<DetailImagePrefetch />
 	<div class="container mx-auto px-4 py-8">
 		<div class="mb-8">
 			<h1 class="text-4xl font-bold mb-2 uppercase tracking-wider">Posts</h1>
@@ -42,9 +52,13 @@ const postCards = posts.map((post, index) => ({ post, coverImage: coverImages[in
 
 			{postCards.length > 0 ? (
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{postCards.map(({ post, coverImage }) => (
+					{postCards.map(({ post, coverImage, detailImage }) => (
 						<a
 							href={`/posts/${post.id}`}
+							data-astro-prefetch="viewport"
+							data-detail-image-src={detailImage?.fallback ? detailImage.src : undefined}
+							data-detail-image-srcset={detailImage?.srcset}
+							data-detail-image-sizes={detailImage?.sizes}
 							class="block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
 						>
 							{coverImage && (

@@ -110,3 +110,29 @@ test('artwork cards use responsive image URLs', async ({ page }) => {
 	await expect(image).toHaveAttribute('srcset', /\/_image\?.* 480w, .* 960w/);
 	await expect(image).toHaveAttribute('sizes', /20vw/);
 });
+
+test('artwork and post cards prefetch the exact detail image for visible cards', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	for (const listing of ['/artworks', '/posts']) {
+		const prefetched = new Set<string>();
+		await page.route(/\/_image\?/, async (route) => {
+			const url = route.request().url();
+			if (['1280', '2560'].includes(new URL(url).searchParams.get('h') ?? '')) prefetched.add(url);
+			await route.fulfill(await imageResponse(url));
+		});
+		await page.goto(listing, { waitUntil: 'load' });
+		const cards = page.locator('a[data-detail-image-src]');
+		await expect(cards.first()).toHaveAttribute('data-astro-prefetch', 'viewport');
+		await cards.first().scrollIntoViewIfNeeded();
+		await expect.poll(() => prefetched.size).toBeGreaterThan(0);
+		await cards.last().scrollIntoViewIfNeeded();
+		await page.waitForTimeout(300);
+		expect(prefetched.size).toBeLessThanOrEqual(2);
+		const prefetchedUrls = [...prefetched];
+		await page.goto((await cards.first().getAttribute('href'))!, { waitUntil: 'load' });
+		const detailImageUrl = await page.locator('img[fetchpriority="high"]').first()
+			.evaluate((image) => (image as HTMLImageElement).currentSrc);
+		expect(prefetchedUrls).toContain(detailImageUrl);
+		await page.unrouteAll();
+	}
+});
