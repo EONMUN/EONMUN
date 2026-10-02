@@ -39,6 +39,8 @@ for (const post of posts) {
 		`coverImageUrl: ${toYamlScalar(post.coverImageUrl ?? null)}`,
 		`publishedAt: ${toYamlScalar(post.publishedAt ?? null)}`,
 		`scheduledAt: ${toYamlScalar(post.scheduledAt ?? null)}`,
+		`createdAt: ${toYamlScalar(post.createdAt)}`,
+		`updatedAt: ${toYamlScalar(post.updatedAt)}`,
 		`locale: ${toYamlScalar(post.locale ?? "en")}`,
 		`artworkSlugs: ${toYamlArray(post.artworkSlugs ?? [])}`,
 		`collectionSlugs: ${toYamlArray(post.collectionSlugs ?? [])}`,

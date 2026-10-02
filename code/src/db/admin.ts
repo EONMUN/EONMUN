@@ -107,6 +107,9 @@ export async function updateArtworkAdmin(env: Env, currentSlug: string, input: A
 			publishedAt: input.published ? (current.publishedAt ?? new Date()) : null,
 		}).where(eq(artworks.id, current.id)).returning();
 
+		const [previousDefaultImage] = await tx.select({ url: artworkImages.url })
+			.from(artworkImages)
+			.where(and(eq(artworkImages.artworkId, current.id), eq(artworkImages.isDefault, true)));
 		await tx.delete(artworkImages).where(eq(artworkImages.artworkId, current.id));
 		if (input.images.length) {
 			await tx.insert(artworkImages).values(input.images.map((image) => ({ ...image, artworkId: current.id })));
@@ -120,6 +123,13 @@ export async function updateArtworkAdmin(env: Env, currentSlug: string, input: A
 				.filter((membership) => membership.isDefaultForCollection)
 				.map((membership) => membership.collectionId),
 		);
+		const previousCollectionIds = existingMemberships.map((membership) => membership.collectionId);
+		const collectionGridChanged = (current.publishedAt !== null || input.published) && (
+			current.title !== input.title || current.slug !== input.slug || current.year !== input.year ||
+			(previousDefaultImage?.url ?? null) !== defaultImageUrl(input) ||
+			(current.publishedAt !== null) !== input.published ||
+			previousCollectionIds.slice().sort().join(",") !== input.collectionIds.slice().sort().join(",")
+		);
 		await replaceMemberships(
 			tx,
 			artworksToCollections.artworkId,
@@ -131,6 +141,13 @@ export async function updateArtworkAdmin(env: Env, currentSlug: string, input: A
 				isDefaultForCollection: coverCollectionIds.has(collectionId),
 			})),
 		);
+		if (collectionGridChanged) {
+			const affectedCollectionIds = [...new Set([...previousCollectionIds, ...input.collectionIds])];
+			if (affectedCollectionIds.length) {
+				await tx.update(collections).set({ updatedAt: new Date() })
+					.where(inArray(collections.id, affectedCollectionIds));
+			}
+		}
 
 		const [product] = await tx.select().from(products).where(
 			and(eq(products.artworkId, current.id), eq(products.type, "artwork")),

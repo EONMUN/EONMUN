@@ -15,7 +15,7 @@ import {
 } from "../src/db/admin";
 import { getAllArtworks, getArtworkBySlug, getHomepageSlides, getPublishedArtworkImages } from "../src/db/queries";
 import { markArtworkPaid } from "../src/db/checkout";
-import { artworks, artworksToCollections, homepageArtworks, products } from "../src/db";
+import { artworks, artworksToCollections, collections, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
 import { artworkContentChanged, collectionContentChanged } from "../src/lib/cache";
 import { createArtworkSitemapEntries, selectRelatedBySlug } from "../src/lib/public-catalog";
@@ -122,6 +122,23 @@ describe("admin mutations", () => {
 		const memberships = await db.select().from(artworksToCollections).where(eq(artworksToCollections.collectionId, created.id));
 		expect(memberships).toHaveLength(2);
 		expect(memberships.find((row) => row.isDefaultForCollection)?.artworkId).toBe(second.id);
+	});
+
+	test("dates a collection when its published artwork card changes", async () => {
+		const artwork = await createArtworkAdmin(env, artworkInput(), db);
+		const collection = await createCollectionAdmin(env, parseCollectionInput({
+			name: "Group", slug: "group", published: true, artworkIds: [artwork.id], defaultArtworkId: artwork.id,
+		}), db);
+		await updateCollectionAdmin(env, collection.slug, parseCollectionInput({
+			name: "Group", slug: "group", published: true, artworkIds: [artwork.id], defaultArtworkId: artwork.id,
+		}), db);
+		const oldDate = new Date("2025-01-01T00:00:00.000Z");
+		await db.update(collections).set({ updatedAt: oldDate }).where(eq(collections.id, collection.id));
+		await updateArtworkAdmin(env, artwork.slug, artworkInput({
+			published: true, collectionIds: [collection.id],
+		}), db);
+		const [changed] = await db.select().from(collections).where(eq(collections.id, collection.id));
+		expect(changed.updatedAt.getTime()).toBeGreaterThan(oldDate.getTime());
 	});
 
 	test("preserves a collection cover when its artwork is edited", async () => {

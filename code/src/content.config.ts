@@ -18,6 +18,8 @@ const posts = defineCollection({
 		coverImageUrl: z.string().url().nullable().optional(),
 		publishedAt: z.string().datetime().nullable().optional(),
 		scheduledAt: z.string().datetime().nullable().optional(),
+		createdAt: z.string().datetime(),
+		updatedAt: z.string().datetime(),
 		locale: z.string().default("en"),
 		artworkSlugs: z.array(z.string()).default([]),
 		collectionSlugs: z.array(z.string()).default([]),

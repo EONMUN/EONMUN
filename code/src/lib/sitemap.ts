@@ -59,12 +59,16 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	}
 	const postEntries = posts.map((post) => ({
 		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
+		lastmod: post.data.updatedAt,
 	}));
 
 	return [
 		...staticEntries,
 		...postEntries,
-		...collections.map((collection) => ({ loc: toAbsoluteUrl(baseUrl, getCollectionHref(collection.slug)) })),
+		...collections.map((collection) => ({
+			loc: toAbsoluteUrl(baseUrl, getCollectionHref(collection.slug)),
+			lastmod: collection.updatedAt.toISOString(),
+		})),
 		...createArtworkSitemapEntries(
 			baseUrl,
 			artworks,
