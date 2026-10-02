@@ -100,5 +100,9 @@ describe("checkout", () => {
 		});
 		expect(stripeBody).toContain("unit_amount%5D=125000");
 		expect(stripeBody).toContain("success_url=https%3A%2F%2Feonmun.test%2Fartworks%2Fwork%3Fcheckout%3Dsuccess");
+		const params = new URLSearchParams(stripeBody);
+		expect(params.get("shipping_address_collection[allowed_countries][0]")).toBe("US");
+		expect(params.get("shipping_options[0][shipping_rate_data][fixed_amount][amount]")).toBe("0");
+		expect(params.get("shipping_options[0][shipping_rate_data][display_name]")).toBe("U.S. shipping included");
 	});
 });
