@@ -203,9 +203,11 @@ describe("admin mutations", () => {
 			gallery,
 			(row) => row.slug,
 			(row) => publishedImages.filter((image) => image.slug === row.slug).map((image) => image.url),
+			(row) => row.updatedAt.toISOString(),
 		);
 		expect(sitemapData.map((entry) => entry.loc)).toContain("https://eonmun.test/artworks/study");
 		expect(sitemapData[0].images).toEqual(images.map((image) => image.url));
+		expect(sitemapData[0].lastmod).toBe(gallery[0].updatedAt.toISOString());
 	});
 
 	test("one valid Stripe event marks an artwork sold exactly once", async () => {

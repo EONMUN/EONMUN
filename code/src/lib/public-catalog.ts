@@ -12,9 +12,11 @@ export function createArtworkSitemapEntries<T>(
 	items: T[],
 	getSlug: (item: T) => string,
 	getImages: (item: T) => string[],
+	getLastmod: (item: T) => string,
 ) {
 	return items.map((item) => ({
 		loc: new URL(`/artworks/${encodeURIComponent(getSlug(item))}`, site).toString(),
 		images: getImages(item),
+		lastmod: getLastmod(item),
 	}));
 }

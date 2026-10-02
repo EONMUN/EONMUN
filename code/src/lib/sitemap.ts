@@ -8,6 +8,7 @@ import { createArtworkSitemapEntries } from "./public-catalog";
 export interface SitemapEntry {
 	loc: string;
 	images?: string[];
+	lastmod?: string;
 }
 
 const STATIC_PATHS = ["/", "/artworks", "/collections", "/contact", "/posts"];
@@ -60,7 +61,6 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
 	}));
 
-	// Publication dates do not track later changes to pages or their structured data.
 	return [
 		...staticEntries,
 		...postEntries,
@@ -70,6 +70,7 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 			artworks,
 			(artwork) => artwork.slug,
 			(artwork) => [...(imagesByArtwork.get(artwork.slug) ?? [])],
+			(artwork) => artwork.updatedAt.toISOString(),
 		),
 	];
 }
@@ -77,10 +78,11 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 export function renderSitemapXml(entries: SitemapEntry[]) {
 	const urls = entries
 		.map((entry) => {
+			const lastmod = entry.lastmod ? `<lastmod>${escapeXml(entry.lastmod)}</lastmod>` : "";
 			const images = entry.images
 				?.map((image) => `<image:image><image:loc>${escapeXml(image)}</image:loc></image:image>`)
 				.join("") ?? "";
-			return `<url><loc>${escapeXml(entry.loc)}</loc>${images}</url>`;
+			return `<url><loc>${escapeXml(entry.loc)}</loc>${lastmod}${images}</url>`;
 		})
 		.join("");
 
