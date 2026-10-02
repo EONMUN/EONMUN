@@ -1,7 +1,7 @@
 import { getAllArtworks, getAllCollections, getPublishedArtworkImages } from "../db/queries";
 import { getCollectionHref } from "./paths";
 import { SITE_URL } from "../consts";
-import { getPublishedPostEntries } from "./post-content";
+import { getPostLastmodTime, getPublishedPostEntries } from "./post-content";
 import { getRuntimeEnv } from "./runtime-env";
 import { createArtworkSitemapEntries } from "./public-catalog";
 
@@ -59,7 +59,7 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 	}
 	const postEntries = posts.map((post) => ({
 		loc: toAbsoluteUrl(baseUrl, `/posts/${post.id}`),
-		lastmod: post.data.updatedAt,
+		lastmod: getPostLastmodTime(post),
 	}));
 
 	return [
