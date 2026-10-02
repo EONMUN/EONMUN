@@ -68,6 +68,8 @@ Turso is the production source for artwork, collections, relationships, products
 
 Use `/admin/artworks` to create and publish artwork. Uploads go through the authenticated Worker endpoint to the bound R2 bucket. Prices are stored in USD cents and shown on published artwork pages only while the product is available for purchase.
 
+The public Pinterest catalog feed is `https://eonmun.com/pinterest-catalog.csv`. It includes only published artwork marked available for purchase with a positive price and an image. The admin price and availability fields control it automatically. To use it, create a Pinterest business account, claim `eonmun.com`, install the Pinterest tag, publish visible shipping and refund policies, then add this URL as a CSV data source for the US in English. Pinterest fetches hosted feeds daily; a sale may remain visible on Pinterest until the next ingestion, but the artwork page and checkout check live availability. Checkout does not reserve inventory yet; a timed reservation is a separate inventory change.
+
 ### Add a post
 
 1. Add the post entry to `fixtures/posts.json`.
