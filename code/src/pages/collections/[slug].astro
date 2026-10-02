@@ -17,7 +17,7 @@ const artworks = await getPublishedArtworkEntries(collection.slug);
 // Membership and artwork publication changes must invalidate the collection's grid too.
 Astro.cache.set({ tags: [CACHE_TAGS.artworks, CACHE_TAGS.collection(collection.slug)] });
 ---
-<BaseLayout title={`${collection.name} — EONMUN`} description={collection.description || `Explore the ${collection.name} collection.`} image={artworks[0]?.defaultImageUrl ?? undefined}>
+<BaseLayout title={`${collection.name} — EONMUN`} description={collection.description || `Explore the ${collection.name} collection.`} image={artworks.find((entry) => entry.defaultImageUrl)?.defaultImageUrl ?? undefined}>
 	<div class="container mx-auto px-4 py-8">
 		<div class="mb-8 space-y-4">
 			<h1 class="text-4xl font-bold uppercase tracking-wider">{collection.name}</h1>

@@ -83,7 +83,7 @@ const productJsonLd = saleOffer ? JSON.stringify({
 									img.url === mainImage ? 'border-current ring-2 ring-current/20' : 'border-gray-200 dark:border-gray-700',
 								]}
 							>
-								<Image data-fallback-src={img.url} format="webp" quality={75} fit="scale-down" src={img.url} alt={img.caption ?? artwork.data.title} width={480} height={480} widths={[480]} sizes="25vw" class="w-full h-full object-cover" />
+								<Image data-fallback-src={img.url} format="webp" quality={75} fit="cover" src={img.url} alt={img.caption ?? artwork.data.title} width={480} height={480} widths={[480]} sizes="25vw" class="w-full h-full object-cover" />
 							</div>
 						))}
 					</div>

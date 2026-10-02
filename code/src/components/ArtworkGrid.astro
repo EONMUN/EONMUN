@@ -30,7 +30,7 @@ const cards = await Promise.all(artworks.map(async (entry) => ({
 							{defaultImageUrl ? (
 								<Image
 									data-fallback-src={defaultImageUrl}
-									format="webp" quality={75} fit="scale-down"
+									format="webp" quality={75} fit="cover"
 									src={defaultImageUrl}
 									alt={artwork.data.title}
 									width={960}
