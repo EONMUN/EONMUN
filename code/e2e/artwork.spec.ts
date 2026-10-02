@@ -92,14 +92,14 @@ test('artwork and post filters share legible light and dark styles', async ({ pa
 	await expect(page.locator('[data-filter-chip][aria-current="page"]')).toHaveText('Announcements');
 });
 
-test('site chrome and primary buttons follow the active theme', async ({ page }) => {
+test('site chrome follows the active theme and contact uses email', async ({ page }) => {
 	for (const colorScheme of ['light', 'dark'] as const) {
 		await page.emulateMedia({ colorScheme });
 		await page.goto('/contact', { waitUntil: 'load' });
 		const wordmarkColor = await page.locator('nav > a[href="/"]').evaluate((link) => getComputedStyle(link).color);
 		const bodyColor = await page.locator('body').evaluate((body) => getComputedStyle(body).color);
 		expect(wordmarkColor).toBe(bodyColor);
-		await expect(page.getByRole('button', { name: 'Send Message' })).toHaveCSS('color', colorScheme === 'dark' ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)');
+		await expect(page.getByRole('link', { name: 'contact@eonmun.com' })).toHaveAttribute('href', 'mailto:contact@eonmun.com');
 		await expect(page.locator(`meta[name="theme-color"][media="(prefers-color-scheme: ${colorScheme})"]`))
 			.toHaveAttribute('content', colorScheme === 'dark' ? '#111827' : '#ffffff');
 	}
