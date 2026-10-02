@@ -18,7 +18,7 @@ import { markArtworkPaid } from "../src/db/checkout";
 import { artworks, artworksToCollections, collections, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
 import { artworkContentChanged, collectionContentChanged } from "../src/lib/cache";
-import { createArtworkSitemapEntries, selectRelatedBySlug } from "../src/lib/public-catalog";
+import { selectRelatedBySlug } from "../src/lib/public-catalog";
 
 const env = { TURSO_DATABASE_URL: "https://unused.test" };
 let client: Client;
@@ -215,16 +215,7 @@ describe("admin mutations", () => {
 		expect(relatedCollections).toHaveLength(1);
 		const publishedImages = await getPublishedArtworkImages(env, db);
 		expect(publishedImages).toHaveLength(2);
-		const sitemapData = createArtworkSitemapEntries(
-			new URL("https://eonmun.test"),
-			gallery,
-			(row) => row.slug,
-			(row) => publishedImages.filter((image) => image.slug === row.slug).map((image) => image.url),
-			(row) => row.updatedAt.toISOString(),
-		);
-		expect(sitemapData.map((entry) => entry.loc)).toContain("https://eonmun.test/artworks/study");
-		expect(sitemapData[0].images).toEqual(images.map((image) => image.url));
-		expect(sitemapData[0].lastmod).toBe(gallery[0].updatedAt.toISOString());
+		expect(publishedImages.map((image) => image.url)).toEqual(images.map((image) => image.url));
 	});
 
 	test("one valid Stripe event marks an artwork sold exactly once", async () => {

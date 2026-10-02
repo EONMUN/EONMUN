@@ -3,7 +3,6 @@ import { getCollectionHref } from "./paths";
 import { SITE_URL } from "../consts";
 import { getPostLastmodTime, getPublishedPostEntries } from "./post-content";
 import { getRuntimeEnv } from "./runtime-env";
-import { createArtworkSitemapEntries } from "./public-catalog";
 
 export interface SitemapEntry {
 	loc: string;
@@ -69,13 +68,11 @@ export async function getSitemapEntries(site?: URL): Promise<SitemapEntry[]> {
 			loc: toAbsoluteUrl(baseUrl, getCollectionHref(collection.slug)),
 			lastmod: collection.updatedAt.toISOString(),
 		})),
-		...createArtworkSitemapEntries(
-			baseUrl,
-			artworks,
-			(artwork) => artwork.slug,
-			(artwork) => [...(imagesByArtwork.get(artwork.slug) ?? [])],
-			(artwork) => artwork.updatedAt.toISOString(),
-		),
+		...artworks.map((artwork) => ({
+			loc: toAbsoluteUrl(baseUrl, `/artworks/${encodeURIComponent(artwork.slug)}`),
+			images: [...(imagesByArtwork.get(artwork.slug) ?? [])],
+			lastmod: artwork.updatedAt.toISOString(),
+		})),
 	];
 }
 
