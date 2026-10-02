@@ -76,8 +76,9 @@ The public Pinterest catalog feed is `https://eonmun.com/pinterest-catalog.csv`.
 2. Put the Markdown or MDX body in the `body` field.
 3. Use `artworkSlugs` and `collectionSlugs` to connect the post to existing content.
 4. If using a cover image, upload it to R2 first and set `coverImageUrl` to the public URL.
-5. From `code/`, run `bun run posts:sync`.
-6. Review the generated file in `code/src/content/posts/`.
+5. Set `createdAt` and `updatedAt` when adding a post. Advance `updatedAt` when changing its published content; the sitemap uses it for `<lastmod>`.
+6. From `code/`, run `bun run posts:sync`.
+7. Review the generated file in `code/src/content/posts/`.
 
 Post fixture fields:
 
@@ -90,6 +91,8 @@ Post fixture fields:
   "postType": "announcement",
   "publishedAt": "2026-05-28T00:00:00.000Z",
   "scheduledAt": null,
+  "createdAt": "2026-05-28T00:00:00.000Z",
+  "updatedAt": "2026-05-28T00:00:00.000Z",
   "locale": "en",
   "artworkSlugs": [],
   "collectionSlugs": []
