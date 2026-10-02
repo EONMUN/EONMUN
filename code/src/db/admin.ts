@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 
 import type { ArtworkAdminInput, CollectionAdminInput } from "../lib/admin-input";
 import {
@@ -355,6 +355,30 @@ export async function getAdminArtworkCards(env: Env, db = getDb(env)): Promise<A
 		.from(artworks)
 		.leftJoin(artworkImages, onDefaultImage(artworks.id))
 		.orderBy(artworks.title);
+}
+
+function pricedUnavailableCondition(db: Database) {
+	return and(
+		eq(products.type, "artwork"),
+		gt(products.price, 0),
+		isNull(products.soldAt),
+		or(isNull(products.quantity), lte(products.quantity, 0)),
+		inArray(products.artworkId, db.select({ id: artworks.id }).from(artworks).where(isNotNull(artworks.publishedAt))),
+	);
+}
+
+export async function getPricedUnavailableArtworks(env: Env, db = getDb(env)) {
+	return db.select({ id: products.id, title: artworks.title })
+		.from(products)
+		.innerJoin(artworks, eq(products.artworkId, artworks.id))
+		.where(pricedUnavailableCondition(db))
+		.orderBy(artworks.title);
+}
+
+export async function enablePricedArtworks(env: Env, db = getDb(env)) {
+	return db.update(products).set({ quantity: 1, updatedAt: new Date() })
+		.where(pricedUnavailableCondition(db))
+		.returning({ id: products.id });
 }
 
 export async function getAdminCollectionCards(env: Env, db = getDb(env)): Promise<DashboardCollection[]> {
