@@ -11,10 +11,10 @@ export function createArtworkSitemapEntries<T>(
 	site: URL,
 	items: T[],
 	getSlug: (item: T) => string,
-	getLastmod: (item: T) => string | undefined,
+	getImages: (item: T) => string[],
 ) {
 	return items.map((item) => ({
-		loc: new URL(`/artworks/${getSlug(item)}`, site).toString(),
-		lastmod: getLastmod(item),
+		loc: new URL(`/artworks/${encodeURIComponent(getSlug(item))}`, site).toString(),
+		images: getImages(item),
 	}));
 }
