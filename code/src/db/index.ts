@@ -15,6 +15,7 @@ export type Env = {
 	R2_BUCKET?: R2Bucket;
 	STRIPE_SECRET_KEY?: string;
 	STRIPE_WEBHOOK_SECRET?: string;
+	OPENAI_API_KEY?: string;
 };
 
 export function getDb(env: Env) {

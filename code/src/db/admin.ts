@@ -30,6 +30,7 @@ function artworkValues(input: ArtworkAdminInput) {
 		title: input.title,
 		slug: input.slug,
 		description: input.description,
+		tags: input.tags,
 		artist: input.artist,
 		year: input.year,
 		width: input.width,

@@ -127,6 +127,10 @@ Required production Worker secrets for `eonmun-astro`:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
+The artwork editor's optional writing assistant uses `OPENAI_API_KEY` as a Worker secret. It sends the editor's current artwork fields and cover image to OpenAI when an admin requests suggestions. Suggested copy is never published until the admin applies it and saves the artwork.
+
+Apply the `code/drizzle/0011_artwork_seo.sql` and `0012_artwork_copy.sql` migrations to production Turso before deploying the Worker version that reads tags and image alt text. The copy migration updates only rows that still match their previous descriptions and cover image URLs.
+
 Configure Stripe to send `checkout.session.completed` and `checkout.session.async_payment_succeeded` events to `https://eonmun.com/api/webhooks/stripe`. Contact-email secrets are required only by the contact runtime endpoint.
 
 ## Validation

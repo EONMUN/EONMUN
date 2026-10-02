@@ -14,6 +14,7 @@ export interface PublicArtworkEntry {
 	data: {
 		title: string;
 		description: string | null;
+		tags: string[];
 		artist: string | null;
 		year: number | null;
 		width: number | null;
@@ -22,7 +23,7 @@ export interface PublicArtworkEntry {
 		dimensionUnit: string | null;
 		publishedAt: string;
 		locale: string;
-		images: { url: string; isDefault: boolean; caption: string | null }[];
+		images: { url: string; isDefault: boolean; caption: string | null; altText: string | null }[];
 	};
 }
 
@@ -30,6 +31,7 @@ export interface PublishedArtworkDetail {
 	artwork: PublicArtworkEntry;
 	collections: PublicCollectionRef[];
 	defaultImageUrl: string | null;
+	defaultImageAltText: string | null;
 	offer: ArtworkDetail["offer"];
 }
 
@@ -40,6 +42,7 @@ function toEntry(row: ArtworkListItem | ArtworkDetail): PublicArtworkEntry {
 		data: {
 			title: row.title,
 			description: row.description,
+			tags: row.tags,
 			artist: row.artist,
 			year: row.year,
 			width: row.width,
@@ -58,6 +61,7 @@ function toListDetail(row: ArtworkListItem): PublishedArtworkDetail {
 		artwork: toEntry(row),
 		collections: row.collections,
 		defaultImageUrl: row.defaultImageUrl,
+		defaultImageAltText: row.defaultImageAltText,
 		offer: null,
 	};
 }
@@ -90,6 +94,7 @@ export async function getPublishedArtworkDetailBySlug(
 			name,
 		})),
 		defaultImageUrl: row.defaultImageUrl,
+		defaultImageAltText: row.defaultImageAltText,
 		offer: row.offer,
 	};
 }

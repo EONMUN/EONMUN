@@ -21,6 +21,7 @@ import {
 
 export interface ArtworkWithDefaultImage extends BaseSelectArtwork {
 	defaultImageUrl: string | null;
+	defaultImageAltText: string | null;
 }
 
 export interface ArtworkCollectionRef {
@@ -35,7 +36,7 @@ export interface ArtworkListItem extends ArtworkWithDefaultImage {
 
 export interface ArtworkDetail extends ArtworkWithDefaultImage {
 	collections: SelectCollection[];
-	images: { url: string; isDefault: boolean; caption: string | null }[];
+	images: { url: string; isDefault: boolean; caption: string | null; altText: string | null }[];
 	offer: { priceCents: number; available: boolean; sold: boolean } | null;
 }
 
@@ -148,6 +149,7 @@ export async function getAllArtworks(
 			title: artworks.title,
 			slug: artworks.slug,
 			description: artworks.description,
+			tags: artworks.tags,
 			artist: artworks.artist,
 			year: artworks.year,
 			width: artworks.width,
@@ -159,6 +161,7 @@ export async function getAllArtworks(
 			createdAt: artworks.createdAt,
 			updatedAt: artworks.updatedAt,
 			defaultImageUrl: artworkImages.url,
+			defaultImageAltText: artworkImages.altText,
 		})
 		.from(artworks)
 		.leftJoin(
@@ -264,10 +267,12 @@ export async function getArtworkBySlug(
 			sold: product.soldAt !== null,
 		} : null,
 		defaultImageUrl: defaultImage?.url ?? null,
+		defaultImageAltText: defaultImage?.altText ?? null,
 		images: imageRows.map((i) => ({
 			url: i.url,
 			isDefault: i.isDefault ?? false,
 			caption: i.caption,
+			altText: i.altText,
 		})),
 		collections: junctionRows.map((r) => r.collection),
 	};
@@ -293,6 +298,7 @@ export async function getHomepageSlides(
 			title: artworks.title,
 			slug: artworks.slug,
 			description: artworks.description,
+			tags: artworks.tags,
 			artist: artworks.artist,
 			year: artworks.year,
 			width: artworks.width,
@@ -304,6 +310,7 @@ export async function getHomepageSlides(
 			createdAt: artworks.createdAt,
 			updatedAt: artworks.updatedAt,
 			defaultImageUrl: artworkImages.url,
+			defaultImageAltText: artworkImages.altText,
 		})
 		.from(homepageArtworks)
 		.innerJoin(artworks, eq(homepageArtworks.artworkId, artworks.id))

@@ -70,4 +70,12 @@ describe("admin input", () => {
 		] });
 		expect(result.images.map((image) => image.isDefault)).toEqual([true, false]);
 	});
+
+	test("keeps editor tags and alt text separate from image captions", () => {
+		const result = parseArtworkInput({ ...artwork, tags: ["  bird  ", "bird", "watercolor"], images: [
+			{ url: "https://r2.eonmun.com/artwork-media/a.jpg", caption: "Detail view", altText: "Blue bird on a branch", isDefault: true },
+		] });
+		expect(result.tags).toEqual(["bird", "watercolor"]);
+		expect(result.images[0]).toMatchObject({ caption: "Detail view", altText: "Blue bird on a branch" });
+	});
 });

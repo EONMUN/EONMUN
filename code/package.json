@@ -20,14 +20,17 @@
 		"db:seed": "bun run scripts/seed-db.ts"
 	},
 	"dependencies": {
+		"@ai-sdk/openai": "4.0.83",
 		"@astrojs/cloudflare": "^14",
 		"@astrojs/mdx": "^7",
 		"@libsql/client": "^0.17.3",
+		"ai": "7.0.127",
 		"astro": "^7",
 		"better-auth": "^1.7.7",
 		"drizzle-orm": "^0.45.2",
 		"posthog-js": "^1.435.5",
-		"sharp": "^0.35"
+		"sharp": "^0.35",
+		"zod": "^4.6.5"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.57.0",

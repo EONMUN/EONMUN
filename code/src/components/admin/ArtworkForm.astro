@@ -13,7 +13,7 @@ interface Props {
 }
 
 const { action, artwork, collections } = Astro.props;
-const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, caption, isDefault })) ?? [];
+const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ url, caption, altText, isDefault })) ?? [];
 ---
 <form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)}>
 	<ErrorBanner />
@@ -36,6 +36,21 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		<label>Artist <input class="admin-input" name="artist" value={artwork?.artist ?? 'EONMUN'} /></label>
 		<label>Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
 		<label class="span-all">Description <textarea class="admin-input" name="description">{artwork?.description ?? ''}</textarea></label>
+		<label class="span-all">Tags <input class="admin-input" name="tags" value={artwork?.tags.join(', ') ?? ''} aria-describedby="tags-hint" /></label>
+		<p class="hint span-all" id="tags-hint">Separate subjects and styles with commas. Tags appear on the artwork page.</p>
+	</FormFieldset>
+
+	<FormFieldset legend="Writing assistant">
+		<p class="hint">Add a cover image and title, then ask for a description, tags, and cover image alt text. Suggestions stay in this editor until you apply and save them.</p>
+		<label>What should the assistant focus on? <textarea class="admin-input" name="aiInstructions" placeholder="For example: emphasize the warm colors and quiet mood"></textarea></label>
+		<button type="button" class="add-collection" data-suggest>Suggest copy</button>
+		<p class="hint" data-suggest-status role="status" aria-live="polite"></p>
+		<div data-suggestion hidden>
+			<label>Suggested description <textarea class="admin-input" data-suggest-description></textarea></label>
+			<label>Suggested tags <input class="admin-input" data-suggest-tags /></label>
+			<label>Suggested cover image alt text <textarea class="admin-input" data-suggest-alt></textarea></label>
+			<button type="button" class="add-collection" data-apply-suggestion>Use these suggestions</button>
+		</div>
 	</FormFieldset>
 
 	<FormFieldset legend="Dimensions" layout="columns">
@@ -132,14 +147,16 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 				const row = document.createElement('div');
 				row.className = 'image-row';
 				const preview = document.createElement('img'); preview.src = image.url; preview.alt = ''; preview.className = 'image-thumb';
-				const caption = document.createElement('input'); caption.className = 'admin-input'; caption.placeholder = 'Caption'; caption.value = image.caption || '';
+				const caption = document.createElement('input'); caption.className = 'admin-input'; caption.placeholder = 'Caption (optional)'; caption.value = image.caption || '';
 				caption.addEventListener('input', () => { image.caption = caption.value || null; });
+				const alt = document.createElement('input'); alt.className = 'admin-input'; alt.placeholder = 'Describe this image for alt text'; alt.setAttribute('aria-label', 'Image alt text'); alt.value = image.altText || '';
+				alt.addEventListener('input', () => { image.altText = alt.value || null; });
 				const label = document.createElement('label'); const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'defaultImage'; radio.checked = image.isDefault;
 				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); renderImages(); });
 				label.append(radio, ' Default');
 				const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
 				remove.addEventListener('click', () => { images.splice(index, 1); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); });
-				row.append(preview, caption, label, remove); list.append(row);
+				row.append(preview, alt, caption, label, remove); list.append(row);
 			});
 		};
 		const uploadSelected = async () => {
@@ -150,9 +167,42 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 			const response = await fetch('/api/admin/media', { method: 'POST', body });
 			const payload = await response.json();
 			if (!response.ok) throw new Error(payload.error || 'Upload failed');
-			for (const uploaded of payload.images) images.push({ url: uploaded.url, caption: null, isDefault: images.length === 0 });
+			for (const uploaded of payload.images) images.push({ url: uploaded.url, caption: null, altText: null, isDefault: images.length === 0 });
 			input.value = ''; renderImages();
 		};
+		const suggest = form.querySelector('[data-suggest]');
+		const suggestion = form.querySelector('[data-suggestion]');
+		const status = form.querySelector('[data-suggest-status]');
+		let suggestedCoverUrl = null;
+		suggest.addEventListener('click', async () => {
+			if (suggest.disabled) return;
+			suggest.disabled = true; status.textContent = 'Generating suggestions…'; suggestion.hidden = true;
+			try {
+				await uploadSelected();
+				const cover = images.find((image) => image.isDefault) || images[0];
+				if (!cover) throw new Error('Add a cover image first.');
+				const response = await fetch('/api/admin/artworks/suggest', {
+					method: 'POST', headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ title: form.elements.title.value, artist: form.elements.artist.value, year: form.elements.year.value, description: form.elements.description.value, instructions: form.elements.aiInstructions.value, images: [{ url: cover.url, altText: cover.altText }] }),
+				});
+				const payload = await response.json();
+				if (!response.ok) throw new Error(payload.error || 'Suggestions failed');
+				form.querySelector('[data-suggest-description]').value = payload.suggestion.description;
+				form.querySelector('[data-suggest-tags]').value = payload.suggestion.tags.join(', ');
+				form.querySelector('[data-suggest-alt]').value = payload.suggestion.altText;
+				suggestedCoverUrl = cover.url;
+				suggestion.hidden = false; status.textContent = 'Review and edit the suggestions, then apply them.';
+			} catch (error) { status.textContent = error instanceof Error ? error.message : 'Suggestions failed'; }
+			finally { suggest.disabled = false; }
+		});
+		form.querySelector('[data-apply-suggestion]').addEventListener('click', () => {
+			const cover = images.find((image) => image.url === suggestedCoverUrl);
+			if (!cover) { status.textContent = 'The cover image changed. Generate fresh suggestions.'; return; }
+			form.elements.description.value = form.querySelector('[data-suggest-description]').value;
+			form.elements.tags.value = form.querySelector('[data-suggest-tags]').value;
+			cover.altText = form.querySelector('[data-suggest-alt]').value || null;
+			renderImages(); suggestion.hidden = true; status.textContent = 'Suggestions applied. Review the fields and save when ready.';
+		});
 		form.addEventListener('submit', async (event) => {
 			event.preventDefault(); errorBox.hidden = true;
 			try {
@@ -162,8 +212,9 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 				payload.published = data.has('published'); payload.available = data.has('available');
 				payload.priceCents = price.value === '' ? '' : Math.round(Number(price.value) * 100);
 				delete payload.priceDollars;
+				payload.tags = form.elements.tags.value.split(',').map((tag) => tag.trim()).filter(Boolean);
 				payload.collectionIds = data.getAll('collectionIds').map(Number); payload.images = images;
-				delete payload.imageFiles; delete payload.defaultImage;
+				delete payload.imageFiles; delete payload.defaultImage; delete payload.aiInstructions;
 				const response = await fetch(form.dataset.action, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
 				const result = await response.json();
 				if (!response.ok) throw new Error(result.error || 'Save failed');

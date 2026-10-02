@@ -35,13 +35,13 @@ try {
 	}
 
 	const artworkData = new Map<string, {id: number; title: string; imageUrl: string | null}>();
-	for (const item of await fixture<Array<{title: string; slug: string; description?: string; artist?: string; year?: number; images?: string[]; collectionSlug?: string; isDefaultForCollection?: boolean; publishedAt?: string; locale?: string}>>('artworks')) {
+	for (const item of await fixture<Array<{title: string; slug: string; description?: string; tags?: string[]; imageAltText?: string; artist?: string; year?: number; images?: string[]; collectionSlug?: string; isDefaultForCollection?: boolean; publishedAt?: string; locale?: string}>>('artworks')) {
 		const [row] = await db.insert(artworks).values({ title: item.title, slug: item.slug,
-			description: item.description, artist: item.artist, year: item.year,
+			description: item.description, tags: item.tags ?? [], artist: item.artist, year: item.year,
 			publishedAt: date(item.publishedAt), locale: item.locale }).returning({ id: artworks.id });
 		artworkData.set(item.slug, { id: row.id, title: item.title, imageUrl: item.images?.[0] ?? null });
 		for (const [index, imageUrl] of (item.images ?? []).entries()) {
-			await db.insert(artworkImages).values({ artworkId: row.id, url: imageUrl, caption: item.title, isDefault: index === 0 });
+			await db.insert(artworkImages).values({ artworkId: row.id, url: imageUrl, caption: item.title, altText: index === 0 ? item.imageAltText : null, isDefault: index === 0 });
 		}
 		const collectionId = item.collectionSlug && collectionIds.get(item.collectionSlug);
 		if (collectionId) await db.insert(artworksToCollections).values({ artworkId: row.id, collectionId, isDefaultForCollection: item.isDefaultForCollection ?? false });

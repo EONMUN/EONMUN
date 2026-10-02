@@ -38,6 +38,7 @@ export const artworks = sqliteTable(
 		title: text("title").notNull(),
 		slug: text("slug").notNull().unique(),
 		description: text("description"),
+		tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
 		artist: text("artist"),
 		year: integer("year"),
 		width: real("width"),
@@ -67,6 +68,7 @@ export const artworkImages = sqliteTable(
 			.references(() => artworks.id, { onDelete: "cascade" }),
 		url: text("url").notNull(),
 		caption: text("caption"),
+		altText: text("alt_text"),
 		isDefault: integer("is_default", { mode: "boolean" })
 			.notNull()
 			.default(false),

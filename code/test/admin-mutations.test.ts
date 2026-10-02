@@ -90,6 +90,16 @@ describe("admin mutations", () => {
 		expect(draft.publishedAt).toBeNull();
 	});
 
+	test("saves reviewed tags and image alt text for public artwork", async () => {
+		const image = { url: "https://r2.eonmun.com/artwork-media/study.png", caption: null, altText: "A blue bird on a branch", isDefault: true };
+		const created = await createArtworkAdmin(env, artworkInput({ images: [image], tags: ["bird", "watercolor"] }), db);
+		await updateArtworkAdmin(env, created.slug, artworkInput({ images: [image], tags: ["bird", "watercolor"], published: true }), db);
+		const publicArtwork = await getArtworkBySlug(env, created.slug, db);
+		expect(publicArtwork?.tags).toEqual(["bird", "watercolor"]);
+		expect(publicArtwork?.defaultImageAltText).toBe("A blue bird on a branch");
+		expect(publicArtwork?.images[0]?.altText).toBe("A blue bird on a branch");
+	});
+
 	test("rejects slug conflicts", async () => {
 		await createArtworkAdmin(env, artworkInput(), db);
 		await expect(createArtworkAdmin(env, artworkInput({ title: "Other" }), db)).rejects.toThrow();

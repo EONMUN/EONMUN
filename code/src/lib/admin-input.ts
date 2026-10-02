@@ -29,6 +29,7 @@ export interface ArtworkAdminInput {
 	title: string;
 	slug: string;
 	description: string | null;
+	tags: string[];
 	artist: string | null;
 	year: number | null;
 	width: number | null;
@@ -39,7 +40,7 @@ export interface ArtworkAdminInput {
 	available: boolean;
 	priceCents: number | null;
 	collectionIds: number[];
-	images: { url: string; caption: string | null; isDefault: boolean }[];
+	images: { url: string; caption: string | null; altText: string | null; isDefault: boolean }[];
 }
 
 export function parseArtworkInput(value: unknown): ArtworkAdminInput {
@@ -61,7 +62,7 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
 		const url = text(image.url, "Image URL", true)!;
 		const parsed = new URL(url);
 		if (parsed.origin !== R2_PUBLIC_ORIGIN) throw new Error("Image URL must use the EONMUN media domain");
-		return { url, caption: text(image.caption, "Caption"), isDefault: image.isDefault === true };
+		return { url, caption: text(image.caption, "Caption"), altText: text(image.altText, "Alt text"), isDefault: image.isDefault === true };
 	});
 	if (images.filter((image) => image.isDefault).length > 1) throw new Error("Only one image can be the default");
 	if (images.length > 0 && !images.some((image) => image.isDefault)) images[0].isDefault = true;
@@ -69,6 +70,7 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
 		title,
 		slug,
 		description: text(input.description, "Description"),
+		tags: Array.isArray(input.tags) ? [...new Set(input.tags.map((tag) => text(tag, "Tag", true)!))].slice(0, 12) : [],
 		artist: text(input.artist, "Artist"),
 		year,
 		width: optionalNumber(input.width, "Width"),
