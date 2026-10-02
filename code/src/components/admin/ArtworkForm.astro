@@ -87,15 +87,15 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 
 	<FormFieldset legend="Sale">
 		<label class="inline-label"><input type="checkbox" name="available" checked={(artwork?.product?.quantity ?? 0) > 0 && artwork?.product?.soldAt === null} /> Available for purchase</label>
-		<label>Price (USD cents)
+		<label>Price (USD)
 			<input
 				class="admin-input"
-				name="priceCents"
+				name="priceDollars"
 				type="number"
-				min="1"
-				step="1"
+				min="0.01"
+				step="0.01"
 				aria-describedby="price-note"
-				value={artwork?.product?.price ?? ''}
+				value={artwork?.product?.price == null ? '' : (artwork.product.price / 100).toFixed(2)}
 			/>
 		</label>
 		<p id="price-note" class="hint">Required when the piece is available for purchase. The price appears publicly only while the piece is available.</p>
@@ -121,7 +121,7 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 		// here so the requirement is caught before a round trip, and so the field
 		// is only marked required while it actually is.
 		const available = form.elements.available;
-		const price = form.elements.priceCents;
+		const price = form.elements.priceDollars;
 		const syncPriceRequirement = () => { price.required = available.checked; };
 		available.addEventListener('change', syncPriceRequirement);
 		syncPriceRequirement();
@@ -160,6 +160,8 @@ const images = artwork?.images.map(({ url, caption, isDefault }) => ({ url, capt
 				const data = new FormData(form);
 				const payload = Object.fromEntries(data);
 				payload.published = data.has('published'); payload.available = data.has('available');
+				payload.priceCents = price.value === '' ? '' : Math.round(Number(price.value) * 100);
+				delete payload.priceDollars;
 				payload.collectionIds = data.getAll('collectionIds').map(Number); payload.images = images;
 				delete payload.imageFiles; delete payload.defaultImage;
 				const response = await fetch(form.dataset.action, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
