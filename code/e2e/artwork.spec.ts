@@ -13,13 +13,14 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork');
 	await page.getByRole('textbox', { name: 'Slug' }).fill(slug);
 	await page.getByRole('textbox', { name: 'Artist' }).fill('EONMUN');
-	await page.getByRole('spinbutton', { name: 'Price (USD cents)' }).fill('125000');
+	await page.getByRole('spinbutton', { name: 'Price (USD)' }).fill('1250');
 	await page.getByRole('button', { name: 'Save artwork' }).click();
 	await expect(page).toHaveURL(`/admin/artworks/${slug}`);
 
 	await visit(page, '/admin/artworks');
 	await expect(page.locator(`a[href="/admin/artworks/${slug}"]`)).toBeVisible();
 	await page.locator(`a[href="/admin/artworks/${slug}"]`).click();
+	await expect(page.getByRole('spinbutton', { name: 'Price (USD)' })).toHaveValue('1250.00');
 	await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork edited');
 	await page.getByRole('checkbox', { name: 'Published' }).check();
 	await page.getByRole('button', { name: 'Save artwork' }).click();
