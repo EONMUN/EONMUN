@@ -210,6 +210,15 @@ export async function getAllArtworks(
 	}));
 }
 
+export async function getPublishedArtworkImages(env: Env, db = getDb(env)) {
+	return db
+		.select({ slug: artworks.slug, url: artworkImages.url })
+		.from(artworkImages)
+		.innerJoin(artworks, eq(artworkImages.artworkId, artworks.id))
+		.where(isNotNull(artworks.publishedAt))
+		.orderBy(artworkImages.id);
+}
+
 export async function getArtworkBySlug(
 	env: Env,
 	slug: string,

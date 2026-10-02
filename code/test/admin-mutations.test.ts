@@ -13,12 +13,12 @@ import {
 	updateArtworkAdmin,
 	updateCollectionAdmin,
 } from "../src/db/admin";
-import { getAllArtworks, getArtworkBySlug, getHomepageSlides } from "../src/db/queries";
+import { getAllArtworks, getArtworkBySlug, getHomepageSlides, getPublishedArtworkImages } from "../src/db/queries";
 import { markArtworkPaid } from "../src/db/checkout";
-import { artworks, artworksToCollections, homepageArtworks, products } from "../src/db";
+import { artworks, artworksToCollections, collections, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
 import { artworkContentChanged, collectionContentChanged } from "../src/lib/cache";
-import { createArtworkSitemapEntries, selectRelatedBySlug } from "../src/lib/public-catalog";
+import { selectRelatedBySlug } from "../src/lib/public-catalog";
 
 const env = { TURSO_DATABASE_URL: "https://unused.test" };
 let client: Client;
@@ -124,6 +124,23 @@ describe("admin mutations", () => {
 		expect(memberships.find((row) => row.isDefaultForCollection)?.artworkId).toBe(second.id);
 	});
 
+	test("dates a collection when its published artwork card changes", async () => {
+		const artwork = await createArtworkAdmin(env, artworkInput(), db);
+		const collection = await createCollectionAdmin(env, parseCollectionInput({
+			name: "Group", slug: "group", published: true, artworkIds: [artwork.id], defaultArtworkId: artwork.id,
+		}), db);
+		await updateCollectionAdmin(env, collection.slug, parseCollectionInput({
+			name: "Group", slug: "group", published: true, artworkIds: [artwork.id], defaultArtworkId: artwork.id,
+		}), db);
+		const oldDate = new Date("2025-01-01T00:00:00.000Z");
+		await db.update(collections).set({ updatedAt: oldDate }).where(eq(collections.id, collection.id));
+		await updateArtworkAdmin(env, artwork.slug, artworkInput({
+			published: true, collectionIds: [collection.id],
+		}), db);
+		const [changed] = await db.select().from(collections).where(eq(collections.id, collection.id));
+		expect(changed.updatedAt.getTime()).toBeGreaterThan(oldDate.getTime());
+	});
+
 	test("preserves a collection cover when its artwork is edited", async () => {
 		const cover = await createArtworkAdmin(env, artworkInput(), db);
 		const other = await createArtworkAdmin(env, artworkInput({ title: "Other", slug: "other" }), db);
@@ -173,9 +190,14 @@ describe("admin mutations", () => {
 	});
 
 	test("published admin content feeds gallery, homepage, filters, post relationships, and sitemap data", async () => {
-		const artwork = await createArtworkAdmin(env, artworkInput({ images: [{ url: "https://r2.eonmun.com/artwork-media/study.png", caption: null, isDefault: true }] }), db);
+		const images = [
+			{ url: "https://r2.eonmun.com/artwork-media/study.png", caption: null, isDefault: true },
+			{ url: "https://r2.eonmun.com/artwork-media/study-detail.png", caption: null, isDefault: false },
+		];
+		const artwork = await createArtworkAdmin(env, artworkInput({ images }), db);
+		await createArtworkAdmin(env, artworkInput({ slug: "draft", images: [{ url: "https://r2.eonmun.com/draft.png", caption: null, isDefault: true }] }), db);
 		const collection = await createCollectionAdmin(env, parseCollectionInput({ name: "Live group", slug: "live-group", artworkIds: [artwork.id], defaultArtworkId: artwork.id }), db);
-		await updateArtworkAdmin(env, artwork.slug, artworkInput({ published: true, collectionIds: [collection.id], images: [{ url: "https://r2.eonmun.com/artwork-media/study.png", caption: null, isDefault: true }] }), db);
+		await updateArtworkAdmin(env, artwork.slug, artworkInput({ published: true, collectionIds: [collection.id], images }), db);
 		await updateCollectionAdmin(env, collection.slug, parseCollectionInput({ name: "Live group", slug: "live-group", published: true, artworkIds: [artwork.id], defaultArtworkId: artwork.id }), db);
 		await db.insert(homepageArtworks).values({ artworkId: artwork.id, position: 0 });
 
@@ -191,13 +213,9 @@ describe("admin mutations", () => {
 			(row) => row.slug,
 		);
 		expect(relatedCollections).toHaveLength(1);
-		const sitemapData = createArtworkSitemapEntries(
-			new URL("https://eonmun.test"),
-			gallery,
-			(row) => row.slug,
-			(row) => row.publishedAt?.toISOString(),
-		);
-		expect(sitemapData.map((entry) => entry.loc)).toContain("https://eonmun.test/artworks/study");
+		const publishedImages = await getPublishedArtworkImages(env, db);
+		expect(publishedImages).toHaveLength(2);
+		expect(publishedImages.map((image) => image.url)).toEqual(images.map((image) => image.url));
 	});
 
 	test("one valid Stripe event marks an artwork sold exactly once", async () => {

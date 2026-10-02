@@ -47,6 +47,14 @@ export function getPostPublishedTime(post: PostEntry) {
 	return getPostPublishedDate(post)?.toISOString();
 }
 
+export function getPostLastmodTime(post: PostEntry) {
+	const publishedAt = getPostPublishedDate(post);
+	return new Date(Math.max(
+		new Date(post.data.updatedAt).getTime(),
+		publishedAt?.getTime() ?? 0,
+	)).toISOString();
+}
+
 export function isPublishedPost(post: PostEntry, now = new Date()) {
 	const publishedAt = parseEntryDate(post.data.publishedAt);
 	if (publishedAt) return true;

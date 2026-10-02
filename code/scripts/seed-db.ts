@@ -65,10 +65,11 @@ try {
 		}
 	}
 
-	for (const item of await fixture<Array<{title: string; slug: string; body: string; excerpt?: string; postType: string; coverImageUrl?: string; publishedAt?: string; scheduledAt?: string; locale?: string; artworkSlugs?: string[]; collectionSlugs?: string[]}>>('posts')) {
+	for (const item of await fixture<Array<{title: string; slug: string; body: string; excerpt?: string; postType: string; coverImageUrl?: string; publishedAt?: string; scheduledAt?: string; createdAt: string; updatedAt: string; locale?: string; artworkSlugs?: string[]; collectionSlugs?: string[]}>>('posts')) {
 		const [row] = await db.insert(posts).values({ title: item.title, slug: item.slug, body: item.body,
 			excerpt: item.excerpt, postType: item.postType, coverImageUrl: item.coverImageUrl,
-			publishedAt: date(item.publishedAt), scheduledAt: date(item.scheduledAt), locale: item.locale }).returning({ id: posts.id });
+			publishedAt: date(item.publishedAt), scheduledAt: date(item.scheduledAt),
+			createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt), locale: item.locale }).returning({ id: posts.id });
 		for (const slug of item.artworkSlugs ?? []) {
 			const artwork = artworkData.get(slug);
 			if (artwork) await db.insert(postsToArtworks).values({ postId: row.id, artworkId: artwork.id });

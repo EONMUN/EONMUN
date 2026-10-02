@@ -13,7 +13,9 @@
     ],
     "collectionSlugs": [
       "dorada"
-    ]
+    ],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   },
   {
     "title": "Working with Gold Leaf: Techniques and Tips",
@@ -26,7 +28,9 @@
     "artworkSlugs": [
       "persimmons-del-oro"
     ],
-    "collectionSlugs": []
+    "collectionSlugs": [],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   },
   {
     "title": "Behind the Scenes: Creating Casa de Fuji",
@@ -41,7 +45,9 @@
     ],
     "collectionSlugs": [
       "oriental"
-    ]
+    ],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   },
   {
     "title": "Gallery Showing: Black & White Exhibition",
@@ -56,7 +62,9 @@
     ],
     "collectionSlugs": [
       "black-and-white"
-    ]
+    ],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   },
   {
     "title": "Learning Watercolor: My Journey So Far",
@@ -72,7 +80,9 @@
     ],
     "collectionSlugs": [
       "botanica"
-    ]
+    ],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   },
   {
     "title": "The Language of Gold: Understanding the Dorada Palette",
@@ -88,7 +98,9 @@
     ],
     "collectionSlugs": [
       "dorada"
-    ]
+    ],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   },
   {
     "title": "Future Feature: The 2026 Roadmap",
@@ -99,7 +111,9 @@
     "scheduledAt": "2026-02-10T12:00:00.000Z",
     "locale": "en",
     "artworkSlugs": [],
-    "collectionSlugs": []
+    "collectionSlugs": [],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   },
   {
     "title": "A Look Back: Early 2026 Update",
@@ -110,6 +124,8 @@
     "scheduledAt": "2026-01-20T10:00:00.000Z",
     "locale": "en",
     "artworkSlugs": [],
-    "collectionSlugs": []
+    "collectionSlugs": [],
+    "createdAt": "2026-02-03T23:18:40.000Z",
+    "updatedAt": "2026-02-03T23:18:40.000Z"
   }
 ]
