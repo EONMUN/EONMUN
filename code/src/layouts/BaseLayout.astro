@@ -1,5 +1,6 @@
 ---
 import Analytics from '../components/Analytics.astro';
+import PinterestTag from '../components/PinterestTag.astro';
 import BaseHead from '../components/BaseHead.astro';
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
@@ -26,6 +27,7 @@ const { title, description, image, type, publishedTime, themeColor } = Astro.pro
 			publishedTime={publishedTime}
 			themeColor={themeColor}
 		/>
+		<PinterestTag />
 	</head>
 	<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen flex flex-col">
 		<Navbar />
