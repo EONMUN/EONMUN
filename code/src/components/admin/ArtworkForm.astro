@@ -4,15 +4,16 @@ import RequiredMark from './RequiredMark.astro';
 import RequiredNote from './RequiredNote.astro';
 import FormFieldset from './FormFieldset.astro';
 import SubmitButton from './SubmitButton.astro';
-import type { SelectArtwork, SelectArtworkImage, SelectCollection, SelectProduct } from '../../db';
+import type { SelectArtwork, SelectArtworkImage, SelectCollection, SelectFacet, SelectProduct } from '../../db';
 
 interface Props {
 	action: string;
-	artwork?: SelectArtwork & { images: SelectArtworkImage[]; collectionIds: number[]; product: SelectProduct | null };
+	artwork?: SelectArtwork & { images: SelectArtworkImage[]; collectionIds: number[]; facetIds: number[]; tags: string[]; product: SelectProduct | null };
 	collections: SelectCollection[];
+	facets: SelectFacet[];
 }
 
-const { action, artwork, collections } = Astro.props;
+const { action, artwork, collections, facets } = Astro.props;
 const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ url, caption, altText, isDefault })) ?? [];
 ---
 <form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)}>
@@ -37,7 +38,24 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		<label>Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
 		<label class="span-all">Description <textarea class="admin-input" name="description">{artwork?.description ?? ''}</textarea></label>
 		<label class="span-all">Tags <input class="admin-input" name="tags" value={artwork?.tags.join(', ') ?? ''} aria-describedby="tags-hint" /></label>
-		<p class="hint span-all" id="tags-hint">Separate subjects and styles with commas. Tags appear on the artwork page.</p>
+		<p class="hint span-all" id="tags-hint">Separate tags with commas. Each tag is stored as a facet.</p>
+	</FormFieldset>
+
+	<FormFieldset legend="Other facets">
+		<p class="hint">Select existing attributes or add one for this artwork. Size labels are editorial categories; the numeric dimensions above remain the exact measurements.</p>
+		<div class="collection-list">
+			{facets.filter((facet) => facet.type !== 'tag').map((facet) => (
+				<label><input type="checkbox" name="facetIds" value={facet.id} checked={artwork?.facetIds.includes(facet.id)} /> {facet.type}: {facet.name}</label>
+			))}
+		</div>
+		<div class="new-collection-row">
+			<select class="admin-input" data-new-facet-type aria-label="Facet type">
+				{[...new Set(['size', 'material', 'style', 'subject', ...facets.map((facet) => facet.type)])].filter((type) => type !== 'tag').map((type) => <option value={type}>{type}</option>)}
+			</select>
+			<input class="admin-input" data-new-facet-name aria-label="New facet name" placeholder="New facet name" />
+			<button type="button" class="add-collection" data-add-facet>Add facet</button>
+		</div>
+		<div data-new-facet-list class="collection-list"></div>
 	</FormFieldset>
 
 	<FormFieldset legend="Writing assistant">
@@ -129,6 +147,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	const form = document.querySelector('[data-admin-artwork-form]');
 	if (form) {
 		let images = JSON.parse(form.dataset.images || '[]');
+		const newFacets = [];
 		const list = form.querySelector('[data-image-list]');
 		const errorBox = form.querySelector('[data-error]');
 		const showError = (message) => { errorBox.hidden = false; errorBox.textContent = message; };
@@ -173,6 +192,22 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		const suggest = form.querySelector('[data-suggest]');
 		const suggestion = form.querySelector('[data-suggestion]');
 		const status = form.querySelector('[data-suggest-status]');
+		const newFacetList = form.querySelector('[data-new-facet-list]');
+		const renderNewFacets = () => newFacetList.replaceChildren(...newFacets.map((facet, index) => {
+			const row = document.createElement('span'); row.textContent = `${facet.type}: ${facet.name} `;
+			const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
+			remove.addEventListener('click', () => { newFacets.splice(index, 1); renderNewFacets(); });
+			row.append(remove); return row;
+		}));
+		form.querySelector('[data-add-facet]').addEventListener('click', () => {
+			const type = form.querySelector('[data-new-facet-type]').value;
+			const nameInput = form.querySelector('[data-new-facet-name]');
+			const name = nameInput.value.trim();
+			if (!name) return;
+			if (!newFacets.some((facet) => facet.type === type && facet.name.toLowerCase() === name.toLowerCase())) newFacets.push({ type, name });
+			nameInput.value = '';
+			renderNewFacets();
+		});
 		let suggestedCoverUrl = null;
 		suggest.addEventListener('click', async () => {
 			if (suggest.disabled) return;
@@ -213,6 +248,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 				payload.priceCents = price.value === '' ? '' : Math.round(Number(price.value) * 100);
 				delete payload.priceDollars;
 				payload.tags = form.elements.tags.value.split(',').map((tag) => tag.trim()).filter(Boolean);
+				payload.facetIds = data.getAll('facetIds').map(Number); payload.newFacets = newFacets;
 				payload.collectionIds = data.getAll('collectionIds').map(Number); payload.images = images;
 				delete payload.imageFiles; delete payload.defaultImage; delete payload.aiInstructions;
 				const response = await fetch(form.dataset.action, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });

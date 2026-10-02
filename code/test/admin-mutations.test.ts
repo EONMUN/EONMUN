@@ -15,7 +15,7 @@ import {
 } from "../src/db/admin";
 import { getAllArtworks, getArtworkBySlug, getHomepageSlides, getPublishedArtworkImages } from "../src/db/queries";
 import { markArtworkPaid } from "../src/db/checkout";
-import { artworks, artworksToCollections, collections, homepageArtworks, products } from "../src/db";
+import { artworks, artworksToCollections, artworksToFacets, collections, facets, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
 import { artworkContentChanged, collectionContentChanged } from "../src/lib/cache";
 import { selectRelatedBySlug } from "../src/lib/public-catalog";
@@ -90,14 +90,28 @@ describe("admin mutations", () => {
 		expect(draft.publishedAt).toBeNull();
 	});
 
-	test("saves reviewed tags and image alt text for public artwork", async () => {
+	test("saves tags and size as facets alongside image alt text", async () => {
 		const image = { url: "https://r2.eonmun.com/artwork-media/study.png", caption: null, altText: "A blue bird on a branch", isDefault: true };
-		const created = await createArtworkAdmin(env, artworkInput({ images: [image], tags: ["bird", "watercolor"] }), db);
-		await updateArtworkAdmin(env, created.slug, artworkInput({ images: [image], tags: ["bird", "watercolor"], published: true }), db);
+		const input = { images: [image], tags: ["bird", "watercolor"], newFacets: [{ type: "size", name: "Small" }] };
+		const created = await createArtworkAdmin(env, artworkInput(input), db);
+		await updateArtworkAdmin(env, created.slug, artworkInput({ ...input, published: true }), db);
 		const publicArtwork = await getArtworkBySlug(env, created.slug, db);
-		expect(publicArtwork?.tags).toEqual(["bird", "watercolor"]);
+		expect(publicArtwork?.facets.map(({ type, slug }) => `${type}:${slug}`).sort()).toEqual(["size:small", "tag:bird", "tag:watercolor"]);
 		expect(publicArtwork?.defaultImageAltText).toBe("A blue bird on a branch");
 		expect(publicArtwork?.images[0]?.altText).toBe("A blue bird on a branch");
+	});
+
+	test("shares tag facets across artworks and keeps selected size facets on edit", async () => {
+		const [size] = await db.insert(facets).values({ name: "Small", slug: "small", type: "size" }).returning();
+		const first = await createArtworkAdmin(env, artworkInput({ tags: ["bird"], facetIds: [size.id] }), db);
+		const second = await createArtworkAdmin(env, artworkInput({ slug: "another-study", tags: ["bird"] }), db);
+		expect((await db.select().from(facets).where(eq(facets.type, "tag")))).toHaveLength(1);
+		expect((await getAdminArtwork(env, first.slug, db))?.facetIds).toEqual([size.id]);
+		await updateArtworkAdmin(env, first.slug, artworkInput({ tags: [], facetIds: [size.id] }), db);
+		expect((await db.select().from(artworksToFacets).where(eq(artworksToFacets.artworkId, first.id)))).toHaveLength(1);
+		expect((await getArtworkBySlug(env, second.slug, db))).toBeNull();
+		await updateArtworkAdmin(env, second.slug, artworkInput({ slug: second.slug, tags: ["bird"], published: true }), db);
+		expect((await getArtworkBySlug(env, second.slug, db))?.facets.map((facet) => facet.name)).toEqual(["bird"]);
 	});
 
 	test("rejects slug conflicts", async () => {

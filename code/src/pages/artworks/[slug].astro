@@ -109,9 +109,9 @@ const productJsonLd = saleOffer ? JSON.stringify({
 						<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{artwork.data.description}</p>
 					</div>
 				)}
-				{artwork.data.tags.length > 0 && (
-					<div class="flex flex-wrap gap-2" aria-label="Artwork tags">
-						{artwork.data.tags.map((tag) => <span class="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{tag}</span>)}
+				{artwork.data.facets.length > 0 && (
+					<div class="flex flex-wrap gap-2" aria-label="Artwork facets">
+						{artwork.data.facets.map((facet) => <span class="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{facet.type === 'tag' ? facet.name : `${facet.type}: ${facet.name}`}</span>)}
 					</div>
 				)}
 

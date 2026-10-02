@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7a44c9b5-97cf-41ae-b3b1-b73f6c5cc56a",
+  "id": "78069e94-39ec-41d0-989e-0df5bd4e076c",
   "prevId": "9fc4c45f-66a2-4319-affc-afcbc1fb0161",
   "tables": {
     "artwork_images": {
@@ -131,14 +131,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "tags": {
-          "name": "tags",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
         },
         "artist": {
           "name": "artist",

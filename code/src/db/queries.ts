@@ -7,7 +7,9 @@ import {
 	artworks,
 	artworkImages,
 	artworksToCollections,
+	artworksToFacets,
 	collections,
+	facets,
 	homepageArtworks,
 	posts,
 	postsToArtworks,
@@ -30,12 +32,21 @@ export interface ArtworkCollectionRef {
 	name: string;
 }
 
+export interface ArtworkFacetRef {
+	id: number;
+	name: string;
+	slug: string;
+	type: string;
+}
+
 export interface ArtworkListItem extends ArtworkWithDefaultImage {
 	collections: ArtworkCollectionRef[];
+	facets: ArtworkFacetRef[];
 }
 
 export interface ArtworkDetail extends ArtworkWithDefaultImage {
 	collections: SelectCollection[];
+	facets: ArtworkFacetRef[];
 	images: { url: string; isDefault: boolean; caption: string | null; altText: string | null }[];
 	offer: { priceCents: number; available: boolean; sold: boolean } | null;
 }
@@ -149,7 +160,6 @@ export async function getAllArtworks(
 			title: artworks.title,
 			slug: artworks.slug,
 			description: artworks.description,
-			tags: artworks.tags,
 			artist: artworks.artist,
 			year: artworks.year,
 			width: artworks.width,
@@ -174,7 +184,7 @@ export async function getAllArtworks(
 		.where(isNotNull(artworks.publishedAt));
 	if (rows.length === 0) return [];
 
-	const collectionRows = await db
+	const [collectionRows, facetRows] = await Promise.all([db
 		.select({
 			artworkId: artworksToCollections.artworkId,
 			id: collections.id,
@@ -194,9 +204,18 @@ export async function getAllArtworks(
 				),
 				isNotNull(collections.publishedAt),
 			),
-		);
+		), db.select({ artworkId: artworksToFacets.artworkId, id: facets.id, name: facets.name, slug: facets.slug, type: facets.type })
+			.from(artworksToFacets).innerJoin(facets, eq(artworksToFacets.facetId, facets.id))
+			.where(inArray(artworksToFacets.artworkId, rows.map((row) => row.id))),
+	]);
 
 	const collectionsByArtworkId = new Map<number, ArtworkCollectionRef[]>();
+	const facetsByArtworkId = new Map<number, ArtworkFacetRef[]>();
+	for (const row of facetRows) {
+		const current = facetsByArtworkId.get(row.artworkId) ?? [];
+		current.push({ id: row.id, name: row.name, slug: row.slug, type: row.type });
+		facetsByArtworkId.set(row.artworkId, current);
+	}
 	for (const row of collectionRows) {
 		const current = collectionsByArtworkId.get(row.artworkId) ?? [];
 		current.push({
@@ -210,6 +229,7 @@ export async function getAllArtworks(
 	return rows.map((row) => ({
 		...row,
 		collections: collectionsByArtworkId.get(row.id) ?? [],
+		facets: facetsByArtworkId.get(row.id) ?? [],
 	}));
 }
 
@@ -233,7 +253,7 @@ export async function getArtworkBySlug(
 		.where(and(eq(artworks.slug, slug), isNotNull(artworks.publishedAt)));
 	if (!artwork) return null;
 
-	const [imageRows, junctionRows, productRows] = await Promise.all([
+	const [imageRows, junctionRows, facetRows, productRows] = await Promise.all([
 		db
 			.select()
 			.from(artworkImages)
@@ -251,6 +271,9 @@ export async function getArtworkBySlug(
 					isNotNull(collections.publishedAt),
 				),
 			),
+		db.select({ id: facets.id, name: facets.name, slug: facets.slug, type: facets.type })
+			.from(artworksToFacets).innerJoin(facets, eq(artworksToFacets.facetId, facets.id))
+			.where(eq(artworksToFacets.artworkId, artwork.id)),
 		db.select({ priceCents: products.price, quantity: products.quantity, soldAt: products.soldAt })
 			.from(products)
 			.where(and(eq(products.artworkId, artwork.id), eq(products.type, "artwork")))
@@ -275,6 +298,7 @@ export async function getArtworkBySlug(
 			altText: i.altText,
 		})),
 		collections: junctionRows.map((r) => r.collection),
+		facets: facetRows,
 	};
 }
 
@@ -298,7 +322,6 @@ export async function getHomepageSlides(
 			title: artworks.title,
 			slug: artworks.slug,
 			description: artworks.description,
-			tags: artworks.tags,
 			artist: artworks.artist,
 			year: artworks.year,
 			width: artworks.width,

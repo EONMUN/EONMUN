@@ -3,6 +3,7 @@ import {
 	getArtworkBySlug,
 	type ArtworkDetail,
 	type ArtworkListItem,
+	type ArtworkFacetRef,
 } from "../db/queries";
 import { getRuntimeEnv } from "./runtime-env";
 
@@ -14,7 +15,7 @@ export interface PublicArtworkEntry {
 	data: {
 		title: string;
 		description: string | null;
-		tags: string[];
+		facets: ArtworkFacetRef[];
 		artist: string | null;
 		year: number | null;
 		width: number | null;
@@ -42,7 +43,7 @@ function toEntry(row: ArtworkListItem | ArtworkDetail): PublicArtworkEntry {
 		data: {
 			title: row.title,
 			description: row.description,
-			tags: row.tags,
+			facets: row.facets,
 			artist: row.artist,
 			year: row.year,
 			width: row.width,

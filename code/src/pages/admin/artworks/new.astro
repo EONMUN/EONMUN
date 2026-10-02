@@ -1,7 +1,7 @@
 ---
 import ArtworkForm from '../../../components/admin/ArtworkForm.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
-import { getAdminCollections } from '../../../db/admin';
+import { getAdminCollections, getAdminFacets } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
@@ -11,7 +11,7 @@ const env = getRuntimeEnv();
 const access = await requireAdminPage(Astro.request, env, '/admin/artworks/new');
 if ('response' in access) return access.response;
 const { session } = access;
-const collections = await getAdminCollections(env);
+const [collections, facets] = await Promise.all([getAdminCollections(env), getAdminFacets(env)]);
 ---
 <ConsoleShell
 	title="New artwork — EONMUN admin"
@@ -20,5 +20,5 @@ const collections = await getAdminCollections(env);
 	backHref="/admin/artworks"
 	backLabel="Artwork"
 >
-	<ArtworkForm action="/api/admin/artworks" collections={collections} />
+	<ArtworkForm action="/api/admin/artworks" collections={collections} facets={facets} />
 </ConsoleShell>

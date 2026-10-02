@@ -38,7 +38,6 @@ export const artworks = sqliteTable(
 		title: text("title").notNull(),
 		slug: text("slug").notNull().unique(),
 		description: text("description"),
-		tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
 		artist: text("artist"),
 		year: integer("year"),
 		width: real("width"),

@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { sql } from 'drizzle-orm';
+import { slugify } from '../src/lib/slug';
 import {
 	artworks, artworkImages, artworksToCollections, artworksToFacets, collections,
 	facets, homepageArtworks, posts, postsToArtworks, postsToCollections, products,
@@ -35,11 +36,13 @@ try {
 	}
 
 	const artworkData = new Map<string, {id: number; title: string; imageUrl: string | null}>();
+	const artworkTags = new Map<string, string[]>();
 	for (const item of await fixture<Array<{title: string; slug: string; description?: string; tags?: string[]; imageAltText?: string; artist?: string; year?: number; images?: string[]; collectionSlug?: string; isDefaultForCollection?: boolean; publishedAt?: string; locale?: string}>>('artworks')) {
 		const [row] = await db.insert(artworks).values({ title: item.title, slug: item.slug,
-			description: item.description, tags: item.tags ?? [], artist: item.artist, year: item.year,
+			description: item.description, artist: item.artist, year: item.year,
 			publishedAt: date(item.publishedAt), locale: item.locale }).returning({ id: artworks.id });
 		artworkData.set(item.slug, { id: row.id, title: item.title, imageUrl: item.images?.[0] ?? null });
+		artworkTags.set(item.slug, item.tags ?? []);
 		for (const [index, imageUrl] of (item.images ?? []).entries()) {
 			await db.insert(artworkImages).values({ artworkId: row.id, url: imageUrl, caption: item.title, altText: index === 0 ? item.imageAltText : null, isDefault: index === 0 });
 		}
@@ -62,6 +65,14 @@ try {
 		for (const slug of item.artworkSlugs ?? []) {
 			const artwork = artworkData.get(slug);
 			if (artwork) await db.insert(artworksToFacets).values({ artworkId: artwork.id, facetId: row.id });
+		}
+	}
+	for (const [artworkSlug, tags] of artworkTags) {
+		const artwork = artworkData.get(artworkSlug)!;
+		for (const name of tags) {
+			const slug = slugify(name);
+			const [facet] = await db.insert(facets).values({ name, slug, type: 'tag' }).onConflictDoUpdate({ target: [facets.slug, facets.type], set: { name } }).returning({ id: facets.id });
+			await db.insert(artworksToFacets).values({ artworkId: artwork.id, facetId: facet.id });
 		}
 	}
 

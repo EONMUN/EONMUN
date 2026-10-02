@@ -30,6 +30,8 @@ export interface ArtworkAdminInput {
 	slug: string;
 	description: string | null;
 	tags: string[];
+	facetIds: number[];
+	newFacets: { name: string; type: string }[];
 	artist: string | null;
 	year: number | null;
 	width: number | null;
@@ -66,11 +68,25 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
 	});
 	if (images.filter((image) => image.isDefault).length > 1) throw new Error("Only one image can be the default");
 	if (images.length > 0 && !images.some((image) => image.isDefault)) images[0].isDefault = true;
+	const tags = Array.isArray(input.tags) ? input.tags.map((tag) => text(tag, "Tag", true)!) : [];
+	if (tags.length > 12 || tags.some((tag) => tag.length > 40 || !slugify(tag))) throw new Error("Tags must be 12 short names or fewer");
+	if (!Array.isArray(input.newFacets ?? [])) throw new Error("New facets must be an array");
+	const newFacets = ((input.newFacets ?? []) as unknown[]).map((raw) => {
+		if (!raw || typeof raw !== "object") throw new Error("Invalid facet");
+		const facet = raw as Record<string, unknown>;
+		const name = text(facet.name, "Facet name", true)!;
+		const type = text(facet.type, "Facet type", true)!;
+		if (name.length > 80 || !slugify(name) || !/^[a-z][a-z0-9-]{0,31}$/.test(type) || type === "tag") throw new Error("Invalid facet name or type");
+		return { name, type };
+	});
+	if (newFacets.length > 12) throw new Error("Too many new facets");
 	return {
 		title,
 		slug,
 		description: text(input.description, "Description"),
-		tags: Array.isArray(input.tags) ? [...new Set(input.tags.map((tag) => text(tag, "Tag", true)!))].slice(0, 12) : [],
+		tags: [...new Map(tags.map((tag) => [slugify(tag), tag])).values()],
+		facetIds: ids(input.facetIds ?? [], "Facets"),
+		newFacets,
 		artist: text(input.artist, "Artist"),
 		year,
 		width: optionalNumber(input.width, "Width"),

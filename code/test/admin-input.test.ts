@@ -71,11 +71,13 @@ describe("admin input", () => {
 		expect(result.images.map((image) => image.isDefault)).toEqual([true, false]);
 	});
 
-	test("keeps editor tags and alt text separate from image captions", () => {
-		const result = parseArtworkInput({ ...artwork, tags: ["  bird  ", "bird", "watercolor"], images: [
+	test("keeps facet selections, tags, and alt text separate from captions", () => {
+		const result = parseArtworkInput({ ...artwork, tags: ["  bird  ", "bird", "watercolor"], facetIds: [3], newFacets: [{ type: "size", name: "Small" }], images: [
 			{ url: "https://r2.eonmun.com/artwork-media/a.jpg", caption: "Detail view", altText: "Blue bird on a branch", isDefault: true },
 		] });
 		expect(result.tags).toEqual(["bird", "watercolor"]);
+		expect(result.facetIds).toEqual([3]);
+		expect(result.newFacets).toEqual([{ type: "size", name: "Small" }]);
 		expect(result.images[0]).toMatchObject({ caption: "Detail view", altText: "Blue bird on a branch" });
 	});
 });
