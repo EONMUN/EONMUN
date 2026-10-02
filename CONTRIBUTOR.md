@@ -129,7 +129,9 @@ Required production Worker secrets for `eonmun-astro`:
 
 The artwork editor's optional writing assistant uses `OPENAI_API_KEY` as a Worker secret. It sends the editor's current artwork fields and cover image to OpenAI when an admin requests suggestions. Suggested copy is never published until the admin applies it and saves the artwork.
 
-Apply the `code/drizzle/0011_artwork_image_alt.sql` and `0012_artwork_copy.sql` migrations to production Turso before deploying the Worker version that reads image alt text. Tags use the existing `facets` and `artworks_to_facets` tables. The copy migration updates descriptions and cover alt text only where the previous values still match the 2026-10-01 audit.
+Apply migrations `0011` through `0014` to production Turso before deploying this Worker version. They add image alt text, backfill editorial copy, migrate facets to `namespace`/`key`/`value`, and preserve documented specifications while linking material and support facets. Existing facet IDs and artwork links are preserved; equivalent values are combined without losing memberships. Each artwork can share multiple facet values through `artworks_to_facets`. Tags use `artwork` / `tag` / the tag text.
+
+The copy backfills only change descriptions and cover alt text matching their audited values. Material backfills skip groups that an editor has already populated. Width, height, depth, and units remain typed artwork fields; the audit did not establish the axis order of measurements recorded only in descriptions. See [Artwork facet model and catalog audit](docs/artwork-facets.md) for the source evidence and migration decisions.
 
 Configure Stripe to send `checkout.session.completed` and `checkout.session.async_payment_succeeded` events to `https://eonmun.com/api/webhooks/stripe`. Contact-email secrets are required only by the contact runtime endpoint.
 

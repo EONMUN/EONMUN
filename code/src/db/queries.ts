@@ -34,9 +34,9 @@ export interface ArtworkCollectionRef {
 
 export interface ArtworkFacetRef {
 	id: number;
-	name: string;
-	slug: string;
-	type: string;
+	namespace: string;
+	key: string;
+	value: string;
 }
 
 export interface ArtworkListItem extends ArtworkWithDefaultImage {
@@ -204,7 +204,7 @@ export async function getAllArtworks(
 				),
 				isNotNull(collections.publishedAt),
 			),
-		), db.select({ artworkId: artworksToFacets.artworkId, id: facets.id, name: facets.name, slug: facets.slug, type: facets.type })
+		), db.select({ artworkId: artworksToFacets.artworkId, id: facets.id, namespace: facets.namespace, key: facets.key, value: facets.value })
 			.from(artworksToFacets).innerJoin(facets, eq(artworksToFacets.facetId, facets.id))
 			.where(inArray(artworksToFacets.artworkId, rows.map((row) => row.id))),
 	]);
@@ -271,7 +271,7 @@ export async function getArtworkBySlug(
 					isNotNull(collections.publishedAt),
 				),
 			),
-		db.select({ id: facets.id, name: facets.name, slug: facets.slug, type: facets.type })
+		db.select({ id: facets.id, namespace: facets.namespace, key: facets.key, value: facets.value })
 			.from(artworksToFacets).innerJoin(facets, eq(artworksToFacets.facetId, facets.id))
 			.where(eq(artworksToFacets.artworkId, artwork.id)),
 		db.select({ priceCents: products.price, quantity: products.quantity, soldAt: products.soldAt })

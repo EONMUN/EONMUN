@@ -111,7 +111,7 @@ const productJsonLd = saleOffer ? JSON.stringify({
 				)}
 				{artwork.data.facets.length > 0 && (
 					<div class="flex flex-wrap gap-2" aria-label="Artwork facets">
-						{artwork.data.facets.map((facet) => <span class="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{facet.type === 'tag' ? facet.name : `${facet.type}: ${facet.name}`}</span>)}
+						{artwork.data.facets.map((facet) => <span class="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{facet.namespace === 'artwork' && facet.key === 'tag' ? facet.value : `${facet.namespace === 'artwork' ? '' : facet.namespace + '/'}${facet.key}: ${facet.value}`}</span>)}
 					</div>
 				)}
 

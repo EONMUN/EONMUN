@@ -31,7 +31,7 @@ export interface ArtworkAdminInput {
 	description: string | null;
 	tags: string[];
 	facetIds: number[];
-	newFacets: { name: string; type: string }[];
+	newFacets: { namespace: string; key: string; value: string }[];
 	artist: string | null;
 	year: number | null;
 	width: number | null;
@@ -74,17 +74,20 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
 	const newFacets = ((input.newFacets ?? []) as unknown[]).map((raw) => {
 		if (!raw || typeof raw !== "object") throw new Error("Invalid facet");
 		const facet = raw as Record<string, unknown>;
-		const name = text(facet.name, "Facet name", true)!;
-		const type = text(facet.type, "Facet type", true)!;
-		if (name.length > 80 || !slugify(name) || !/^[a-z][a-z0-9-]{0,31}$/.test(type) || type === "tag") throw new Error("Invalid facet name or type");
-		return { name, type };
+		const namespace = text(facet.namespace, "Facet namespace", true)!;
+		const key = text(facet.key, "Facet key", true)!;
+		const value = text(facet.value, "Facet value", true)!;
+		const identifier = /^[a-z][a-z0-9-]{0,31}$/;
+		if (!identifier.test(namespace) || !identifier.test(key) || value.length > 80
+			|| (namespace === "artwork" && key === "tag")) throw new Error("Invalid facet namespace, key, or value");
+		return { namespace, key, value };
 	});
 	if (newFacets.length > 12) throw new Error("Too many new facets");
 	return {
 		title,
 		slug,
 		description: text(input.description, "Description"),
-		tags: [...new Map(tags.map((tag) => [slugify(tag), tag])).values()],
+		tags: [...new Map(tags.map((tag) => [tag.toLowerCase(), tag])).values()],
 		facetIds: ids(input.facetIds ?? [], "Facets"),
 		newFacets,
 		artist: text(input.artist, "Artist"),

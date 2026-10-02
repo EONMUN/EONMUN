@@ -118,9 +118,9 @@ export const facets = sqliteTable(
 	"facets",
 	{
 		id: integer("id").primaryKey({ autoIncrement: true }),
-		name: text("name").notNull(),
-		slug: text("slug").notNull(),
-		type: text("type").notNull(),
+		namespace: text("namespace").notNull().default("artwork"),
+		key: text("key").notNull(),
+		value: text("value").notNull(),
 		description: text("description"),
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.notNull()
@@ -130,11 +130,11 @@ export const facets = sqliteTable(
 			.$defaultFn(() => new Date()),
 	},
 	(table) => ({
-		slugTypeUnique: uniqueIndex("facets_slug_type_unique").on(
-			table.slug,
-			table.type,
+		identityUnique: uniqueIndex("facets_namespace_key_value_unique").on(
+			table.namespace,
+			table.key,
+			sql`${table.value} COLLATE NOCASE`,
 		),
-		typeIdx: index("facets_type_idx").on(table.type),
 	}),
 );
 

@@ -1,7 +1,6 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { ArtworkAdminInput, CollectionAdminInput } from "../lib/admin-input";
-import { slugify } from "../lib/slug";
 import {
 	artworkImages,
 	artworks,
@@ -70,13 +69,14 @@ async function replaceMemberships(
 
 async function replaceArtworkFacets(tx: Transaction, artworkId: number, input: ArtworkAdminInput) {
 	const facetIds = new Set(input.facetIds);
-	for (const { name, type } of [
-		...input.tags.map((name) => ({ name, type: "tag" })),
+	for (const { namespace, key, value } of [
+		...input.tags.map((value) => ({ namespace: "artwork", key: "tag", value })),
 		...input.newFacets,
 	]) {
-		const slug = slugify(name);
-		await tx.insert(facets).values({ name, slug, type }).onConflictDoNothing({ target: [facets.slug, facets.type] });
-		const [facet] = await tx.select({ id: facets.id }).from(facets).where(and(eq(facets.slug, slug), eq(facets.type, type)));
+		await tx.insert(facets).values({ namespace, key, value }).onConflictDoNothing();
+		const [facet] = await tx.select({ id: facets.id }).from(facets).where(and(
+			eq(facets.namespace, namespace), eq(facets.key, key), sql`${facets.value} = ${value} COLLATE NOCASE`,
+		));
 		facetIds.add(facet.id);
 	}
 	await tx.delete(artworksToFacets).where(eq(artworksToFacets.artworkId, artworkId));
@@ -247,7 +247,7 @@ export async function getAdminCollections(env: Env) {
 }
 
 export async function getAdminFacets(env: Env) {
-	return getDb(env).select().from(facets).orderBy(facets.type, facets.name);
+	return getDb(env).select().from(facets).orderBy(facets.namespace, facets.key, facets.value);
 }
 
 export async function getAdminArtwork(env: Env, slug: string, db = getDb(env)) {
@@ -256,12 +256,12 @@ export async function getAdminArtwork(env: Env, slug: string, db = getDb(env)) {
 	const [images, memberships, facetRows, productRows] = await Promise.all([
 		db.select().from(artworkImages).where(eq(artworkImages.artworkId, artwork.id)),
 		db.select().from(artworksToCollections).where(eq(artworksToCollections.artworkId, artwork.id)),
-		db.select({ id: facets.id, name: facets.name, type: facets.type }).from(artworksToFacets)
+		db.select({ id: facets.id, namespace: facets.namespace, key: facets.key, value: facets.value }).from(artworksToFacets)
 			.innerJoin(facets, eq(artworksToFacets.facetId, facets.id))
 			.where(eq(artworksToFacets.artworkId, artwork.id)),
 		db.select().from(products).where(and(eq(products.artworkId, artwork.id), eq(products.type, "artwork"))),
 	]);
-	return { ...artwork, images, collectionIds: memberships.map((row) => row.collectionId), facetIds: facetRows.filter((row) => row.type !== "tag").map((row) => row.id), tags: facetRows.filter((row) => row.type === "tag").map((row) => row.name), product: productRows[0] ?? null };
+	return { ...artwork, images, collectionIds: memberships.map((row) => row.collectionId), facetIds: facetRows.filter((row) => !(row.namespace === "artwork" && row.key === "tag")).map((row) => row.id), tags: facetRows.filter((row) => row.namespace === "artwork" && row.key === "tag").map((row) => row.value), product: productRows[0] ?? null };
 }
 
 // Dashboard shapes. The dashboard is the only admin surface that reads every

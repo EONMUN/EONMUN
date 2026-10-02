@@ -15,8 +15,8 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await page.getByRole('textbox', { name: 'Artist' }).fill('EONMUN');
 	await page.getByRole('spinbutton', { name: 'Price (USD)' }).fill('1250');
 	await page.getByRole('textbox', { name: 'Tags' }).fill('bird, watercolor');
-	await page.getByRole('combobox', { name: 'Facet type' }).selectOption('size');
-	await page.getByRole('textbox', { name: 'New facet name' }).fill('Small');
+	await page.getByRole('combobox', { name: 'Facet key' }).fill('size');
+	await page.getByRole('textbox', { name: 'Facet value' }).fill('Small');
 	await page.getByRole('button', { name: 'Add facet' }).click();
 	await page.getByRole('button', { name: 'Save artwork' }).click();
 	await expect(page).toHaveURL(`/admin/artworks/${slug}`);

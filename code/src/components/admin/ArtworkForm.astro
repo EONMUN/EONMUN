@@ -38,21 +38,23 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		<label>Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
 		<label class="span-all">Description <textarea class="admin-input" name="description">{artwork?.description ?? ''}</textarea></label>
 		<label class="span-all">Tags <input class="admin-input" name="tags" value={artwork?.tags.join(', ') ?? ''} aria-describedby="tags-hint" /></label>
-		<p class="hint span-all" id="tags-hint">Separate tags with commas. Each tag is stored as a facet.</p>
+		<p class="hint span-all" id="tags-hint">Separate tags with commas.</p>
 	</FormFieldset>
 
 	<FormFieldset legend="Other facets">
-		<p class="hint">Select existing attributes or add one for this artwork. Size labels are editorial categories; the numeric dimensions above remain the exact measurements.</p>
+		<p class="hint">Select existing attributes or add one for this artwork. Use size for a category such as Small. Enter exact measurements in the dimension fields.</p>
 		<div class="collection-list">
-			{facets.filter((facet) => facet.type !== 'tag').map((facet) => (
-				<label><input type="checkbox" name="facetIds" value={facet.id} checked={artwork?.facetIds.includes(facet.id)} /> {facet.type}: {facet.name}</label>
+			{facets.filter((facet) => !(facet.namespace === 'artwork' && facet.key === 'tag')).map((facet) => (
+				<label><input type="checkbox" name="facetIds" value={facet.id} checked={artwork?.facetIds.includes(facet.id)} /> {facet.namespace === 'artwork' ? '' : facet.namespace + '/'}{facet.key}: {facet.value}</label>
 			))}
 		</div>
 		<div class="new-collection-row">
-			<select class="admin-input" data-new-facet-type aria-label="Facet type">
-				{[...new Set(['size', 'material', 'style', 'subject', ...facets.map((facet) => facet.type)])].filter((type) => type !== 'tag').map((type) => <option value={type}>{type}</option>)}
-			</select>
-			<input class="admin-input" data-new-facet-name aria-label="New facet name" placeholder="New facet name" />
+			<input class="admin-input" data-new-facet-namespace aria-label="Facet namespace" value="artwork" placeholder="Namespace" />
+			<input class="admin-input" data-new-facet-key aria-label="Facet key" list="facet-keys" placeholder="Key, e.g. material" />
+			<datalist id="facet-keys">
+				{[...new Set(['size', 'material', 'support', 'medium', 'style', 'subject', 'color', 'orientation', ...facets.map((facet) => facet.key)])].filter((key) => key !== 'tag').map((key) => <option value={key} />)}
+			</datalist>
+			<input class="admin-input" data-new-facet-value aria-label="Facet value" placeholder="Value, e.g. Watercolor" />
 			<button type="button" class="add-collection" data-add-facet>Add facet</button>
 		</div>
 		<div data-new-facet-list class="collection-list"></div>
@@ -194,18 +196,19 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		const status = form.querySelector('[data-suggest-status]');
 		const newFacetList = form.querySelector('[data-new-facet-list]');
 		const renderNewFacets = () => newFacetList.replaceChildren(...newFacets.map((facet, index) => {
-			const row = document.createElement('span'); row.textContent = `${facet.type}: ${facet.name} `;
+			const row = document.createElement('span'); row.textContent = `${facet.namespace}/${facet.key}: ${facet.value} `;
 			const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
 			remove.addEventListener('click', () => { newFacets.splice(index, 1); renderNewFacets(); });
 			row.append(remove); return row;
 		}));
 		form.querySelector('[data-add-facet]').addEventListener('click', () => {
-			const type = form.querySelector('[data-new-facet-type]').value;
-			const nameInput = form.querySelector('[data-new-facet-name]');
-			const name = nameInput.value.trim();
-			if (!name) return;
-			if (!newFacets.some((facet) => facet.type === type && facet.name.toLowerCase() === name.toLowerCase())) newFacets.push({ type, name });
-			nameInput.value = '';
+			const namespace = form.querySelector('[data-new-facet-namespace]').value.trim();
+			const key = form.querySelector('[data-new-facet-key]').value.trim();
+			const valueInput = form.querySelector('[data-new-facet-value]');
+			const value = valueInput.value.trim();
+			if (!namespace || !key || !value) return;
+			if (!newFacets.some((facet) => facet.namespace === namespace && facet.key === key && facet.value.toLowerCase() === value.toLowerCase())) newFacets.push({ namespace, key, value });
+			valueInput.value = '';
 			renderNewFacets();
 		});
 		let suggestedCoverUrl = null;
