@@ -99,6 +99,7 @@ const productJsonLd = saleOffer ? JSON.stringify({
 				<div class="border-t border-b border-gray-200 dark:border-gray-700 py-6">
 					{formattedPrice && <p class="mb-4 text-2xl font-semibold" data-artwork-price>{formattedPrice} USD</p>}
 					<PurchaseState artworkSlug={artwork.id} available={offer?.available ?? false} sold={offer?.sold ?? false} />
+					{saleOffer && <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">U.S. shipping included. All sales final. <a class="underline" href="/shipping">Shipping</a> · <a class="underline" href="/returns">Returns</a></p>}
 				</div>
 
 				{artwork.data.description && (
