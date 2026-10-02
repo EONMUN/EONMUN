@@ -8,7 +8,9 @@ import { createCatalogSchema } from "./schema-fixture";
 import {
 	createArtworkAdmin,
 	createCollectionAdmin,
+	enablePricedArtworks,
 	getAdminArtwork,
+	getPricedUnavailableArtworks,
 	getAdminCollection,
 	updateArtworkAdmin,
 	updateCollectionAdmin,
@@ -56,6 +58,25 @@ afterEach(async () => {
 });
 
 describe("admin mutations", () => {
+	test("enables only published, unsold artworks with positive prices", async () => {
+		const priced = await createArtworkAdmin(env, artworkInput({ slug: "priced", priceCents: 12000 }), db);
+		await updateArtworkAdmin(env, priced.slug, artworkInput({ slug: "priced", published: true, priceCents: 12000 }), db);
+		const draft = await createArtworkAdmin(env, artworkInput({ slug: "draft", priceCents: 13000 }), db);
+		const sold = await createArtworkAdmin(env, artworkInput({ slug: "sold", priceCents: 14000 }), db);
+		await updateArtworkAdmin(env, sold.slug, artworkInput({ slug: "sold", published: true, priceCents: 14000 }), db);
+		const [soldProduct] = await db.select().from(products).where(eq(products.artworkId, sold.id));
+		await markArtworkPaid(env, "evt", soldProduct.id, sold.slug, db);
+		const unpriced = await createArtworkAdmin(env, artworkInput({ slug: "unpriced" }), db);
+		await updateArtworkAdmin(env, unpriced.slug, artworkInput({ slug: "unpriced", published: true }), db);
+
+		expect((await getPricedUnavailableArtworks(env, db)).map((row) => row.id)).toHaveLength(1);
+		expect(await enablePricedArtworks(env, db)).toHaveLength(1);
+		expect((await getArtworkBySlug(env, priced.slug, db))?.offer?.available).toBe(true);
+		expect((await getArtworkBySlug(env, draft.slug, db))).toBeNull();
+		expect((await getArtworkBySlug(env, sold.slug, db))?.offer?.sold).toBe(true);
+		expect((await getArtworkBySlug(env, unpriced.slug, db))?.offer).toBeNull();
+		expect(await enablePricedArtworks(env, db)).toHaveLength(0);
+	});
 	test("billing-only edits and draft saves do not refresh public pages", async () => {
 		const artwork = await createArtworkAdmin(env, artworkInput(), db);
 		let before = await getAdminArtwork(env, artwork.slug, db);

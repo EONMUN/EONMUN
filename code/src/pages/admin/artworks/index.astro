@@ -6,7 +6,7 @@ import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
 import CreateAction from '../../../components/admin/CreateAction.astro';
 import EmptyState from '../../../components/admin/EmptyState.astro';
 import MediaCard from '../../../components/admin/MediaCard.astro';
-import { getAdminArtworkCards } from '../../../db/admin';
+import { getAdminArtworkCards, getPricedUnavailableArtworks } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
@@ -17,7 +17,7 @@ const access = await requireAdminPage(Astro.request, env, '/admin/artworks');
 if ('response' in access) return access.response;
 const { session } = access;
 
-const artworks = await getAdminArtworkCards(env);
+const [artworks, pricedUnavailable] = await Promise.all([getAdminArtworkCards(env), getPricedUnavailableArtworks(env)]);
 const published = artworks.filter((artwork) => artwork.publishedAt !== null).length;
 const tally = `${artworks.length} total · ${published} published · ${artworks.length - published} draft`;
 ---
@@ -35,6 +35,14 @@ const tally = `${artworks.length} total · ${published} published · ${artworks.
 			note="Images, dimensions, collections, private price."
 		/>
 	</ActionBar>
+	{pricedUnavailable.length > 0 && (
+		<div class="mb-10 border border-gray-700/40 p-5 space-y-3">
+			<h2 class="text-lg font-semibold">Priced artwork not yet for sale</h2>
+			<p>{pricedUnavailable.length} published, unsold {pricedUnavailable.length === 1 ? 'piece has' : 'pieces have'} a price but {pricedUnavailable.length === 1 ? 'is' : 'are'} marked unavailable: {pricedUnavailable.map((artwork) => artwork.title).join(', ')}.</p>
+			<button type="button" class="primary-button" data-enable-priced>Make all priced pieces available</button>
+			<p class="text-sm" role="status" aria-live="polite" data-enable-priced-status></p>
+		</div>
+	)}
 
 	<ConsoleSection title="Every piece" tally={tally} links={[{ href: '/admin/collections', label: 'Collections →' }]}>
 		{artworks.length === 0 ? (
@@ -60,3 +68,19 @@ const tally = `${artworks.length} total · ${published} published · ${artworks.
 	</ConsoleSection>
 </ConsoleShell>
 
+<script>
+	const button = document.querySelector<HTMLButtonElement>('[data-enable-priced]');
+	button?.addEventListener('click', async () => {
+		const status = document.querySelector<HTMLElement>('[data-enable-priced-status]');
+		button.disabled = true;
+		if (status) status.textContent = 'Updating availability…';
+		try {
+			const response = await fetch('/api/admin/artworks/enable-priced', { method: 'POST' });
+			if (!response.ok) throw new Error('Could not update availability. Please try again.');
+			location.reload();
+		} catch (error) {
+			if (status) status.textContent = error instanceof Error ? error.message : 'Could not update availability.';
+			button.disabled = false;
+		}
+	});
+</script>
