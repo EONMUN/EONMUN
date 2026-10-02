@@ -14,6 +14,10 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await page.getByRole('textbox', { name: 'Slug' }).fill(slug);
 	await page.getByRole('textbox', { name: 'Artist' }).fill('EONMUN');
 	await page.getByRole('spinbutton', { name: 'Price (USD)' }).fill('1250');
+	await page.getByRole('textbox', { name: 'Tags' }).fill('bird, watercolor');
+	await page.getByRole('combobox', { name: 'Facet type' }).selectOption('size');
+	await page.getByRole('textbox', { name: 'New facet name' }).fill('Small');
+	await page.getByRole('button', { name: 'Add facet' }).click();
 	await page.getByRole('button', { name: 'Save artwork' }).click();
 	await expect(page).toHaveURL(`/admin/artworks/${slug}`);
 
@@ -34,6 +38,8 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	}).toPass({ timeout: 15_000 });
 	await visit(page, `/artworks/${slug}`);
 	await expect(page.getByRole('heading', { name: 'Playwright artwork edited' })).toBeVisible();
+	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('bird');
+	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('size: Small');
 	await expect(page.getByText('Not currently available for purchase.')).toBeVisible();
 	await expect(page.locator('[data-artwork-price]')).toHaveCount(0);
 	expect(await page.locator('script[type="application/ld+json"]').count()).toBe(0);
