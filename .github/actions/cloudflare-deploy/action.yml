@@ -11,6 +11,10 @@ inputs:
   cloudflare-account-id:
     description: 'Cloudflare account ID'
     required: true
+  stripe-secret-key:
+    description: 'Stripe API secret required for production checkout; unused by previews'
+    required: false
+    default: ''
   node-version:
     description: 'Node.js version'
     required: false
@@ -32,6 +36,17 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Check production checkout configuration
+      if: inputs.mode == 'deploy'
+      shell: bash
+      env:
+        STRIPE_SECRET_KEY: ${{ inputs.stripe-secret-key }}
+      run: |
+        if [ -z "$STRIPE_SECRET_KEY" ]; then
+          echo "::error::STRIPE_SECRET_KEY must be configured in GitHub Actions secrets for production checkout."
+          exit 1
+        fi
+
     - name: Setup Node.js
       if: inputs.skip-setup != 'true'
       uses: actions/setup-node@v4
@@ -74,6 +89,17 @@ runs:
       shell: bash
       working-directory: code
       run: bun run astro build
+
+    # Worker bindings are separate from GitHub Actions secrets.
+    - name: Configure production checkout secret
+      if: inputs.mode == 'deploy'
+      shell: bash
+      working-directory: code
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        STRIPE_SECRET_KEY: ${{ inputs.stripe-secret-key }}
+      run: printf '%s' "$STRIPE_SECRET_KEY" | bunx wrangler secret put STRIPE_SECRET_KEY --name eonmun-astro
 
     - name: Deploy to Cloudflare (promote)
       if: inputs.mode == 'deploy'

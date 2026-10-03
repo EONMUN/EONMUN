@@ -27,5 +27,6 @@ jobs:
         uses: ./.github/actions/cloudflare-deploy
         with:
           mode: deploy
+          stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
