@@ -31,10 +31,6 @@ const artworkInput = (overrides: Record<string, unknown> = {}) => parseArtworkIn
 	description: "A study",
 	artist: "EONMUN",
 	year: 2026,
-	width: 10,
-	height: 12,
-	depth: "",
-	dimensionUnit: "in",
 	published: false,
 	available: false,
 	priceCents: "",
@@ -89,6 +85,20 @@ describe("admin mutations", () => {
 		const draft = await updateArtworkAdmin(env, published.slug, artworkInput({ title: "Edited", published: false }), db);
 		expect(draft.publishedAt).toBeNull();
 	});
+
+    test("editing measurement facets replaces derived size and orientation atomically", async () => {
+        const measurementFacets = Object.entries({width:'12',height:'16','dimension-unit':'in'}).map(([key,value])=>({namespace:'artwork',key,value}));
+        const created = await createArtworkAdmin(env, artworkInput({newFacets:measurementFacets}), db);
+        const selected = await db.select().from(facets);
+        const ids = selected.filter(f=>f.key!=='width').map(f=>f.id);
+        await updateArtworkAdmin(env, created.slug, artworkInput({published:true,facetIds:ids,newFacets:[{namespace:'artwork',key:'width',value:'48'}]}), db);
+        const result = (await getArtworkBySlug(env, created.slug, db))!.facets;
+        expect(result.filter(f=>f.key==='width').map(f=>f.value)).toEqual(['48']);
+        expect(result.find(f=>f.key==='size')?.value).toBe('Large');
+        expect(result.find(f=>f.key==='orientation')?.value).toBe('Landscape');
+        await expect(updateArtworkAdmin(env,created.slug,artworkInput({title:'Invalid edit',facetIds:ids.filter(id=>selected.find(f=>f.id===id)?.key!=='dimension-unit')}),db)).rejects.toThrow('dimension-unit');
+        expect((await getAdminArtwork(env,created.slug,db))?.title).toBe('Study');
+    });
 
 	test("saves tags and size as facets alongside image alt text", async () => {
 		const image = { url: "https://r2.eonmun.com/artwork-media/study.png", caption: null, altText: "A blue bird on a branch", isDefault: true };

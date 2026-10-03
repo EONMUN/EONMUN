@@ -29,6 +29,31 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Canvas paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "13"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "16"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
@@ -63,6 +88,31 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "12"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "16"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
@@ -106,6 +156,31 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "18"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
@@ -128,7 +203,14 @@
       "botanical",
       "still life"
     ],
-    "imageAltText": "A framed botanical painting of yellow lemons, green leaves, and warm orange tones."
+    "imageAltText": "A framed botanical painting of yellow lemons, green leaves, and warm orange tones.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      }
+    ]
   },
   {
     "title": "Casa de Fuji",
@@ -165,6 +247,31 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "12"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
@@ -198,6 +305,31 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Rice paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "12"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
@@ -241,6 +373,31 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "18"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
@@ -279,11 +436,36 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "13"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "16"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
   {
-    "title": "Quetzalcōātlin tetl",
+    "title": "Quetzalc\u014d\u0101tlin tetl",
     "slug": "quetzalcoatlin-tetl",
     "description": "A grayscale architectural motif combines carved faces and stepped forms in a finely detailed work on paper.\n\nWatercolor, pencil, paper\n14\"x18\"",
     "artist": "EONMUN",
@@ -317,11 +499,36 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "18"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
       }
     ]
   },
   {
-    "title": "Camélia",
+    "title": "Cam\u00e9lia",
     "slug": "camelia",
     "description": "Fine black ink branches spread across pale rice paper in this spare botanical composition.\n\nCarbon ink, rice paper\n19\"x25\"",
     "artist": "EONMUN",
@@ -350,6 +557,31 @@
         "namespace": "artwork",
         "key": "support",
         "value": "Rice paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "19"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "25"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Medium"
       }
     ]
   }

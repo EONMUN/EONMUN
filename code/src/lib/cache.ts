@@ -25,7 +25,7 @@ export function artworkContentChanged(
 	if (!before) return false;
 	if ((before.publishedAt !== null) !== input.published) return true;
 	if (!input.published) return false;
-	const fields = ["slug", "title", "description", "artist", "year", "width", "height", "depth", "dimensionUnit"] as const;
+	const fields = ["slug", "title", "description", "artist", "year"] as const;
 	if (fields.some((field) => before[field] !== input[field])) return true;
 	if (JSON.stringify(before.tags) !== JSON.stringify(input.tags)) return true;
 	if (input.newFacets.length > 0) return true;

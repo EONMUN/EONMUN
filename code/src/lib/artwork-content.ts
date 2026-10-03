@@ -18,10 +18,6 @@ export interface PublicArtworkEntry {
 		facets: ArtworkFacetRef[];
 		artist: string | null;
 		year: number | null;
-		width: number | null;
-		height: number | null;
-		depth: number | null;
-		dimensionUnit: string | null;
 		publishedAt: string;
 		locale: string;
 		images: { url: string; isDefault: boolean; caption: string | null; altText: string | null }[];
@@ -46,10 +42,6 @@ function toEntry(row: ArtworkListItem | ArtworkDetail): PublicArtworkEntry {
 			facets: row.facets,
 			artist: row.artist,
 			year: row.year,
-			width: row.width,
-			height: row.height,
-			depth: row.depth,
-			dimensionUnit: row.dimensionUnit,
 			publishedAt: row.publishedAt?.toISOString() ?? "",
 			locale: row.locale,
 			images: "images" in row ? row.images : [],

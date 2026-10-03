@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
+import { normalizeArtworkFacets } from "../lib/artwork-facets";
 import type { ArtworkAdminInput, CollectionAdminInput } from "../lib/admin-input";
 import {
 	artworkImages,
@@ -34,10 +35,6 @@ function artworkValues(input: ArtworkAdminInput) {
 		description: input.description,
 		artist: input.artist,
 		year: input.year,
-		width: input.width,
-		height: input.height,
-		depth: input.depth,
-		dimensionUnit: input.dimensionUnit,
 		updatedAt: new Date(),
 	};
 }
@@ -68,11 +65,13 @@ async function replaceMemberships(
 }
 
 async function replaceArtworkFacets(tx: Transaction, artworkId: number, input: ArtworkAdminInput) {
-	const facetIds = new Set(input.facetIds);
-	for (const { namespace, key, value } of [
+	const selected = input.facetIds.length ? await tx.select().from(facets).where(inArray(facets.id, input.facetIds)) : [];
+	const facetIds = new Set<number>();
+	for (const { namespace, key, value } of normalizeArtworkFacets([
+		...selected,
 		...input.tags.map((value) => ({ namespace: "artwork", key: "tag", value })),
 		...input.newFacets,
-	]) {
+	])) {
 		await tx.insert(facets).values({ namespace, key, value }).onConflictDoNothing();
 		const [facet] = await tx.select({ id: facets.id }).from(facets).where(and(
 			eq(facets.namespace, namespace), eq(facets.key, key), sql`${facets.value} = ${value} COLLATE NOCASE`,

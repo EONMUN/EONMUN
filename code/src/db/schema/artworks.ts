@@ -3,7 +3,6 @@ import {
 	sqliteTable,
 	text,
 	integer,
-	real,
 	index,
 	uniqueIndex,
 	primaryKey,
@@ -40,10 +39,6 @@ export const artworks = sqliteTable(
 		description: text("description"),
 		artist: text("artist"),
 		year: integer("year"),
-		width: real("width"),
-		height: real("height"),
-		depth: real("depth"),
-		dimensionUnit: text("dimension_unit").default("in"),
 		publishedAt: integer("published_at", { mode: "timestamp" }),
 		locale: text("locale").notNull().default("en"),
 		createdAt: integer("created_at", { mode: "timestamp" })
