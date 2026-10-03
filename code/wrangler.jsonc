@@ -12,6 +12,7 @@
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 //
 // AUTH_GOOGLE_ID is a public OAuth client ID and is configured in `vars` below.
+// PINTEREST_AD_ACCOUNT_ID is an optional public var for a catalog owned by an ad account.
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	// Keep preview URLs on the same Worker as the production Astro site.

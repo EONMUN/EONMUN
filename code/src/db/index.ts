@@ -18,6 +18,7 @@ export type Env = {
 	PINTEREST_APP_ID?: string;
 	PINTEREST_APP_SECRET?: string;
 	PINTEREST_CATALOG_ID?: string;
+	PINTEREST_AD_ACCOUNT_ID?: string;
 	OPENAI_API_KEY?: string;
 };
 

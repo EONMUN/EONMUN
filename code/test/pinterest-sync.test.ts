@@ -37,21 +37,24 @@ describe("Pinterest catalog sync", () => {
 	});
 
 	test("uses only catalog endpoints supported by app credentials", async () => {
-		const calls: Array<{ path: string; body: unknown }> = [];
+		const calls: Array<{ url: string; path: string; body: unknown }> = [];
 		const mockFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-			const path = new URL(String(input)).pathname;
-			calls.push({ path, body: init?.body && typeof init.body === "string" ? JSON.parse(init.body) : null });
+			const url = String(input);
+			const path = new URL(url).pathname;
+			calls.push({ url, path, body: init?.body && typeof init.body === "string" ? JSON.parse(init.body) : null });
 			if (path === "/v5/oauth/token") return Response.json({ access_token: "test-token", scope: "catalogs:read catalogs:write" });
 			if (path === "/v5/catalogs/feeds") return Response.json({ items: [] });
-		if (path === "/v5/catalogs/items/batch") return Response.json({ batch_id: "b12345", status: "PROCESSING", items: [] });
-		throw new Error(`Unexpected Pinterest endpoint: ${path}`);
+			if (path === "/v5/catalogs/items/batch") return Response.json({ batch_id: "b12345", status: "PROCESSING", items: [] });
+			throw new Error(`Unexpected Pinterest endpoint: ${path}`);
 		}) as typeof fetch;
-		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456" };
+		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456", PINTEREST_AD_ACCOUNT_ID: "789" };
 		const result = await syncPinterestCatalog(env, [artwork], ["artwork-41", "artwork-42"], mockFetch);
 		expect(result).toMatchObject({ batch_id: "b12345", status: "PROCESSING" });
 		expect(calls.map((call) => call.path)).toEqual([
 			"/v5/oauth/token", "/v5/catalogs/feeds", "/v5/catalogs/items/batch",
 		]);
+		expect(calls[1].url).toEndWith("/v5/catalogs/feeds?catalog_id=456&ad_account_id=789");
+		expect(calls[2].url).toEndWith("/v5/catalogs/items/batch?ad_account_id=789");
 		expect(calls[2].body).toMatchObject({
 			catalog_id: "456",
 			items: [
@@ -59,6 +62,19 @@ describe("Pinterest catalog sync", () => {
 				{ item_id: "artwork-42", operation: "DELETE" },
 			],
 		});
+	});
+
+	test("routes batch status checks through the catalog owner's ad account", async () => {
+		const calls: string[] = [];
+		const mockFetch = (async (input: RequestInfo | URL) => {
+			calls.push(String(input));
+			return Response.json(calls.length === 1
+				? { access_token: "test-token", scope: "catalogs:read catalogs:write" }
+				: { batch_id: "b12345", status: "COMPLETED", items: [] });
+		}) as typeof fetch;
+		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456", PINTEREST_AD_ACCOUNT_ID: "789" };
+		await getPinterestBatchStatus(env, "b12345", mockFetch);
+		expect(calls[1]).toBe("https://api.pinterest.com/v5/catalogs/items/batch/b12345?ad_account_id=789");
 	});
 
 	test("names the Pinterest operation that denied access", async () => {

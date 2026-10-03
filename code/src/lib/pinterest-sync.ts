@@ -19,11 +19,21 @@ export function isPinterestConfigured(env: Env) {
 
 function requireConfig(env: Env) {
 	if (!isPinterestConfigured(env)) throw new PinterestSyncError("Pinterest app secret is not configured", 503);
+	if (env.PINTEREST_AD_ACCOUNT_ID && !/^\d+$/.test(env.PINTEREST_AD_ACCOUNT_ID)) {
+		throw new PinterestSyncError("Pinterest ad account ID must be numeric", 503);
+	}
 	return {
 		appId: env.PINTEREST_APP_ID!,
 		appSecret: env.PINTEREST_APP_SECRET!,
 		catalogId: env.PINTEREST_CATALOG_ID!,
+		adAccountId: env.PINTEREST_AD_ACCOUNT_ID,
 	};
+}
+
+function withAdAccount(path: string, adAccountId?: string) {
+	if (!adAccountId) return path;
+	const separator = path.includes("?") ? "&" : "?";
+	return `${path}${separator}ad_account_id=${encodeURIComponent(adAccountId)}`;
 }
 
 async function jsonResponse<T>(response: Response, operation: string): Promise<T> {
@@ -106,18 +116,18 @@ export async function syncPinterestCatalog(
 	knownIds: string[],
 	apiFetch: ApiFetch = fetch,
 ) {
-	const { catalogId } = requireConfig(env);
+	const { catalogId, adAccountId } = requireConfig(env);
 	if (knownIds.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-item sync limit", 409);
 	const token = await accessToken(env, apiFetch);
 	const feeds = await pinterestRequest<{ items?: unknown[] }>(
-		`/catalogs/feeds?catalog_id=${encodeURIComponent(catalogId)}`, token, apiFetch, "catalog feed check",
+		withAdAccount(`/catalogs/feeds?catalog_id=${encodeURIComponent(catalogId)}`, adAccountId), token, apiFetch, "catalog feed check",
 	);
 	if (feeds.items?.length) throw new PinterestSyncError("Pinterest already has a feed for this catalog; choose one catalog writer", 409);
 	// Pinterest item lookup requires user OAuth; batch writes support app credentials.
 	const operations = buildPinterestOperations(artworks, knownIds);
 	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [] };
 	if (operations.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-operation sync limit", 409);
-	const batch = await pinterestRequest<Batch>("/catalogs/items/batch", token, apiFetch, "catalog batch write", {
+	const batch = await pinterestRequest<Batch>(withAdAccount("/catalogs/items/batch", adAccountId), token, apiFetch, "catalog batch write", {
 		catalog_id: catalogId,
 		catalog_type: "RETAIL",
 		country: "US",
@@ -147,7 +157,8 @@ function summarizeBatch(batch: Batch) {
 
 export async function getPinterestBatchStatus(env: Env, batchId: string, apiFetch: ApiFetch = fetch) {
 	if (!/^[a-zA-Z0-9_-]{1,64}$/.test(batchId)) throw new PinterestSyncError("Invalid batch ID", 400);
+	const { adAccountId } = requireConfig(env);
 	const token = await accessToken(env, apiFetch);
-	const batch = await pinterestRequest<Batch>(`/catalogs/items/batch/${batchId}`, token, apiFetch, "catalog batch status check");
+	const batch = await pinterestRequest<Batch>(withAdAccount(`/catalogs/items/batch/${batchId}`, adAccountId), token, apiFetch, "catalog batch status check");
 	return summarizeBatch(batch);
 }
