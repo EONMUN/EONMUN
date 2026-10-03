@@ -66,12 +66,16 @@ async function replaceMemberships(
 
 async function replaceArtworkFacets(tx: Transaction, artworkId: number, input: ArtworkAdminInput) {
 	const selected = input.facetIds.length ? await tx.select().from(facets).where(inArray(facets.id, input.facetIds)) : [];
-	const facetIds = new Set<number>();
+	const identity = (facet: { namespace: string; key: string; value: string }) => JSON.stringify([facet.namespace, facet.key, facet.value.replace(/[A-Z]/g, letter => letter.toLowerCase())]);
+    const existing = new Map(selected.map(facet => [identity(facet), facet.id]));
+    const facetIds = new Set<number>();
 	for (const { namespace, key, value } of normalizeArtworkFacets([
 		...selected,
 		...input.tags.map((value) => ({ namespace: "artwork", key: "tag", value })),
 		...input.newFacets,
 	])) {
+        const selectedId = existing.get(identity({ namespace, key, value }));
+        if (selectedId !== undefined) { facetIds.add(selectedId); continue; }
 		await tx.insert(facets).values({ namespace, key, value }).onConflictDoNothing();
 		const [facet] = await tx.select({ id: facets.id }).from(facets).where(and(
 			eq(facets.namespace, namespace), eq(facets.key, key), sql`${facets.value} = ${value} COLLATE NOCASE`,

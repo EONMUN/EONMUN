@@ -2,9 +2,9 @@ import type { APIRoute } from 'astro';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { requireAdminMutation } from '../../../../lib/admin-guard';
-import { R2_PUBLIC_ORIGIN } from '../../../../lib/media';
-import { getRuntimeEnv } from '../../../../lib/runtime-env';
+import { requireAdminMutation } from '../../../lib/admin-guard';
+import { R2_PUBLIC_ORIGIN } from '../../../lib/media';
+import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 export const prerender = false;
 

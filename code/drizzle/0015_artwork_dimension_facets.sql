@@ -41,7 +41,7 @@ INSERT INTO artwork_dimension_values SELECT artwork_id, 'depth', printf('%.15g',
 --> statement-breakpoint
 INSERT INTO artwork_dimension_values SELECT artwork_id, 'dimension-unit', unit FROM artwork_dimension_backfill WHERE width IS NOT NULL OR height IS NOT NULL OR depth IS NOT NULL;
 --> statement-breakpoint
-INSERT INTO artwork_dimension_values SELECT artwork_id, 'orientation', CASE WHEN width=height THEN 'Square' WHEN width>height THEN 'Landscape' ELSE 'Portrait' END FROM artwork_dimension_backfill;
+INSERT INTO artwork_dimension_values SELECT artwork_id, 'orientation', CASE WHEN width=height THEN 'Square' WHEN width>height THEN 'Landscape' ELSE 'Portrait' END FROM artwork_dimension_backfill b WHERE (width>0 AND height>0) OR NOT EXISTS (SELECT 1 FROM artworks_to_facets af JOIN facets f ON f.id=af.facet_id WHERE af.artwork_id=b.artwork_id AND f.namespace='artwork' AND f.key='orientation');
 --> statement-breakpoint
 INSERT INTO artwork_dimension_values SELECT artwork_id, 'size', CASE WHEN max(width,height)*(CASE unit WHEN 'in' THEN 2.54 ELSE 1 END)<=50 THEN 'Small' WHEN max(width,height)*(CASE unit WHEN 'in' THEN 2.54 ELSE 1 END)<=100 THEN 'Medium' ELSE 'Large' END FROM artwork_dimension_backfill WHERE width>0 AND height>0;
 --> statement-breakpoint

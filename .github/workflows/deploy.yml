@@ -8,6 +8,12 @@ on:
       - '.github/workflows/deploy.yml'
       - '.github/actions/cloudflare-deploy/**'
   workflow_dispatch:
+    inputs:
+      catalog_operation:
+        description: Temporary PR108 catalog release operation
+        type: choice
+        default: deploy
+        options: [deploy, inspect, migrate, cleanup]
 
 concurrency:
   group: production
@@ -15,6 +21,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name != 'workflow_dispatch' || inputs.catalog_operation == 'deploy'
     runs-on: ubuntu-latest
     environment: production
 
@@ -29,3 +36,37 @@ jobs:
           mode: deploy
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+  catalog-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.catalog_operation != 'deploy'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+        working-directory: code
+      - name: Inspect catalog
+        if: inputs.catalog_operation == 'inspect'
+        working-directory: code
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: bun run scripts/release-facets.ts inspect
+      - name: Back up and migrate catalog
+        if: inputs.catalog_operation == 'migrate'
+        working-directory: code
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          bun run scripts/release-facets.ts backup
+          bun run db:migrate
+          bun run scripts/release-facets.ts inspect
+      - name: Remove accepted release backup
+        if: inputs.catalog_operation == 'cleanup'
+        working-directory: code
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: bun run scripts/release-facets.ts cleanup

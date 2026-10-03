@@ -207,7 +207,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 				await uploadSelected();
 				const cover = images.find((image) => image.isDefault) || images[0];
 				if (!cover) throw new Error('Add a cover image first.');
-				const response = await fetch('/api/admin/artworks/suggest', {
+				const response = await fetch('/api/admin/artwork-suggestions', {
 					method: 'POST', headers: { 'content-type': 'application/json' },
 					body: JSON.stringify({ title: form.elements.title.value, artist: form.elements.artist.value, year: form.elements.year.value, description: form.elements.description.value, instructions: form.elements.aiInstructions.value, images: [{ url: cover.url, altText: cover.altText }] }),
 				});

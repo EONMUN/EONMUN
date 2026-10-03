@@ -107,7 +107,8 @@ describe("admin mutations", () => {
 		await updateArtworkAdmin(env, created.slug, artworkInput({ ...input, published: true }), db);
 		const publicArtwork = await getArtworkBySlug(env, created.slug, db);
 		expect(publicArtwork?.facets.map(({ namespace, key, value }) => `${namespace}/${key}:${value}`).sort()).toEqual(["artwork/size:Small", "artwork/tag:bird", "artwork/tag:watercolor"]);
-		expect(publicArtwork?.defaultImageAltText).toBe("A blue bird on a branch");
+		expect((await getAllArtworks(env, db)).find(artwork=>artwork.id===created.id)?.facets).toEqual(publicArtwork?.facets);
+        expect(publicArtwork?.defaultImageAltText).toBe("A blue bird on a branch");
 		expect(publicArtwork?.images[0]?.altText).toBe("A blue bird on a branch");
 	});
 

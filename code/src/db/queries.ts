@@ -209,7 +209,7 @@ export async function getAllArtworks(
 	const facetsByArtworkId = new Map<number, ArtworkFacetRef[]>();
 	for (const row of facetRows) {
 		const current = facetsByArtworkId.get(row.artworkId) ?? [];
-		current.push({ id: row.id, name: row.name, slug: row.slug, type: row.type });
+		current.push({ id: row.id, namespace: row.namespace, key: row.key, value: row.value });
 		facetsByArtworkId.set(row.artworkId, current);
 	}
 	for (const row of collectionRows) {

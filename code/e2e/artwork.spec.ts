@@ -8,7 +8,7 @@ async function visit(page: import('@playwright/test').Page, path: string) {
 test('admin creates, lists, edits, and publishes an artwork', async ({ page, context }) => {
 	await context.addCookies(await adminCookies('http://127.0.0.1:' + process.env.EONMUN_E2E_PORT));
 
-	const slug = `playwright-artwork-${Date.now()}`;
+	const slug = 'suggest';
 	await visit(page, '/admin/artworks/new');
 	await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork');
 	await page.getByRole('textbox', { name: 'Slug' }).fill(slug);
@@ -32,6 +32,11 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await page.getByRole('button', { name: 'Save artwork' }).click();
 	await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Playwright artwork edited');
 	await expect(page.getByRole('checkbox', { name: 'Published' })).toBeChecked();
+    const staleSave = await page.evaluate(async () => {
+        const response = await fetch('/api/admin/artworks/suggest', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Stale edit',slug:'suggest',width:12,height:16})});
+        return response.status;
+    });
+    expect(staleSave).toBe(409);
 
 	await visit(page, '/artworks');
 	await expect(async () => {

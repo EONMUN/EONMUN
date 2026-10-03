@@ -24,14 +24,16 @@ test("facet migrations preserve memberships, specifications, and editor changes"
             (5, 'Elephants', 'elephants-bw', 'Acrylic, canvas paper\n12”x9”', NULL, NULL, NULL, 1, 1);
 			INSERT INTO facets (id, name, slug, type, created_at, updated_at) VALUES
 			(1, 'Small', 'small', 'size', 1, 1), (2, ' small ', 'legacy-small', 'size', 1, 1),
-			(3, 'Artist-confirmed medium', 'confirmed', 'material', 1, 1);
-			INSERT INTO artworks_to_facets VALUES (1, 1, 1), (2, 2, 1), (4, 3, 1);
+			(3, 'Artist-confirmed medium', 'confirmed', 'material', 1, 1),
+            (4, 'Landscape', 'landscape', 'orientation', 1, 1);
+			INSERT INTO artworks_to_facets VALUES (1, 1, 1), (2, 2, 1), (4, 3, 1), (2, 4, 1);
 		`);
 		for (const file of files.filter((file) => file >= "0012")) await apply(file);
 		const small = await client.execute("SELECT id, namespace, key, value FROM facets WHERE key = 'size'");
 		expect(small.rows).toEqual([{ id: 1, namespace: "artwork", key: "size", value: "Small" }]);
 		expect((await client.execute("SELECT artwork_id FROM artworks_to_facets WHERE facet_id = 1 ORDER BY artwork_id")).rows).toEqual([{ artwork_id: 1 }, { artwork_id: 2 }, { artwork_id: 3 }, { artwork_id: 4 }, { artwork_id: 5 }]);
-		const facts = async (id: number) => (await client.execute({ sql: "SELECT key, value FROM facets f JOIN artworks_to_facets af ON af.facet_id=f.id WHERE af.artwork_id=? AND key IN ('material','support') ORDER BY key,value", args: [id] })).rows;
+		expect((await client.execute("SELECT value FROM facets f JOIN artworks_to_facets af ON af.facet_id=f.id WHERE af.artwork_id=2 AND f.key='orientation'")).rows).toEqual([{value:'Landscape'}]);
+        const facts = async (id: number) => (await client.execute({ sql: "SELECT key, value FROM facets f JOIN artworks_to_facets af ON af.facet_id=f.id WHERE af.artwork_id=? AND key IN ('material','support') ORDER BY key,value", args: [id] })).rows;
 		expect(await facts(1)).toEqual([{ key: "material", value: "Watercolor" }, { key: "support", value: "Rice paper" }]);
 		expect(await facts(2)).toEqual([]);
 		expect(await facts(3)).toEqual([{ key: "material", value: "Gold leaf" }, { key: "material", value: "Pencil" }, { key: "material", value: "Watercolor" }, { key: "support", value: "Paper" }]);
