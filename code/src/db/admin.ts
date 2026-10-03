@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
-import { artworkAttributes, dimensionCategories, managedArtworkKeys, type ArtworkFacet } from "../lib/artwork-facets";
+import { artworkAttributes, dimensionOrientation, managedArtworkKeys, type ArtworkFacet } from "../lib/artwork-facets";
 import type { ArtworkAdminInput, CollectionAdminInput } from "../lib/admin-input";
 import {
 	artworkImages,
@@ -73,11 +73,11 @@ async function replaceArtworkFacets(tx: Transaction, artworkId: number, input: A
     const existing = new Map(selected.map(facet => [identity(facet), facet.id]));
     // Preserve attributes that this editor does not own.
     const facetIds = new Set(selected.filter(f => f.namespace !== 'artwork' || !managedArtworkKeys.has(f.key)).map(f => f.id));
-    const categories = dimensionCategories(input) ?? { size: input.size, orientation: input.orientation };
+    const orientation = dimensionOrientation(input) ?? input.orientation;
     const values = [
         ...input.tags.map(value => ({namespace:'artwork', key:'tag', value})),
         ...artworkAttributes.flatMap(({name,key}) => input[name].map(value => ({namespace:'artwork',key,value}))),
-        ...Object.entries(categories).filter((entry): entry is [string,string] => Boolean(entry[1])).map(([key,value]) => ({namespace:'artwork',key,value})),
+        ...(orientation ? [{namespace:'artwork', key:'orientation', value:orientation}] : []),
     ];
     for (const {namespace,key,value} of values) {
         const selectedId = existing.get(identity({namespace,key,value}));

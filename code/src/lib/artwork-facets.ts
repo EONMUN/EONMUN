@@ -10,11 +10,10 @@ export const artworkAttributes = [
 ] as const;
 export type ArtworkAttribute = typeof artworkAttributes[number]['name'];
 export type ArtworkAttributes = Record<ArtworkAttribute, string[]>;
-export const managedArtworkKeys = new Set<string>(['tag', 'size', 'orientation', ...artworkAttributes.map(field => field.key)]);
+export const managedArtworkKeys = new Set<string>(['tag', 'orientation', ...artworkAttributes.map(field => field.key)]);
 
 export interface ArtworkMeasurements { width: number | null; height: number | null; depth: number | null; dimensionUnit: 'in' | 'cm'; }
-export function dimensionCategories({ width, height, dimensionUnit }: ArtworkMeasurements) {
+export function dimensionOrientation({ width, height }: Pick<ArtworkMeasurements, 'width' | 'height'>) {
  if (width === null || height === null || width <= 0 || height <= 0) return null;
- const longestCm = Math.max(width, height) * (dimensionUnit === 'in' ? 2.54 : 1);
- return { size: longestCm <= 50 ? 'Small' : longestCm <= 100 ? 'Medium' : 'Large', orientation: width === height ? 'Square' : height > width ? 'Portrait' : 'Landscape' };
+ return width === height ? 'Square' : height > width ? 'Portrait' : 'Landscape';
 }

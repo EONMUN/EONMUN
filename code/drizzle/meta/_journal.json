@@ -120,6 +120,13 @@
       "when": 1791008542910,
       "tag": "0016_typed_artwork_dimensions",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1791010200000,
+      "tag": "0017_remove_artwork_size_facets",
+      "breakpoints": true
     }
   ]
 }

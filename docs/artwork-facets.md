@@ -2,6 +2,10 @@
 
 Reviewed 2026-10-02; dimension decision updated 2026-10-03. Scope: the 18 published artwork detail pages in the live sitemap, the active schema, and three gallery storefronts. This public audit does not establish the contents of unpublished work or private database fields.
 
+## Current size decision
+
+Small, Medium and Large are not stored artwork attributes. Migration `0017` removes `artwork/size` memberships and values; the admin has no Size field. Any frontend size filter must compare width and height using explicit criteria and unit conversion. Unknown measurements cannot be treated as zero or assigned a size. The existing public gallery still filters by collection; this correction does not add a new size-filter interface. Historical size-band decisions below describe earlier releases.
+
 ## Facet identity
 
 `facets(id, namespace, key, value, description, created_at, updated_at)` stores shared values. `artworks_to_facets(artwork_id, facet_id)` assigns multiple values to multiple works.
@@ -14,7 +18,6 @@ Reviewed 2026-10-02; dimension decision updated 2026-10-03. Scope: the 18 publis
 | artwork | support | Rice paper | Surface carrying the work |
 | artwork | subject | botanical | Reviewed subject classification |
 | artwork | style | abstract | Reviewed style classification |
-| artwork | size | Small | Derived from longest edge |
 | artwork | orientation | Portrait | Derived or assumed orientation |
 
 Migration `0013` maps the old `type` to `key`, `name` to `value`, adds namespace `artwork`, and removes the derived slug. The database enforces unique namespace/key/value identity with SQLite NOCASE value comparison. Namespace and key identifiers use lowercase letters, digits, and hyphens. Values retain display spelling and are trimmed. NOCASE folds ASCII characters; it is not full Unicode normalization. Existing IDs survive unless duplicate values must be combined; their artwork memberships are transferred first.
