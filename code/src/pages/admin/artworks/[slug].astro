@@ -16,6 +16,7 @@ if (!slug) return new Response('Not found', { status: 404 });
 const [artwork, collections, facets] = await Promise.all([getAdminArtwork(env, slug), getAdminCollections(env), getAdminFacets(env)]);
 if (!artwork) return new Response('Not found', { status: 404 });
 const pinterestState = Astro.url.searchParams.get('pinterest');
+const googleState = Astro.url.searchParams.get('google');
 const rawBatchId = Astro.url.searchParams.get('pinterestBatch');
 const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) ? rawBatchId : null;
 ---
@@ -27,6 +28,10 @@ const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) 
 	backLabel="Artwork"
 >
 	{pinterestState === 'not-connected' && <p role="alert">Artwork saved. Pinterest is not connected yet. <a href="/admin/pinterest">View Pinterest setup →</a></p>}
+	{googleState === 'not-connected' && <p role="alert">Artwork saved. Google Merchant API is not connected yet.</p>}
+	{googleState === 'failed' && <p role="alert">Artwork saved, but Google Merchant sync failed. Check Worker logs before retrying.</p>}
+	{googleState === 'submitted' && <p role="status">Artwork saved and submitted to Google Merchant Center for processing.</p>}
+	{googleState === 'removed' && <p role="status">Artwork saved and removed from the Google Merchant API source.</p>}
 	{pinterestState === 'failed' && <p role="alert">Artwork saved, but Pinterest sync failed. <a href="/admin/pinterest">Retry the catalog sync →</a></p>}
 	{pinterestBatchId && <p role="status" data-pinterest-batch={pinterestBatchId}>Artwork saved. Pinterest is processing the catalog update…</p>}
 	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets} />

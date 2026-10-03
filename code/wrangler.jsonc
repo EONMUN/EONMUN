@@ -9,17 +9,21 @@
 //   STRIPE_SECRET_KEY    — Stripe Checkout API secret
 //   STRIPE_WEBHOOK_SECRET — Stripe Checkout webhook signing secret
 //   PINTEREST_APP_SECRET — Pinterest app client secret for catalog sync
+//   GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON — Google Merchant API service account JSON key
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 //
 // AUTH_GOOGLE_ID is a public OAuth client ID and is configured in `vars` below.
 // PINTEREST_AD_ACCOUNT_ID is an optional public var for a catalog owned by an ad account.
+// GOOGLE_MERCHANT_ACCOUNT_ID and GOOGLE_MERCHANT_DATA_SOURCE_ID are public vars
+// for a primary API product data source; add them once Merchant Center is ready.
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	// Keep preview URLs on the same Worker as the production Astro site.
 	"name": "eonmun-astro",
 	"workers_dev": true,
 	"preview_urls": true,
-	"main": "@astrojs/cloudflare/entrypoints/server",
+	"main": "./src/worker.ts",
+	"triggers": { "crons": ["0 9 * * 1"] },
 	"compatibility_date": "2026-05-13",
 	"compatibility_flags": [
 		"global_fetch_strictly_public",

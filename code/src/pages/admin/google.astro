@@ -1,0 +1,34 @@
+---
+import ConsoleShell from '../../components/admin/ConsoleShell.astro';
+import { requireAdminPage } from '../../lib/admin-guard';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import { isGoogleMerchantConfigured } from '../../lib/google-merchant';
+
+export const prerender = false;
+const env = getRuntimeEnv();
+const access = await requireAdminPage(Astro.request, env, '/admin/google');
+if ('response' in access) return access.response;
+const configured = isGoogleMerchantConfigured(env);
+---
+<ConsoleShell title="Google Merchant — EONMUN admin" heading="Google Merchant sync" email={access.session.user.email} backHref="/admin" backLabel="Admin">
+	<p>Saleable artwork is sent to Google Merchant Center when saved and removed after a confirmed Stripe sale. Google reviews submitted products before they can appear in listings.</p>
+	{configured ? <button type="button" data-google-sync>Retry all artwork listings</button> : <p role="status">Google Merchant API is not connected yet.</p>}
+	<p role="status" aria-live="polite" data-google-status></p>
+</ConsoleShell>
+<script>
+	const button = document.querySelector<HTMLButtonElement>('[data-google-sync]');
+	const status = document.querySelector<HTMLElement>('[data-google-status]');
+	button?.addEventListener('click', async () => {
+		if (!status) return;
+		button.disabled = true;
+		status.textContent = 'Submitting artwork changes…';
+		try {
+			const response = await fetch('/api/admin/google', { method: 'POST' });
+			const result = await response.json() as { submitted?: number; removed?: number; error?: string };
+			status.textContent = response.ok
+				? `Submitted ${result.submitted} saleable artwork(s); removed ${result.removed} unavailable artwork(s) from the API source.`
+				: result.error ?? 'Google Merchant sync failed';
+		} catch { status.textContent = 'Google Merchant sync failed'; }
+		finally { button.disabled = false; }
+	});
+</script>

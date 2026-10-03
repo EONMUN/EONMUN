@@ -76,6 +76,10 @@ The Pinterest app ID and catalog ID are non-secret Worker variables. To enable t
 
 `PINTEREST_AD_ACCOUNT_ID` identifies the Pinterest ad account used for catalog API authorization. It is separate from `PINTEREST_CATALOG_ID`. The configured ad account is `549770850256`; if a catalog batch still returns HTTP 403, confirm this account has Catalog Admin access to the catalog before changing site inventory.
 
+Google Merchant API sync uses the same sale-eligible artwork query. After configuration, saving a published saleable artwork submits its product input in USD; changing availability or receiving a paid Stripe webhook removes it. New artworks start as drafts and sync when published. A Monday 09:00 UTC Worker schedule refreshes the catalog weekly; `/admin/google` retries and reconciles it on demand. API submission is not Google approval or a guaranteed live listing; check Merchant Center product diagnostics. The API source must be a **primary API product data source** with U.S. feed label, not an HTML website or file source. Do not also manage the same products through a separate automatic website source, since a sold artwork may reappear after API removal.
+
+To connect the Worker, create a Google Cloud service account with Merchant API enabled and grant its email access to the Merchant Center account. Set `GOOGLE_MERCHANT_ACCOUNT_ID` and `GOOGLE_MERCHANT_DATA_SOURCE_ID` as `eonmun-astro` Worker vars, then set the complete service-account JSON as the `GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON` Worker secret. Never commit or paste the key in chat. Configure Merchant Center with U.S. shipping included in the price and the site's final-sale returns policy. Use `/admin/google` for the initial backfill and inspect one processed product before treating the integration as live.
+
 ### Add a post
 
 1. Add the post entry to `fixtures/posts.json`.

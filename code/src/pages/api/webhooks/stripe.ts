@@ -3,6 +3,7 @@ import { waitUntil } from "cloudflare:workers";
 import { getArtworkIdByProductId, markArtworkPaid } from "../../../db/checkout";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
 import { getPinterestBatchStatus, isPinterestConfigured, syncPinterestArtwork } from "../../../lib/pinterest-sync";
+import { isGoogleMerchantConfigured, syncGoogleArtwork } from "../../../lib/google-merchant";
 import { handleStripeWebhook } from "../../../lib/stripe-webhook";
 
 export const prerender = false;
@@ -33,6 +34,14 @@ export const POST: APIRoute = async ({ request }) => {
 					}
 				})().catch((error) => {
 					console.error(JSON.stringify({ message: "Pinterest sale removal failed", productId, error: error instanceof Error ? error.message : "Unknown error" }));
+				}));
+			}
+			if (isGoogleMerchantConfigured(env)) {
+				waitUntil((async () => {
+					const artworkId = await getArtworkIdByProductId(env, productId);
+					if (artworkId !== null) await syncGoogleArtwork(env, artworkId);
+				})().catch((error) => {
+					console.error(JSON.stringify({ message: "Google Merchant sale removal failed", productId, error: error instanceof Error ? error.message : "Unknown error" }));
 				}));
 			}
 			return marked;
