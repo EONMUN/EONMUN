@@ -6,7 +6,6 @@ const apiBase = "https://api.pinterest.com/v5";
 const scopes = "catalogs:read,catalogs:write";
 
 type ApiFetch = typeof fetch;
-type ApiItem = { item_id?: string; attributes?: { item_id?: string }; item_response_kind?: string };
 type BatchItem = { item_id?: string; status?: string; errors?: Array<{ message?: string }> };
 type Batch = { batch_id?: string; status?: string; items?: BatchItem[] };
 
@@ -27,15 +26,15 @@ function requireConfig(env: Env) {
 	};
 }
 
-async function jsonResponse<T>(response: Response): Promise<T> {
+async function jsonResponse<T>(response: Response, operation: string): Promise<T> {
 	if (response.status >= 300 && response.status < 400) {
-		throw new PinterestSyncError("Pinterest redirected an API request");
+		throw new PinterestSyncError(`Pinterest redirected ${operation}`);
 	}
 	if (!response.ok) {
 		if (response.status === 401 || response.status === 403) {
-			throw new PinterestSyncError("Pinterest denied catalog access; check the app owner and catalog scopes", 502);
+			throw new PinterestSyncError(`Pinterest denied ${operation} (HTTP ${response.status}); check the app owner and catalog scopes`, 502);
 		}
-		throw new PinterestSyncError(`Pinterest API returned HTTP ${response.status}`);
+		throw new PinterestSyncError(`Pinterest returned HTTP ${response.status} during ${operation}`);
 	}
 	try { return await response.json() as T; }
 	catch { throw new PinterestSyncError("Pinterest returned an invalid response"); }
@@ -52,7 +51,7 @@ async function accessToken(env: Env, apiFetch: ApiFetch) {
 		},
 		body,
 		redirect: "manual",
-	}));
+	}), "app authentication");
 	const granted = new Set(result.scope?.split(/[\s,]+/) ?? []);
 	if (!result.access_token || !granted.has("catalogs:read") || !granted.has("catalogs:write")) {
 		throw new PinterestSyncError("Pinterest did not grant both catalog read and write scopes", 502);
@@ -60,7 +59,7 @@ async function accessToken(env: Env, apiFetch: ApiFetch) {
 	return result.access_token;
 }
 
-async function pinterestRequest<T>(path: string, token: string, apiFetch: ApiFetch, body?: unknown) {
+async function pinterestRequest<T>(path: string, token: string, apiFetch: ApiFetch, operation: string, body?: unknown) {
 	return jsonResponse<T>(await apiFetch(`${apiBase}${path}`, {
 		method: body === undefined ? "GET" : "POST",
 		headers: {
@@ -70,13 +69,12 @@ async function pinterestRequest<T>(path: string, token: string, apiFetch: ApiFet
 		},
 		...(body === undefined ? {} : { body: JSON.stringify(body) }),
 		redirect: "manual",
-	}));
+	}), operation);
 }
 
 export function buildPinterestOperations(
 	artworks: PinterestCatalogArtwork[],
 	knownIds: string[],
-	existingIds: string[],
 	site = new URL("https://eonmun.com"),
 ) {
 	const listed = artworks.map((artwork) => toPinterestCatalogItem(artwork, site));
@@ -97,7 +95,7 @@ export function buildPinterestOperations(
 				condition: "new",
 			},
 		})),
-		...existingIds.filter((id) => known.has(id) && !availableIds.has(id))
+		...[...known].filter((id) => !availableIds.has(id))
 			.map((item_id) => ({ item_id, operation: "DELETE" })),
 	];
 }
@@ -112,23 +110,14 @@ export async function syncPinterestCatalog(
 	if (knownIds.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-item sync limit", 409);
 	const token = await accessToken(env, apiFetch);
 	const feeds = await pinterestRequest<{ items?: unknown[] }>(
-		`/catalogs/feeds?catalog_id=${encodeURIComponent(catalogId)}`, token, apiFetch,
+		`/catalogs/feeds?catalog_id=${encodeURIComponent(catalogId)}`, token, apiFetch, "catalog feed check",
 	);
 	if (feeds.items?.length) throw new PinterestSyncError("Pinterest already has a feed for this catalog; choose one catalog writer", 409);
-	const existing = knownIds.length ? await pinterestRequest<{ items?: ApiItem[] }>(
-		"/catalogs/items", token, apiFetch, {
-			country: "US", language: "en-US",
-			filters: { catalog_type: "RETAIL", catalog_id: catalogId, item_ids: knownIds },
-		},
-	) : { items: [] };
-	const existingIds = (existing.items ?? [])
-		.filter((item) => item.item_response_kind === "retail_item" || (!item.item_response_kind && Boolean(item.attributes)))
-		.map((item) => item.item_id ?? item.attributes?.item_id)
-		.filter((id): id is string => typeof id === "string");
-	const operations = buildPinterestOperations(artworks, knownIds, existingIds);
+	// Pinterest item lookup requires user OAuth; batch writes support app credentials.
+	const operations = buildPinterestOperations(artworks, knownIds);
 	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [] };
 	if (operations.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-operation sync limit", 409);
-	const batch = await pinterestRequest<Batch>("/catalogs/items/batch", token, apiFetch, {
+	const batch = await pinterestRequest<Batch>("/catalogs/items/batch", token, apiFetch, "catalog batch write", {
 		catalog_id: catalogId,
 		catalog_type: "RETAIL",
 		country: "US",
@@ -159,6 +148,6 @@ function summarizeBatch(batch: Batch) {
 export async function getPinterestBatchStatus(env: Env, batchId: string, apiFetch: ApiFetch = fetch) {
 	if (!/^[a-zA-Z0-9_-]{1,64}$/.test(batchId)) throw new PinterestSyncError("Invalid batch ID", 400);
 	const token = await accessToken(env, apiFetch);
-	const batch = await pinterestRequest<Batch>(`/catalogs/items/batch/${batchId}`, token, apiFetch);
+	const batch = await pinterestRequest<Batch>(`/catalogs/items/batch/${batchId}`, token, apiFetch, "catalog batch status check");
 	return summarizeBatch(batch);
 }

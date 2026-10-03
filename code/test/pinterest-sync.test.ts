@@ -14,7 +14,7 @@ const artwork: PinterestCatalogArtwork = {
 describe("Pinterest catalog sync", () => {
 	test("sends dollars and removes only known works that are no longer for sale", () => {
 		const operations = buildPinterestOperations(
-			[artwork], ["artwork-41", "artwork-42"], ["artwork-42", "unrelated-item"],
+			[artwork], ["artwork-41", "artwork-42"],
 		);
 		expect(operations).toHaveLength(2);
 		expect(operations[0]).toMatchObject({
@@ -36,32 +36,40 @@ describe("Pinterest catalog sync", () => {
 		expect(paths).toEqual(["https://api.pinterest.com/v5/oauth/token"]);
 	});
 
-	test("checks for a feed and existing items before submitting a scoped batch", async () => {
+	test("uses only catalog endpoints supported by app credentials", async () => {
 		const calls: Array<{ path: string; body: unknown }> = [];
 		const mockFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 			const path = new URL(String(input)).pathname;
 			calls.push({ path, body: init?.body && typeof init.body === "string" ? JSON.parse(init.body) : null });
 			if (path === "/v5/oauth/token") return Response.json({ access_token: "test-token", scope: "catalogs:read catalogs:write" });
 			if (path === "/v5/catalogs/feeds") return Response.json({ items: [] });
-			if (path === "/v5/catalogs/items") return Response.json({ items: [
-				{ attributes: { item_id: "artwork-42" } },
-				{ item_id: "artwork-41", item_response_kind: "retail_item_error" },
-			] });
-			return Response.json({ batch_id: "b12345", status: "PROCESSING", items: [] });
+		if (path === "/v5/catalogs/items/batch") return Response.json({ batch_id: "b12345", status: "PROCESSING", items: [] });
+		throw new Error(`Unexpected Pinterest endpoint: ${path}`);
 		}) as typeof fetch;
 		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456" };
 		const result = await syncPinterestCatalog(env, [artwork], ["artwork-41", "artwork-42"], mockFetch);
 		expect(result).toMatchObject({ batch_id: "b12345", status: "PROCESSING" });
 		expect(calls.map((call) => call.path)).toEqual([
-			"/v5/oauth/token", "/v5/catalogs/feeds", "/v5/catalogs/items", "/v5/catalogs/items/batch",
+			"/v5/oauth/token", "/v5/catalogs/feeds", "/v5/catalogs/items/batch",
 		]);
-		expect(calls[3].body).toMatchObject({
+		expect(calls[2].body).toMatchObject({
 			catalog_id: "456",
 			items: [
 				{ item_id: "artwork-41", operation: "UPSERT", attributes: { price: "250.00 USD" } },
 				{ item_id: "artwork-42", operation: "DELETE" },
 			],
 		});
+	});
+
+	test("names the Pinterest operation that denied access", async () => {
+		const mockFetch = (async (input: RequestInfo | URL) => {
+			const path = new URL(String(input)).pathname;
+			if (path === "/v5/oauth/token") return Response.json({ access_token: "test-token", scope: "catalogs:read catalogs:write" });
+			return Response.json({ code: 2, message: "Denied" }, { status: 403 });
+		}) as typeof fetch;
+		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456" };
+		await expect(syncPinterestCatalog(env, [artwork], ["artwork-41"], mockFetch))
+			.rejects.toThrow("Pinterest denied catalog feed check (HTTP 403)");
 	});
 
 	test("accepts an alphanumeric Pinterest batch ID for status checks", async () => {
