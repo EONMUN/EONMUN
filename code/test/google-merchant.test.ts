@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activateGoogleMerchant, googleProductInput, hasGoogleMerchantAccess, registerGoogleMerchantProject, syncGoogleArtwork, syncGoogleCatalog } from "../src/lib/google-merchant";
+import { activateGoogleMerchant, ensureGoogleMerchantServiceAccount, googleProductInput, hasGoogleMerchantAccess, registerGoogleMerchantProject, syncGoogleArtwork, syncGoogleCatalog } from "../src/lib/google-merchant";
 import type { PinterestCatalogArtwork } from "../src/lib/pinterest-feed";
 
 const artwork: PinterestCatalogArtwork = {
@@ -14,11 +14,47 @@ async function testEnv() {
 	return {
 		GOOGLE_MERCHANT_ACCOUNT_ID: "123",
 		GOOGLE_MERCHANT_DATA_SOURCE_ID: "456",
-		GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: "merchant@example.com", private_key: pem }),
+		GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: "sync@project.iam.gserviceaccount.com", private_key: pem }),
 	};
 }
 
 describe("Google Merchant sync", () => {
+	test.each(["missing", "existing", "read-only", "concurrent"])("grants the configured service account product access: %s", async (state) => {
+		const env = await testEnv();
+		const methods: string[] = [];
+		const apiFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+			const method = init?.method ?? "GET";
+			methods.push(method);
+			expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer human-token");
+			expect(String(input)).toContain("sync%40project.iam.gserviceaccount.com");
+			if (method === "GET") {
+				if ((state === "missing" || state === "concurrent") && methods.length === 1) return Response.json({}, { status: 404 });
+				return Response.json({ accessRights: state === "read-only" ? ["READ_ONLY", "API_DEVELOPER"] : ["ADMIN"] });
+			}
+			if (method === "POST") {
+				expect(String(input)).toContain("/users?userId=");
+				expect(JSON.parse(String(init?.body))).toEqual({ accessRights: ["STANDARD"] });
+				return state === "concurrent" ? Response.json({}, { status: 409 }) : Response.json({ accessRights: ["STANDARD"], state: "PENDING" });
+			}
+			expect(String(input)).toContain("?updateMask=accessRights");
+			expect(JSON.parse(String(init?.body))).toEqual({ name: "accounts/123/users/sync@project.iam.gserviceaccount.com", accessRights: ["API_DEVELOPER", "STANDARD"] });
+			return Response.json({});
+		}) as typeof fetch;
+		await ensureGoogleMerchantServiceAccount(env, "human-token", apiFetch);
+		expect(methods).toEqual(state === "missing" ? ["GET", "POST"] : state === "read-only" ? ["GET", "PATCH"] : state === "concurrent" ? ["GET", "POST", "GET"] : ["GET"]);
+	});
+
+	test("does not invite users after permission denial or with a non-service-account identity", async () => {
+		const env = await testEnv();
+		const apiFetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+			expect(init?.method ?? "GET").toBe("GET");
+			return Response.json({}, { status: 403 });
+		}) as typeof fetch;
+		await expect(ensureGoogleMerchantServiceAccount(env, "human-token", apiFetch)).rejects.toThrow("access setup failed (HTTP 403)");
+		const invalid = { ...env, GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: "someone@example.com", private_key: "unused" }) };
+		await expect(ensureGoogleMerchantServiceAccount(invalid, "human-token", apiFetch)).rejects.toThrow("must identify a Google service account");
+	});
+
 	test("accepts an existing registration only for the configured Merchant account", async () => {
 		const env = await testEnv();
 		for (const account of ['accounts/123', 'accounts/999']) {

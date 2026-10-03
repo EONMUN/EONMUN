@@ -82,6 +82,33 @@ export async function hasGoogleMerchantAccess(env: Env, apiFetch: ApiFetch = fet
 	} catch { return false; }
 }
 
+export async function ensureGoogleMerchantServiceAccount(env: Env, adminToken: string, apiFetch: ApiFetch = fetch) {
+	const { account, credentials } = config(env);
+	const email = credentials.client_email;
+	if (typeof email !== "string" || !email.endsWith(".iam.gserviceaccount.com")) {
+		throw new GoogleMerchantError("Google Merchant credentials must identify a Google service account");
+	}
+	// SECURITY: the invited identity comes only from the configured key, never browser input.
+	const usersUrl = `https://merchantapi.googleapis.com/accounts/v1/accounts/${account}/users`;
+	const userUrl = `${usersUrl}/${encodeURIComponent(email)}`;
+	const options = { headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" }, redirect: "manual" as const };
+	let response = await apiFetch(userUrl, options);
+	if (response.status === 404) {
+		response = await apiFetch(`${usersUrl}?userId=${encodeURIComponent(email)}`, {
+			...options, method: "POST", body: JSON.stringify({ accessRights: ["STANDARD"] }),
+		});
+		if (response.status === 409) response = await apiFetch(userUrl, options);
+	}
+	if (!response.ok) throw new GoogleMerchantError(`Google Merchant service-account access setup failed (HTTP ${response.status}). Connect using a Merchant Center admin account.`);
+	const user = await response.json() as { accessRights?: string[] };
+	const rights = user.accessRights ?? [];
+	if (rights.includes("STANDARD") || rights.includes("ADMIN")) return;
+	const updated = await apiFetch(`${userUrl}?updateMask=accessRights`, {
+		...options, method: "PATCH", body: JSON.stringify({ name: `accounts/${account}/users/${email}`, accessRights: [...rights.filter((right) => right !== "READ_ONLY"), "STANDARD"] }),
+	});
+	if (!updated.ok) throw new GoogleMerchantError(`Google Merchant service-account permissions could not be updated (HTTP ${updated.status}). Connect using a Merchant Center admin account.`);
+}
+
 export async function activateGoogleMerchant(env: Env, apiFetch: ApiFetch = fetch) {
 	const { account, dataSource, credentials } = config(env);
 	const token = await accessToken(credentials, apiFetch);

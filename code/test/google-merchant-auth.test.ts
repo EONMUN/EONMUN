@@ -30,7 +30,7 @@ test.each([
 ])('Merchant consent uses the bound admin and never runs during ordinary login: %j', async (scenario) => {
 	const keys = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
 	const privateKey = Buffer.from(await crypto.subtle.exportKey('pkcs8', keys.privateKey)).toString('base64');
-	const config = { ...env, GOOGLE_MERCHANT_ACCOUNT_ID: '123', GOOGLE_MERCHANT_DATA_SOURCE_ID: '456', GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: 'service@example.com', private_key: `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----` }) };
+	const config = { ...env, GOOGLE_MERCHANT_ACCOUNT_ID: '123', GOOGLE_MERCHANT_DATA_SOURCE_ID: '456', GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: 'sync@project.iam.gserviceaccount.com', private_key: `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----` }) };
 	const body = scenario.setup ? setupBody : { provider: 'google', callbackURL: `${origin}/admin`, additionalData: { serverContext: { googleMerchantAdminId: 'google-test-admin' } } };
 	const start = new Request(`${origin}/api/auth/sign-in/social`, { method: 'POST', headers: { origin, cookie: await cookie(), 'content-type': 'application/json' }, body: JSON.stringify(body) });
 	const initiated = await createAuth(config, start).handler(start);
@@ -41,6 +41,7 @@ test.each([
 	const stateCookie = initiated.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
 	const originalFetch = globalThis.fetch;
 	let registrations = 0;
+	let userAccessChecks = 0;
 	globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 		const url = String(input);
 		if (url === 'https://oauth2.googleapis.com/token') {
@@ -54,6 +55,11 @@ test.each([
 			expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer human-token');
 			return Response.json({});
 		}
+		if (url.includes('/users/')) {
+			userAccessChecks++;
+			expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer human-token');
+			return Response.json({ accessRights: ['STANDARD'] });
+		}
 		if (url.includes('/dataSources/')) return Response.json({});
 		throw new Error(`Unexpected request: ${url}`);
 	}) as typeof fetch;
@@ -64,6 +70,7 @@ test.each([
 		const request = new Request(callback, { headers: { cookie: stateCookie } });
 		const response = await createAuth(config, request).handler(request);
 		expect(registrations).toBe(scenario.connects ? 1 : 0);
+		expect(userAccessChecks).toBe(scenario.connects ? 1 : 0);
 		const destination = response.headers.get('location')!;
 		if (scenario.connects) {
 			expect(destination).toBe(`${origin}/admin/google`);

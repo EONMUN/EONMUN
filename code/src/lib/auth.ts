@@ -3,7 +3,7 @@ import { APIError, addOAuthServerContext, createAuthMiddleware, getOAuthState } 
 import { oAuthProxy } from "better-auth/plugins/oauth-proxy";
 import { google } from "better-auth/social-providers";
 import type { Env } from "../db";
-import { activateGoogleMerchant, GOOGLE_MERCHANT_SCOPE, GoogleMerchantError, registerGoogleMerchantProject } from "./google-merchant";
+import { activateGoogleMerchant, ensureGoogleMerchantServiceAccount, GOOGLE_MERCHANT_SCOPE, GoogleMerchantError, registerGoogleMerchantProject } from "./google-merchant";
 
 export interface AuthEnv extends Pick<Env, "GOOGLE_MERCHANT_ACCOUNT_ID" | "GOOGLE_MERCHANT_DATA_SOURCE_ID" | "GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON"> {
 	ADMIN_EMAILS?: string;
@@ -130,6 +130,7 @@ export function createAuth(env: AuthEnv, request: Request) {
 					if (!merchantToken) return { error: "google_merchant_permission_missing" };
 					try {
 						await registerGoogleMerchantProject(env, merchantToken, user.email);
+						await ensureGoogleMerchantServiceAccount(env, merchantToken);
 						await activateGoogleMerchant(env);
 					}
 					catch (error) {
