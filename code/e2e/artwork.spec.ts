@@ -60,11 +60,13 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	}).toPass({ timeout: 15_000 });
 	await visit(page, `/artworks/${slug}`);
 	await expect(page.getByRole('heading', { name: 'Playwright artwork edited' })).toBeVisible();
-	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('bird');
-	await expect(page.locator('[aria-label="Artwork facets"]')).not.toContainText('size:');
+	await expect(page.locator('[aria-label="Artwork tags"]')).toContainText('bird');
+	await expect(page.locator('[aria-label="Artwork tags"]')).not.toContainText('size:');
 	await expect(page.locator('[aria-label="Artwork dimensions"]')).toContainText('12 in');
-	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('orientation: Portrait');
-    await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('material: Ink wash');
+	await expect(page.getByRole('region',{name:'Orientation',exact:true})).toContainText('Portrait');
+    await expect(page.locator('[aria-label="Artwork tags"]')).not.toContainText('Portrait');
+    await expect(page.getByRole('region',{name:'Materials',exact:true})).toContainText('Ink wash');
+    await expect(page.locator('[aria-label="Artwork tags"]')).not.toContainText('Ink wash');
 	await expect(page.getByText('Not currently available for purchase.')).toBeVisible();
 	await expect(page.locator('[data-artwork-price]')).toHaveCount(0);
 	expect(await page.locator('script[type="application/ld+json"]').count()).toBe(0);
@@ -135,4 +137,62 @@ test('site chrome follows the active theme and contact uses email', async ({ pag
 		await expect(page.locator(`meta[name="theme-color"][media="(prefers-color-scheme: ${colorScheme})"]`))
 			.toHaveAttribute('content', colorScheme === 'dark' ? '#111827' : '#ffffff');
 	}
+});
+
+
+test('orientation filters are separate, shareable, and work in collections', async ({page}) => {
+    await page.goto('/artworks?orientation=portrait');
+    const filter = page.getByRole('combobox',{name:'Orientation',exact:true});
+    const cards = page.locator('[data-artwork-card]:visible');
+    await expect(filter).toHaveValue('portrait');
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(await cards.evaluateAll(items => items.every(item => (item as HTMLElement).dataset.orientation === 'portrait'))).toBe(true);
+    await page.getByRole('link',{name:'Botánica',exact:true}).click();
+    await expect(page).toHaveURL('/collections/botanica?orientation=portrait');
+    await expect(filter).toHaveValue('portrait');
+    expect(await cards.count()).toBeGreaterThan(0);
+    await filter.selectOption('landscape');
+    await expect(page).toHaveURL(/orientation=landscape/);
+    await expect(cards).toHaveCount(0);
+    await expect(page.getByText('No artworks match this orientation.')).toBeVisible();
+    await page.reload();
+    await expect(filter).toHaveValue('landscape');
+    await filter.selectOption('');
+    await expect(page).toHaveURL('/collections/botanica');
+    await page.goBack();
+    await expect(filter).toHaveValue('landscape');
+    await page.goto('/artworks?collection=botanica&orientation=portrait');
+    await expect(page).toHaveURL('/collections/botanica?orientation=portrait');
+    await expect(filter).toHaveValue('portrait');
+    await page.goto('/artworks?orientation=invalid');
+    await expect(filter).toHaveValue('');
+    expect(await cards.count()).toBeGreaterThan(0);
+});
+
+
+test('custom orientations remain selected in collections without matches', async ({page,context}) => {
+    await context.addCookies(await adminCookies('http://127.0.0.1:' + process.env.EONMUN_E2E_PORT));
+    await page.goto('/admin/artworks');
+    const saved = await page.evaluate(async () => {
+        const body = JSON.stringify({
+            editorVersion:2,title:'Panoramic study',slug:'panoramic-study',published:true,orientation:'Panoramic',
+            tags:[],materials:[],supports:[],mediums:[],subjects:[],styles:[],colors:[],images:[],collectionIds:[]
+        });
+        const options = {method:'POST',headers:{'content-type':'application/json'},body};
+        const created = await fetch('/api/admin/artworks',options);
+        if (!created.ok) return false;
+        return (await fetch('/api/admin/artworks/panoramic-study',options)).ok;
+    });
+    expect(saved).toBe(true);
+    await page.goto('/artworks?orientation=panoramic');
+    const filter = page.getByRole('combobox',{name:'Orientation',exact:true});
+    await expect(filter).toHaveValue('panoramic');
+    await expect(page.locator('[data-artwork-card]:visible')).toHaveCount(1);
+    await page.getByRole('link',{name:'Botánica',exact:true}).click();
+    await expect(filter).toHaveValue('panoramic');
+    await expect(page.locator('[data-artwork-card]:visible')).toHaveCount(0);
+    await expect(page.getByText('No artworks match this orientation.')).toBeVisible();
+    await page.getByRole('link',{name:'All',exact:true}).click();
+    await expect(filter).toHaveValue('panoramic');
+    await expect(page.locator('[data-artwork-card]:visible')).toHaveCount(1);
 });

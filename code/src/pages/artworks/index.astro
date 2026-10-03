@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArtworkGrid from '../../components/ArtworkGrid.astro';
+import ArtworkGallery from '../../components/ArtworkGallery.astro';
 import FilterChip from '../../components/FilterChip.astro';
 import { getPublishedArtworkEntries } from '../../lib/artwork-content';
 import { getPublishedCollectionRefs } from '../../lib/collection-content';
@@ -17,14 +17,18 @@ const [artworks, collections] = await Promise.all([getPublishedArtworkEntries(),
 				<FilterChip href="/artworks" active>All</FilterChip>
 				{collections.map((collection) => <FilterChip href={getCollectionHref(collection.slug)}>{collection.name}</FilterChip>)}
 			</div>
-			<p class="text-sm text-gray-500">{artworks.length} artwork{artworks.length !== 1 ? 's' : ''}</p>
 		</div>
-		<ArtworkGrid artworks={artworks} />
+		<ArtworkGallery artworks={artworks} />
 	</div>
 </BaseLayout>
 <script>
 	import { getCollectionHref } from '../../lib/paths';
 	// Public gallery HTML is shared by the cache, so resolve legacy query links in the browser.
 	const collection = new URLSearchParams(location.search).get('collection');
-	if (collection) location.replace(getCollectionHref(collection));
+	if (collection) {
+        const target = new URL(getCollectionHref(collection),location.origin);
+        const orientation = new URLSearchParams(location.search).get('orientation');
+        if (orientation) target.searchParams.set('orientation',orientation);
+        location.replace(target);
+    }
 </script>

@@ -102,3 +102,7 @@ Two independent Codex reviewers identified manual-category preservation and zero
 ## Size-label removal verification, 2026-10-03
 
 PR #119 removed the Size field and all size-band calculations from artwork writes. Migration `0017` deleted the old `artwork/size` memberships and values, with no foreign-key errors. All 18 production artwork pages retained the same numeric dimension labels and no longer showed a stored size label. Two independent Codex reviewers approved the change; 101 unit tests, the build, and all 21 browser tests passed. The temporary migration workflow input is removed after this verification.
+
+## Public presentation
+
+The Tags section includes only `artwork/tag` values. Orientation has its own section and links to the gallery's orientation filter. Materials, surface, medium, subjects, styles, and colors have named sections rather than appearing as generic tags. Gallery and collection pages filter orientation in the browser so cached HTML remains shared; the selection is carried in the URL and supports browser history. Complete positive measurements determine orientation, with an existing editorial orientation used when measurements are incomplete.
