@@ -4,8 +4,11 @@ import { createHmac } from "node:crypto";
 const worker = "eonmun-astro";
 const webhookUrl = "https://eonmun.com/api/webhooks/stripe";
 const events = ["checkout.session.completed", "checkout.session.async_payment_succeeded"];
-const key = process.env.STRIPE_SECRET_KEY;
-if (!key || !/^(sk|rk)_live_/.test(key)) throw new Error("Production requires a live Stripe API key");
+const key = process.env.STRIPE_SECRET_KEY?.trim();
+if (!key || !/^(sk|rk)_live_/.test(key)) {
+	const kind = /^(sk|rk)_test_/.test(key ?? "") ? "test-mode secret" : /^pk_/.test(key ?? "") ? "publishable key" : "missing or unrecognized value";
+	throw new Error(`Production requires a live Stripe API key; GitHub STRIPE_SECRET_KEY contains a ${kind}`);
+}
 
 async function stripe(path: string, body?: URLSearchParams, idempotencyKey?: string) {
 	const response = await fetch(`https://api.stripe.com/v1/${path}`, {
