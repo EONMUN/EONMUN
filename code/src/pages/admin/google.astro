@@ -20,13 +20,15 @@ const connectionMessage = error === 'google_merchant_account_changed'
 			: error ? 'Google authorization was not completed. Please try again.' : null;
 ---
 <ConsoleShell title="Google Merchant — EONMUN admin" heading="Google Merchant sync" email={access.session.user.email} backHref="/admin" backLabel="Admin">
-	<p>Saleable artwork is sent to Google Merchant Center when saved and removed after a confirmed Stripe sale. Google reviews submitted products before they can appear in listings.</p>
+	<p>Once connected, saleable artwork is sent to Google Merchant Center when saved and removed after a confirmed Stripe sale. Google reviews submitted products before they can appear in listings.</p>
 	{connectionMessage && <p role="alert">{connectionMessage}</p>}
 	{connected && <p role="status">Google Merchant account access is verified. Use the retry button to sync existing artwork.</p>}
 	{configured ? <>
 		{!connected && <p>For initial setup, connect using the Google account that administers Merchant Center. Afterwards, syncing continues even when you are signed out.</p>}
-		<button type="button" data-google-connect>{connected ? 'Reconnect Google Merchant' : 'Connect Google Merchant'}</button>
-		<button type="button" data-google-sync>Retry all artwork listings</button>
+		<div class="google-actions">
+			<button type="button" class="primary-button" data-google-connect>{connected ? 'Reconnect Google Merchant' : 'Connect Google Merchant'}</button>
+			<button type="button" class="retry-button" data-google-sync>Retry artwork sync</button>
+		</div>
 	</> : <p role="status">Google Merchant API is not configured yet.</p>}
 	<p role="status" aria-live="polite" data-google-status></p>
 </ConsoleShell>
@@ -65,3 +67,9 @@ const connectionMessage = error === 'google_merchant_account_changed'
 		finally { button.disabled = false; }
 	});
 </script>
+<style>
+	.google-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
+	.retry-button { border: 1px solid var(--hair); padding: .8rem 1.2rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+	button:disabled { cursor: wait; opacity: .6; }
+	[data-google-status], [role="alert"] { overflow-wrap: anywhere; }
+</style>

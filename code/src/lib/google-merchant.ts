@@ -92,7 +92,13 @@ export async function activateGoogleMerchant(env: Env, apiFetch: ApiFetch = fetc
 		const verified = await apiFetch(`https://merchantapi.googleapis.com/accounts/v1/accounts/${account}/users/me:verifySelf`, {
 			...options, method: "PATCH",
 		});
-		if (!verified.ok) throw new GoogleMerchantError(`Google Merchant access is not ready (HTTP ${verified.status}). Connect Google Merchant first; if you just connected, wait five minutes and retry. The service account must be added to Merchant Center.`);
+		if (!verified.ok) {
+			const failures = await Promise.all([source, verified].map(response => response.json().catch(() => null))) as Array<{ error?: { details?: Array<{ metadata?: { REASON?: string } }> } } | null>;
+			if (failures.some(failure => Array.isArray(failure?.error?.details) && failure.error.details.some(detail => detail?.metadata?.REASON === "GCP_NOT_REGISTERED"))) {
+				throw new GoogleMerchantError("Google account authorization is not complete. Choose Connect Google Merchant and approve access with your Merchant Center admin account. If you just approved access, wait five minutes and retry the sync.");
+			}
+			throw new GoogleMerchantError(`Google Merchant access is not ready (HTTP ${verified.status}). Connect Google Merchant first; if you just connected, wait five minutes and retry. The service account must be added to Merchant Center.`);
+		}
 		source = await apiFetch(sourceUrl, options);
 	}
 	if (!source.ok) throw new GoogleMerchantError(`Google Merchant data source access failed (HTTP ${source.status}). Check the service account permissions and API data source.`);

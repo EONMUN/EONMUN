@@ -93,6 +93,14 @@ describe("Google Merchant sync", () => {
 		await expect(registerGoogleMerchantProject(env, "human-token", "admin@example.com", apiFetch)).rejects.toThrow("connection failed (HTTP 401)");
 	});
 
+	test.each(["dataSources", "verifySelf"])("distinguishes an unregistered project reported by %s from other access failures", async (endpoint) => {
+		const env = await testEnv();
+		const apiFetch = (async (input: RequestInfo | URL) => String(input) === "https://oauth2.googleapis.com/token"
+			? Response.json({ access_token: "service-token" })
+			: Response.json({ error: { message: "private-upstream-detail", ...(String(input).includes(endpoint) ? { details: [{ metadata: { REASON: "GCP_NOT_REGISTERED" } }] } : {}) } }, { status: 401 })) as typeof fetch;
+		await expect(activateGoogleMerchant(env, apiFetch)).rejects.toThrow("Choose Connect Google Merchant and approve access");
+	});
+
 	test("maps cents to USD micros for a one-of-a-kind artwork", () => {
 		expect(googleProductInput(artwork)).toMatchObject({
 			offerId: "artwork-41", contentLanguage: "en", feedLabel: "US",
