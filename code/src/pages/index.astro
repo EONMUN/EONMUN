@@ -15,7 +15,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	sizes: '100vw',
 })));
 ---
-<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor="#f5f1e8" image={slides[0]?.defaultImageUrl ?? undefined}>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor="#f5f1e8" image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
 	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN" aria-hidden="true" hidden>
 		<span class="loading-wordmark" aria-hidden="true">EON<br />MUN</span>
 		<a class="loading-fallback" data-loading-fallback href="/artworks" hidden>View artworks</a>
@@ -170,15 +170,17 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 </script>
 
 <style is:global>
-	/* Homepage is a fullscreen carousel — the page is itself the hero. Hide
-	   the layout footer here only; other routes keep theirs. */
+	/* The artwork is the homepage; other routes keep the layout footer. */
 	body > footer { display: none; }
+	html, body { height: 100%; overflow: hidden; }
+	body { min-height: 0; height: 100dvh; }
+	body > main { position: relative; flex: none; height: 100%; min-height: 0; }
 	html, body { background: #f5f1e8 !important; }
 </style>
 
 <style>
 	.loading-screen {
-		position: fixed;
+		position: absolute;
 		inset: 0;
 		z-index: 100;
 		display: flex;
@@ -206,10 +208,10 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	.loading-fallback { color: inherit; text-decoration: underline; text-underline-offset: 0.25em; }
 	.loading-fallback[hidden] { display: none; }
 	.hero-carousel {
-		position: fixed;
-		inset: 0;
+		/* Safari clips fixed layers at its controls and extends their solid tint. */
+		position: relative;
+		height: 100%;
 		z-index: 0;
-		background: #f5f1e8;
 	}
 	.slide {
 		position: absolute;
@@ -229,11 +231,14 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	/* Keep artwork details legible over the image. */
 	.artwork-info {
 		position: absolute;
-		right: 1rem;
-		bottom: 1.25rem;
+		left: calc(1rem + env(safe-area-inset-left));
+		right: calc(1rem + env(safe-area-inset-right));
+		bottom: calc(1.25rem + env(safe-area-inset-bottom));
 		z-index: 50;
 		display: flex;
 		flex-direction: column;
+		width: fit-content;
+		margin-left: auto;
 		gap: 0.5rem;
 		padding: 0.75rem;
 		text-align: right;

@@ -12,9 +12,10 @@ interface Props {
 	type?: 'website' | 'article';
 	publishedTime?: string;
 	themeColor?: string;
+	iosEdgeToEdge?: boolean;
 }
 
-const { title, description, image, type, publishedTime, themeColor } = Astro.props;
+const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdge } = Astro.props;
 ---
 <!doctype html>
 <html lang="en" class="dark:bg-gray-900 dark:text-white">
@@ -26,6 +27,7 @@ const { title, description, image, type, publishedTime, themeColor } = Astro.pro
 			type={type}
 			publishedTime={publishedTime}
 			themeColor={themeColor}
+			iosEdgeToEdge={iosEdgeToEdge}
 		/>
 		<PinterestTag />
 	</head>

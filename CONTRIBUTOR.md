@@ -247,6 +247,18 @@ allowlisted Google accounts can access administration. The app requires a networ
 does not cache pages for offline use.
 
 The homepage uses warm ivory for its browser theme, loading screen, and page
-background in both light and dark mode. Other pages retain their own themes.
-Check browser chrome and home-screen launch on a physical iPhone; desktop browser
-tests do not reproduce Safari toolbar or installed-app behavior.
+background in both light and dark mode. The homepage is locked to the dynamic
+viewport height without page scrolling, with navigation overlaid on the artwork.
+The slideshow resizes with browser controls and device rotation; caption links
+stay inside the visible viewport. It is not a fixed, solid-color layer that
+Safari can use to tint its toolbars. The homepage also
+opts into a translucent status bar when launched from the iPhone home screen;
+navigation and captions respect device safe areas. Other routes retain their own
+viewport and status-bar behavior. iOS can keep the homepage status-bar treatment
+while navigating within the installed app, so do not rely on that chrome change
+alone to distinguish routes.
+
+Acceptance requires checking both a Safari tab and the installed app on a
+physical iPhone, in portrait and landscape, confirming the homepage does not scroll, and navigating to another
+route and back. Desktop browser tests do not reproduce Safari toolbar, safe-area,
+or installed-app behavior.
