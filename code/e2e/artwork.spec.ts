@@ -24,7 +24,7 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
     await page.getByRole('textbox',{name:'Add materials',exact:true}).fill('Ink wash');
     await expect(page.getByRole('combobox',{name:'Size',exact:true})).toHaveValue('Small');
     await expect(page.getByRole('combobox',{name:'Orientation',exact:true})).toBeDisabled();
-	await page.getByRole('button', { name: 'Save artwork' }).click();
+	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page).toHaveURL(`/admin/artworks/${slug}`);
 
 	await visit(page, '/admin/artworks');
@@ -35,17 +35,17 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
     await expect(page.getByRole('spinbutton',{name:'Width',exact:true})).toHaveValue('12');
     await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork edited');
 	await page.getByRole('checkbox', { name: 'Published' }).check();
-	await page.getByRole('button', { name: 'Save artwork' }).click();
+	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Playwright artwork edited');
     await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('0');
     await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('');
-    await page.getByRole('button', { name: 'Save artwork' }).click();
+    await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
     await visit(page, `/artworks/${slug}`);
     await expect(page.locator('[aria-label="Artwork dimensions"]')).toContainText('0 in');
     await visit(page, `/admin/artworks/${slug}`);
     await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('12');
     await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('16');
-    await page.getByRole('button', { name: 'Save artwork' }).click();
+    await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page.getByRole('checkbox', { name: 'Published' })).toBeChecked();
     const staleSaves = await page.evaluate(async () => Promise.all(['/api/admin/artworks/suggest', '/api/admin/artworks'].map(async endpoint => {
         const response = await fetch(endpoint, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Stale edit',slug:'suggest',width:12,height:16,tags:[],facetIds:[],newFacets:[]})});
