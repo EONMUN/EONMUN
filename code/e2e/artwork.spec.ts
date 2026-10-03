@@ -174,11 +174,14 @@ test('custom orientations remain selected in collections without matches', async
     await context.addCookies(await adminCookies('http://127.0.0.1:' + process.env.EONMUN_E2E_PORT));
     await page.goto('/admin/artworks');
     const saved = await page.evaluate(async () => {
-        const response = await fetch('/api/admin/artworks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+        const body = JSON.stringify({
             editorVersion:2,title:'Panoramic study',slug:'panoramic-study',published:true,orientation:'Panoramic',
             tags:[],materials:[],supports:[],mediums:[],subjects:[],styles:[],colors:[],images:[],collectionIds:[]
-        })});
-        return response.ok;
+        });
+        const options = {method:'POST',headers:{'content-type':'application/json'},body};
+        const created = await fetch('/api/admin/artworks',options);
+        if (!created.ok) return false;
+        return (await fetch('/api/admin/artworks/panoramic-study',options)).ok;
     });
     expect(saved).toBe(true);
     await page.goto('/artworks?orientation=panoramic');
