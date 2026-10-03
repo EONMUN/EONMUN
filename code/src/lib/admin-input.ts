@@ -142,3 +142,9 @@ export function parseCollectionInput(value: unknown, options: CollectionParseOpt
 		defaultArtworkId,
 	};
 }
+
+export function isCurrentArtworkEditor(value: unknown): boolean {
+    if (!value || typeof value !== "object") return false;
+    const input = value as Record<string, unknown>;
+    return [input.facetIds, input.tags, input.newFacets].every(Array.isArray);
+}

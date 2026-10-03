@@ -32,11 +32,11 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await page.getByRole('button', { name: 'Save artwork' }).click();
 	await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Playwright artwork edited');
 	await expect(page.getByRole('checkbox', { name: 'Published' })).toBeChecked();
-    const staleSave = await page.evaluate(async () => {
-        const response = await fetch('/api/admin/artworks/suggest', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Stale edit',slug:'suggest',width:12,height:16})});
+    const staleSaves = await page.evaluate(async () => Promise.all(['/api/admin/artworks/suggest', '/api/admin/artworks'].map(async endpoint => {
+        const response = await fetch(endpoint, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Stale edit',slug:'suggest',width:12,height:16})});
         return response.status;
-    });
-    expect(staleSave).toBe(409);
+    })));
+    expect(staleSaves).toEqual([409, 409]);
 
 	await visit(page, '/artworks');
 	await expect(async () => {
