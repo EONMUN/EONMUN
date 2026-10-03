@@ -217,3 +217,17 @@ with a fixed 30-day expiry; no auth database migration is needed. Sign-out clear
 the browser cookies. As with the previous stateless sessions, signing out does
 not centrally revoke a copied cookie; removing an email from `ADMIN_EMAILS`
 blocks its admin access.
+
+## Home-screen app
+
+The site includes a standalone web app manifest and home-screen icons. In Safari,
+use Share → Add to Home Screen. The manifest launches `/`; saving another page
+does not reliably select a different launch route. Use the Admin navigation link
+to reach Google sign-in and the protected admin console. Only allowlisted Google
+accounts can access administration. The app requires a network connection; it
+does not cache pages for offline use.
+
+The homepage uses warm ivory for its browser theme, loading screen, and page
+background in both light and dark mode. Other pages retain their own themes.
+Check browser chrome and home-screen launch on a physical iPhone; desktop browser
+tests do not reproduce Safari toolbar or installed-app behavior.
