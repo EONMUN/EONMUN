@@ -45,3 +45,27 @@ test('rejects missing configuration, unsupported ranges, redirects, and malforme
 	await expect(getTrafficReport(env, 7, now, (async () => Response.json({ results: [['date', -1]] })) as typeof fetch)).rejects.toThrow('Invalid analytics row');
 	await expect(getTrafficReport(env, 7, now, (async () => Response.json({ error: 'private upstream details' })) as typeof fetch)).rejects.toThrow('Invalid analytics response');
 });
+
+test('excludes every admin email in all queries without interpolating addresses into SQL', async () => {
+	const queries: { query: string; values: Record<string, string> }[] = [];
+	await getTrafficReport({ ...env, ADMIN_EMAILS: " Admin@Example.com, second@example.com,admin@example.com, o'hara@example.com, " }, 7, now,
+		(async (_url, init) => {
+			queries.push(JSON.parse(String(init?.body)).query);
+			return Response.json({ results: [] });
+		}) as typeof fetch);
+	expect(queries).toHaveLength(3);
+	for (const { query, values } of queries) {
+		expect(values).toEqual({ admin_email_0: 'admin@example.com', admin_email_1: 'second@example.com', admin_email_2: "o'hara@example.com" });
+		expect(query).toContain("lower(coalesce(toString(person.properties.email), '')) NOT IN ({admin_email_0}, {admin_email_1}, {admin_email_2})");
+		expect(query).not.toContain('@example.com');
+	}
+});
+
+test('omits email exclusion when the admin list is empty', async () => {
+	await getTrafficReport({ ...env, ADMIN_EMAILS: ' , ' }, 7, now, (async (_url, init) => {
+		const { query } = JSON.parse(String(init?.body));
+		expect(query.query).not.toContain('NOT IN');
+		expect(query.values).toEqual({});
+		return Response.json({ results: [] });
+	}) as typeof fetch);
+});

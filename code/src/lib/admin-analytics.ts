@@ -1,4 +1,6 @@
-export interface AnalyticsConfig { POSTHOG_PROJECT_ID?: string; POSTHOG_PERSONAL_API_KEY?: string }
+import { getAllowedAdminEmails } from './auth';
+
+export interface AnalyticsConfig { ADMIN_EMAILS?: string; POSTHOG_PROJECT_ID?: string; POSTHOG_PERSONAL_API_KEY?: string }
 export interface TrafficReport {
 	days: number;
 	start: string;
@@ -33,6 +35,12 @@ function rows(payload: unknown): [string, number][] {
 export async function getTrafficReport(env: AnalyticsConfig, days: number, now = new Date(), fetcher: typeof fetch = fetch): Promise<TrafficReport> {
 	if (![7, 30, 90].includes(days)) throw new Error('Invalid date range');
 	if (!analyticsConfigured(env)) throw new Error('Analytics not configured');
+	const emails = [...getAllowedAdminEmails({ ADMIN_EMAILS: env.ADMIN_EMAILS })];
+	const values = Object.fromEntries(emails.map((email, index) => [`admin_email_${index}`, email]));
+	// SECURITY: bind allowlisted addresses as values so email punctuation cannot alter SQL.
+	const excludeAdmins = emails.length
+		? `AND lower(coalesce(toString(person.properties.email), '')) NOT IN (${emails.map((_, index) => `{admin_email_${index}}`).join(', ')})`
+		: '';
 	const end = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 	const start = end - days * DAY;
 	const historyStart = end - (days * 2 + 6) * DAY;
@@ -41,12 +49,13 @@ export async function getTrafficReport(env: AnalyticsConfig, days: number, now =
 		AND timestamp < toDateTime('${date(end)} 00:00:00', 'UTC')
 		AND properties.$host IN ('eonmun.com', 'www.eonmun.com')
 		AND properties.$pathname != '/admin' AND properties.$pathname NOT LIKE '/admin/%'
-		AND properties.$pathname NOT LIKE '/api/%'`;
+		AND properties.$pathname NOT LIKE '/api/%'
+		${excludeAdmins}`;
 	const query = async (name: string, sql: string) => {
 		const response = await fetcher(`https://us.posthog.com/api/projects/${env.POSTHOG_PROJECT_ID}/query/`, {
 			method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(10_000),
 			headers: { 'content-type': 'application/json', authorization: `Bearer ${env.POSTHOG_PERSONAL_API_KEY}` },
-			body: JSON.stringify({ name: `EONMUN admin ${name}`, query: { kind: 'HogQLQuery', query: sql } }),
+			body: JSON.stringify({ name: `EONMUN admin ${name}`, query: { kind: 'HogQLQuery', query: sql, values } }),
 		});
 		// SECURITY: never follow a redirect carrying the private PostHog credential.
 		if (!response.ok) throw new Error(`Analytics upstream HTTP ${response.status}`);

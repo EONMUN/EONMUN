@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ request }) => {
 	if (!analyticsConfigured(env)) return Response.json({ error: 'Analytics is not connected yet.' }, { status: 503, headers });
 	try {
 		const now = new Date();
-		const cache = await caches.open('admin-analytics-v1');
+		const cache = await caches.open('admin-analytics-v2');
 		const key = new Request(new URL(`/__admin-analytics/${env.POSTHOG_PROJECT_ID}/${days}/${now.toISOString().slice(0, 10)}`, request.url));
 		const cached = await cache.match(key);
 		if (cached) return new Response(cached.body, { headers: { ...headers, 'content-type': 'application/json' } });
