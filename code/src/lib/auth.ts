@@ -1,8 +1,11 @@
 import { betterAuth } from "better-auth/minimal";
-import { APIError } from "better-auth/api";
+import { APIError, addOAuthServerContext, createAuthMiddleware, getOAuthState } from "better-auth/api";
 import { oAuthProxy } from "better-auth/plugins/oauth-proxy";
+import { google } from "better-auth/social-providers";
+import type { Env } from "../db";
+import { activateGoogleMerchant, GOOGLE_MERCHANT_SCOPE, GoogleMerchantError, registerGoogleMerchantProject } from "./google-merchant";
 
-export interface AuthEnv {
+export interface AuthEnv extends Pick<Env, "GOOGLE_MERCHANT_ACCOUNT_ID" | "GOOGLE_MERCHANT_DATA_SOURCE_ID" | "GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON"> {
 	ADMIN_EMAILS?: string;
 	AUTH_GOOGLE_ID?: string;
 	AUTH_GOOGLE_SECRET?: string;
@@ -78,6 +81,14 @@ const trustedOrigins = [
 export function createAuth(env: AuthEnv, request: Request) {
 	// This instance handles one request; never share provider identity between requests.
 	let googleId: string | undefined;
+	let merchantToken: string | undefined;
+	const googleOptions = {
+		clientId: getStringEnv(env, "GOOGLE_CLIENT_ID") ?? getStringEnv(env, "AUTH_GOOGLE_ID") ?? "",
+		clientSecret: getStringEnv(env, "GOOGLE_CLIENT_SECRET") ?? getStringEnv(env, "AUTH_GOOGLE_SECRET") ?? "",
+		// SECURITY: ordinary and preview logins must not inherit previously granted Merchant scope.
+		includeGrantedScopes: false,
+	};
+	const googleProvider = google(googleOptions);
 	return betterAuth({
 		baseURL: new URL(request.url).origin,
 		basePath: "/api/auth",
@@ -88,20 +99,51 @@ export function createAuth(env: AuthEnv, request: Request) {
 			enabled: true, strategy: "jwe", maxAge: 30 * 24 * 60 * 60, refreshCache: false,
 		} },
 		account: { storeStateStrategy: "cookie", storeAccountCookie: false },
+		hooks: { before: createAuthMiddleware(async (ctx) => {
+			if (ctx.path !== "/sign-in/social" || ctx.body?.additionalData?.googleMerchantSetup !== true) return;
+			const origin = new URL(request.url).origin;
+			if (origin !== new URL(getStringEnv(env, "AUTH_PROXY_URL") ?? "https://eonmun.com").origin
+				|| request.headers.get("origin") !== origin || ctx.body.provider !== "google") {
+				throw new APIError("FORBIDDEN", { message: "Connect Google Merchant from the production admin site." });
+			}
+			const session = await getSession(request, env);
+			if (!session?.user.id) throw new APIError("UNAUTHORIZED", { message: "Sign in before connecting Google Merchant." });
+			// SECURITY: bind Merchant setup to the initiating admin inside validated OAuth state.
+			await addOAuthServerContext({ googleMerchantAdminId: session.user.id });
+			ctx.body.scopes = [GOOGLE_MERCHANT_SCOPE];
+			ctx.body.callbackURL = `${origin}/admin/google`;
+			ctx.body.newUserCallbackURL = ctx.body.callbackURL;
+			ctx.body.errorCallbackURL = `${origin}/admin/google`;
+		}) },
 		user: {
 			additionalFields: { googleId: { type: "string", required: false, input: false } },
-			validateUserInfo({ user, source }) {
+			async validateUserInfo({ user, source }) {
 				const subject = source.oauth?.profile?.sub;
 				if (source.oauth?.providerId !== "google" || typeof subject !== "string" || !subject
 					|| user.emailVerified !== true || !isAllowedAdminEmail(user.email, env)) {
 					return { error: "admin_access_denied" };
 				}
 				googleId = subject;
+				const state = await getOAuthState();
+				if (state?.serverContext?.googleMerchantAdminId) {
+					if (state.serverContext.googleMerchantAdminId !== subject) return { error: "google_merchant_account_changed" };
+					if (!merchantToken) return { error: "google_merchant_permission_missing" };
+					try {
+						await registerGoogleMerchantProject(env, merchantToken, user.email);
+						await activateGoogleMerchant(env);
+					}
+					catch (error) {
+						return { error: "google_merchant_connect_failed", errorDescription: error instanceof GoogleMerchantError ? error.message : "Google Merchant connection failed. Please retry." };
+					}
+				}
 			},
 		},
 		socialProviders: { google: {
-			clientId: getStringEnv(env, "GOOGLE_CLIENT_ID") ?? getStringEnv(env, "AUTH_GOOGLE_ID") ?? "",
-			clientSecret: getStringEnv(env, "GOOGLE_CLIENT_SECRET") ?? getStringEnv(env, "AUTH_GOOGLE_SECRET") ?? "",
+			...googleOptions,
+			async getUserInfo(tokens) {
+				merchantToken = tokens.scopes?.includes(GOOGLE_MERCHANT_SCOPE) ? tokens.accessToken : undefined;
+				return googleProvider.getUserInfo(tokens);
+			},
 		} },
 		databaseHooks: { user: { create: { before(user) {
 			if (!googleId || !user.emailVerified || !isAllowedAdminEmail(user.email, env)) {

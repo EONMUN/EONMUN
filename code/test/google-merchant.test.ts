@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { googleProductInput, syncGoogleArtwork, syncGoogleCatalog } from "../src/lib/google-merchant";
+import { activateGoogleMerchant, googleProductInput, hasGoogleMerchantAccess, registerGoogleMerchantProject, syncGoogleArtwork, syncGoogleCatalog } from "../src/lib/google-merchant";
 import type { PinterestCatalogArtwork } from "../src/lib/pinterest-feed";
 
 const artwork: PinterestCatalogArtwork = {
@@ -19,6 +19,80 @@ async function testEnv() {
 }
 
 describe("Google Merchant sync", () => {
+	test("accepts an existing registration only for the configured Merchant account", async () => {
+		const env = await testEnv();
+		for (const account of ['accounts/123', 'accounts/999']) {
+			const apiFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+				expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer human-token');
+				if (String(input).endsWith(':registerGcp')) return Response.json({}, { status: 409 });
+				expect(String(input)).toBe('https://merchantapi.googleapis.com/accounts/v1/accounts:getAccountForGcpRegistration');
+				return Response.json({ name: account });
+			}) as typeof fetch;
+			if (account === 'accounts/123') await registerGoogleMerchantProject(env, 'human-token', 'admin@example.com', apiFetch);
+			else await expect(registerGoogleMerchantProject(env, 'human-token', 'admin@example.com', apiFetch)).rejects.toThrow('connection failed (HTTP 409)');
+		}
+	});
+
+	test("reports connection from a read-only service-account check", async () => {
+		const env = await testEnv();
+		for (const status of [200, 401]) {
+			const apiFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+				if (String(input) === 'https://oauth2.googleapis.com/token') return Response.json({ access_token: 'service-token' });
+				expect(String(input)).toBe('https://merchantapi.googleapis.com/datasources/v1/accounts/123/dataSources/456');
+				expect(init?.method ?? 'GET').toBe('GET');
+				return Response.json({}, { status });
+			}) as typeof fetch;
+			expect(await hasGoogleMerchantAccess(env, apiFetch)).toBe(status === 200);
+		}
+	});
+
+	test("registers with the human token, then verifies pending service access with its own token", async () => {
+		const env = await testEnv();
+		const requests: Array<{ url: string; method: string; token: string | null }> = [];
+		let verified = false;
+		const apiFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			requests.push({ url, method: init?.method ?? "GET", token: new Headers(init?.headers).get("Authorization") });
+			if (url.endsWith(":registerGcp")) {
+				expect(JSON.parse(String(init?.body))).toEqual({ developerEmail: "admin@example.com" });
+				return Response.json({});
+			}
+			if (url === "https://oauth2.googleapis.com/token") return Response.json({ access_token: "service-token" });
+			if (url.endsWith(":verifySelf")) { verified = true; return Response.json({ state: "VERIFIED" }); }
+			return Response.json({}, { status: verified ? 200 : 401 });
+		}) as typeof fetch;
+		await registerGoogleMerchantProject(env, "human-token", "admin@example.com", apiFetch);
+		await activateGoogleMerchant(env, apiFetch);
+		expect(requests[0].token).toBe("Bearer human-token");
+		expect(requests.slice(2).map(r => [r.method, r.token])).toEqual([
+			["GET", "Bearer service-token"], ["PATCH", "Bearer service-token"], ["GET", "Bearer service-token"],
+		]);
+		expect(requests[3].url).toBe("https://merchantapi.googleapis.com/accounts/v1/accounts/123/users/me:verifySelf");
+		expect(requests[4].url).toBe("https://merchantapi.googleapis.com/datasources/v1/accounts/123/dataSources/456");
+	});
+
+	test("retries an already active connection without re-verifying or accepting data source failures", async () => {
+		const env = await testEnv();
+		for (const status of [200, 404]) {
+			const apiFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+				if (String(input) === "https://oauth2.googleapis.com/token") return Response.json({ access_token: "service-token" });
+				expect(init?.method).not.toBe("PATCH");
+				return Response.json({}, { status });
+			}) as typeof fetch;
+			if (status === 200) await activateGoogleMerchant(env, apiFetch);
+			else await expect(activateGoogleMerchant(env, apiFetch)).rejects.toThrow("data source access failed (HTTP 404)");
+		}
+	});
+
+	test("reports registration propagation failure without exposing provider response bodies", async () => {
+		const env = await testEnv();
+		const apiFetch = (async (input: RequestInfo | URL) => String(input) === "https://oauth2.googleapis.com/token"
+			? Response.json({ access_token: "service-token" })
+			: Response.json({ error: "sensitive-provider-detail" }, { status: 401 })) as typeof fetch;
+		await expect(activateGoogleMerchant(env, apiFetch)).rejects.toThrow("wait five minutes and retry");
+		await expect(registerGoogleMerchantProject(env, "human-token", "admin@example.com", apiFetch)).rejects.toThrow("connection failed (HTTP 401)");
+	});
+
 	test("maps cents to USD micros for a one-of-a-kind artwork", () => {
 		expect(googleProductInput(artwork)).toMatchObject({
 			offerId: "artwork-41", contentLanguage: "en", feedLabel: "US",

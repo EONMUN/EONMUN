@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { getArtworkCatalogIds, getAvailableArtworkCatalog } from "../../../db/catalog";
 import { requireAdminMutation } from "../../../lib/admin-guard";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
-import { GoogleMerchantError, syncGoogleCatalog } from "../../../lib/google-merchant";
+import { activateGoogleMerchant, GoogleMerchantError, syncGoogleCatalog } from "../../../lib/google-merchant";
 
 export const prerender = false;
 export const POST: APIRoute = async ({ request }) => {
@@ -10,6 +10,7 @@ export const POST: APIRoute = async ({ request }) => {
 	const guard = await requireAdminMutation(request, env);
 	if ("response" in guard) return guard.response;
 	try {
+		await activateGoogleMerchant(env);
 		const [artworks, ids] = await Promise.all([getAvailableArtworkCatalog(env), getArtworkCatalogIds(env)]);
 		return Response.json(await syncGoogleCatalog(env, artworks, ids), { headers: { "Cache-Control": "no-store" } });
 	} catch (error) {

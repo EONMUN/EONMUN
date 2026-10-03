@@ -80,6 +80,8 @@ Google Merchant API sync uses the same sale-eligible artwork query. After config
 
 To connect the Worker, create a Google Cloud service account with Merchant API enabled and grant its email access to Merchant Center account `5867265608`. Account ID `5867265608` and API data source ID `10758370300` are configured as public `eonmun-astro` Worker vars. Set the complete service-account JSON as the `GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON` Worker secret. Never commit or paste the key in chat. Configure Merchant Center with U.S. shipping included in the price and the site's final-sale returns policy. Use `/admin/google` for the initial backfill and inspect one processed product before treating the integration as live.
 
+The Google OAuth web client used by Better Auth must belong to the same Cloud project as the service account. Keep its authorized redirect URI as `https://eonmun.com/api/auth/callback/google`. From production `/admin/google`, select **Connect Google Merchant**, use the same Google account as your admin session, and grant Merchant Center access. This registers the Cloud project using your Merchant Center Admin identity and verifies the pending service account. The extra scope is requested only for this setup; the Google user token remains in memory for the callback and is not stored. If Google is still applying the registration, wait five minutes and select **Retry all artwork listings** to finish verification and backfill. Normal artwork saves, Stripe callbacks, and the weekly refresh continue using the service account.
+
 ### Add a post
 
 1. Add the post entry to `fixtures/posts.json`.

@@ -4,7 +4,7 @@ import type { PinterestCatalogArtwork } from "./pinterest-feed";
 
 const tokenUrl = "https://oauth2.googleapis.com/token";
 const apiBase = "https://merchantapi.googleapis.com/products/v1";
-const scope = "https://www.googleapis.com/auth/content";
+export const GOOGLE_MERCHANT_SCOPE = "https://www.googleapis.com/auth/content";
 type ApiFetch = typeof fetch;
 
 export class GoogleMerchantError extends Error {}
@@ -37,7 +37,7 @@ async function accessToken(credentials: { client_email?: string; private_key?: s
 	const now = Math.floor(Date.now() / 1000);
 	const encoded = [
 		{ alg: "RS256", typ: "JWT" },
-		{ iss: credentials.client_email, scope, aud: tokenUrl, iat: now, exp: now + 3600 },
+		{ iss: credentials.client_email, scope: GOOGLE_MERCHANT_SCOPE, aud: tokenUrl, iat: now, exp: now + 3600 },
 	].map((part) => base64url(new TextEncoder().encode(JSON.stringify(part)))).join(".");
 	const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(encoded));
 	const response = await apiFetch(tokenUrl, {
@@ -50,6 +50,52 @@ async function accessToken(credentials: { client_email?: string; private_key?: s
 	const body = await response.json() as { access_token?: string };
 	if (!body.access_token) throw new GoogleMerchantError("Google Merchant did not return an access token");
 	return body.access_token;
+}
+
+export async function registerGoogleMerchantProject(env: Env, token: string, email: string, apiFetch: ApiFetch = fetch) {
+	const { account } = config(env);
+	const response = await apiFetch(`https://merchantapi.googleapis.com/accounts/v1/accounts/${account}/developerRegistration:registerGcp`, {
+		method: "POST",
+		headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+		body: JSON.stringify({ developerEmail: email }),
+		redirect: "manual",
+	});
+	if (!response.ok) {
+		// Registration can finish before activation does; verify its account before accepting a retry.
+		const registered = await apiFetch("https://merchantapi.googleapis.com/accounts/v1/accounts:getAccountForGcpRegistration", {
+			headers: { Authorization: `Bearer ${token}` }, redirect: "manual",
+		});
+		if (registered.ok && (await registered.json() as { name?: string }).name === `accounts/${account}`) return;
+		throw new GoogleMerchantError(`Google Merchant connection failed (HTTP ${response.status}). Use a Google account with Admin access to Merchant Center and an OAuth client in the service account's Cloud project.`);
+	}
+}
+
+export async function hasGoogleMerchantAccess(env: Env, apiFetch: ApiFetch = fetch) {
+	if (!isGoogleMerchantConfigured(env)) return false;
+	try {
+		const { dataSource, credentials } = config(env);
+		const token = await accessToken(credentials, apiFetch);
+		const response = await apiFetch(`https://merchantapi.googleapis.com/datasources/v1/${dataSource}`, {
+			headers: { Authorization: `Bearer ${token}` }, redirect: "manual",
+		});
+		return response.ok;
+	} catch { return false; }
+}
+
+export async function activateGoogleMerchant(env: Env, apiFetch: ApiFetch = fetch) {
+	const { account, dataSource, credentials } = config(env);
+	const token = await accessToken(credentials, apiFetch);
+	const options = { headers: { Authorization: `Bearer ${token}` }, redirect: "manual" as const };
+	const sourceUrl = `https://merchantapi.googleapis.com/datasources/v1/${dataSource}`;
+	let source = await apiFetch(sourceUrl, options);
+	if (source.status === 401 || source.status === 403) {
+		const verified = await apiFetch(`https://merchantapi.googleapis.com/accounts/v1/accounts/${account}/users/me:verifySelf`, {
+			...options, method: "PATCH",
+		});
+		if (!verified.ok) throw new GoogleMerchantError(`Google Merchant access is not ready (HTTP ${verified.status}). Connect Google Merchant first; if you just connected, wait five minutes and retry. The service account must be added to Merchant Center.`);
+		source = await apiFetch(sourceUrl, options);
+	}
+	if (!source.ok) throw new GoogleMerchantError(`Google Merchant data source access failed (HTTP ${source.status}). Check the service account permissions and API data source.`);
 }
 
 export function googleProductInput(artwork: PinterestCatalogArtwork) {
