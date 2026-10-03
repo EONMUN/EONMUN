@@ -170,15 +170,15 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 </script>
 
 <style is:global>
-	/* Homepage is a fullscreen carousel — the page is itself the hero. Hide
-	   the layout footer here only; other routes keep theirs. */
+	/* The artwork is the homepage; other routes keep the layout footer. */
 	body > footer { display: none; }
+	body > main { position: relative; }
 	html, body { background: #f5f1e8 !important; }
 </style>
 
 <style>
 	.loading-screen {
-		position: fixed;
+		position: absolute;
 		inset: 0;
 		z-index: 100;
 		display: flex;
@@ -206,10 +206,11 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	.loading-fallback { color: inherit; text-decoration: underline; text-underline-offset: 0.25em; }
 	.loading-fallback[hidden] { display: none; }
 	.hero-carousel {
-		position: fixed;
-		inset: 0;
+		/* Safari clips fixed layers at its controls and extends their solid tint. */
+		position: relative;
+		height: 100vh;
+		height: 100lvh;
 		z-index: 0;
-		background: #f5f1e8;
 	}
 	.slide {
 		position: absolute;
@@ -232,6 +233,8 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		left: calc(1rem + env(safe-area-inset-left));
 		right: calc(1rem + env(safe-area-inset-right));
 		bottom: calc(1.25rem + env(safe-area-inset-bottom));
+		/* Keep links visible while expanded browser controls cover the large viewport. */
+		bottom: calc(1.25rem + env(safe-area-inset-bottom) + 100lvh - 100svh);
 		z-index: 50;
 		display: flex;
 		flex-direction: column;
