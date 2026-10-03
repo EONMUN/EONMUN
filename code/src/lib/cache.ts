@@ -29,7 +29,7 @@ export function artworkContentChanged(
 	const fields = ["slug", "title", "description", "artist", "year", "width", "height", "depth", "dimensionUnit"] as const;
 	if (fields.some((field) => before[field] !== input[field])) return true;
 	if (JSON.stringify(before.tags) !== JSON.stringify(input.tags)) return true;
-    for (const {name,key} of [...artworkAttributes, {name:'size',key:'size'}, {name:'orientation',key:'orientation'}] as const) {
+    for (const {name,key} of [...artworkAttributes, {name:'orientation',key:'orientation'}] as const) {
         const previous = before.attributes.filter(f => f.namespace === 'artwork' && f.key === key).map(f => f.value).sort();
         const current = Array.isArray(input[name]) ? input[name] : input[name] ? [input[name]] : [];
         if (JSON.stringify(previous) !== JSON.stringify([...current].sort())) return true;

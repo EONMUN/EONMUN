@@ -51,9 +51,8 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
         <label>Height <input class="admin-input" name="height" type="number" min="0" step="any" value={artwork?.height ?? ''} /></label>
         <label>Depth <input class="admin-input" name="depth" type="number" min="0" step="any" value={artwork?.depth ?? ''} /></label>
         <label>Unit <select class="admin-input" name="dimensionUnit"><option value="in" selected={artwork?.dimensionUnit !== 'cm'}>Inches</option><option value="cm" selected={artwork?.dimensionUnit === 'cm'}>Centimeters</option></select></label>
-        <label>Size <select class="admin-input" name="size"><option value="">Not specified</option>{[...new Set([...values('size'), 'Small','Medium','Large'])].map(value => <option value={value} selected={values('size').includes(value)}>{value}</option>)}</select></label>
         <label>Orientation <select class="admin-input" name="orientation"><option value="">Not specified</option>{[...new Set([...values('orientation'), 'Portrait','Landscape','Square'])].map(value => <option value={value} selected={values('orientation').includes(value)}>{value}</option>)}</select></label>
-        <p class="hint span-all" data-dimension-summary>Size and orientation are calculated when width and height are known.</p>
+        <p class="hint span-all" data-dimension-summary>Orientation is calculated when width and height are known.</p>
     </FormFieldset>
 
     {['Materials and surface', 'Subject and style'].map(group => (
@@ -233,7 +232,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 				delete payload.priceDollars;
 				payload.tags = form.elements.tags.value.split(',').map((tag) => tag.trim()).filter(Boolean);
 				payload.editorVersion = 2;
-                payload.size = form.elements.size.value; payload.orientation = form.elements.orientation.value;
+                payload.orientation = form.elements.orientation.value;
                 for (const name of attributeNames) {
                     payload[name] = [...data.getAll(name), ...form.elements[name + 'New'].value.split(',').map(value => value.trim()).filter(Boolean)];
                     delete payload[name + 'New'];
@@ -260,22 +259,20 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 </script>
 
 <script>
-    import { dimensionCategories } from '../../lib/artwork-facets';
+    import { dimensionOrientation } from '../../lib/artwork-facets';
     const form = document.querySelector<HTMLFormElement>('[data-admin-artwork-form]');
     if (form) {
         const input = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
         const syncDimensions = () => {
             const number = (name: string) => input(name).value === '' ? null : Number(input(name).value);
-            const categories = dimensionCategories({width:number('width'),height:number('height'),depth:number('depth'),dimensionUnit:input('dimensionUnit').value as 'in'|'cm'});
-            for (const key of ['size','orientation'] as const) {
-                input(key).disabled = Boolean(categories);
-                if (categories) input(key).value = categories[key];
-            }
-            form.querySelector('[data-dimension-summary]')!.textContent = categories
-                ? `${categories.size} · ${categories.orientation}. Size uses the longest edge: small up to 50 cm, medium up to 100 cm, large above 100 cm.`
-                : 'Add width and height to calculate size and orientation, or choose them manually.';
+            const orientation = dimensionOrientation({width:number('width'),height:number('height')});
+            input('orientation').disabled = Boolean(orientation);
+            if (orientation) input('orientation').value = orientation;
+            form.querySelector('[data-dimension-summary]')!.textContent = orientation
+                ? `Orientation: ${orientation}.`
+                : 'Add width and height to calculate orientation, or choose it manually.';
         };
-        for (const name of ['width','height','depth','dimensionUnit']) input(name).addEventListener('input',syncDimensions);
+        for (const name of ['width','height']) input(name).addEventListener('input',syncDimensions);
         syncDimensions();
     }
 </script>

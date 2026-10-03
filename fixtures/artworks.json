@@ -34,11 +34,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 13.0,
@@ -81,11 +76,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 12.0,
@@ -137,11 +127,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 14.0,
@@ -216,11 +201,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 12.0,
@@ -262,11 +242,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 12.0,
@@ -318,11 +293,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 14.0,
@@ -369,11 +339,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 13.0,
@@ -381,7 +346,7 @@
     "dimensionUnit": "in"
   },
   {
-    "title": "Quetzalc\u014d\u0101tlin tetl",
+    "title": "Quetzalcōātlin tetl",
     "slug": "quetzalcoatlin-tetl",
     "description": "A grayscale architectural motif combines carved faces and stepped forms in a finely detailed work on paper.\n\nWatercolor, pencil, paper\n14\"x18\"",
     "artist": "EONMUN",
@@ -420,11 +385,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Small"
       }
     ],
     "width": 14.0,
@@ -432,7 +392,7 @@
     "dimensionUnit": "in"
   },
   {
-    "title": "Cam\u00e9lia",
+    "title": "Camélia",
     "slug": "camelia",
     "description": "Fine black ink branches spread across pale rice paper in this spare botanical composition.\n\nCarbon ink, rice paper\n19\"x25\"",
     "artist": "EONMUN",
@@ -466,11 +426,6 @@
         "namespace": "artwork",
         "key": "orientation",
         "value": "Portrait"
-      },
-      {
-        "namespace": "artwork",
-        "key": "size",
-        "value": "Medium"
       }
     ],
     "width": 19.0,

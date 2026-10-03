@@ -22,7 +22,7 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
     await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('16');
     await page.getByRole('combobox',{name:'Unit',exact:true}).selectOption('in');
     await page.getByRole('textbox',{name:'Add materials',exact:true}).fill('Ink wash');
-    await expect(page.getByRole('combobox',{name:'Size',exact:true})).toHaveValue('Small');
+    await expect(page.getByRole('combobox',{name:'Size',exact:true})).toHaveCount(0);
     await expect(page.getByRole('combobox',{name:'Orientation',exact:true})).toBeDisabled();
 	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page).toHaveURL(`/admin/artworks/${slug}`);
@@ -61,7 +61,7 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await visit(page, `/artworks/${slug}`);
 	await expect(page.getByRole('heading', { name: 'Playwright artwork edited' })).toBeVisible();
 	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('bird');
-	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('size: Small');
+	await expect(page.locator('[aria-label="Artwork facets"]')).not.toContainText('size:');
 	await expect(page.locator('[aria-label="Artwork dimensions"]')).toContainText('12 in');
 	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('orientation: Portrait');
     await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('material: Ink wash');

@@ -32,7 +32,6 @@ export interface ArtworkAdminInput extends ArtworkAttributes, ArtworkMeasurement
 	slug: string;
 	description: string | null;
 	tags: string[];
-	size: string | null;
 	orientation: string | null;
 	artist: string | null;
 	year: number | null;
@@ -78,9 +77,7 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
     })) as ArtworkAttributes;
     const dimensionUnit = input.dimensionUnit ?? 'in';
     if (dimensionUnit !== 'in' && dimensionUnit !== 'cm') throw new Error('Choose inches or centimeters');
-    const size = text(input.size, 'Size');
     const orientation = text(input.orientation, 'Orientation');
-    if (size && size.length > 80) throw new Error('Size must be a short name');
     if (orientation && orientation.length > 80) throw new Error('Orientation must be a short name');
 
 	return {
@@ -92,7 +89,7 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
         width: optionalNumber(input.width, 'Width'),
         height: optionalNumber(input.height, 'Height'),
         depth: optionalNumber(input.depth, 'Depth'),
-        dimensionUnit, size, orientation,
+        dimensionUnit, orientation,
 		artist: text(input.artist, "Artist"),
 		year,
 		published: input.published === true,

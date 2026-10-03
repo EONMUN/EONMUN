@@ -1,11 +1,11 @@
 import { expect, test } from 'bun:test';
-import { dimensionCategories } from '../src/lib/artwork-facets';
+import { dimensionOrientation } from '../src/lib/artwork-facets';
 import { parseArtworkInput, isCurrentArtworkEditor } from '../src/lib/admin-input';
-test('measurement categories use numeric values and unit conversion', () => {
- expect(dimensionCategories({width:12,height:16,depth:null,dimensionUnit:'in'})).toEqual({size:'Small',orientation:'Portrait'});
- expect(dimensionCategories({width:101,height:60,depth:null,dimensionUnit:'cm'})).toEqual({size:'Large',orientation:'Landscape'});
- expect(dimensionCategories({width:60,height:60,depth:null,dimensionUnit:'cm'})).toEqual({size:'Medium',orientation:'Square'});
- for (const height of [0,null]) expect(dimensionCategories({width:12,height,depth:null,dimensionUnit:'in'})).toBeNull();
+test('orientation uses numeric width and height', () => {
+ expect(dimensionOrientation({width:12,height:16})).toBe('Portrait');
+ expect(dimensionOrientation({width:101,height:60})).toBe('Landscape');
+ expect(dimensionOrientation({width:60,height:60})).toBe('Square');
+ for (const height of [0,null]) expect(dimensionOrientation({width:12,height})).toBeNull();
 });
 test('measurements reject invalid numbers and stale generic forms', () => {
  const input={title:'Study',slug:'study',images:[],dimensionUnit:'in'};
@@ -17,6 +17,6 @@ test('measurements reject invalid numbers and stale generic forms', () => {
 
 test('manual categories retain existing spelling and custom names', () => {
  const input = parseArtworkInput({title:'Test',slug:'test',images:[],size:'Miniature',orientation:'portrait'});
- expect(input.size).toBe('Miniature');
+ expect(input).not.toHaveProperty('size');
  expect(input.orientation).toBe('portrait');
 });

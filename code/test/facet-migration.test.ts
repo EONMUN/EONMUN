@@ -59,6 +59,11 @@ test("facet migrations preserve memberships, specifications, and editor changes"
         expect((await client.execute("SELECT id FROM facets WHERE namespace='artwork' AND key IN ('width','height','depth','dimension-unit')")).rows).toEqual([]);
         expect((await client.execute('PRAGMA foreign_key_check')).rows).toEqual([]);
 
+        await apply('0017_remove_artwork_size_facets.sql');
+        expect((await client.execute("SELECT id FROM facets WHERE namespace='artwork' AND key='size'")).rows).toEqual([]);
+        expect((await client.execute("SELECT value FROM facets WHERE namespace='shipping' AND key='size'")).rows).toEqual([{value:'Small'}]);
+        expect((await client.execute('SELECT width,height,depth FROM artworks WHERE id=1')).rows).toEqual([{width:12,height:14,depth:0.5}]);
+        expect((await client.execute('PRAGMA foreign_key_check')).rows).toEqual([]);
 		expect(await facts(3)).toHaveLength(4);
 	} finally {
 		client.close();
