@@ -17,3 +17,7 @@ export function dimensionOrientation({ width, height }: Pick<ArtworkMeasurements
  if (width === null || height === null || width <= 0 || height <= 0) return null;
  return width === height ? 'Square' : height > width ? 'Portrait' : 'Landscape';
 }
+
+export function artworkOrientation(artwork: Pick<ArtworkMeasurements, 'width' | 'height'> & { facets: ArtworkFacet[] }) {
+ return dimensionOrientation(artwork) ?? artwork.facets.find(f => f.namespace === 'artwork' && f.key === 'orientation')?.value ?? null;
+}

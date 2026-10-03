@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArtworkGrid from '../../components/ArtworkGrid.astro';
+import ArtworkGallery from '../../components/ArtworkGallery.astro';
 import FilterChip from '../../components/FilterChip.astro';
 import { getPublishedArtworkEntries } from '../../lib/artwork-content';
 import { getPublishedCollectionRefs } from '../../lib/collection-content';
@@ -26,9 +26,7 @@ Astro.cache.set({ tags: [CACHE_TAGS.artworks, CACHE_TAGS.collection(collection.s
 				<FilterChip href="/artworks">All</FilterChip>
 				{collections.map((item) => <FilterChip href={getCollectionHref(item.slug)} active={item.slug === collection.slug}>{item.name}</FilterChip>)}
 			</div>
-			<p class="text-sm text-gray-500">{artworks.length} artwork{artworks.length !== 1 ? 's' : ''}</p>
 		</div>
-		<ArtworkGrid artworks={artworks} collectionSlug={collection.slug} />
-		{artworks.length === 0 && <p class="py-12 text-center text-gray-500">No artworks published in this collection yet.</p>}
+		<ArtworkGallery artworks={artworks} collectionSlug={collection.slug} />
 	</div>
 </BaseLayout>

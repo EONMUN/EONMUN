@@ -1,4 +1,5 @@
 ---
+import { artworkAttributes, artworkOrientation } from '../../lib/artwork-facets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PurchaseState from '../../components/PurchaseState.astro';
 import TagLink from '../../components/TagLink.astro';
@@ -28,7 +29,9 @@ const { artwork, collections, defaultImageUrl, offer } = artworkDetail;
 // Shopping crawlers must receive the current offer in the initial HTML.
 Astro.cache.set(false);
 const measurements = { width: artwork.data.width, height: artwork.data.height, depth: artwork.data.depth, unit: artwork.data.dimensionUnit };
-const displayFacets = artwork.data.facets;
+const tags = artwork.data.facets.filter(f => f.namespace === 'artwork' && f.key === 'tag');
+const orientation = artworkOrientation(artwork.data);
+const attributes = artworkAttributes.map(({key,label}) => ({label, values: artwork.data.facets.filter(f => f.namespace === 'artwork' && f.key === key).map(f => f.value)})).filter(field => field.values.length);
 const images = artwork.data.images;
 const defaultImage = images.find((image) => image.isDefault) ?? images[0];
 const mainImage = defaultImage?.url ?? defaultImageUrl;
@@ -118,11 +121,26 @@ const productJsonLd = saleOffer ? JSON.stringify({
                         ))}
                     </dl>
                 )}
-                {displayFacets.length > 0 && (
-					<div class="flex flex-wrap gap-2" aria-label="Artwork facets">
-						{displayFacets.map((facet) => <span class="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{facet.namespace === 'artwork' && facet.key === 'tag' ? facet.value : `${facet.namespace === 'artwork' ? '' : facet.namespace + '/'}${facet.key}: ${facet.value}`}</span>)}
-					</div>
-				)}
+                {orientation && (
+                    <section aria-label="Orientation">
+                        <h2 class="text-lg font-semibold mb-3">Orientation</h2>
+                        <a class="underline" href={`/artworks?orientation=${encodeURIComponent(orientation.toLowerCase())}`}>{orientation}</a>
+                    </section>
+                )}
+                {attributes.map(({label,values}) => (
+                    <section aria-label={label}>
+                        <h2 class="text-lg font-semibold mb-3">{label}</h2>
+                        <p class="text-gray-700 dark:text-gray-300">{values.join(', ')}</p>
+                    </section>
+                ))}
+                {tags.length > 0 && (
+                    <section aria-label="Artwork tags">
+                        <h2 class="text-lg font-semibold mb-3">Tags</h2>
+                        <div class="flex flex-wrap gap-2">
+                            {tags.map(tag => <span class="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{tag.value}</span>)}
+                        </div>
+                    </section>
+                )}
 
 				{collections.length > 0 && (
 					<div>

@@ -1,0 +1,58 @@
+---
+import ArtworkGrid from './ArtworkGrid.astro';
+import { artworkOrientation } from '../lib/artwork-facets';
+import type { PublishedArtworkDetail } from '../lib/artwork-content';
+interface Props { artworks: PublishedArtworkDetail[]; collectionSlug?: string }
+const {artworks, collectionSlug} = Astro.props;
+const orientations = new Map(['Portrait','Landscape','Square'].map(value => [value.toLowerCase(),value]));
+for (const {artwork} of artworks) {
+ const value = artworkOrientation(artwork.data);
+ if (value && !orientations.has(value.toLowerCase())) orientations.set(value.toLowerCase(),value);
+}
+---
+<div data-artwork-gallery>
+    <div class="mb-6 flex flex-wrap items-center gap-4">
+        <label class="flex items-center gap-2">Orientation
+            <select disabled data-orientation-filter class="rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                <option value="">All orientations</option>
+                {[...orientations].map(([value,label]) => <option value={value}>{label}</option>)}
+            </select>
+        </label>
+        <p class="text-sm text-gray-500" data-artwork-count aria-live="polite">{artworks.length} artwork{artworks.length === 1 ? '' : 's'}</p>
+    </div>
+    <ArtworkGrid artworks={artworks} collectionSlug={collectionSlug} />
+    <p data-orientation-empty hidden class="py-12 text-center text-gray-500">No artworks match this orientation.</p>
+</div>
+<script>
+    for (const gallery of document.querySelectorAll<HTMLElement>('[data-artwork-gallery]')) {
+        const select = gallery.querySelector<HTMLSelectElement>('[data-orientation-filter]')!;
+        const cards = [...gallery.querySelectorAll<HTMLElement>('[data-artwork-card]')];
+        const apply = () => {
+            const value = new URL(location.href).searchParams.get('orientation')?.toLowerCase() ?? '';
+            select.value = [...select.options].some(option => option.value === value) ? value : '';
+            for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-filter-chip]')) {
+                const target = new URL(link.href);
+                if (select.value) target.searchParams.set('orientation',select.value);
+                else target.searchParams.delete('orientation');
+                link.href = target.href;
+            }
+            let count = 0;
+            for (const card of cards) {
+                card.hidden = Boolean(select.value && card.dataset.orientation !== select.value);
+                if (!card.hidden) count++;
+            }
+            gallery.querySelector('[data-artwork-count]')!.textContent = `${count} artwork${count === 1 ? '' : 's'}`;
+            gallery.querySelector<HTMLElement>('[data-orientation-empty]')!.hidden = count !== 0;
+        };
+        select.addEventListener('change', () => {
+            const url = new URL(location.href);
+            if (select.value) url.searchParams.set('orientation',select.value);
+            else url.searchParams.delete('orientation');
+            history.pushState(null,'',url);
+            apply();
+        });
+        window.addEventListener('popstate',apply);
+        apply();
+        select.disabled = false;
+    }
+</script>
