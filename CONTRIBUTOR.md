@@ -222,9 +222,12 @@ blocks its admin access.
 
 The site includes a standalone web app manifest and home-screen icons. In Safari,
 use Share → Add to Home Screen. The manifest launches `/`; saving another page
-does not reliably select a different launch route. Use the Admin navigation link
-to reach Google sign-in and the protected admin console. Only allowlisted Google
-accounts can access administration. The app requires a network connection; it
+does not reliably select a different launch route. Admin sign-in is available
+directly at `/admin`, which can be saved as a private browser bookmark. It is not
+linked in the public navigation. On the homepage, tap the EONMUN logo five times
+with less than 1.5 seconds between taps to open admin sign-in, including inside
+the installed app. From other pages, the logo returns home normally. Only
+allowlisted Google accounts can access administration. The app requires a network connection; it
 does not cache pages for offline use.
 
 The homepage uses warm ivory for its browser theme, loading screen, and page
