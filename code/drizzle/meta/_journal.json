@@ -113,6 +113,13 @@
       "when": 1791006773122,
       "tag": "0015_artwork_dimension_facets",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1791008542910,
+      "tag": "0016_typed_artwork_dimensions",
+      "breakpoints": true
     }
   ]
 }

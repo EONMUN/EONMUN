@@ -37,25 +37,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "13"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "16"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 13.0,
+    "height": 16.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Quiescent Citadel",
@@ -96,25 +84,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "12"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "16"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 12.0,
+    "height": 16.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Persimmons del Oro",
@@ -164,25 +140,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "14"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "18"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 14.0,
+    "height": 18.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Limones del Cobre",
@@ -255,25 +219,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "12"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "14"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 12.0,
+    "height": 14.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Banc de Poissons",
@@ -313,25 +265,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "12"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "14"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 12.0,
+    "height": 14.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Occullilium",
@@ -381,25 +321,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "14"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "18"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 14.0,
+    "height": 18.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Equestrian Equilibrium",
@@ -444,25 +372,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "13"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "16"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 13.0,
+    "height": 16.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Quetzalc\u014d\u0101tlin tetl",
@@ -507,25 +423,13 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "14"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "18"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Small"
       }
-    ]
+    ],
+    "width": 14.0,
+    "height": 18.0,
+    "dimensionUnit": "in"
   },
   {
     "title": "Cam\u00e9lia",
@@ -565,24 +469,12 @@
       },
       {
         "namespace": "artwork",
-        "key": "width",
-        "value": "19"
-      },
-      {
-        "namespace": "artwork",
-        "key": "height",
-        "value": "25"
-      },
-      {
-        "namespace": "artwork",
-        "key": "dimension-unit",
-        "value": "in"
-      },
-      {
-        "namespace": "artwork",
         "key": "size",
         "value": "Medium"
       }
-    ]
+    ],
+    "width": 19.0,
+    "height": 25.0,
+    "dimensionUnit": "in"
   }
 ]

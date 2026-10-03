@@ -1,5 +1,4 @@
 ---
-import { artworkMeasurements, dimensionKeys } from '../../lib/artwork-facets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PurchaseState from '../../components/PurchaseState.astro';
 import TagLink from '../../components/TagLink.astro';
@@ -28,8 +27,8 @@ const { artwork, collections, defaultImageUrl, offer } = artworkDetail;
 // CRITICAL: product price and stock can change independently of artwork content.
 // Shopping crawlers must receive the current offer in the initial HTML.
 Astro.cache.set(false);
-const measurements = artworkMeasurements(artwork.data.facets);
-const displayFacets = artwork.data.facets.filter(f => f.namespace !== "artwork" || !dimensionKeys.has(f.key));
+const measurements = { width: artwork.data.width, height: artwork.data.height, depth: artwork.data.depth, unit: artwork.data.dimensionUnit };
+const displayFacets = artwork.data.facets;
 const images = artwork.data.images;
 const defaultImage = images.find((image) => image.isDefault) ?? images[0];
 const mainImage = defaultImage?.url ?? defaultImageUrl;
@@ -114,7 +113,7 @@ const productJsonLd = saleOffer ? JSON.stringify({
 				)}
 				{(measurements.width || measurements.height || measurements.depth) && (
                     <dl aria-label="Artwork dimensions" class="flex flex-wrap gap-4">
-                        {(['width', 'height', 'depth'] as const).filter(key => measurements[key] !== undefined).map(key => (
+                        {(['width', 'height', 'depth'] as const).filter(key => measurements[key] !== null).map(key => (
                             <div><dt class="capitalize">{key}</dt><dd>{measurements[key]} {measurements.unit}</dd></div>
                         ))}
                     </dl>

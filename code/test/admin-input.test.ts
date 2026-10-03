@@ -68,12 +68,12 @@ describe("admin input", () => {
 	});
 
 	test("keeps facet selections, tags, and alt text separate from captions", () => {
-		const result = parseArtworkInput({ ...artwork, tags: ["  bird  ", "bird", "watercolor"], facetIds: [3], newFacets: [{ namespace: "artwork", key: "size", value: "Small" }], images: [
+		const result = parseArtworkInput({ ...artwork, tags: ["  bird  ", "bird", "watercolor"], materials: ["Watercolor"], width:"12", height:"16", dimensionUnit:"in", images: [
 			{ url: "https://r2.eonmun.com/artwork-media/a.jpg", caption: "Detail view", altText: "Blue bird on a branch", isDefault: true },
 		] });
 		expect(result.tags).toEqual(["bird", "watercolor"]);
-		expect(result.facetIds).toEqual([3]);
-		expect(result.newFacets).toEqual([{ namespace: "artwork", key: "size", value: "Small" }]);
+		expect(result.materials).toEqual(["Watercolor"]);
+		expect([result.width,result.height,result.depth,result.dimensionUnit]).toEqual([12,16,null,"in"]);
 		expect(result.images[0]).toMatchObject({ caption: "Detail view", altText: "Blue bird on a branch" });
 	});
 });

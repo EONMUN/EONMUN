@@ -28,7 +28,7 @@ test("facet migrations preserve memberships, specifications, and editor changes"
             (4, 'Landscape', 'landscape', 'orientation', 1, 1);
 			INSERT INTO artworks_to_facets VALUES (1, 1, 1), (2, 2, 1), (4, 3, 1), (2, 4, 1);
 		`);
-		for (const file of files.filter((file) => file >= "0012")) await apply(file);
+		for (const file of files.filter((file) => file >= "0012" && file < "0016")) await apply(file);
 		const small = await client.execute("SELECT id, namespace, key, value FROM facets WHERE key = 'size'");
 		expect(small.rows).toEqual([{ id: 1, namespace: "artwork", key: "size", value: "Small" }]);
 		expect((await client.execute("SELECT artwork_id FROM artworks_to_facets WHERE facet_id = 1 ORDER BY artwork_id")).rows).toEqual([{ artwork_id: 1 }, { artwork_id: 2 }, { artwork_id: 3 }, { artwork_id: 4 }, { artwork_id: 5 }]);
@@ -53,6 +53,12 @@ test("facet migrations preserve memberships, specifications, and editor changes"
 		await client.execute("INSERT INTO facets(namespace,key,value,created_at,updated_at) VALUES('shipping','size','Small',1,1)");
 		// A data migration can be replayed safely without replacing new editor input.
 		await apply("0014_artwork_material_facets.sql");
+        await apply('0016_typed_artwork_dimensions.sql');
+        expect((await client.execute('SELECT width,height,depth,dimension_unit FROM artworks WHERE id=1')).rows).toEqual([{width:12,height:14,depth:0.5,dimension_unit:'in'}]);
+        expect((await client.execute('SELECT width,height,depth FROM artworks WHERE id=2')).rows).toEqual([{width:null,height:null,depth:null}]);
+        expect((await client.execute("SELECT id FROM facets WHERE namespace='artwork' AND key IN ('width','height','depth','dimension-unit')")).rows).toEqual([]);
+        expect((await client.execute('PRAGMA foreign_key_check')).rows).toEqual([]);
+
 		expect(await facts(3)).toHaveLength(4);
 	} finally {
 		client.close();

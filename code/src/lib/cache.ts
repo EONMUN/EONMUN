@@ -1,3 +1,4 @@
+import { artworkAttributes } from "./artwork-facets";
 import type { APIContext } from "astro";
 import type { getAdminArtwork, getAdminCollection } from "../db/admin";
 import type { ArtworkAdminInput, CollectionAdminInput } from "./admin-input";
@@ -25,11 +26,14 @@ export function artworkContentChanged(
 	if (!before) return false;
 	if ((before.publishedAt !== null) !== input.published) return true;
 	if (!input.published) return false;
-	const fields = ["slug", "title", "description", "artist", "year"] as const;
+	const fields = ["slug", "title", "description", "artist", "year", "width", "height", "depth", "dimensionUnit"] as const;
 	if (fields.some((field) => before[field] !== input[field])) return true;
 	if (JSON.stringify(before.tags) !== JSON.stringify(input.tags)) return true;
-	if (input.newFacets.length > 0) return true;
-	if (before.facetIds.slice().sort().join(",") !== input.facetIds.slice().sort().join(",")) return true;
+    for (const {name,key} of [...artworkAttributes, {name:'size',key:'size'}, {name:'orientation',key:'orientation'}] as const) {
+        const previous = before.attributes.filter(f => f.namespace === 'artwork' && f.key === key).map(f => f.value).sort();
+        const current = Array.isArray(input[name]) ? input[name] : input[name] ? [input[name]] : [];
+        if (JSON.stringify(previous) !== JSON.stringify([...current].sort())) return true;
+    }
 	if (before.collectionIds.slice().sort().join(",") !== input.collectionIds.slice().sort().join(",")) return true;
 	return JSON.stringify(before.images.map(({ url, caption, altText, isDefault }) => ({ url, caption, altText, isDefault }))) !==
 		JSON.stringify(input.images);

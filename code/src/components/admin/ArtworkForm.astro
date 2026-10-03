@@ -1,4 +1,5 @@
 ---
+import { artworkAttributes, type ArtworkFacet } from '../../lib/artwork-facets';
 import ErrorBanner from './ErrorBanner.astro';
 import RequiredMark from './RequiredMark.astro';
 import RequiredNote from './RequiredNote.astro';
@@ -8,15 +9,17 @@ import type { SelectArtwork, SelectArtworkImage, SelectCollection, SelectFacet, 
 
 interface Props {
 	action: string;
-	artwork?: SelectArtwork & { images: SelectArtworkImage[]; collectionIds: number[]; facetIds: number[]; tags: string[]; product: SelectProduct | null };
+	artwork?: SelectArtwork & { images: SelectArtworkImage[]; collectionIds: number[]; attributes: ArtworkFacet[]; tags: string[]; product: SelectProduct | null };
 	collections: SelectCollection[];
 	facets: SelectFacet[];
 }
 
 const { action, artwork, collections, facets } = Astro.props;
+const values = (key: string) => artwork?.attributes.filter(f => f.namespace === 'artwork' && f.key === key).map(f => f.value) ?? [];
+const options = (key: string) => [...new Set(facets.filter(f => f.namespace === 'artwork' && f.key === key).map(f => f.value))].sort();
 const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ url, caption, altText, isDefault })) ?? [];
 ---
-<form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)}>
+<form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)} data-attributes={JSON.stringify(artworkAttributes.map(field => field.name))}>
 	<ErrorBanner />
 	<RequiredNote />
 
@@ -41,24 +44,31 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		<p class="hint span-all" id="tags-hint">Separate tags with commas.</p>
 	</FormFieldset>
 
-	<FormFieldset legend="Other facets">
-		<p class="hint">Select existing attributes or add one for this artwork. For measurements, use width, height, or depth with a numeric value, and dimension-unit with in or cm. Uncheck an old measurement before adding its replacement. Size and orientation are calculated from width and height.</p>
-		<div class="collection-list">
-			{facets.filter((facet) => !(facet.namespace === 'artwork' && facet.key === 'tag')).map((facet) => (
-				<label><input type="checkbox" name="facetIds" value={facet.id} checked={artwork?.facetIds.includes(facet.id)} /> {facet.namespace === 'artwork' ? '' : facet.namespace + '/'}{facet.key}: {facet.value}</label>
-			))}
-		</div>
-		<div class="new-collection-row">
-			<input class="admin-input" data-new-facet-namespace aria-label="Facet namespace" value="artwork" placeholder="Namespace" />
-			<input class="admin-input" data-new-facet-key aria-label="Facet key" list="facet-keys" placeholder="Key, e.g. material" />
-			<datalist id="facet-keys">
-				{[...new Set(['width', 'height', 'depth', 'dimension-unit', 'material', 'support', 'medium', 'style', 'subject', 'color', ...facets.map((facet) => facet.key)])].filter((key) => key !== 'tag').map((key) => <option value={key} />)}
-			</datalist>
-			<input class="admin-input" data-new-facet-value aria-label="Facet value" placeholder="Value, e.g. Watercolor" />
-			<button type="button" class="add-collection" data-add-facet>Add facet</button>
-		</div>
-		<div data-new-facet-list class="collection-list"></div>
-	</FormFieldset>
+
+    <FormFieldset legend="Dimensions" layout="columns">
+        <p class="hint span-all">Physical measurements of the artwork. Leave unknown measurements blank.</p>
+        <label>Width <input class="admin-input" name="width" type="number" min="0" step="any" value={artwork?.width ?? ''} /></label>
+        <label>Height <input class="admin-input" name="height" type="number" min="0" step="any" value={artwork?.height ?? ''} /></label>
+        <label>Depth <input class="admin-input" name="depth" type="number" min="0" step="any" value={artwork?.depth ?? ''} /></label>
+        <label>Unit <select class="admin-input" name="dimensionUnit"><option value="in" selected={artwork?.dimensionUnit !== 'cm'}>Inches</option><option value="cm" selected={artwork?.dimensionUnit === 'cm'}>Centimeters</option></select></label>
+        <label>Size <select class="admin-input" name="size"><option value="">Not specified</option>{['Small','Medium','Large'].map(value => <option value={value} selected={values('size').includes(value)}>{value}</option>)}</select></label>
+        <label>Orientation <select class="admin-input" name="orientation"><option value="">Not specified</option>{['Portrait','Landscape','Square'].map(value => <option value={value} selected={values('orientation').includes(value)}>{value}</option>)}</select></label>
+        <p class="hint span-all" data-dimension-summary>Size and orientation are calculated when width and height are known.</p>
+    </FormFieldset>
+
+    {['Materials and surface', 'Subject and style'].map(group => (
+        <FormFieldset legend={group} layout="columns">
+            {artworkAttributes.filter(field => field.group === group).map(({name,key,label}) => (
+                <fieldset class="attribute-field">
+                    <legend>{label}</legend>
+                    <div class="collection-list">
+                        {options(key).map(value => <label><input type="checkbox" name={name} value={value} checked={values(key).includes(value)} /> {value}</label>)}
+                    </div>
+                    <label>Add {label.toLowerCase()} <input class="admin-input" name={`${name}New`} placeholder="Separate new values with commas" /></label>
+                </fieldset>
+            ))}
+        </FormFieldset>
+    ))}
 
 	<FormFieldset legend="Writing assistant">
 		<p class="hint">Add a cover image and title, then ask for a description, tags, and cover image alt text. Suggestions stay in this editor until you apply and save them.</p>
@@ -137,7 +147,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	const form = document.querySelector('[data-admin-artwork-form]');
 	if (form) {
 		let images = JSON.parse(form.dataset.images || '[]');
-		const newFacets = [];
+		const attributeNames = JSON.parse(form.dataset.attributes);
 		const list = form.querySelector('[data-image-list]');
 		const errorBox = form.querySelector('[data-error]');
 		const showError = (message) => { errorBox.hidden = false; errorBox.textContent = message; };
@@ -182,23 +192,6 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		const suggest = form.querySelector('[data-suggest]');
 		const suggestion = form.querySelector('[data-suggestion]');
 		const status = form.querySelector('[data-suggest-status]');
-		const newFacetList = form.querySelector('[data-new-facet-list]');
-		const renderNewFacets = () => newFacetList.replaceChildren(...newFacets.map((facet, index) => {
-			const row = document.createElement('span'); row.textContent = `${facet.namespace}/${facet.key}: ${facet.value} `;
-			const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
-			remove.addEventListener('click', () => { newFacets.splice(index, 1); renderNewFacets(); });
-			row.append(remove); return row;
-		}));
-		form.querySelector('[data-add-facet]').addEventListener('click', () => {
-			const namespace = form.querySelector('[data-new-facet-namespace]').value.trim();
-			const key = form.querySelector('[data-new-facet-key]').value.trim();
-			const valueInput = form.querySelector('[data-new-facet-value]');
-			const value = valueInput.value.trim();
-			if (!namespace || !key || !value) return;
-			if (!newFacets.some((facet) => facet.namespace === namespace && facet.key === key && facet.value.toLowerCase() === value.toLowerCase())) newFacets.push({ namespace, key, value });
-			valueInput.value = '';
-			renderNewFacets();
-		});
 		let suggestedCoverUrl = null;
 		suggest.addEventListener('click', async () => {
 			if (suggest.disabled) return;
@@ -239,7 +232,12 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 				payload.priceCents = price.value === '' ? '' : Math.round(Number(price.value) * 100);
 				delete payload.priceDollars;
 				payload.tags = form.elements.tags.value.split(',').map((tag) => tag.trim()).filter(Boolean);
-				payload.facetIds = data.getAll('facetIds').map(Number); payload.newFacets = newFacets;
+				payload.editorVersion = 2;
+                payload.size = form.elements.size.value; payload.orientation = form.elements.orientation.value;
+                for (const name of attributeNames) {
+                    payload[name] = [...data.getAll(name), ...form.elements[name + 'New'].value.split(',').map(value => value.trim()).filter(Boolean)];
+                    delete payload[name + 'New'];
+                }
 				payload.collectionIds = data.getAll('collectionIds').map(Number); payload.images = images;
 				delete payload.imageFiles; delete payload.defaultImage; delete payload.aiInstructions;
 				const response = await fetch(form.dataset.action, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
@@ -261,7 +259,31 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	if (artworkForm instanceof HTMLFormElement) attachInlineCollectionCreator(artworkForm);
 </script>
 
+<script>
+    import { dimensionCategories } from '../../lib/artwork-facets';
+    const form = document.querySelector<HTMLFormElement>('[data-admin-artwork-form]');
+    if (form) {
+        const input = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
+        const syncDimensions = () => {
+            const number = (name: string) => input(name).value === '' ? null : Number(input(name).value);
+            const categories = dimensionCategories({width:number('width'),height:number('height'),depth:number('depth'),dimensionUnit:input('dimensionUnit').value as 'in'|'cm'});
+            for (const key of ['size','orientation'] as const) {
+                input(key).disabled = Boolean(categories);
+                if (categories) input(key).value = categories[key];
+            }
+            form.querySelector('[data-dimension-summary]')!.textContent = categories
+                ? `${categories.size} · ${categories.orientation}. Size uses the longest edge: small up to 50 cm, medium up to 100 cm, large above 100 cm.`
+                : 'Add width and height to calculate size and orientation, or choose them manually.';
+        };
+        for (const name of ['width','height','depth','dimensionUnit']) input(name).addEventListener('input',syncDimensions);
+        syncDimensions();
+    }
+</script>
+
 <style>
+    .attribute-field { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: .75rem; }
+    .attribute-field legend { font-weight: 600; margin-bottom: .75rem; }
+
 	form {
 		display: flex;
 		flex-direction: column;
