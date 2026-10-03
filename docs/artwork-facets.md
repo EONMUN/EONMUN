@@ -98,3 +98,7 @@ Migration `0016` requires a coordinated release: block old writes, take a catalo
 PR #117 restored typed measurements and the dedicated editor. The migration preserved all 64 measurement/unit assignments across 18 artworks, including the pre-existing zero height, and passed the foreign-key check. All 18 artwork pages matched their pre-migration dimension labels in preview and production. Homepage metadata, artwork and collection indexes, sitemap, privacy, the direct Astro Worker, and unauthenticated admin guards were also checked. The authenticated editor was verified locally in browser tests; a live Google-authenticated editing session was not exercised.
 
 Two independent Codex reviewers identified manual-category preservation and zero-only display issues; both were fixed and received follow-up approval. The rebased build, 100 unit tests, and CI browser suite passed. Temporary release tooling is removed after verification; historical SQL migrations and their snapshots remain required for fresh database setup.
+
+## Size-label removal verification, 2026-10-03
+
+PR #119 removed the Size field and all size-band calculations from artwork writes. Migration `0017` deleted the old `artwork/size` memberships and values, with no foreign-key errors. All 18 production artwork pages retained the same numeric dimension labels and no longer showed a stored size label. Two independent Codex reviewers approved the change; 101 unit tests, the build, and all 21 browser tests passed. The temporary migration workflow input is removed after this verification.

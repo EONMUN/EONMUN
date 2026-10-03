@@ -8,11 +8,6 @@ on:
       - '.github/workflows/deploy.yml'
       - '.github/actions/cloudflare-deploy/**'
   workflow_dispatch:
-    inputs:
-      migrate_sizes:
-        description: Apply the artwork size removal migration after the new editor is deployed
-        type: boolean
-        default: false
 
 concurrency:
   group: production
@@ -26,19 +21,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        if: inputs.migrate_sizes == true
-      - name: Remove stored artwork size categories
-        if: inputs.migrate_sizes == true
-        working-directory: code
-        env:
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: |
-          bun install --frozen-lockfile
-          bun run db:migrate
-          bun -e 'import {createClient} from "@libsql/client"; const c=createClient({url:process.env.TURSO_DATABASE_URL,authToken:process.env.TURSO_AUTH_TOKEN}); const r=await c.execute({sql:"SELECT count(*) AS count FROM facets WHERE namespace=? AND key=?",args:["artwork","size"]}); if(r.rows[0].count!==0) throw new Error("Size facets remain"); if((await c.execute("PRAGMA foreign_key_check")).rows.length) throw new Error("Foreign key check failed"); console.log("No artwork size facets remain; foreign key check passed"); c.close();'
 
       # Main pushes deploy the Astro worker defined in code/wrangler.jsonc.
       - name: Deploy Astro worker
