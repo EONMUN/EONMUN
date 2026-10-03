@@ -1,11 +1,12 @@
 import type { Env } from "../db";
+import { getAvailableArtworkById } from "../db/catalog";
 import { toPinterestCatalogItem, type PinterestCatalogArtwork } from "./pinterest-feed";
 
 const apiBase = "https://api.pinterest.com/v5";
 const scopes = "catalogs:read,catalogs:write";
 
 type ApiFetch = typeof fetch;
-type ApiItem = { item_id?: string; item_response_kind?: string };
+type ApiItem = { item_id?: string; attributes?: { item_id?: string }; item_response_kind?: string };
 type BatchItem = { item_id?: string; status?: string; errors?: Array<{ message?: string }> };
 type Batch = { batch_id?: string; status?: string; items?: BatchItem[] };
 
@@ -121,8 +122,9 @@ export async function syncPinterestCatalog(
 		},
 	) : { items: [] };
 	const existingIds = (existing.items ?? [])
-		.filter((item) => item.item_response_kind === "retail_item" && typeof item.item_id === "string")
-		.map((item) => item.item_id!);
+		.filter((item) => item.item_response_kind === "retail_item" || (!item.item_response_kind && Boolean(item.attributes)))
+		.map((item) => item.item_id ?? item.attributes?.item_id)
+		.filter((id): id is string => typeof id === "string");
 	const operations = buildPinterestOperations(artworks, knownIds, existingIds);
 	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [] };
 	if (operations.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-operation sync limit", 409);
@@ -135,6 +137,11 @@ export async function syncPinterestCatalog(
 	});
 	if (!batch.batch_id) throw new PinterestSyncError("Pinterest did not return a batch ID");
 	return summarizeBatch(batch);
+}
+
+export async function syncPinterestArtwork(env: Env, artworkId: number, apiFetch: ApiFetch = fetch) {
+	const available = await getAvailableArtworkById(env, artworkId);
+	return syncPinterestCatalog(env, available ? [available] : [], [`artwork-${artworkId}`], apiFetch);
 }
 
 function summarizeBatch(batch: Batch) {
@@ -150,7 +157,7 @@ function summarizeBatch(batch: Batch) {
 }
 
 export async function getPinterestBatchStatus(env: Env, batchId: string, apiFetch: ApiFetch = fetch) {
-	if (!/^\d+$/.test(batchId)) throw new PinterestSyncError("Invalid batch ID", 400);
+	if (!/^[a-zA-Z0-9_-]{1,64}$/.test(batchId)) throw new PinterestSyncError("Invalid batch ID", 400);
 	const token = await accessToken(env, apiFetch);
 	const batch = await pinterestRequest<Batch>(`/catalogs/items/batch/${batchId}`, token, apiFetch);
 	return summarizeBatch(batch);

@@ -4,6 +4,7 @@ import { mutationError, requireAdminMutation } from "../../../../lib/admin-guard
 import { isCurrentArtworkEditor, parseArtworkInput } from "../../../../lib/admin-input";
 import { artworkContentChanged, refreshPublicContent } from "../../../../lib/cache";
 import { getRuntimeEnv } from "../../../../lib/runtime-env";
+import { isPinterestConfigured, syncPinterestArtwork } from "../../../../lib/pinterest-sync";
 
 export const prerender = false;
 export const POST: APIRoute = async (context) => {
@@ -25,7 +26,25 @@ export const POST: APIRoute = async (context) => {
 				kind: "artwork", oldSlug: params.slug, slug: artwork.slug, published: artwork.publishedAt !== null,
 			});
 		}
-		return Response.json({ artwork, redirect: `/admin/artworks/${artwork.slug}` });
+		const redirect = new URL(`/admin/artworks/${artwork.slug}`, request.url);
+		if ((input.available && input.published) || (before?.publishedAt && (before.product?.quantity ?? 0) > 0)) {
+			if (!isPinterestConfigured(env)) {
+				redirect.searchParams.set("pinterest", "not-connected");
+			} else {
+				try {
+					const batch = await syncPinterestArtwork(env, artwork.id);
+					if (batch.status === "FAILED" || batch.items.some((item) => item.status === "FAILURE")) {
+						redirect.searchParams.set("pinterest", "failed");
+					} else if (batch.batch_id) {
+						redirect.searchParams.set("pinterestBatch", batch.batch_id);
+					}
+				} catch (error) {
+					console.error(JSON.stringify({ message: "Pinterest artwork sync failed", artworkId: artwork.id, error: error instanceof Error ? error.message : "Unknown error" }));
+					redirect.searchParams.set("pinterest", "failed");
+				}
+			}
+		}
+		return Response.json({ artwork, redirect: `${redirect.pathname}${redirect.search}` });
 	} catch (error) {
 		return mutationError(error);
 	}

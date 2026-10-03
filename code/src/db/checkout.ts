@@ -73,3 +73,9 @@ export async function markArtworkPaid(
 	}).where(and(eq(products.id, productId), isNull(products.soldAt))).returning({ id: products.id });
 	return updated.length === 1;
 }
+
+export async function getArtworkIdByProductId(env: Env, productId: number, db = getDb(env)) {
+	const [row] = await db.select({ artworkId: products.artworkId })
+		.from(products).where(and(eq(products.id, productId), eq(products.type, "artwork")));
+	return row?.artworkId ?? null;
+}

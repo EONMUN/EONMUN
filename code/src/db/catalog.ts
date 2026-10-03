@@ -1,7 +1,7 @@
 import { and, eq, gt, isNotNull, isNull } from "drizzle-orm";
 import { artworkImages, artworks, getDb, products, type Env } from "./index";
 
-export async function getAvailableArtworkCatalog(env: Env, db = getDb(env)) {
+export async function getAvailableArtworkCatalog(env: Env, db = getDb(env), artworkId?: number) {
 	const rows = await db.select({
 		id: artworks.id,
 		slug: artworks.slug,
@@ -21,6 +21,7 @@ export async function getAvailableArtworkCatalog(env: Env, db = getDb(env)) {
 		gt(products.price, 0),
 		gt(products.quantity, 0),
 		isNull(products.soldAt),
+		artworkId === undefined ? undefined : eq(artworks.id, artworkId),
 	));
 
 	return rows.map((row) => ({
@@ -34,6 +35,10 @@ export async function getAvailableArtworkCatalog(env: Env, db = getDb(env)) {
 		if (!row.imageUrl) return false;
 		try { return new URL(row.imageUrl).protocol === "https:"; } catch { return false; }
 	});
+}
+
+export async function getAvailableArtworkById(env: Env, artworkId: number) {
+	return (await getAvailableArtworkCatalog(env, getDb(env), artworkId))[0] ?? null;
 }
 
 export async function getArtworkCatalogIds(env: Env, db = getDb(env)) {

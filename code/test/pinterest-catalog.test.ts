@@ -13,6 +13,7 @@ test("catalog follows publication, price, and live stock", async () => {
 		await createCatalogSchema(client);
 		const db = drizzle(client, { schema });
 		const stamp = 1_700_000_000;
+		let liveId = 0;
 		for (const [state, publishedAt, quantity, soldAt, price] of [
 			["live", stamp, 1, null, 12345],
 			["draft", null, 1, null, 12345],
@@ -23,11 +24,14 @@ test("catalog follows publication, price, and live stock", async () => {
 		] as const) {
 			const artwork = await client.execute({ sql: "INSERT INTO artworks (title, slug, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id", args: [state, state, publishedAt, stamp, stamp] });
 			const id = Number(artwork.rows[0].id);
+			if (state === "live") liveId = id;
 			if (state !== "imageless") await client.execute({ sql: "INSERT INTO artwork_images (artwork_id, url, is_default, created_at, updated_at) VALUES (?, ?, 1, ?, ?)", args: [id, `https://r2.eonmun.com/${state}.jpg`, stamp, stamp] });
 			await client.execute({ sql: "INSERT INTO products (type, artwork_id, name, slug, price, quantity, sold_at, listed_at, created_at, updated_at) VALUES ('artwork', ?, ?, ?, ?, ?, ?, ?, ?, ?)", args: [id, state, state, price, quantity, soldAt, stamp, stamp, stamp] });
 		}
 		const catalog = await getAvailableArtworkCatalog({}, db);
 		expect(catalog.map((item) => [item.slug, item.priceCents])).toEqual([["live", 12345]]);
+		expect((await getAvailableArtworkCatalog({}, db, liveId)).map((item) => item.slug)).toEqual(["live"]);
+		expect(await getAvailableArtworkCatalog({}, db, liveId + 1)).toEqual([]);
 	} finally {
 		client.close();
 		await unlink(path).catch(() => undefined);
