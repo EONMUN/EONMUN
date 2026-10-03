@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+export const prerender = true;
+---
+<BaseLayout title="Privacy policy — EONMUN" description="How EONMUN handles information when you visit our site or buy artwork.">
+	<div class="container mx-auto max-w-2xl px-4 py-16 space-y-8 leading-relaxed">
+		<div class="space-y-2">
+			<h1 class="text-4xl font-bold">Privacy policy</h1>
+			<p>Last updated: 2026-10-03</p>
+		</div>
+
+		<p>EONMUN operates eonmun.com. This page explains what information we collect, how we use it, and how to contact us about it.</p>
+
+		<section class="space-y-3" aria-labelledby="information">
+			<h2 id="information" class="text-2xl font-semibold">Information we handle</h2>
+			<p>When you visit the site, we and our service providers may receive your IP address, browser and device information, pages viewed, referral information, and interactions with artwork and checkout links. We use this information to operate and protect the site, understand how it is used, and measure our marketing.</p>
+			<p>If you email us, we receive your email address and anything you include in your message. If you buy artwork, Stripe collects payment and shipping information during checkout. We can access the order details needed to process and fulfill the purchase. We do not receive your full payment card number.</p>
+			<p>Authorized administrators can sign in with Google. For those accounts, we use the Google account identifier, name, and email address to control access to the admin site.</p>
+		</section>
+
+		<section class="space-y-3" aria-labelledby="services">
+			<h2 id="services" class="text-2xl font-semibold">Services we use</h2>
+			<p>Cloudflare hosts and protects the site. PostHog helps us understand page views, interactions, and site errors. The Pinterest tag sends page-visit information to Pinterest to measure activity related to Pinterest. Stripe processes checkout and payments. Google provides administrator sign-in. These providers process information under their own privacy policies.</p>
+			<p>These services may use cookies or similar browser storage. You can control cookies through your browser settings, though blocking some of them may affect site features.</p>
+		</section>
+
+		<section class="space-y-3" aria-labelledby="retention">
+			<h2 id="retention" class="text-2xl font-semibold">Retention and your choices</h2>
+			<p>We keep information for as long as needed to run the site, fulfill orders, respond to inquiries, and meet applicable recordkeeping obligations. Service providers may retain information according to their settings and policies.</p>
+			<p>To ask about information we hold about you, or to request access, correction, or deletion where applicable, email <a class="underline" href="mailto:contact@eonmun.com?subject=Privacy%20request">contact@eonmun.com</a>.</p>
+		</section>
+
+		<section class="space-y-3" aria-labelledby="updates">
+			<h2 id="updates" class="text-2xl font-semibold">Changes</h2>
+			<p>We may update this policy as the site or our practices change. The date above shows when it was last revised.</p>
+		</section>
+	</div>
+</BaseLayout>
