@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
 					if (batch.batch_id) {
 						console.info(JSON.stringify({ message: "Pinterest sale removal submitted", artworkId, batchId: batch.batch_id }));
 					}
-					for (let attempt = 0; batch.status === "PROCESSING" && batch.batch_id && attempt < 5; attempt++) {
+					for (let attempt = 0; batch.status === "PROCESSING" && batch.batch_id && attempt < 3; attempt++) {
 						await new Promise((resolve) => setTimeout(resolve, 3000));
 						batch = await getPinterestBatchStatus(env, batch.batch_id);
 					}
