@@ -1,5 +1,6 @@
 import type { Env } from "../db";
 import { getAvailableArtworkById } from "../db/catalog";
+import { R2_PUBLIC_ORIGIN } from "./media";
 import type { PinterestCatalogArtwork } from "./pinterest-feed";
 
 const tokenUrl = "https://oauth2.googleapis.com/token";
@@ -132,6 +133,14 @@ export async function activateGoogleMerchant(env: Env, apiFetch: ApiFetch = fetc
 }
 
 export function googleProductInput(artwork: PinterestCatalogArtwork) {
+	const image = new URL(artwork.imageUrl);
+	let imageLink = artwork.imageUrl;
+	if (image.origin === R2_PUBLIC_ORIGIN) {
+		// Normalize uploaded camera images to JPEG for Merchant Center's image decoder.
+		const normalized = new URL("/_image", "https://eonmun.com");
+		normalized.search = new URLSearchParams({ href: image.href, w: "1600", q: "90", f: "jpeg", fit: "scale-down" }).toString();
+		imageLink = normalized.href;
+	}
 	return {
 		offerId: `artwork-${artwork.id}`,
 		contentLanguage: "en",
@@ -140,7 +149,7 @@ export function googleProductInput(artwork: PinterestCatalogArtwork) {
 			title: artwork.title,
 			description: artwork.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
 			link: new URL(`/artworks/${encodeURIComponent(artwork.slug)}`, "https://eonmun.com").toString(),
-			imageLink: artwork.imageUrl,
+			imageLink,
 			availability: "IN_STOCK",
 			condition: "NEW",
 			identifierExists: false,

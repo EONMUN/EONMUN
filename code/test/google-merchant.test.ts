@@ -148,6 +148,15 @@ describe("Google Merchant sync", () => {
 		});
 	});
 
+	test("normalizes owned images to JPEG without proxying external images", () => {
+		const imageUrl = "https://r2.eonmun.com/camera photo.jpeg";
+		const normalized = new URL(googleProductInput({ ...artwork, imageUrl }).productAttributes.imageLink);
+		expect(normalized.origin + normalized.pathname).toBe("https://eonmun.com/_image");
+		expect(normalized.searchParams.get("href")).toBe(new URL(imageUrl).href);
+		expect(normalized.searchParams.get("f")).toBe("jpeg");
+		expect(googleProductInput(artwork).productAttributes.imageLink).toBe(artwork.imageUrl);
+	});
+
 	test("submits a saleable product and removes it after sale", async () => {
 		const env = await testEnv();
 		const requests: Array<{ url: string; method: string; body?: unknown }> = [];
