@@ -48,6 +48,7 @@ export const POST: APIRoute = async (context) => {
 						redirect.searchParams.set("pinterest", "failed");
 					} else if (batch.batch_id) {
 						redirect.searchParams.set("pinterestBatch", batch.batch_id);
+						if (batch.deletionIds.length) redirect.searchParams.set("pinterestDeletion", batch.deletionIds[0]);
 					}
 				} catch (error) {
 					console.error(JSON.stringify({ message: "Pinterest artwork sync failed", artworkId: artwork.id, error: error instanceof Error ? error.message : "Unknown error" }));

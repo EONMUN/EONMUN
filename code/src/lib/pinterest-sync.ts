@@ -130,7 +130,7 @@ export async function syncPinterestCatalog(
 	if (feeds.items?.length) throw new PinterestSyncError("Pinterest already has a feed for this catalog; choose one catalog writer", 409);
 	// Pinterest item lookup requires user OAuth; batch writes support app credentials.
 	const operations = buildPinterestOperations(artworks, knownIds);
-	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [] };
+	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [], deletionIds: [] as string[] };
 	if (operations.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-operation sync limit", 409);
 	const batch = await pinterestRequest<Batch>(withAdAccount("/catalogs/items/batch", adAccountId), token, apiFetch, "catalog batch write", {
 		catalog_type: "RETAIL",
@@ -139,7 +139,7 @@ export async function syncPinterestCatalog(
 		items: operations,
 	});
 	if (!batch.batch_id) throw new PinterestSyncError("Pinterest did not return a batch ID");
-	return summarizeBatch(batch);
+	return summarizeBatch(batch, operations.filter((item) => item.operation === "DELETE").map((item) => item.item_id));
 }
 
 export async function syncPinterestArtwork(env: Env, artworkId: number, apiFetch: ApiFetch = fetch) {
@@ -147,22 +147,29 @@ export async function syncPinterestArtwork(env: Env, artworkId: number, apiFetch
 	return syncPinterestCatalog(env, available ? [available] : [], [`artwork-${artworkId}`], apiFetch);
 }
 
-function summarizeBatch(batch: Batch) {
+function summarizeBatch(batch: Batch, deletionIds: string[] = []) {
+	const deletions = new Set(deletionIds);
+	const items = (batch.items ?? []).map((item) => {
+		const errors = (item.errors ?? []).map((error) => error.message ?? "Pinterest rejected this item");
+		// Only a known deletion with this exact response has already reached its desired state.
+		const absent = item.status === "FAILURE" && deletions.has(item.item_id ?? "")
+			&& errors.length === 1 && errors[0] === "Item is not found in the system.";
+		return { item_id: item.item_id, status: absent ? "ALREADY_ABSENT" : item.status ?? "UNKNOWN", errors };
+	});
+	const allAbsent = items.length > 0 && items.length === deletions.size && items.every((item) => item.status === "ALREADY_ABSENT");
 	return {
-		status: batch.status ?? "UNKNOWN",
+		status: batch.status === "FAILED" && allAbsent ? "COMPLETED" : batch.status ?? "UNKNOWN",
+		providerStatus: batch.status ?? "UNKNOWN",
 		batch_id: batch.batch_id ?? null,
-		items: (batch.items ?? []).map((item) => ({
-			item_id: item.item_id,
-			status: item.status ?? "UNKNOWN",
-			errors: (item.errors ?? []).map((error) => error.message ?? "Pinterest rejected this item"),
-		})),
+		deletionIds,
+		items,
 	};
 }
 
-export async function getPinterestBatchStatus(env: Env, batchId: string, apiFetch: ApiFetch = fetch) {
+export async function getPinterestBatchStatus(env: Env, batchId: string, apiFetch: ApiFetch = fetch, deletionIds: string[] = []) {
 	if (!/^[a-zA-Z0-9_-]{1,64}$/.test(batchId)) throw new PinterestSyncError("Invalid batch ID", 400);
 	const { adAccountId } = requireConfig(env);
 	const token = await accessToken(env, apiFetch);
 	const batch = await pinterestRequest<Batch>(withAdAccount(`/catalogs/items/batch/${batchId}`, adAccountId), token, apiFetch, "catalog batch status check");
-	return summarizeBatch(batch);
+	return summarizeBatch(batch, deletionIds);
 }

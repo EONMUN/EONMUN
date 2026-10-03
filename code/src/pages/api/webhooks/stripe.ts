@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request }) => {
 					}
 					for (let attempt = 0; batch.status === "PROCESSING" && batch.batch_id && attempt < 3; attempt++) {
 						await new Promise((resolve) => setTimeout(resolve, 3000));
-						batch = await getPinterestBatchStatus(env, batch.batch_id);
+						batch = await getPinterestBatchStatus(env, batch.batch_id, fetch, batch.deletionIds);
 					}
 					if (batch.status === "FAILED" || batch.items.some((item) => item.status === "FAILURE")) {
 						console.error(JSON.stringify({ message: "Pinterest sale removal failed", artworkId, batchId: batch.batch_id }));

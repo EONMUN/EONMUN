@@ -19,6 +19,7 @@ const pinterestState = Astro.url.searchParams.get('pinterest');
 const googleState = Astro.url.searchParams.get('google');
 const rawBatchId = Astro.url.searchParams.get('pinterestBatch');
 const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) ? rawBatchId : null;
+const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `artwork-${artwork.id}` ? `artwork-${artwork.id}` : undefined;
 ---
 <ConsoleShell
 	title={`Edit ${artwork.title} — EONMUN admin`}
@@ -33,7 +34,7 @@ const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) 
 	{googleState === 'submitted' && <p role="status">Artwork saved and submitted to Google Merchant Center for processing.</p>}
 	{googleState === 'removed' && <p role="status">Artwork saved and removed from the Google Merchant API source.</p>}
 	{pinterestState === 'failed' && <p role="alert">Artwork saved, but Pinterest sync failed. <a href="/admin/pinterest">Retry the catalog sync →</a></p>}
-	{pinterestBatchId && <p role="status" data-pinterest-batch={pinterestBatchId}>Artwork saved. Pinterest is processing the catalog update…</p>}
+	{pinterestBatchId && <p role="status" data-pinterest-batch={pinterestBatchId} data-pinterest-deletion={pinterestDeletion}>Artwork saved. Pinterest is processing the catalog update…</p>}
 	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets} />
 </ConsoleShell>
 
@@ -41,9 +42,10 @@ const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) 
 	const status = document.querySelector<HTMLElement>('[data-pinterest-batch]');
 	if (status) {
 		const batchId = status.dataset.pinterestBatch;
+		const deletionIds = status.dataset.pinterestDeletion ? [status.dataset.pinterestDeletion] : [];
 		const check = async () => {
 			const response = await fetch('/api/admin/pinterest', {
-				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ batchId }),
+				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ batchId, deletionIds }),
 			});
 			if (!response.ok) throw new Error('Could not check Pinterest status');
 			return response.json() as Promise<{ status: string; items: Array<{ status: string }> }>;
