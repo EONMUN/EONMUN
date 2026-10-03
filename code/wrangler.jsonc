@@ -42,6 +42,7 @@
 		"AUTH_PROXY_URL": "https://eonmun.com",
 		"PINTEREST_APP_ID": "1618886",
 		"PINTEREST_CATALOG_ID": "4816002279797",
+		"PINTEREST_AD_ACCOUNT_ID": "549770850256",
 		"ADMIN_EMAILS": "ncrmro@gmail.com,1e1104k4@gmail.com"
 	},
 	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare

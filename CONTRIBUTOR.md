@@ -74,6 +74,8 @@ With the Pinterest app secret configured, saving a published artwork as availabl
 
 The Pinterest app ID and catalog ID are non-secret Worker variables. To enable the admin sync, the Pinterest app owner must have two-factor authentication enabled and the app must be allowed to mint a client-credentials token with `catalogs:read` and `catalogs:write`. Set `PINTEREST_APP_SECRET` as an `eonmun-astro` Worker secret, then use the admin page to test the first batch and inspect its item result. Keep the app secret out of source, shell history, and chat. If Pinterest denies client-credentials access to this catalog, use an authorization-code connection instead.
 
+`PINTEREST_AD_ACCOUNT_ID` identifies the Pinterest ad account used for catalog API authorization. It is separate from `PINTEREST_CATALOG_ID`. The configured ad account is `549770850256`; if a catalog batch still returns HTTP 403, confirm this account has Catalog Admin access to the catalog before changing site inventory.
+
 ### Add a post
 
 1. Add the post entry to `fixtures/posts.json`.
