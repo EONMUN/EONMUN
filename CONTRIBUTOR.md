@@ -157,7 +157,9 @@ The PR validation workflow runs the Astro build, Bun tests, and Playwright artwo
 ## Analytics
 
 The Astro base layout loads PostHog into the existing US project on `eonmun.com`
-and `www.eonmun.com`. Local and preview hosts disable analytics by default. To
+and `www.eonmun.com`. Browser analytics requests use the reverse proxy at
+`https://fipijgll.eonmun.com`; the PostHog UI and server-side query API remain
+on `https://us.posthog.com`. Local and preview hosts disable analytics by default. To
 validate against a separate test project, set `PUBLIC_POSTHOG_KEY` at build time.
 This is a public ingestion key, never a PostHog personal API key.
 
