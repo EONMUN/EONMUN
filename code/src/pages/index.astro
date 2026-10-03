@@ -37,7 +37,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 					data-fallback-src={images[i].fallback}
 					width={images[i].width}
 					height={images[i].height}
-					alt={slide.artwork.data.title}
+					alt={slide.defaultImageAltText || slide.artwork.data.description?.split('.')[0] || slide.artwork.data.title}
 					loading="eager"
 					fetchpriority={i === 0 ? 'high' : 'low'}
 					decoding="async"

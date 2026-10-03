@@ -3,7 +3,6 @@ import {
 	sqliteTable,
 	text,
 	integer,
-	real,
 	index,
 	uniqueIndex,
 	primaryKey,
@@ -40,10 +39,6 @@ export const artworks = sqliteTable(
 		description: text("description"),
 		artist: text("artist"),
 		year: integer("year"),
-		width: real("width"),
-		height: real("height"),
-		depth: real("depth"),
-		dimensionUnit: text("dimension_unit").default("in"),
 		publishedAt: integer("published_at", { mode: "timestamp" }),
 		locale: text("locale").notNull().default("en"),
 		createdAt: integer("created_at", { mode: "timestamp" })
@@ -67,6 +62,7 @@ export const artworkImages = sqliteTable(
 			.references(() => artworks.id, { onDelete: "cascade" }),
 		url: text("url").notNull(),
 		caption: text("caption"),
+		altText: text("alt_text"),
 		isDefault: integer("is_default", { mode: "boolean" })
 			.notNull()
 			.default(false),
@@ -117,9 +113,9 @@ export const facets = sqliteTable(
 	"facets",
 	{
 		id: integer("id").primaryKey({ autoIncrement: true }),
-		name: text("name").notNull(),
-		slug: text("slug").notNull(),
-		type: text("type").notNull(),
+		namespace: text("namespace").notNull().default("artwork"),
+		key: text("key").notNull(),
+		value: text("value").notNull(),
 		description: text("description"),
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.notNull()
@@ -129,11 +125,11 @@ export const facets = sqliteTable(
 			.$defaultFn(() => new Date()),
 	},
 	(table) => ({
-		slugTypeUnique: uniqueIndex("facets_slug_type_unique").on(
-			table.slug,
-			table.type,
+		identityUnique: uniqueIndex("facets_namespace_key_value_unique").on(
+			table.namespace,
+			table.key,
+			sql`${table.value} COLLATE NOCASE`,
 		),
-		typeIdx: index("facets_type_idx").on(table.type),
 	}),
 );
 

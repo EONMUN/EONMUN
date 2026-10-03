@@ -127,6 +127,12 @@ Required production Worker secrets for `eonmun-astro`:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
+The artwork editor's optional writing assistant uses `OPENAI_API_KEY` as a Worker secret. It sends the editor's current artwork fields and cover image to OpenAI when an admin requests suggestions. Suggested copy is never published until the admin applies it and saves the artwork.
+
+For the initial facet release, use a maintenance cutover: block old-version reads and writes, back up the catalog, apply migrations `0011` through `0015`, verify the preview, then deploy this Worker version and verify production. They add image alt text, backfill editorial copy, migrate facets to `namespace`/`key`/`value`, and preserve documented specifications while linking material and support facets. Existing facet IDs and artwork links are preserved; equivalent values are combined without losing memberships. Each artwork can share multiple facet values through `artworks_to_facets`. Tags use `artwork` / `tag` / the tag text.
+
+The copy backfills only change descriptions and cover alt text matching their audited values. Material backfills skip groups that an editor has already populated. Migration `0015` moves width, height, depth, and units into facets and drops their artwork columns. The artist authorized portrait order for unlabeled pairs (smaller width, larger height). Existing labeled measurements survive, unknown dimensions remain absent, and size/orientation derive from complete measurements. Do not run this migration while the old Worker is serving traffic, and do not roll back the Worker alone after the schema changes. Drain old requests before migrating. Editors opened before the release receive a reload-required response on save. See [Artwork facet model and catalog audit](docs/artwork-facets.md) for the source evidence and migration decisions.
+
 Configure Stripe to send `checkout.session.completed` and `checkout.session.async_payment_succeeded` events to `https://eonmun.com/api/webhooks/stripe`. Contact-email secrets are required only by the contact runtime endpoint.
 
 ## Validation

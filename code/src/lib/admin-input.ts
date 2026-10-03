@@ -1,3 +1,4 @@
+import { validateArtworkFacet } from "./artwork-facets";
 import { R2_PUBLIC_ORIGIN } from "./media";
 import { SLUG_PATTERN, slugify } from "./slug";
 
@@ -29,17 +30,16 @@ export interface ArtworkAdminInput {
 	title: string;
 	slug: string;
 	description: string | null;
+	tags: string[];
+	facetIds: number[];
+	newFacets: { namespace: string; key: string; value: string }[];
 	artist: string | null;
 	year: number | null;
-	width: number | null;
-	height: number | null;
-	depth: number | null;
-	dimensionUnit: string;
 	published: boolean;
 	available: boolean;
 	priceCents: number | null;
 	collectionIds: number[];
-	images: { url: string; caption: string | null; isDefault: boolean }[];
+	images: { url: string; caption: string | null; altText: string | null; isDefault: boolean }[];
 }
 
 export function parseArtworkInput(value: unknown): ArtworkAdminInput {
@@ -61,20 +61,35 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
 		const url = text(image.url, "Image URL", true)!;
 		const parsed = new URL(url);
 		if (parsed.origin !== R2_PUBLIC_ORIGIN) throw new Error("Image URL must use the EONMUN media domain");
-		return { url, caption: text(image.caption, "Caption"), isDefault: image.isDefault === true };
+		return { url, caption: text(image.caption, "Caption"), altText: text(image.altText, "Alt text"), isDefault: image.isDefault === true };
 	});
 	if (images.filter((image) => image.isDefault).length > 1) throw new Error("Only one image can be the default");
 	if (images.length > 0 && !images.some((image) => image.isDefault)) images[0].isDefault = true;
+	const tags = Array.isArray(input.tags) ? input.tags.map((tag) => text(tag, "Tag", true)!) : [];
+	if (tags.length > 12 || tags.some((tag) => tag.length > 40 || !slugify(tag))) throw new Error("Tags must be 12 short names or fewer");
+	if (!Array.isArray(input.newFacets ?? [])) throw new Error("New facets must be an array");
+	const newFacets = ((input.newFacets ?? []) as unknown[]).map((raw) => {
+		if (!raw || typeof raw !== "object") throw new Error("Invalid facet");
+		const facet = raw as Record<string, unknown>;
+		const namespace = text(facet.namespace, "Facet namespace", true)!;
+		const key = text(facet.key, "Facet key", true)!;
+		const value = text(facet.value, "Facet value", true)!;
+		const identifier = /^[a-z][a-z0-9-]{0,31}$/;
+		if (!identifier.test(namespace) || !identifier.test(key) || value.length > 80
+			|| (namespace === "artwork" && key === "tag")) throw new Error("Invalid facet namespace, key, or value");
+		validateArtworkFacet({ namespace, key, value });
+		return { namespace, key, value };
+	});
+	if (newFacets.length > 12) throw new Error("Too many new facets");
 	return {
 		title,
 		slug,
 		description: text(input.description, "Description"),
+		tags: [...new Map(tags.map((tag) => [tag.toLowerCase(), tag])).values()],
+		facetIds: ids(input.facetIds ?? [], "Facets"),
+		newFacets,
 		artist: text(input.artist, "Artist"),
 		year,
-		width: optionalNumber(input.width, "Width"),
-		height: optionalNumber(input.height, "Height"),
-		depth: optionalNumber(input.depth, "Depth"),
-		dimensionUnit: text(input.dimensionUnit, "Dimension unit") ?? "in",
 		published: input.published === true,
 		available,
 		priceCents,
@@ -126,4 +141,10 @@ export function parseCollectionInput(value: unknown, options: CollectionParseOpt
 		artworkIds,
 		defaultArtworkId,
 	};
+}
+
+export function isCurrentArtworkEditor(value: unknown): boolean {
+    if (!value || typeof value !== "object") return false;
+    const input = value as Record<string, unknown>;
+    return [input.facetIds, input.tags, input.newFacets].every(Array.isArray);
 }

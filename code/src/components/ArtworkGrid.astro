@@ -15,7 +15,7 @@ const cards = await Promise.all(artworks.map(async (entry) => ({
 ---
 <DetailImagePrefetch />
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" data-artwork-grid>
-			{cards.map(({ artwork, collections: artworkCollections, defaultImageUrl, detailImage }) => (
+			{cards.map(({ artwork, collections: artworkCollections, defaultImageUrl, defaultImageAltText, detailImage }) => (
 					<a
 						href={getArtworkHref(artwork.id, collectionSlug)}
 						data-astro-prefetch="viewport"
@@ -32,7 +32,7 @@ const cards = await Promise.all(artworks.map(async (entry) => ({
 									data-fallback-src={defaultImageUrl}
 									format="webp" quality={75} fit="cover"
 									src={defaultImageUrl}
-									alt={artwork.data.title}
+									alt={defaultImageAltText || artwork.data.description?.split('.')[0] || artwork.data.title}
 									width={960}
 									height={960}
 									widths={[480, 960]}

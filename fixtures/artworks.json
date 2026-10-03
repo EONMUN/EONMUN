@@ -2,7 +2,7 @@
   {
     "title": "Soleil et Montagnes",
     "slug": "soleil-et-montagnes",
-    "description": "Acrylic, canvas paper\n13\"x16\"",
+    "description": "A bright red sun hangs above layered black mountain peaks in this spare painting on canvas paper.\n\nAcrylic, canvas paper\n13\"x16\"",
     "artist": "EONMUN",
     "year": 2025,
     "price": null,
@@ -12,12 +12,55 @@
     "collectionSlug": "oriental",
     "isDefaultForCollection": false,
     "publishedAt": "2025-07-23T03:56:51.040Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "mountains",
+      "sun",
+      "landscape"
+    ],
+    "imageAltText": "A red sun over black mountain peaks on a pale ground.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Acrylic"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Canvas paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "13"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "16"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
     "title": "Quiescent Citadel",
     "slug": "quiescent-citadel",
-    "description": "Watercolor, paper\n12\"x16\"",
+    "description": "A quiet grayscale arch stands alone on white paper, its repeated lines drawing the eye inward.\n\nWatercolor, paper\n12\"x16\"",
     "artist": "EONMUN",
     "year": 2025,
     "price": null,
@@ -28,12 +71,55 @@
     "collectionSlug": "black-and-white",
     "publishedAt": "2025-07-23T03:56:56.621Z",
     "locale": "en",
-    "isDefaultForCollection": false
+    "isDefaultForCollection": false,
+    "tags": [
+      "architecture",
+      "arch",
+      "watercolor"
+    ],
+    "imageAltText": "A framed grayscale drawing of a tall arched structure with repeated inner lines.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Watercolor"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "12"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "16"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
     "title": "Persimmons del Oro",
     "slug": "persimmons-del-oro",
-    "description": "Watercolor, pencil, gold leaf, paper\n14\"x18\"",
+    "description": "Orange persimmons hang among green leaves in a luminous botanical composition with gold accents.\n\nWatercolor, pencil, gold leaf, paper\n14\"x18\"",
     "artist": "EONMUN",
     "year": 2025,
     "price": null,
@@ -43,12 +129,65 @@
     "collectionSlug": "dorada",
     "isDefaultForCollection": true,
     "publishedAt": "2025-07-23T03:57:11.617Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "persimmons",
+      "botanical",
+      "gold leaf"
+    ],
+    "imageAltText": "A framed painting of orange persimmons and green leaves with gold accents.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Watercolor"
+      },
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Pencil"
+      },
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Gold leaf"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "18"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
     "title": "Limones del Cobre",
     "slug": "limones-del-cobre",
-    "description": null,
+    "description": "Yellow lemons and green leaves form a warm botanical study with orange and copper tones.",
     "artist": "EONMUN",
     "year": null,
     "price": null,
@@ -58,12 +197,25 @@
     "collectionSlug": "dorada",
     "isDefaultForCollection": false,
     "publishedAt": "2025-07-23T03:57:29.040Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "lemons",
+      "botanical",
+      "still life"
+    ],
+    "imageAltText": "A framed botanical painting of yellow lemons, green leaves, and warm orange tones.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      }
+    ]
   },
   {
     "title": "Casa de Fuji",
     "slug": "casa-de-fuji",
-    "description": "Acrylic, watercolor, paper\n12\"x14\"",
+    "description": "A vivid pink and blue fish moves across a dark field in this acrylic and watercolor work on paper.\n\nAcrylic, watercolor, paper\n12\"x14\"",
     "artist": "EONMUN",
     "year": 2024,
     "price": null,
@@ -73,12 +225,60 @@
     "collectionSlug": "oriental",
     "isDefaultForCollection": true,
     "publishedAt": "2025-07-23T03:59:52.922Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "fish",
+      "acrylic",
+      "watercolor"
+    ],
+    "imageAltText": "A framed painting of a pink and blue fish against a dark background.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Acrylic"
+      },
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Watercolor"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "12"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
     "title": "Banc de Poissons",
     "slug": "banc-de-poissons",
-    "description": "Watercolor, rice paper\n12\"x14\"",
+    "description": "A loose school of fish gathers in overlapping blue, green, and gold watercolor marks on rice paper.\n\nWatercolor, rice paper\n12\"x14\"",
     "artist": "EONMUN",
     "year": 2024,
     "price": null,
@@ -88,12 +288,55 @@
     "collectionSlug": "2024",
     "isDefaultForCollection": true,
     "publishedAt": "2025-07-23T04:13:52.427Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "fish",
+      "watercolor",
+      "abstract"
+    ],
+    "imageAltText": "A framed watercolor of fish formed from layered blue, green, and gold marks.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Watercolor"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Rice paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "12"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
     "title": "Occullilium",
     "slug": "occullilium",
-    "description": "Watercolor, pencil, gold leaf, paper\n14\"x18\"",
+    "description": "A single orange flower rises from a leafy stem, with small birds and decorative motifs above it.\n\nWatercolor, pencil, gold leaf, paper\n14\"x18\"",
     "artist": "EONMUN",
     "year": 2025,
     "price": null,
@@ -103,12 +346,65 @@
     "collectionSlug": "botanica",
     "isDefaultForCollection": true,
     "publishedAt": "2025-07-23T04:15:02.521Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "flower",
+      "botanical",
+      "birds"
+    ],
+    "imageAltText": "A framed botanical painting of an orange flower with small birds above.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Watercolor"
+      },
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Pencil"
+      },
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Gold leaf"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "18"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
     "title": "Equestrian Equilibrium",
     "slug": "equestrian-equilibrium",
-    "description": "Watercolor, gold leaf, paper\n13\"x16\"",
+    "description": "Five small horse forms balance in a vertical sequence against a pale ground, with delicate marks around them.\n\nWatercolor, gold leaf, paper\n13\"x16\"",
     "artist": "EONMUN",
     "year": 2025,
     "price": null,
@@ -118,12 +414,60 @@
     "collectionSlug": "2025",
     "isDefaultForCollection": true,
     "publishedAt": "2025-07-23T03:52:49.216Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "horses",
+      "watercolor",
+      "gold leaf"
+    ],
+    "imageAltText": "Five small horse forms arranged vertically on a pale ground.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Watercolor"
+      },
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Gold leaf"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "13"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "16"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
-    "title": "Quetzalcōātlin tetl",
+    "title": "Quetzalc\u014d\u0101tlin tetl",
     "slug": "quetzalcoatlin-tetl",
-    "description": "Watercolor, pencil, paper\n14\"x18\"",
+    "description": "A grayscale architectural motif combines carved faces and stepped forms in a finely detailed work on paper.\n\nWatercolor, pencil, paper\n14\"x18\"",
     "artist": "EONMUN",
     "year": 2025,
     "price": null,
@@ -133,12 +477,60 @@
     "collectionSlug": "black-and-white",
     "isDefaultForCollection": true,
     "publishedAt": "2025-07-23T03:53:18.518Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "architectural motif",
+      "grayscale",
+      "drawing"
+    ],
+    "imageAltText": "A framed grayscale drawing of carved faces above stepped architectural forms.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Watercolor"
+      },
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Pencil"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "14"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "18"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Small"
+      }
+    ]
   },
   {
-    "title": "Camélia",
+    "title": "Cam\u00e9lia",
     "slug": "camelia",
-    "description": "Japanese ink, rice paper\n19\"x25\"",
+    "description": "Fine black ink branches spread across pale rice paper in this spare botanical composition.\n\nCarbon ink, rice paper\n19\"x25\"",
     "artist": "EONMUN",
     "year": 2024,
     "price": null,
@@ -148,6 +540,49 @@
     "collectionSlug": "botanica",
     "isDefaultForCollection": false,
     "publishedAt": "2025-07-23T04:19:07.320Z",
-    "locale": "en"
+    "locale": "en",
+    "tags": [
+      "botanical",
+      "ink drawing",
+      "branches"
+    ],
+    "imageAltText": "A framed black ink drawing of branching foliage on pale rice paper.",
+    "facets": [
+      {
+        "namespace": "artwork",
+        "key": "material",
+        "value": "Carbon ink"
+      },
+      {
+        "namespace": "artwork",
+        "key": "support",
+        "value": "Rice paper"
+      },
+      {
+        "namespace": "artwork",
+        "key": "orientation",
+        "value": "Portrait"
+      },
+      {
+        "namespace": "artwork",
+        "key": "width",
+        "value": "19"
+      },
+      {
+        "namespace": "artwork",
+        "key": "height",
+        "value": "25"
+      },
+      {
+        "namespace": "artwork",
+        "key": "dimension-unit",
+        "value": "in"
+      },
+      {
+        "namespace": "artwork",
+        "key": "size",
+        "value": "Medium"
+      }
+    ]
   }
 ]

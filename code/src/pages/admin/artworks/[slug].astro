@@ -1,7 +1,7 @@
 ---
 import ArtworkForm from '../../../components/admin/ArtworkForm.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
-import { getAdminArtwork, getAdminCollections } from '../../../db/admin';
+import { getAdminArtwork, getAdminCollections, getAdminFacets } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
@@ -13,7 +13,7 @@ if ('response' in access) return access.response;
 const { session } = access;
 const slug = Astro.params.slug;
 if (!slug) return new Response('Not found', { status: 404 });
-const [artwork, collections] = await Promise.all([getAdminArtwork(env, slug), getAdminCollections(env)]);
+const [artwork, collections, facets] = await Promise.all([getAdminArtwork(env, slug), getAdminCollections(env), getAdminFacets(env)]);
 if (!artwork) return new Response('Not found', { status: 404 });
 ---
 <ConsoleShell
@@ -23,5 +23,5 @@ if (!artwork) return new Response('Not found', { status: 404 });
 	backHref="/admin/artworks"
 	backLabel="Artwork"
 >
-	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} />
+	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets} />
 </ConsoleShell>

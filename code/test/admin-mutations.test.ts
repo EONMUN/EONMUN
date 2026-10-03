@@ -15,7 +15,7 @@ import {
 } from "../src/db/admin";
 import { getAllArtworks, getArtworkBySlug, getHomepageSlides, getPublishedArtworkImages } from "../src/db/queries";
 import { markArtworkPaid } from "../src/db/checkout";
-import { artworks, artworksToCollections, collections, homepageArtworks, products } from "../src/db";
+import { artworks, artworksToCollections, artworksToFacets, collections, facets, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
 import { artworkContentChanged, collectionContentChanged } from "../src/lib/cache";
 import { selectRelatedBySlug } from "../src/lib/public-catalog";
@@ -31,10 +31,6 @@ const artworkInput = (overrides: Record<string, unknown> = {}) => parseArtworkIn
 	description: "A study",
 	artist: "EONMUN",
 	year: 2026,
-	width: 10,
-	height: 12,
-	depth: "",
-	dimensionUnit: "in",
 	published: false,
 	available: false,
 	priceCents: "",
@@ -88,6 +84,61 @@ describe("admin mutations", () => {
 		expect(published.publishedAt).toBeInstanceOf(Date);
 		const draft = await updateArtworkAdmin(env, published.slug, artworkInput({ title: "Edited", published: false }), db);
 		expect(draft.publishedAt).toBeNull();
+	});
+
+    test("editing measurement facets replaces derived size and orientation atomically", async () => {
+        const measurementFacets = Object.entries({width:'12',height:'16','dimension-unit':'in'}).map(([key,value])=>({namespace:'artwork',key,value}));
+        const created = await createArtworkAdmin(env, artworkInput({newFacets:measurementFacets}), db);
+        const selected = await db.select().from(facets);
+        const ids = selected.filter(f=>f.key!=='width').map(f=>f.id);
+        await updateArtworkAdmin(env, created.slug, artworkInput({published:true,facetIds:ids,newFacets:[{namespace:'artwork',key:'width',value:'48'}]}), db);
+        const result = (await getArtworkBySlug(env, created.slug, db))!.facets;
+        expect(result.filter(f=>f.key==='width').map(f=>f.value)).toEqual(['48']);
+        expect(result.find(f=>f.key==='size')?.value).toBe('Large');
+        expect(result.find(f=>f.key==='orientation')?.value).toBe('Landscape');
+        await expect(updateArtworkAdmin(env,created.slug,artworkInput({title:'Invalid edit',facetIds:ids.filter(id=>selected.find(f=>f.id===id)?.key!=='dimension-unit')}),db)).rejects.toThrow('dimension-unit');
+        expect((await getAdminArtwork(env,created.slug,db))?.title).toBe('Study');
+    });
+
+	test("saves tags and size as facets alongside image alt text", async () => {
+		const image = { url: "https://r2.eonmun.com/artwork-media/study.png", caption: null, altText: "A blue bird on a branch", isDefault: true };
+		const input = { images: [image], tags: ["bird", "watercolor"], newFacets: [{ namespace: "artwork", key: "size", value: "Small" }] };
+		const created = await createArtworkAdmin(env, artworkInput(input), db);
+		await updateArtworkAdmin(env, created.slug, artworkInput({ ...input, published: true }), db);
+		const publicArtwork = await getArtworkBySlug(env, created.slug, db);
+		expect(publicArtwork?.facets.map(({ namespace, key, value }) => `${namespace}/${key}:${value}`).sort()).toEqual(["artwork/size:Small", "artwork/tag:bird", "artwork/tag:watercolor"]);
+		expect((await getAllArtworks(env, db)).find(artwork=>artwork.id===created.id)?.facets).toEqual(publicArtwork?.facets);
+        expect(publicArtwork?.defaultImageAltText).toBe("A blue bird on a branch");
+		expect(publicArtwork?.images[0]?.altText).toBe("A blue bird on a branch");
+	});
+
+	test("shares tag facets across artworks and keeps selected size facets on edit", async () => {
+		const [size] = await db.insert(facets).values({ namespace: "artwork", key: "size", value: "Small" }).returning();
+		const first = await createArtworkAdmin(env, artworkInput({ tags: ["bird"], facetIds: [size.id] }), db);
+		const second = await createArtworkAdmin(env, artworkInput({ slug: "another-study", tags: ["bird"] }), db);
+		expect((await db.select().from(facets).where(eq(facets.key, "tag")))).toHaveLength(1);
+		expect((await getAdminArtwork(env, first.slug, db))?.facetIds).toEqual([size.id]);
+		await updateArtworkAdmin(env, first.slug, artworkInput({ tags: [], facetIds: [size.id] }), db);
+		expect((await db.select().from(artworksToFacets).where(eq(artworksToFacets.artworkId, first.id)))).toHaveLength(1);
+		expect((await getArtworkBySlug(env, second.slug, db))).toBeNull();
+		await updateArtworkAdmin(env, second.slug, artworkInput({ slug: second.slug, tags: ["bird"], published: true }), db);
+		expect((await getArtworkBySlug(env, second.slug, db))?.facets.map((facet) => facet.value)).toEqual(["bird"]);
+	});
+
+	test("facet identity includes namespace and preserves other namespaces when tags change", async () => {
+		const input = artworkInput({ tags: ["Bird"], newFacets: [
+			{ namespace: "catalog", key: "tag", value: "Bird" },
+			{ namespace: "artwork", key: "subject", value: "Bird" },
+		] });
+		const first = await createArtworkAdmin(env, input, db);
+		await createArtworkAdmin(env, artworkInput({ title: "Second", slug: "second", tags: ["bird"] }), db);
+		expect(await db.select().from(facets)).toHaveLength(3);
+		const saved = (await getAdminArtwork(env, first.slug, db))!;
+		expect(saved.tags).toEqual(["Bird"]);
+		expect(saved.facetIds).toHaveLength(2);
+		await updateArtworkAdmin(env, first.slug, artworkInput({ published: true, tags: [], facetIds: saved.facetIds }), db);
+		const edited = (await getArtworkBySlug(env, first.slug, db))!;
+		expect(edited.facets.map(({ namespace, key }) => `${namespace}/${key}`).sort()).toEqual(["artwork/subject", "catalog/tag"]);
 	});
 
 	test("rejects slug conflicts", async () => {

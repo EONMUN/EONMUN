@@ -78,6 +78,41 @@
       "when": 1777429343690,
       "tag": "0010_backfill_artwork_published_at",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1790917694898,
+      "tag": "0011_artwork_image_alt",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1790917695404,
+      "tag": "0012_artwork_copy",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1790932497925,
+      "tag": "0013_facet_namespace_key_value",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1790932590614,
+      "tag": "0014_artwork_material_facets",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1791006773122,
+      "tag": "0015_artwork_dimension_facets",
+      "breakpoints": true
     }
   ]
 }
