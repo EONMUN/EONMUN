@@ -77,3 +77,11 @@ Start with material, subject, size, orientation, availability, and existing coll
 ## Confidence and open questions
 
 High confidence in the field mapping and the 27 explicitly documented material/support associations. Portrait axis order and size bands are now decided. Framing inclusion, eight works' missing specifications, and subjective categories still need artist review. Source HTML and hashes are archived in the 2026-10-02 artwork-facet research packages in the notes vault.
+
+## Production verification, 2026-10-03
+
+Production inspection found additional measurements that the public-page audit could not see. Migration preserved all 30 existing width/height/depth values across ten works, including landscape and square dimensions. The eight remaining works received their documented portrait pairs. All 18 now expose dimensions from facets. Existing depth values were retained; missing depth remains absent.
+
+“Somewhere in Big Bend” already had height `0`. That value was preserved and needs an editorial correction; incomplete positive measurements do not generate a size band. The artist-approved Portrait default applies where no complete measurement or existing orientation is available.
+
+The release used a temporary maintenance Worker to block old reads/writes before backup and migration. All 18 public artwork pages, homepage metadata, artwork/collection indexes, sitemap, and privacy page were checked after migration. Migration staging tables are dropped by their own migrations; temporary release tooling and the backup table are removed after production acceptance. The historical migrations stay checked in for reproducible database setup.
