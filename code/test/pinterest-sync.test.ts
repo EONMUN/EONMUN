@@ -56,12 +56,12 @@ describe("Pinterest catalog sync", () => {
 		expect(calls[1].url).toEndWith("/v5/catalogs/feeds?catalog_id=456&ad_account_id=789");
 		expect(calls[2].url).toEndWith("/v5/catalogs/items/batch?ad_account_id=789");
 		expect(calls[2].body).toMatchObject({
-			catalog_id: "456",
 			items: [
 				{ item_id: "artwork-41", operation: "UPSERT", attributes: { price: "250.00 USD" } },
 				{ item_id: "artwork-42", operation: "DELETE" },
 			],
 		});
+		expect(calls[2].body).not.toHaveProperty("catalog_id");
 	});
 
 	test("routes batch status checks through the catalog owner's ad account", async () => {
@@ -85,7 +85,19 @@ describe("Pinterest catalog sync", () => {
 		}) as typeof fetch;
 		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456" };
 		await expect(syncPinterestCatalog(env, [artwork], ["artwork-41"], mockFetch))
-			.rejects.toThrow("Pinterest denied catalog feed check (HTTP 403)");
+			.rejects.toThrow("Pinterest denied catalog feed check (HTTP 403, code 2): Denied");
+	});
+
+	test("shows the batch denial reason without exposing a token", async () => {
+		const mockFetch = (async (input: RequestInfo | URL) => {
+			const path = new URL(String(input)).pathname;
+			if (path === "/v5/oauth/token") return Response.json({ access_token: "test-token", scope: "catalogs:read catalogs:write" });
+			if (path === "/v5/catalogs/feeds") return Response.json({ items: [] });
+			return Response.json({ code: 29, message: "Account denied for pinc_sensitive123" }, { status: 403 });
+		}) as typeof fetch;
+		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456" };
+		await expect(syncPinterestCatalog(env, [artwork], [], mockFetch))
+			.rejects.toThrow("Pinterest denied catalog batch write (HTTP 403, code 29): Account denied for [redacted]");
 	});
 
 	test("accepts an alphanumeric Pinterest batch ID for status checks", async () => {

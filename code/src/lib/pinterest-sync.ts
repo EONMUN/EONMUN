@@ -42,7 +42,12 @@ async function jsonResponse<T>(response: Response, operation: string): Promise<T
 	}
 	if (!response.ok) {
 		if (response.status === 401 || response.status === 403) {
-			throw new PinterestSyncError(`Pinterest denied ${operation} (HTTP ${response.status}); check the app owner and catalog scopes`, 502);
+			const details = await response.json().catch(() => null) as { code?: unknown; message?: unknown } | null;
+			const code = typeof details?.code === "number" ? `, code ${details.code}` : "";
+			const message = typeof details?.message === "string"
+				? `: ${details.message.slice(0, 200).replace(/pin(?:a|c|r)_[A-Za-z0-9]+/g, "[redacted]")}`
+				: "";
+			throw new PinterestSyncError(`Pinterest denied ${operation} (HTTP ${response.status}${code})${message}`, 502);
 		}
 		throw new PinterestSyncError(`Pinterest returned HTTP ${response.status} during ${operation}`);
 	}
@@ -128,7 +133,6 @@ export async function syncPinterestCatalog(
 	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [] };
 	if (operations.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-operation sync limit", 409);
 	const batch = await pinterestRequest<Batch>(withAdAccount("/catalogs/items/batch", adAccountId), token, apiFetch, "catalog batch write", {
-		catalog_id: catalogId,
 		catalog_type: "RETAIL",
 		country: "US",
 		language: "en-US",
