@@ -1,9 +1,12 @@
 ---
+import { getRuntimeEnv } from "../lib/runtime-env";
+
+const publishableKey = getRuntimeEnv().PUBLIC_STRIPE_PUBLISHABLE_KEY;
 interface Props { artworkSlug: string; available: boolean; sold: boolean }
 const { artworkSlug, available, sold } = Astro.props;
 ---
 <div data-purchase-state data-artwork-slug={artworkSlug} class="space-y-2">
-	<form method="POST" action="/api/checkout" hidden={!available} data-buy-form>
+	<form method="POST" action="/api/checkout" hidden={!available} data-buy-form data-stripe-publishable-key={publishableKey}>
 		<input type="hidden" name="artworkSlug" value={artworkSlug} />
 		<button type="submit" class="primary-button">Buy</button>
 	</form>

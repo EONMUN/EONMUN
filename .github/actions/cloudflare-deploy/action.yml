@@ -11,6 +11,14 @@ inputs:
   cloudflare-account-id:
     description: 'Cloudflare account ID'
     required: true
+  configure-stripe:
+    description: 'Explicitly provision Stripe secrets; normal deploys preserve Worker secrets'
+    required: false
+    default: 'false'
+  stripe-secret-key:
+    description: 'Live Stripe API secret used only for explicit provisioning'
+    required: false
+    default: ''
   node-version:
     description: 'Node.js version'
     required: false
@@ -32,6 +40,17 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Check production checkout configuration
+      if: inputs.mode == 'deploy' && inputs.configure-stripe == 'true'
+      shell: bash
+      env:
+        STRIPE_SECRET_KEY: ${{ inputs.stripe-secret-key }}
+      run: |
+        if [ -z "$STRIPE_SECRET_KEY" ]; then
+          echo "::error::STRIPE_SECRET_KEY must be configured in GitHub Actions secrets for production checkout."
+          exit 1
+        fi
+
     - name: Setup Node.js
       if: inputs.skip-setup != 'true'
       uses: actions/setup-node@v4
@@ -74,6 +93,17 @@ runs:
       shell: bash
       working-directory: code
       run: bun run astro build
+
+    # Worker bindings are separate from GitHub Actions secrets.
+    - name: Configure production Stripe checkout and webhook
+      if: inputs.mode == 'deploy' && inputs.configure-stripe == 'true'
+      shell: bash
+      working-directory: code
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        STRIPE_SECRET_KEY: ${{ inputs.stripe-secret-key }}
+      run: bun run scripts/configure-stripe.ts
 
     - name: Deploy to Cloudflare (promote)
       if: inputs.mode == 'deploy'

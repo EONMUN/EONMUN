@@ -37,6 +37,7 @@
 		{ "pattern": "eonmun.com", "custom_domain": true }
 	],
 	"vars": {
+		"PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_live_51RJPybGjv0l1gAEDpBd5mpyArg8CcUbxbffCG93tASbbu38w7pnJgvBHiVaDeOw9VNdPKwu6lA6D57dQkyhxtB3C00Wb7Vf4Dj",
 		"AUTH_GOOGLE_ID": "155891318260-8svnveu1achtgut2oft9pmr31jpmlk2q.apps.googleusercontent.com",
 		"AUTH_PROXY_URL": "https://eonmun.com",
 		"PINTEREST_APP_ID": "1618886",
