@@ -10,7 +10,7 @@ const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
 const onDarkSurface = pathname === '/' || pathname.startsWith('/admin');
 ---
 <nav class="sticky top-0 z-50 p-2 flex justify-between items-center gap-2 bg-transparent">
-	<a href="/" class:list={['pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold', onDarkSurface ? 'text-white' : 'text-gray-900 dark:text-white']}>
+	<a href="/" data-home-logo class:list={['touch-manipulation pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold', onDarkSurface ? 'text-white' : 'text-gray-900 dark:text-white']}>
 		EONMUN
 	</a>
 	<div class="backdrop-blur-lg border shadow-xl bg-black/30 border-gray-500/30 flex flex-wrap gap-2 sm:gap-4 uppercase justify-between p-2 sm:p-4 rounded-lg font-bold tracking-wider sm:tracking-widest w-full sm:w-auto items-center">
@@ -31,3 +31,19 @@ const onDarkSurface = pathname === '/' || pathname.startsWith('/admin');
 		})}
 	</div>
 </nav>
+
+<script>
+	const logo = document.querySelector<HTMLAnchorElement>('[data-home-logo]');
+	if (location.pathname === '/' && logo) {
+		let taps = 0;
+		let lastTap = 0;
+		logo.addEventListener('click', (event) => {
+			if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+			event.preventDefault();
+			const now = performance.now();
+			taps = now - lastTap > 1500 ? 1 : taps + 1;
+			lastTap = now;
+			if (taps === 5) location.assign('/admin');
+		});
+	}
+</script>
