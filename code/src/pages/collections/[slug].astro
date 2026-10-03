@@ -13,7 +13,8 @@ if (!collection) {
 	Astro.cache.set(false);
 	return new Response('Not found', { status: 404 });
 }
-const artworks = await getPublishedArtworkEntries(collection.slug);
+const allArtworks = await getPublishedArtworkEntries();
+const artworks = allArtworks.filter(entry => entry.collections.some(item => item.slug === collection.slug));
 // Membership and artwork publication changes must invalidate the collection's grid too.
 Astro.cache.set({ tags: [CACHE_TAGS.artworks, CACHE_TAGS.collection(collection.slug)] });
 ---
@@ -27,6 +28,6 @@ Astro.cache.set({ tags: [CACHE_TAGS.artworks, CACHE_TAGS.collection(collection.s
 				{collections.map((item) => <FilterChip href={getCollectionHref(item.slug)} active={item.slug === collection.slug}>{item.name}</FilterChip>)}
 			</div>
 		</div>
-		<ArtworkGallery artworks={artworks} collectionSlug={collection.slug} />
+		<ArtworkGallery artworks={artworks} orientationArtworks={allArtworks} collectionSlug={collection.slug} />
 	</div>
 </BaseLayout>

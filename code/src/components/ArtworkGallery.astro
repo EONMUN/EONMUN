@@ -2,10 +2,10 @@
 import ArtworkGrid from './ArtworkGrid.astro';
 import { artworkOrientation } from '../lib/artwork-facets';
 import type { PublishedArtworkDetail } from '../lib/artwork-content';
-interface Props { artworks: PublishedArtworkDetail[]; collectionSlug?: string }
-const {artworks, collectionSlug} = Astro.props;
+interface Props { artworks: PublishedArtworkDetail[]; collectionSlug?: string; orientationArtworks?: PublishedArtworkDetail[] }
+const {artworks, collectionSlug, orientationArtworks = artworks} = Astro.props;
 const orientations = new Map(['Portrait','Landscape','Square'].map(value => [value.toLowerCase(),value]));
-for (const {artwork} of artworks) {
+for (const {artwork} of orientationArtworks) {
  const value = artworkOrientation(artwork.data);
  if (value && !orientations.has(value.toLowerCase())) orientations.set(value.toLowerCase(),value);
 }

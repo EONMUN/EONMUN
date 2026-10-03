@@ -168,3 +168,28 @@ test('orientation filters are separate, shareable, and work in collections', asy
     await expect(filter).toHaveValue('');
     expect(await cards.count()).toBeGreaterThan(0);
 });
+
+
+test('custom orientations remain selected in collections without matches', async ({page,context}) => {
+    await context.addCookies(await adminCookies('http://127.0.0.1:' + process.env.EONMUN_E2E_PORT));
+    await page.goto('/admin/artworks');
+    const saved = await page.evaluate(async () => {
+        const response = await fetch('/api/admin/artworks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+            editorVersion:2,title:'Panoramic study',slug:'panoramic-study',published:true,orientation:'Panoramic',
+            tags:[],materials:[],supports:[],mediums:[],subjects:[],styles:[],colors:[],images:[],collectionIds:[]
+        })});
+        return response.ok;
+    });
+    expect(saved).toBe(true);
+    await page.goto('/artworks?orientation=panoramic');
+    const filter = page.getByRole('combobox',{name:'Orientation',exact:true});
+    await expect(filter).toHaveValue('panoramic');
+    await expect(page.locator('[data-artwork-card]:visible')).toHaveCount(1);
+    await page.getByRole('link',{name:'Botánica',exact:true}).click();
+    await expect(filter).toHaveValue('panoramic');
+    await expect(page.locator('[data-artwork-card]:visible')).toHaveCount(0);
+    await expect(page.getByText('No artworks match this orientation.')).toBeVisible();
+    await page.getByRole('link',{name:'All',exact:true}).click();
+    await expect(filter).toHaveValue('panoramic');
+    await expect(page.locator('[data-artwork-card]:visible')).toHaveCount(1);
+});
