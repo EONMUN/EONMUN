@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
-import { normalizeArtworkFacets } from "../lib/artwork-facets";
+import { artworkAttributes, dimensionCategories, managedArtworkKeys, type ArtworkFacet } from "../lib/artwork-facets";
 import type { ArtworkAdminInput, CollectionAdminInput } from "../lib/admin-input";
 import {
 	artworkImages,
@@ -35,6 +35,7 @@ function artworkValues(input: ArtworkAdminInput) {
 		description: input.description,
 		artist: input.artist,
 		year: input.year,
+        width: input.width, height: input.height, depth: input.depth, dimensionUnit: input.dimensionUnit,
 		updatedAt: new Date(),
 	};
 }
@@ -65,30 +66,32 @@ async function replaceMemberships(
 }
 
 async function replaceArtworkFacets(tx: Transaction, artworkId: number, input: ArtworkAdminInput) {
-	const selected = input.facetIds.length ? await tx.select().from(facets).where(inArray(facets.id, input.facetIds)) : [];
-	const identity = (facet: { namespace: string; key: string; value: string }) => JSON.stringify([facet.namespace, facet.key, facet.value.replace(/[A-Z]/g, letter => letter.toLowerCase())]);
+
+    const selected = await tx.select({ id: facets.id, namespace: facets.namespace, key: facets.key, value: facets.value })
+        .from(artworksToFacets).innerJoin(facets, eq(artworksToFacets.facetId, facets.id)).where(eq(artworksToFacets.artworkId, artworkId));
+    const identity = (facet: ArtworkFacet) => JSON.stringify([facet.namespace, facet.key, facet.value.replace(/[A-Z]/g, letter => letter.toLowerCase())]);
     const existing = new Map(selected.map(facet => [identity(facet), facet.id]));
-    const facetIds = new Set<number>();
-	for (const { namespace, key, value } of normalizeArtworkFacets([
-		...selected,
-		...input.tags.map((value) => ({ namespace: "artwork", key: "tag", value })),
-		...input.newFacets,
-	])) {
-        const selectedId = existing.get(identity({ namespace, key, value }));
+    // Preserve attributes that this editor does not own.
+    const facetIds = new Set(selected.filter(f => f.namespace !== 'artwork' || !managedArtworkKeys.has(f.key)).map(f => f.id));
+    const categories = dimensionCategories(input) ?? { size: input.size, orientation: input.orientation };
+    const values = [
+        ...input.tags.map(value => ({namespace:'artwork', key:'tag', value})),
+        ...artworkAttributes.flatMap(({name,key}) => input[name].map(value => ({namespace:'artwork',key,value}))),
+        ...Object.entries(categories).filter((entry): entry is [string,string] => Boolean(entry[1])).map(([key,value]) => ({namespace:'artwork',key,value})),
+    ];
+    for (const {namespace,key,value} of values) {
+        const selectedId = existing.get(identity({namespace,key,value}));
         if (selectedId !== undefined) { facetIds.add(selectedId); continue; }
-		await tx.insert(facets).values({ namespace, key, value }).onConflictDoNothing();
-		const [facet] = await tx.select({ id: facets.id }).from(facets).where(and(
-			eq(facets.namespace, namespace), eq(facets.key, key), sql`${facets.value} = ${value} COLLATE NOCASE`,
-		));
-		facetIds.add(facet.id);
-	}
+        await tx.insert(facets).values({namespace,key,value}).onConflictDoNothing();
+        const [facet] = await tx.select({id:facets.id}).from(facets).where(and(eq(facets.namespace,namespace),eq(facets.key,key),sql`${facets.value} = ${value} COLLATE NOCASE`));
+        facetIds.add(facet.id);
+    }
 	await tx.delete(artworksToFacets).where(eq(artworksToFacets.artworkId, artworkId));
 	if (facetIds.size) await tx.insert(artworksToFacets).values([...facetIds].map((facetId) => ({ artworkId, facetId })));
 }
 
 export async function createArtworkAdmin(env: Env, input: ArtworkAdminInput, db = getDb(env)) {
 	await validateIds(db, collections, input.collectionIds, "collections");
-	await validateIds(db, facets, input.facetIds, "facets");
 	return db.transaction(async (tx) => {
 		const [artwork] = await tx.insert(artworks).values({
 			...artworkValues(input),
@@ -122,7 +125,6 @@ export async function createArtworkAdmin(env: Env, input: ArtworkAdminInput, db 
 
 export async function updateArtworkAdmin(env: Env, currentSlug: string, input: ArtworkAdminInput, db = getDb(env)) {
 	await validateIds(db, collections, input.collectionIds, "collections");
-	await validateIds(db, facets, input.facetIds, "facets");
 	return db.transaction(async (tx) => {
 		const [current] = await tx.select().from(artworks).where(eq(artworks.slug, currentSlug));
 		if (!current) throw new Error("Artwork not found");
@@ -264,7 +266,7 @@ export async function getAdminArtwork(env: Env, slug: string, db = getDb(env)) {
 			.where(eq(artworksToFacets.artworkId, artwork.id)),
 		db.select().from(products).where(and(eq(products.artworkId, artwork.id), eq(products.type, "artwork"))),
 	]);
-	return { ...artwork, images, collectionIds: memberships.map((row) => row.collectionId), facetIds: facetRows.filter((row) => !(row.namespace === "artwork" && row.key === "tag")).map((row) => row.id), tags: facetRows.filter((row) => row.namespace === "artwork" && row.key === "tag").map((row) => row.value), product: productRows[0] ?? null };
+	return { ...artwork, images, collectionIds: memberships.map((row) => row.collectionId), attributes: facetRows, tags: facetRows.filter((row) => row.namespace === "artwork" && row.key === "tag").map((row) => row.value), product: productRows[0] ?? null };
 }
 
 // Dashboard shapes. The dashboard is the only admin surface that reads every

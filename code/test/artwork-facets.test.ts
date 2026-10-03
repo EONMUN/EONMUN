@@ -1,16 +1,22 @@
 import { expect, test } from 'bun:test';
-import { normalizeArtworkFacets } from '../src/lib/artwork-facets';
-const facets = (values: Record<string,string>) => Object.entries(values).map(([key,value])=>({namespace:'artwork',key,value}));
-test('measurements normalize numbers and replace derived categories in either unit', () => {
- expect(normalizeArtworkFacets(facets({width:'012',height:'16','dimension-unit':'in',size:'Large',orientation:'Landscape'}))).toEqual(facets({width:'12',height:'16','dimension-unit':'in',size:'Small',orientation:'Portrait'}));
- expect(normalizeArtworkFacets(facets({width:'101',height:'60','dimension-unit':'cm'}))).toContainEqual({namespace:'artwork',key:'size',value:'Large'});
- expect(normalizeArtworkFacets(facets({width:'60',height:'60','dimension-unit':'cm'}))).toContainEqual({namespace:'artwork',key:'orientation',value:'Square'});
+import { dimensionCategories } from '../src/lib/artwork-facets';
+import { parseArtworkInput, isCurrentArtworkEditor } from '../src/lib/admin-input';
+test('measurement categories use numeric values and unit conversion', () => {
+ expect(dimensionCategories({width:12,height:16,depth:null,dimensionUnit:'in'})).toEqual({size:'Small',orientation:'Portrait'});
+ expect(dimensionCategories({width:101,height:60,depth:null,dimensionUnit:'cm'})).toEqual({size:'Large',orientation:'Landscape'});
+ expect(dimensionCategories({width:60,height:60,depth:null,dimensionUnit:'cm'})).toEqual({size:'Medium',orientation:'Square'});
+ for (const height of [0,null]) expect(dimensionCategories({width:12,height,depth:null,dimensionUnit:'in'})).toBeNull();
 });
-test('invalid, conflicting, and unitless measurements fail without inventing depth', () => {
- for (const value of ['-1','NaN','Infinity','12 inches','']) expect(()=>normalizeArtworkFacets(facets({width:value,'dimension-unit':'in'}))).toThrow();
- expect(()=>normalizeArtworkFacets(facets({width:'12'}))).toThrow('dimension-unit');
- expect(()=>normalizeArtworkFacets(facets({width:'12','dimension-unit':'ft'}))).toThrow();
- expect(()=>normalizeArtworkFacets([...facets({width:'12','dimension-unit':'in'}),...facets({width:'14'})])).toThrow('only one width');
- expect(normalizeArtworkFacets(facets({width:'12',height:'14','dimension-unit':'in'})).some(f=>f.key==='depth')).toBe(false);
- expect(normalizeArtworkFacets([{namespace:'shipping',key:'width',value:'Custom'}])).toEqual([{namespace:'shipping',key:'width',value:'Custom'}]);
+test('measurements reject invalid numbers and stale generic forms', () => {
+ const input={title:'Study',slug:'study',images:[],dimensionUnit:'in'};
+ for (const width of [-1,'NaN',true,{},'  ']) expect(()=>parseArtworkInput({...input,width})).toThrow();
+ expect(()=>parseArtworkInput({...input,dimensionUnit:'ft'})).toThrow();
+ expect(parseArtworkInput({...input,width:'12',height:'16'}).depth).toBeNull();
+ expect(isCurrentArtworkEditor({...input,tags:[],facetIds:[],newFacets:[]})).toBe(false);
+});
+
+test('manual categories retain existing spelling and custom names', () => {
+ const input = parseArtworkInput({title:'Test',slug:'test',images:[],size:'Miniature',orientation:'portrait'});
+ expect(input.size).toBe('Miniature');
+ expect(input.orientation).toBe('portrait');
 });

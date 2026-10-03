@@ -1,4 +1,4 @@
-import { validateArtworkFacet } from "./artwork-facets";
+import { artworkAttributes, type ArtworkAttributes, type ArtworkMeasurements } from "./artwork-facets";
 import { R2_PUBLIC_ORIGIN } from "./media";
 import { SLUG_PATTERN, slugify } from "./slug";
 
@@ -14,7 +14,8 @@ function text(value: unknown, field: string, required = false) {
 
 function optionalNumber(value: unknown, field: string) {
 	if (value === "" || value === null || value === undefined) return null;
-	const number = typeof value === "number" ? value : Number(value);
+	if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim())) throw new Error(`${field} must be a number`);
+    const number = typeof value === "number" ? value : Number(value);
 	if (!Number.isFinite(number) || number < 0) throw new Error(`${field} must be a non-negative number`);
 	return number;
 }
@@ -26,13 +27,13 @@ function ids(value: unknown, field: string) {
 	return [...new Set(parsed)];
 }
 
-export interface ArtworkAdminInput {
+export interface ArtworkAdminInput extends ArtworkAttributes, ArtworkMeasurements {
 	title: string;
 	slug: string;
 	description: string | null;
 	tags: string[];
-	facetIds: number[];
-	newFacets: { namespace: string; key: string; value: string }[];
+	size: string | null;
+	orientation: string | null;
 	artist: string | null;
 	year: number | null;
 	published: boolean;
@@ -67,27 +68,31 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
 	if (images.length > 0 && !images.some((image) => image.isDefault)) images[0].isDefault = true;
 	const tags = Array.isArray(input.tags) ? input.tags.map((tag) => text(tag, "Tag", true)!) : [];
 	if (tags.length > 12 || tags.some((tag) => tag.length > 40 || !slugify(tag))) throw new Error("Tags must be 12 short names or fewer");
-	if (!Array.isArray(input.newFacets ?? [])) throw new Error("New facets must be an array");
-	const newFacets = ((input.newFacets ?? []) as unknown[]).map((raw) => {
-		if (!raw || typeof raw !== "object") throw new Error("Invalid facet");
-		const facet = raw as Record<string, unknown>;
-		const namespace = text(facet.namespace, "Facet namespace", true)!;
-		const key = text(facet.key, "Facet key", true)!;
-		const value = text(facet.value, "Facet value", true)!;
-		const identifier = /^[a-z][a-z0-9-]{0,31}$/;
-		if (!identifier.test(namespace) || !identifier.test(key) || value.length > 80
-			|| (namespace === "artwork" && key === "tag")) throw new Error("Invalid facet namespace, key, or value");
-		validateArtworkFacet({ namespace, key, value });
-		return { namespace, key, value };
-	});
-	if (newFacets.length > 12) throw new Error("Too many new facets");
+
+    const attributes = Object.fromEntries(artworkAttributes.map(({ name, label }) => {
+        const values = input[name] ?? [];
+        if (!Array.isArray(values)) throw new Error(`${label} must be a list`);
+        const names = values.map(value => text(value, label, true)!);
+        if (names.length > 20 || names.some(value => value.length > 80)) throw new Error(`${label} must contain at most 20 short names`);
+        return [name, [...new Map(names.map(value => [value.toLowerCase(), value])).values()]];
+    })) as ArtworkAttributes;
+    const dimensionUnit = input.dimensionUnit ?? 'in';
+    if (dimensionUnit !== 'in' && dimensionUnit !== 'cm') throw new Error('Choose inches or centimeters');
+    const size = text(input.size, 'Size');
+    const orientation = text(input.orientation, 'Orientation');
+    if (size && size.length > 80) throw new Error('Size must be a short name');
+    if (orientation && orientation.length > 80) throw new Error('Orientation must be a short name');
+
 	return {
 		title,
 		slug,
 		description: text(input.description, "Description"),
 		tags: [...new Map(tags.map((tag) => [tag.toLowerCase(), tag])).values()],
-		facetIds: ids(input.facetIds ?? [], "Facets"),
-		newFacets,
+        ...attributes,
+        width: optionalNumber(input.width, 'Width'),
+        height: optionalNumber(input.height, 'Height'),
+        depth: optionalNumber(input.depth, 'Depth'),
+        dimensionUnit, size, orientation,
 		artist: text(input.artist, "Artist"),
 		year,
 		published: input.published === true,
@@ -146,5 +151,5 @@ export function parseCollectionInput(value: unknown, options: CollectionParseOpt
 export function isCurrentArtworkEditor(value: unknown): boolean {
     if (!value || typeof value !== "object") return false;
     const input = value as Record<string, unknown>;
-    return [input.facetIds, input.tags, input.newFacets].every(Array.isArray);
+    return input.editorVersion === 2 && [input.tags, ...artworkAttributes.map(field => input[field.name])].every(Array.isArray);
 }

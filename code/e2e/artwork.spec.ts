@@ -15,25 +15,40 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await page.getByRole('textbox', { name: 'Artist' }).fill('EONMUN');
 	await page.getByRole('spinbutton', { name: 'Price (USD)' }).fill('1250');
 	await page.getByRole('textbox', { name: 'Tags' }).fill('bird, watercolor');
-	for (const [key, value] of [['width', '12'], ['height', '16'], ['dimension-unit', 'in']]) {
-        await page.getByRole('combobox', { name: 'Facet key' }).fill(key);
-        await page.getByRole('textbox', { name: 'Facet value' }).fill(value);
-        await page.getByRole('button', { name: 'Add facet' }).click();
-    }
-	await page.getByRole('button', { name: 'Save artwork' }).click();
+    await expect(page.getByRole('group',{name:'Dimensions',exact:true})).toBeVisible();
+    await expect(page.getByRole('group',{name:'Materials and surface',exact:true})).toBeVisible();
+    await expect(page.getByRole('textbox',{name:'Facet value'})).toHaveCount(0);
+    await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('12');
+    await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('16');
+    await page.getByRole('combobox',{name:'Unit',exact:true}).selectOption('in');
+    await page.getByRole('textbox',{name:'Add materials',exact:true}).fill('Ink wash');
+    await expect(page.getByRole('combobox',{name:'Size',exact:true})).toHaveValue('Small');
+    await expect(page.getByRole('combobox',{name:'Orientation',exact:true})).toBeDisabled();
+	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page).toHaveURL(`/admin/artworks/${slug}`);
 
 	await visit(page, '/admin/artworks');
 	await expect(page.locator(`a[href="/admin/artworks/${slug}"]`)).toBeVisible();
 	await page.locator(`a[href="/admin/artworks/${slug}"]`).click();
 	await expect(page.getByRole('spinbutton', { name: 'Price (USD)' })).toHaveValue('1250.00');
-	await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork edited');
+	await expect(page.getByRole('checkbox',{name:'Ink wash',exact:true})).toBeChecked();
+    await expect(page.getByRole('spinbutton',{name:'Width',exact:true})).toHaveValue('12');
+    await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork edited');
 	await page.getByRole('checkbox', { name: 'Published' }).check();
-	await page.getByRole('button', { name: 'Save artwork' }).click();
+	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Playwright artwork edited');
+    await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('0');
+    await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('');
+    await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
+    await visit(page, `/artworks/${slug}`);
+    await expect(page.locator('[aria-label="Artwork dimensions"]')).toContainText('0 in');
+    await visit(page, `/admin/artworks/${slug}`);
+    await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('12');
+    await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('16');
+    await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page.getByRole('checkbox', { name: 'Published' })).toBeChecked();
     const staleSaves = await page.evaluate(async () => Promise.all(['/api/admin/artworks/suggest', '/api/admin/artworks'].map(async endpoint => {
-        const response = await fetch(endpoint, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Stale edit',slug:'suggest',width:12,height:16})});
+        const response = await fetch(endpoint, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Stale edit',slug:'suggest',width:12,height:16,tags:[],facetIds:[],newFacets:[]})});
         return response.status;
     })));
     expect(staleSaves).toEqual([409, 409]);
@@ -49,6 +64,7 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('size: Small');
 	await expect(page.locator('[aria-label="Artwork dimensions"]')).toContainText('12 in');
 	await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('orientation: Portrait');
+    await expect(page.locator('[aria-label="Artwork facets"]')).toContainText('material: Ink wash');
 	await expect(page.getByText('Not currently available for purchase.')).toBeVisible();
 	await expect(page.locator('[data-artwork-price]')).toHaveCount(0);
 	expect(await page.locator('script[type="application/ld+json"]').count()).toBe(0);

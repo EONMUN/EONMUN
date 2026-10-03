@@ -37,9 +37,10 @@ try {
 	const artworkData = new Map<string, {id: number; title: string; imageUrl: string | null}>();
 	const artworkTags = new Map<string, string[]>();
 	const artworkFacets = new Map<string, { namespace: string; key: string; value: string }[]>();
-	for (const item of await fixture<Array<{title: string; slug: string; description?: string; tags?: string[]; facets?: { namespace: string; key: string; value: string }[]; imageAltText?: string; artist?: string; year?: number; images?: string[]; collectionSlug?: string; isDefaultForCollection?: boolean; publishedAt?: string; locale?: string}>>('artworks')) {
+	for (const item of await fixture<Array<{title: string; slug: string; description?: string; tags?: string[]; facets?: { namespace: string; key: string; value: string }[]; imageAltText?: string; artist?: string; year?: number; width?: number; height?: number; depth?: number; dimensionUnit?: "in" | "cm"; images?: string[]; collectionSlug?: string; isDefaultForCollection?: boolean; publishedAt?: string; locale?: string}>>('artworks')) {
 		const [row] = await db.insert(artworks).values({ title: item.title, slug: item.slug,
 			description: item.description, artist: item.artist, year: item.year,
+            width: item.width, height: item.height, depth: item.depth, dimensionUnit: item.dimensionUnit,
 			publishedAt: date(item.publishedAt), locale: item.locale }).returning({ id: artworks.id });
 		artworkData.set(item.slug, { id: row.id, title: item.title, imageUrl: item.images?.[0] ?? null });
 		artworkTags.set(item.slug, item.tags ?? []);
