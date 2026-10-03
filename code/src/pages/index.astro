@@ -15,7 +15,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	sizes: '100vw',
 })));
 ---
-<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor="#f5f1e8" image={slides[0]?.defaultImageUrl ?? undefined}>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor="#f5f1e8" image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
 	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN" aria-hidden="true" hidden>
 		<span class="loading-wordmark" aria-hidden="true">EON<br />MUN</span>
 		<a class="loading-fallback" data-loading-fallback href="/artworks" hidden>View artworks</a>
@@ -229,11 +229,14 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	/* Keep artwork details legible over the image. */
 	.artwork-info {
 		position: absolute;
-		right: 1rem;
-		bottom: 1.25rem;
+		left: calc(1rem + env(safe-area-inset-left));
+		right: calc(1rem + env(safe-area-inset-right));
+		bottom: calc(1.25rem + env(safe-area-inset-bottom));
 		z-index: 50;
 		display: flex;
 		flex-direction: column;
+		width: fit-content;
+		margin-left: auto;
 		gap: 0.5rem;
 		padding: 0.75rem;
 		text-align: right;
