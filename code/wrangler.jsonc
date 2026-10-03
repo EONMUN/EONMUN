@@ -15,7 +15,7 @@
 // AUTH_GOOGLE_ID is a public OAuth client ID and is configured in `vars` below.
 // PINTEREST_AD_ACCOUNT_ID is an optional public var for a catalog owned by an ad account.
 // GOOGLE_MERCHANT_ACCOUNT_ID and GOOGLE_MERCHANT_DATA_SOURCE_ID are public vars
-// for a primary API product data source; add them once Merchant Center is ready.
+// for the primary API product data source.
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	// Keep preview URLs on the same Worker as the production Astro site.
@@ -47,6 +47,8 @@
 		"PINTEREST_APP_ID": "1618886",
 		"PINTEREST_CATALOG_ID": "4816002279797",
 		"PINTEREST_AD_ACCOUNT_ID": "549770850256",
+		"GOOGLE_MERCHANT_ACCOUNT_ID": "5867265608",
+		"GOOGLE_MERCHANT_DATA_SOURCE_ID": "10758370300",
 		"ADMIN_EMAILS": "ncrmro@gmail.com,1e1104k4@gmail.com"
 	},
 	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare
