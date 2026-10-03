@@ -14,3 +14,9 @@ test('measurements reject invalid numbers and stale generic forms', () => {
  expect(parseArtworkInput({...input,width:'12',height:'16'}).depth).toBeNull();
  expect(isCurrentArtworkEditor({...input,tags:[],facetIds:[],newFacets:[]})).toBe(false);
 });
+
+test('manual categories retain existing spelling and custom names', () => {
+ const input = parseArtworkInput({title:'Test',slug:'test',images:[],size:'Miniature',orientation:'portrait'});
+ expect(input.size).toBe('Miniature');
+ expect(input.orientation).toBe('portrait');
+});

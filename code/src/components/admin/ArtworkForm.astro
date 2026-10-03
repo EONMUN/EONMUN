@@ -51,8 +51,8 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
         <label>Height <input class="admin-input" name="height" type="number" min="0" step="any" value={artwork?.height ?? ''} /></label>
         <label>Depth <input class="admin-input" name="depth" type="number" min="0" step="any" value={artwork?.depth ?? ''} /></label>
         <label>Unit <select class="admin-input" name="dimensionUnit"><option value="in" selected={artwork?.dimensionUnit !== 'cm'}>Inches</option><option value="cm" selected={artwork?.dimensionUnit === 'cm'}>Centimeters</option></select></label>
-        <label>Size <select class="admin-input" name="size"><option value="">Not specified</option>{['Small','Medium','Large'].map(value => <option value={value} selected={values('size').includes(value)}>{value}</option>)}</select></label>
-        <label>Orientation <select class="admin-input" name="orientation"><option value="">Not specified</option>{['Portrait','Landscape','Square'].map(value => <option value={value} selected={values('orientation').includes(value)}>{value}</option>)}</select></label>
+        <label>Size <select class="admin-input" name="size"><option value="">Not specified</option>{[...new Set([...values('size'), 'Small','Medium','Large'])].map(value => <option value={value} selected={values('size').includes(value)}>{value}</option>)}</select></label>
+        <label>Orientation <select class="admin-input" name="orientation"><option value="">Not specified</option>{[...new Set([...values('orientation'), 'Portrait','Landscape','Square'])].map(value => <option value={value} selected={values('orientation').includes(value)}>{value}</option>)}</select></label>
         <p class="hint span-all" data-dimension-summary>Size and orientation are calculated when width and height are known.</p>
     </FormFieldset>
 

@@ -80,8 +80,8 @@ export function parseArtworkInput(value: unknown): ArtworkAdminInput {
     if (dimensionUnit !== 'in' && dimensionUnit !== 'cm') throw new Error('Choose inches or centimeters');
     const size = text(input.size, 'Size');
     const orientation = text(input.orientation, 'Orientation');
-    if (size && !['Small','Medium','Large'].includes(size)) throw new Error('Invalid size');
-    if (orientation && !['Portrait','Landscape','Square'].includes(orientation)) throw new Error('Invalid orientation');
+    if (size && size.length > 80) throw new Error('Size must be a short name');
+    if (orientation && orientation.length > 80) throw new Error('Orientation must be a short name');
 
 	return {
 		title,

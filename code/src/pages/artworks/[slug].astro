@@ -111,7 +111,7 @@ const productJsonLd = saleOffer ? JSON.stringify({
 						<p class="leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{artwork.data.description}</p>
 					</div>
 				)}
-				{(measurements.width || measurements.height || measurements.depth) && (
+				{(['width', 'height', 'depth'] as const).some(key => measurements[key] !== null) && (
                     <dl aria-label="Artwork dimensions" class="flex flex-wrap gap-4">
                         {(['width', 'height', 'depth'] as const).filter(key => measurements[key] !== null).map(key => (
                             <div><dt class="capitalize">{key}</dt><dd>{measurements[key]} {measurements.unit}</dd></div>
