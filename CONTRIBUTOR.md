@@ -121,7 +121,7 @@ Astro 7 route rules cache the home page, artwork gallery and detail pages, posts
 
 To check a deployed preview, request a public route twice and confirm `CF-Cache-Status` changes from `MISS` to `HIT`; subsequent hits include `Age`. Confirm admin and inventory routes show `BYPASS`. Cloudflare consumes the provider's cache control and tag headers, so they may not appear in client responses. Local Astro dev and preview do not reproduce the deployed Worker cache or its purge API.
 
-The production deploy workflow copies the GitHub Actions `STRIPE_SECRET_KEY` secret to the `eonmun-astro` Worker before deploying. It fails before deployment if that Actions secret is missing. Preview uploads do not change secrets. Configure `STRIPE_WEBHOOK_SECRET` separately on the Worker using the signing secret for `https://eonmun.com/api/webhooks/stripe`; it is required to confirm sales and update availability.
+The production deploy workflow copies the GitHub Actions `STRIPE_SECRET_KEY` secret to the `eonmun-astro` Worker before deploying. It fails before deployment if that Actions secret is missing. Preview uploads do not change secrets. On first setup, it creates the payment webhook at `https://eonmun.com/api/webhooks/stripe`, stores its signing secret directly on the Worker, and checks authentication with an unpaid event before enabling checkout. An existing endpoint with a missing Worker signing secret requires restoring that endpoint's secret before retrying. The Stripe account must use a live key and be enabled to accept payments.
 
 Required production Worker secrets for `eonmun-astro`:
 

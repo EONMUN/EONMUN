@@ -91,7 +91,7 @@ runs:
       run: bun run astro build
 
     # Worker bindings are separate from GitHub Actions secrets.
-    - name: Configure production checkout secret
+    - name: Configure production Stripe checkout and webhook
       if: inputs.mode == 'deploy'
       shell: bash
       working-directory: code
@@ -99,7 +99,7 @@ runs:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
         STRIPE_SECRET_KEY: ${{ inputs.stripe-secret-key }}
-      run: printf '%s' "$STRIPE_SECRET_KEY" | bunx wrangler secret put STRIPE_SECRET_KEY --name eonmun-astro
+      run: bun run scripts/configure-stripe.ts
 
     - name: Deploy to Cloudflare (promote)
       if: inputs.mode == 'deploy'
