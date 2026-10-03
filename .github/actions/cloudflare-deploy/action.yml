@@ -11,8 +11,12 @@ inputs:
   cloudflare-account-id:
     description: 'Cloudflare account ID'
     required: true
+  configure-stripe:
+    description: 'Explicitly provision Stripe secrets; normal deploys preserve Worker secrets'
+    required: false
+    default: 'false'
   stripe-secret-key:
-    description: 'Stripe API secret required for production checkout; unused by previews'
+    description: 'Live Stripe API secret used only for explicit provisioning'
     required: false
     default: ''
   node-version:
@@ -37,7 +41,7 @@ runs:
   using: 'composite'
   steps:
     - name: Check production checkout configuration
-      if: inputs.mode == 'deploy'
+      if: inputs.mode == 'deploy' && inputs.configure-stripe == 'true'
       shell: bash
       env:
         STRIPE_SECRET_KEY: ${{ inputs.stripe-secret-key }}
@@ -92,7 +96,7 @@ runs:
 
     # Worker bindings are separate from GitHub Actions secrets.
     - name: Configure production Stripe checkout and webhook
-      if: inputs.mode == 'deploy'
+      if: inputs.mode == 'deploy' && inputs.configure-stripe == 'true'
       shell: bash
       working-directory: code
       env:

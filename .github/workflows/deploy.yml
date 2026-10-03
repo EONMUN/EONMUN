@@ -8,6 +8,11 @@ on:
       - '.github/workflows/deploy.yml'
       - '.github/actions/cloudflare-deploy/**'
   workflow_dispatch:
+    inputs:
+      configure_stripe:
+        description: 'Provision Stripe checkout/webhook using the GitHub live secret key'
+        type: boolean
+        default: false
 
 concurrency:
   group: production
@@ -27,6 +32,7 @@ jobs:
         uses: ./.github/actions/cloudflare-deploy
         with:
           mode: deploy
+          configure-stripe: ${{ github.event_name == 'workflow_dispatch' && inputs.configure_stripe }}
           stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
           cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

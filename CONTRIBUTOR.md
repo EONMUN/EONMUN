@@ -121,7 +121,9 @@ Astro 7 route rules cache the home page, artwork gallery and detail pages, posts
 
 To check a deployed preview, request a public route twice and confirm `CF-Cache-Status` changes from `MISS` to `HIT`; subsequent hits include `Age`. Confirm admin and inventory routes show `BYPASS`. Cloudflare consumes the provider's cache control and tag headers, so they may not appear in client responses. Local Astro dev and preview do not reproduce the deployed Worker cache or its purge API.
 
-The production deploy workflow copies the GitHub Actions `STRIPE_SECRET_KEY` secret to the `eonmun-astro` Worker before deploying. It fails before deployment if that Actions secret is missing. Preview uploads do not change secrets. On first setup, it creates the payment webhook at `https://eonmun.com/api/webhooks/stripe`, stores its signing secret directly on the Worker, and checks authentication with an unpaid event before enabling checkout. An existing endpoint with a missing Worker signing secret requires restoring that endpoint's secret before retrying. The Stripe account must use a live key and be enabled to accept payments.
+Normal deploys preserve the Stripe secrets configured directly on `eonmun-astro`. `PUBLIC_STRIPE_PUBLISHABLE_KEY` is a public Wrangler variable exposed to the browser through the purchase form's `data-stripe-publishable-key` attribute. Checkout uses a server-created Stripe session and a redirect, so it does not require Stripe.js on the artwork page.
+
+For first-time automated Stripe setup, set the live `STRIPE_SECRET_KEY` in GitHub Actions and manually run **Deploy Astro** with `configure_stripe` enabled. This validates the Stripe account, creates the payment webhook at `https://eonmun.com/api/webhooks/stripe` when none exists, stores its signing secret directly on the Worker, and checks authentication with an unpaid event before installing the checkout key. An existing endpoint with a missing Worker signing secret requires restoring that endpoint's secret before retrying. Preview uploads never provision secrets.
 
 Required production Worker secrets for `eonmun-astro`:
 
