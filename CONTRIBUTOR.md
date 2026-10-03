@@ -192,7 +192,10 @@ a seven-day moving average, the previous-period change, and top ten referring
 websites and countries. Missing days count as zero; a zero previous total shows
 “No prior baseline.” Referrers describe the pageview's referring domain, not
 first-touch marketing attribution. Admin/API routes and non-production hosts
-are excluded. Reports are cached internally for five minutes behind admin auth;
+are excluded. Identified visitors whose person email matches `ADMIN_EMAILS`
+(case-insensitive) are excluded from every metric; visitors without an email
+remain included. This SQL exclusion is independent of PostHog dashboard filters.
+Reports are cached internally for five minutes behind admin auth;
 browser responses remain `no-store`.
 
 Configure `POSTHOG_PROJECT_ID` and `POSTHOG_PERSONAL_API_KEY` on the
