@@ -35,3 +35,7 @@ export async function getAvailableArtworkCatalog(env: Env, db = getDb(env)) {
 		try { return new URL(row.imageUrl).protocol === "https:"; } catch { return false; }
 	});
 }
+
+export async function getArtworkCatalogIds(env: Env, db = getDb(env)) {
+	return (await db.select({ id: artworks.id }).from(artworks)).map((row) => `artwork-${row.id}`);
+}

@@ -15,6 +15,9 @@ export type Env = {
 	R2_BUCKET?: R2Bucket;
 	STRIPE_SECRET_KEY?: string;
 	STRIPE_WEBHOOK_SECRET?: string;
+	PINTEREST_APP_ID?: string;
+	PINTEREST_APP_SECRET?: string;
+	PINTEREST_CATALOG_ID?: string;
 	OPENAI_API_KEY?: string;
 };
 

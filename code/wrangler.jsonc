@@ -8,6 +8,7 @@
 //   AUTH_GOOGLE_SECRET   — Google OAuth client secret for `/api/auth`
 //   STRIPE_SECRET_KEY    — Stripe Checkout API secret
 //   STRIPE_WEBHOOK_SECRET — Stripe Checkout webhook signing secret
+//   PINTEREST_APP_SECRET — Pinterest app client secret for catalog sync
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 //
 // AUTH_GOOGLE_ID is a public OAuth client ID and is configured in `vars` below.
@@ -37,6 +38,8 @@
 	"vars": {
 		"AUTH_GOOGLE_ID": "155891318260-8svnveu1achtgut2oft9pmr31jpmlk2q.apps.googleusercontent.com",
 		"AUTH_PROXY_URL": "https://eonmun.com",
+		"PINTEREST_APP_ID": "1618886",
+		"PINTEREST_CATALOG_ID": "4816002279797",
 		"ADMIN_EMAILS": "ncrmro@gmail.com,1e1104k4@gmail.com"
 	},
 	// SESSION KV namespace for Astro Sessions on the @astrojs/cloudflare

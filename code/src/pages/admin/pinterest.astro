@@ -1,0 +1,79 @@
+---
+import ConsoleShell from '../../components/admin/ConsoleShell.astro';
+import { requireAdminPage } from '../../lib/admin-guard';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import { isPinterestConfigured } from '../../lib/pinterest-sync';
+
+export const prerender = false;
+
+const env = getRuntimeEnv();
+const access = await requireAdminPage(Astro.request, env, '/admin/pinterest');
+if ('response' in access) return access.response;
+const configured = isPinterestConfigured(env);
+---
+<ConsoleShell title="Pinterest — EONMUN admin" heading="Pinterest catalog" email={access.session.user.email} backHref="/admin" backLabel="Admin">
+	<section class="pinterest-sync">
+		<p>Sync artwork marked available for purchase to the EONMUN Pinterest catalog. Prices are sent in USD. Works no longer available are removed from the catalog.</p>
+		{configured ? (
+			<>
+				<button type="button" data-pinterest-sync>Sync catalog now</button>
+				<p class="hint">Pinterest processes catalog changes asynchronously. This page checks each item's result.</p>
+			</>
+		) : (
+			<p role="status">Pinterest is not connected yet. Configure the app secret on the production Worker to enable syncing.</p>
+		)}
+		<p role="status" aria-live="polite" data-pinterest-status></p>
+		<ul data-pinterest-items></ul>
+	</section>
+</ConsoleShell>
+
+<script>
+	const button = document.querySelector<HTMLButtonElement>('[data-pinterest-sync]');
+	const status = document.querySelector<HTMLElement>('[data-pinterest-status]');
+	const items = document.querySelector<HTMLUListElement>('[data-pinterest-items]');
+	if (button && status && items) {
+		const call = async (body: object) => {
+			const response = await fetch('/api/admin/pinterest', {
+				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+			});
+			const result = await response.json() as {
+				error?: string; status?: string; batch_id?: string | null;
+				items?: Array<{ item_id?: string; status: string; errors: string[] }>;
+			};
+			if (!response.ok) throw new Error(result.error ?? 'Pinterest sync failed');
+			return result;
+		};
+		button.addEventListener('click', async () => {
+			button.disabled = true;
+			status.textContent = 'Submitting catalog changes…';
+			items.replaceChildren();
+			try {
+				let result = await call({});
+				for (let attempt = 0; result.status === 'PROCESSING' && result.batch_id && attempt < 12; attempt++) {
+					status.textContent = 'Pinterest is processing the batch…';
+					await new Promise((resolve) => setTimeout(resolve, 5000));
+					result = await call({ batchId: result.batch_id });
+				}
+				const failed = result.items?.filter((item) => item.status === 'FAILURE') ?? [];
+				status.textContent = result.status === 'NOTHING_TO_SYNC' ? 'No catalog changes to submit.'
+					: result.status === 'PROCESSING' ? `Pinterest is still processing batch ${result.batch_id}. Check the catalog later.`
+					: result.status === 'COMPLETED' && failed.length === 0 ? 'Pinterest reported the batch completed with no item failures.'
+					: `Pinterest batch ${result.status ?? 'UNKNOWN'}; ${failed.length} item(s) failed.`;
+				for (const item of failed) {
+					const row = document.createElement('li');
+					row.textContent = `${item.item_id ?? 'Item'}: ${item.errors.join('; ') || 'Pinterest rejected this item'}`;
+					items.append(row);
+				}
+			} catch (error) {
+				status.textContent = error instanceof Error ? error.message : 'Pinterest sync failed';
+			} finally { button.disabled = false; }
+		});
+	}
+</script>
+
+<style>
+	.pinterest-sync { max-width: 46rem; margin: 2rem 0; line-height: 1.6; }
+	button { padding: .8rem 1.2rem; cursor: pointer; }
+	button:disabled { cursor: wait; opacity: .6; }
+	.hint { opacity: .7; }
+</style>
