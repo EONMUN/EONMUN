@@ -9,6 +9,7 @@ export default {
 		if (!isGoogleMerchantConfigured(env)) return;
 		const [artworks, ids] = await Promise.all([getAvailableArtworkCatalog(env), getArtworkCatalogIds(env)]);
 		const result = await syncGoogleCatalog(env, artworks, ids);
-		console.info(JSON.stringify({ message: "Google Merchant catalog refreshed", ...result }));
+		if (result.failed.length) console.error(JSON.stringify({ message: "Google Merchant catalog refresh partially failed", ...result }));
+		else console.info(JSON.stringify({ message: "Google Merchant catalog refreshed", ...result }));
 	},
 } satisfies ExportedHandler<Env>;

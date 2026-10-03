@@ -59,9 +59,10 @@ const connectionMessage = error === 'google_merchant_account_changed'
 		status.textContent = 'Submitting artwork changes…';
 		try {
 			const response = await fetch('/api/admin/google', { method: 'POST' });
-			const result = await response.json() as { submitted?: number; removed?: number; error?: string };
+			const result = await response.json() as { submitted?: number; removed?: number; failed?: Array<{ id: string; error: string }>; error?: string };
 			status.textContent = response.ok
 				? `Submitted ${result.submitted} saleable artwork(s); removed ${result.removed} unavailable artwork(s) from the API source.`
+					+ (result.failed?.length ? ` ${result.failed.length} failed: ${result.failed.map((item) => `${item.id}: ${item.error}`).join('; ')}` : '')
 				: result.error ?? 'Google Merchant sync failed';
 		} catch { status.textContent = 'Google Merchant sync failed'; }
 		finally { button.disabled = false; }

@@ -195,13 +195,18 @@ export async function syncGoogleCatalog(env: Env, artworks: PinterestCatalogArtw
 	const token = await accessToken(credentials, apiFetch);
 	let submitted = 0;
 	let removed = 0;
+	const failed: Array<{ id: string; error: string }> = [];
 	for (const id of ids) {
 		const match = /^artwork-(\d+)$/.exec(id);
 		if (!match) continue;
 		const artworkId = Number(match[1]);
-		const result = await submitArtwork(account, dataSource, token, artworkId, available.get(artworkId) ?? null, apiFetch);
-		if (result === "submitted") submitted++;
-		else removed++;
+		try {
+			const result = await submitArtwork(account, dataSource, token, artworkId, available.get(artworkId) ?? null, apiFetch);
+			if (result === "submitted") submitted++;
+			else removed++;
+		} catch (error) {
+			failed.push({ id, error: error instanceof GoogleMerchantError ? error.message : "Google Merchant item sync failed" });
+		}
 	}
-	return { submitted, removed };
+	return { submitted, removed, failed };
 }

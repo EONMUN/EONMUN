@@ -182,7 +182,25 @@ describe("Google Merchant sync", () => {
 			methods.push(init?.method ?? "GET");
 			return init?.method === "DELETE" ? new Response(null, { status: 404 }) : Response.json({});
 		}) as typeof fetch;
-		expect(await syncGoogleCatalog(env, [artwork], ["artwork-41", "artwork-42"], mockFetch)).toEqual({ submitted: 1, removed: 1 });
+		expect(await syncGoogleCatalog(env, [artwork], ["artwork-41", "artwork-42"], mockFetch)).toEqual({ submitted: 1, removed: 1, failed: [] });
 		expect(methods).toEqual(["POST", "DELETE"]);
+	});
+
+	test("a rejected listing does not block later sold-artwork removal", async () => {
+		const env = await testEnv();
+		const attempted: string[] = [];
+		const apiFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+			if (String(input) === "https://oauth2.googleapis.com/token") return Response.json({ access_token: "token" });
+			if (init?.method === "DELETE") {
+				attempted.push("remove");
+				return new Response(null, { status: 204 });
+			}
+			const id = JSON.parse(String(init?.body)).offerId;
+			attempted.push(id);
+			return Response.json({}, { status: id === "artwork-42" ? 400 : 200 });
+		}) as typeof fetch;
+		const result = await syncGoogleCatalog(env, [artwork, { ...artwork, id: 42 }], ["artwork-41", "artwork-42", "artwork-43"], apiFetch);
+		expect(attempted).toEqual(["artwork-41", "artwork-42", "remove"]);
+		expect(result).toEqual({ submitted: 1, removed: 1, failed: [{ id: "artwork-42", error: "Google Merchant product submission failed (HTTP 400)" }] });
 	});
 });
