@@ -290,7 +290,12 @@ From `code/`, with the intended Turso credentials available, run
 missing cover colors. Without `--apply`, it calculates and reports pending
 colors without writing (the schema must already exist). Cover identity is
 rechecked at write time so a concurrent cover change is not overwritten.
-Apply the migration before deploying code that reads these columns.
+The production release workflow runs this command after building and before
+promoting the Worker, using the production Turso GitHub secrets. SQL migrations
+run first, followed by the image-processing backfill. Already populated colors
+are skipped on subsequent releases. Any migration or backfill failure stops
+deployment; failed covers are reported by artwork ID and processing stage.
+Preview uploads do not modify the database.
 
 The homepage embeds the first saved color in its initial HTML and includes each
 slide's color for transitions. No visitor-side image sampling is needed. Soft
