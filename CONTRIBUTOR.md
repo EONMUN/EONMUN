@@ -297,7 +297,9 @@ deployment. Preview uploads do not modify the database. No image download or
 artwork-specific backfill script runs during deployment.
 
 The homepage embeds the first saved color in its initial HTML and includes each
-slide's color for transitions. No visitor-side image sampling is needed. Soft
-gradients blend the artwork edges toward that color. Colors use the whole
+slide's color for transitions. No visitor-side image sampling is needed. On iOS only, soft
+gradients blend the artwork edges toward that color; desktop and Android display
+the artwork without this overlay. The CSS feature query uses the iOS-only
+`-webkit-touch-callout` property, so it takes effect before JavaScript runs. Colors use the whole
 cover, so rotation does not change the tint. Safari still controls its own
 bars; physical iPhone acceptance is required for toolbar colors and transitions.

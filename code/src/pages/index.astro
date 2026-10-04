@@ -237,12 +237,15 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		opacity: 0;
 		transition: opacity 1.6s linear;
 	}
-	.slide::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		background: linear-gradient(to bottom, var(--slide-tint, transparent), transparent 14%, transparent 86%, var(--slide-tint, transparent));
+	/* Only iOS needs artwork edges blended into its native browser bars. */
+	@supports (-webkit-touch-callout: none) {
+		.slide::after {
+			content: '';
+			position: absolute;
+			inset: 0;
+			pointer-events: none;
+			background: linear-gradient(to bottom, var(--slide-tint, transparent), transparent 14%, transparent 86%, var(--slide-tint, transparent));
+		}
 	}
 	.slide.is-current { opacity: 1; z-index: 1; }
 	.slide.is-entering { opacity: 1; z-index: 2; }
