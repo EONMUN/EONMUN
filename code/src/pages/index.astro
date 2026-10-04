@@ -116,6 +116,36 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			return promise;
 		};
 
+		const applySlideTint = (index: number) => {
+			const image = pictures[index];
+			let color = '#f5f1e8';
+			try {
+				const canvas = document.createElement('canvas');
+				canvas.width = canvas.height = 16;
+				const context = canvas.getContext('2d', { willReadFrequently: true });
+				if (!context) return;
+				// Sample the visible cover crop rather than artwork outside the screen.
+				const scale = Math.max(root.clientWidth / image.naturalWidth, root.clientHeight / image.naturalHeight);
+				const width = root.clientWidth / scale;
+				const height = root.clientHeight / scale;
+				context.drawImage(image, (image.naturalWidth - width) / 2, (image.naturalHeight - height) / 2, width, height, 0, 0, 16, 16);
+				const pixels = context.getImageData(0, 0, 16, 16).data;
+				const channels = [0, 0, 0];
+				let weight = 0;
+				for (let i = 0; i < pixels.length; i += 4) {
+					const alpha = pixels[i + 3] / 255;
+					weight += alpha;
+					for (let channel = 0; channel < 3; channel++) channels[channel] += pixels[i + channel] * alpha;
+				}
+				if (weight) color = `rgb(${channels.map((value) => Math.round(value / weight)).join(' ')})`;
+			} catch {
+				// Cross-origin fallback images may display but cannot be sampled by canvas.
+			}
+			slides[index].style.setProperty('--slide-tint', color);
+			document.documentElement.style.setProperty('--homepage-tint', color);
+			document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
+		};
+
 		const schedule = () => {
 			if (reducedMotion || document.hidden || slides.length < 2) return;
 			window.clearTimeout(timer);
@@ -126,6 +156,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 					if (document.hidden) return;
 					const previous = slides[current];
 					const incoming = slides[next];
+					applySlideTint(next);
 					incoming.classList.add('is-entering');
 					incoming.removeAttribute('inert');
 					incoming.removeAttribute('aria-hidden');
@@ -157,6 +188,8 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 				loadingScreen?.querySelector<HTMLElement>('[data-loading-fallback]')?.removeAttribute('hidden');
 				return;
 			}
+			applySlideTint(0);
+			new ResizeObserver(() => applySlideTint(current)).observe(root);
 			loadingScreen?.classList.add('is-hidden');
 			loadingScreen?.setAttribute('aria-hidden', 'true');
 			if (reducedMotion) return;
@@ -175,7 +208,13 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	html, body { height: 100%; overflow: hidden; }
 	body { min-height: 0; height: 100dvh; }
 	body > main { position: relative; flex: none; height: 100%; min-height: 0; }
-	html, body { background: #f5f1e8 !important; }
+	html, body {
+		background: var(--homepage-tint, #f5f1e8) !important;
+		transition: background-color 1.6s linear;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		html, body { transition: none; }
+	}
 </style>
 
 <style>
@@ -219,6 +258,13 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		margin: 0;
 		opacity: 0;
 		transition: opacity 1.6s linear;
+	}
+	.slide::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: linear-gradient(to bottom, var(--slide-tint, transparent), transparent 14%, transparent 86%, var(--slide-tint, transparent));
 	}
 	.slide.is-current { opacity: 1; z-index: 1; }
 	.slide.is-entering { opacity: 1; z-index: 2; }

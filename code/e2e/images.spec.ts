@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 import sharp from 'sharp';
 
-async function imageResponse(url: string) {
+async function imageResponse(url: string, background = '#222') {
 	const params = new URL(url).searchParams;
 	const width = Number(params.get('w') ?? 1920);
 	const height = Number(params.get('h') ?? 1200);
 	// Chromium needs the mock's dimensions to match the srcset candidate.
-	const body = await sharp({ create: { width, height, channels: 3, background: '#222' } }).webp().toBuffer();
+	const body = await sharp({ create: { width, height, channels: 3, background } }).webp({ lossless: true }).toBuffer();
 	return { status: 200, contentType: 'image/webp', body };
 }
 
@@ -20,7 +20,7 @@ test('home preloads one slide ahead and waits for it before advancing', async ({
 		firstSource ??= source;
 		requested.add(source);
 		if (source !== firstSource) await nextAllowed;
-		await route.fulfill(await imageResponse(route.request().url()));
+		await route.fulfill(await imageResponse(route.request().url(), source === firstSource ? '#222' : '#884422'));
 	});
 	await page.clock.install();
 	await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -28,11 +28,14 @@ test('home preloads one slide ahead and waits for it before advancing', async ({
 	await expect(page.locator('[data-loading-screen]')).toBeHidden();
 	await expect.poll(() => requested.size).toBe(2);
 	await expect(page.locator('[data-hero-carousel] img[src]')).toHaveCount(2);
+	const tint = () => page.evaluate(() => document.documentElement.style.getPropertyValue('--homepage-tint'));
+	await expect.poll(tint).toBe('rgb(34 34 34)');
 	await page.clock.runFor(8_000);
 	const slides = page.locator('[data-hero-carousel] .slide');
 	await expect(slides.first()).toHaveClass(/is-current/);
 	releaseNext!();
 	await expect(slides.nth(1)).toHaveClass(/is-entering/);
+	await expect.poll(tint).toBe('rgb(136 68 34)');
 	await expect.poll(() => requested.size).toBe(3);
 	await page.clock.runFor(1_600);
 	await expect(slides.nth(1)).toHaveClass(/is-current/);

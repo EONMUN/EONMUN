@@ -246,8 +246,9 @@ the installed app. From other pages, the logo returns home normally. Only
 allowlisted Google accounts can access administration. The app requires a network connection; it
 does not cache pages for offline use.
 
-The homepage uses warm ivory for its browser theme, loading screen, and page
-background in both light and dark mode. The homepage is locked to the dynamic
+The homepage starts with warm ivory for its browser theme, loading screen, and
+page background in both light and dark mode, then applies the experimental
+artwork tint described below once an image is ready. The homepage is locked to the dynamic
 viewport height without page scrolling, with navigation overlaid on the artwork.
 The slideshow resizes with browser controls and device rotation; caption links
 stay inside the visible viewport. It is not a fixed, solid-color layer that
@@ -262,3 +263,14 @@ Acceptance requires checking both a Safari tab and the installed app on a
 physical iPhone, in portrait and landscape, confirming the homepage does not scroll, and navigating to another
 route and back. Desktop browser tests do not reproduce Safari toolbar, safe-area,
 or installed-app behavior.
+
+### Experimental homepage tint
+
+The preview samples a 16×16 copy of the visible artwork crop after it loads.
+Its average color supplies the page background and theme-color metadata; soft
+gradients inside the page blend the image edges toward that color. The color
+updates with slides and viewport resizing. Cross-origin fallback images retain
+ivory if browser canvas security prevents sampling. No additional image request
+is made for sampling. The homepage remains non-scrolling. Safari decides how
+to tint its own controls; matching toolbar colors and transition timing require
+physical iPhone acceptance and are not guaranteed by browser tests.
