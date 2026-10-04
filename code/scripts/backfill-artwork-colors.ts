@@ -13,7 +13,9 @@ const rows = await client.execute(`SELECT a.id, i.url FROM artworks a JOIN artwo
  WHERE a.background_color IS NULL OR a.background_image_url IS NULL OR a.background_image_url <> i.url`);
 console.log(JSON.stringify({ pending: rows.rows.length, apply }));
 let updated = 0;
+const failed: string[] = [];
 for (const row of rows.rows) {
+ try {
  const source = new URL(String(row.url));
  if (source.origin !== 'https://r2.eonmun.com' || source.username || source.password) throw new Error('Unexpected media origin');
  const response = await fetch(source, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
@@ -26,6 +28,11 @@ for (const row of rows.rows) {
   updated += result.rowsAffected;
  }
  console.log(JSON.stringify({ artworkId: row.id, color }));
+ } catch {
+  failed.push(String(row.id));
+  console.error(JSON.stringify({ artworkId: row.id, error: 'Cover color could not be calculated; retry after correcting the image' }));
+ }
 }
-console.log(JSON.stringify({ updated }));
+console.log(JSON.stringify({ updated, failed }));
+if (failed.length) process.exitCode = 1;
 client.close();
