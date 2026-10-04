@@ -258,9 +258,9 @@ the installed app. From other pages, the logo returns home normally. Only
 allowlisted Google accounts can access administration. The app requires a network connection; it
 does not cache pages for offline use.
 
-The homepage starts with warm ivory for its browser theme, loading screen, and
-page background in both light and dark mode, then applies the experimental
-artwork tint described below once an image is ready. The homepage is locked to the dynamic
+The homepage includes the first artwork's saved tint in its initial HTML for
+the browser theme and page background. Its loading screen remains warm ivory;
+ivory also serves as the fallback when no saved color is available. The homepage is locked to the dynamic
 viewport height without page scrolling, with navigation overlaid on the artwork.
 The slideshow resizes with browser controls and device rotation; caption links
 stay inside the visible viewport. It is not a fixed, solid-color layer that
