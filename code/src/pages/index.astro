@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { artworkColor } from '../lib/artwork-color-value';
+import { artworkColor, FALLBACK_ARTWORK_COLOR } from '../lib/artwork-color-value';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getHomepageSlides } from '../lib/homepage-content';
 import { getCollectionHref } from '../lib/paths';
@@ -16,7 +16,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	sizes: '100vw',
 })));
 ---
-<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor={artworkColor(slides[0]?.artwork.data.backgroundColor)} image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor={FALLBACK_ARTWORK_COLOR} image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
 	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN" aria-hidden="true" hidden>
 		<span class="loading-wordmark" aria-hidden="true">EON<br />MUN</span>
 		<a class="loading-fallback" data-loading-fallback href="/artworks" hidden>View artworks</a>
@@ -167,9 +167,11 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 				loadingScreen?.querySelector<HTMLElement>('[data-loading-fallback]')?.removeAttribute('hidden');
 				return;
 			}
-			applySlideTint(0);
 			loadingScreen?.classList.add('is-hidden');
 			loadingScreen?.setAttribute('aria-hidden', 'true');
+			// Keep the native browser bars ivory until the loading overlay finishes fading.
+			await Promise.all(loadingScreen?.getAnimations().map((animation) => animation.finished.catch(() => {})) ?? []);
+			applySlideTint(0);
 			if (reducedMotion) return;
 			schedule();
 			document.addEventListener('visibilitychange', () => {
