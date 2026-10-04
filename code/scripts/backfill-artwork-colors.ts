@@ -15,14 +15,18 @@ console.log(JSON.stringify({ pending: rows.rows.length, apply }));
 let updated = 0;
 const failed: string[] = [];
 for (const row of rows.rows) {
+ let stage = "validate-origin";
  try {
  const source = new URL(String(row.url));
  if (source.origin !== 'https://r2.eonmun.com' || source.username || source.password) throw new Error('Unexpected media origin');
+ stage = "fetch-image";
  const response = await fetch(source, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
  if (!response.ok) throw new Error(`Image fetch failed for artwork ${row.id}`);
+ stage = "decode-image";
  const pixels = await sharp(Buffer.from(await response.arrayBuffer())).rotate().resize(16,16,{fit:'inside'}).flatten({background:'#ffffff'}).ensureAlpha().raw().toBuffer();
  const color = averageColor(pixels);
  if (apply) {
+  stage = "write-color";
   const result = await client.execute({sql: `UPDATE artworks SET background_color=?, background_image_url=? WHERE id=?
    AND EXISTS (SELECT 1 FROM artwork_images WHERE artwork_id=artworks.id AND is_default=1 AND url=?)`, args:[color,String(row.url),row.id,String(row.url)]});
   updated += result.rowsAffected;
@@ -30,7 +34,7 @@ for (const row of rows.rows) {
  console.log(JSON.stringify({ artworkId: row.id, color }));
  } catch {
   failed.push(String(row.id));
-  console.error(JSON.stringify({ artworkId: row.id, error: 'Cover color could not be calculated; retry after correcting the image' }));
+  console.error(JSON.stringify({ artworkId: row.id, stage, error: 'Color backfill failed; correct the reported stage and retry' }));
  }
 }
 console.log(JSON.stringify({ updated, failed }));
