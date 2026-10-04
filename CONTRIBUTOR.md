@@ -298,7 +298,8 @@ artwork-specific backfill script runs during deployment.
 
 The homepage starts with ivory page and browser-bar colors. Each slide's saved
 color is embedded in the HTML, but the first tint is applied only after the
-loading overlay has finished fading away. If the image fails, the loading
+loading overlay has finished fading away, without a second background-color
+animation. Subsequent slide changes crossfade the tint. If the image fails, the loading
 screen and browser tint stay ivory. Later tints follow slide transitions. No visitor-side image sampling is needed. On iOS only, soft
 gradients blend the artwork edges toward that color; desktop and Android display
 the artwork without this overlay. The CSS feature query uses the iOS-only

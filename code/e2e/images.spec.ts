@@ -36,6 +36,7 @@ test('home preloads one slide ahead and waits for it before advancing', async ({
 	releaseNext!();
 	await expect(slides.nth(1)).toHaveClass(/is-entering/);
 	await expect.poll(tint).toBe('#884422');
+	await expect(page.locator('html')).toHaveCSS('transition-duration', '1.6s');
 	await expect.poll(() => requested.size).toBe(3);
 	await page.clock.runFor(1_600);
 	await expect(slides.nth(1)).toHaveClass(/is-current/);
@@ -60,6 +61,14 @@ test('home keeps the loading screen and browser tint ivory until the first image
 	await expect(loading).toHaveClass(/is-hidden/);
 	await expect(loading).toBeHidden();
 	await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#223344');
+	const revealedBackgrounds = await page.evaluate(() => [document.documentElement, document.body].map((element) => ({
+		color: getComputedStyle(element).backgroundColor,
+		transition: getComputedStyle(element).transitionDuration,
+	})));
+	expect(revealedBackgrounds).toEqual([
+		{ color: 'rgb(34, 51, 68)', transition: '0s' },
+		{ color: 'rgb(34, 51, 68)', transition: '0s' },
+	]);
 });
 
 test('home keeps a shown loading screen for its minimum time', async ({ page }) => {
