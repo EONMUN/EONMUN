@@ -276,13 +276,24 @@ physical iPhone, in portrait and landscape, confirming the homepage does not scr
 route and back. Desktop browser tests do not reproduce Safari toolbar, safe-area,
 or installed-app behavior.
 
-### Experimental homepage tint
+### Saved homepage colors
 
-The preview samples a 16×16 copy of the visible artwork crop after it loads.
-Its average color supplies the page background and theme-color metadata; soft
-gradients inside the page blend the image edges toward that color. The color
-updates with slides and viewport resizing. Cross-origin fallback images retain
-ivory if browser canvas security prevents sampling. No additional image request
-is made for sampling. The homepage remains non-scrolling. Safari decides how
-to tint its own controls; matching toolbar colors and transition timing require
-physical iPhone acceptance and are not guaranteed by browser tests.
+Migration `0018_artwork_background_color.sql` adds nullable `background_color`
+and `background_image_url` columns to artwork records. Admin saves calculate a
+small image average with the Cloudflare Images binding when the cover changes
+or its color is missing. Unchanged covers reuse their saved color. Removing a
+cover clears it. Failed calculations leave the color empty and retry next save.
+Only owned media is fetched, without following redirects.
+
+From `code/`, with the intended Turso credentials available, run
+`node --experimental-strip-types scripts/backfill-artwork-colors.ts --apply` to apply migrations and backfill
+missing cover colors. Without `--apply`, it calculates and reports pending
+colors without writing (the schema must already exist). Cover identity is
+rechecked at write time so a concurrent cover change is not overwritten.
+Apply the migration before deploying code that reads these columns.
+
+The homepage embeds the first saved color in its initial HTML and includes each
+slide's color for transitions. No visitor-side image sampling is needed. Soft
+gradients blend the artwork edges toward that color. Colors use the whole
+cover, so rotation does not change the tint. Safari still controls its own
+bars; physical iPhone acceptance is required for toolbar colors and transitions.

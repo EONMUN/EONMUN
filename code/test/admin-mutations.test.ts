@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import jpeg from 'jpeg-js';
+import { afterEach, beforeEach, describe, expect, test, spyOn } from "bun:test";
 import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { eq } from "drizzle-orm";
@@ -292,4 +293,30 @@ describe("admin mutations", () => {
 		expect(sold.quantity).toBe(0);
 		expect(sold.soldAt).toBeInstanceOf(Date);
 	});
+});
+
+ test('cover tint is persisted, reused for metadata edits, and cleared with the cover', async () => {
+ const source = 'https://r2.eonmun.com/cover.jpg';
+ const bytes = jpeg.encode({ width: 1, height: 1, data: new Uint8Array([120, 80, 40, 255]) }, 100).data;
+ let calls = 0;
+ const colorEnv = { ...env, IMAGES: { input: () => ({ transform: () => ({ output: async () => {
+  calls++; return { response: () => new Response(bytes) };
+ } }) }) } } as any;
+ const fetchMock = spyOn(globalThis, 'fetch').mockResolvedValue(new Response(new Uint8Array([1])));
+ try {
+  const input = artworkInput({ images: [{ url: source, isDefault: true }] });
+  const created = await createArtworkAdmin(colorEnv, input, db);
+  expect(created.backgroundColor).toMatch(/^#[0-9a-f]{6}$/);
+  expect(created.backgroundImageUrl).toBe(source);
+  const updated = await updateArtworkAdmin(colorEnv, 'study', { ...input, title: 'New title' }, db);
+  expect(updated.backgroundColor).toBe(created.backgroundColor);
+  expect(calls).toBe(1);
+  fetchMock.mockResolvedValue(new Response(new Uint8Array([1])));
+  const replaced = await updateArtworkAdmin(colorEnv, 'study', artworkInput({ images: [{url:'https://r2.eonmun.com/second.jpg',isDefault:true}] }), db);
+  expect(replaced.backgroundImageUrl).toBe('https://r2.eonmun.com/second.jpg');
+  expect(calls).toBe(2);
+  const removed = await updateArtworkAdmin(colorEnv, 'study', artworkInput(), db);
+  expect(removed.backgroundColor).toBeNull();
+  expect(removed.backgroundImageUrl).toBeNull();
+ } finally { fetchMock.mockRestore(); }
 });

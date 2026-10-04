@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { artworkColor } from '../lib/artwork-color-value';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getHomepageSlides } from '../lib/homepage-content';
 import { getCollectionHref } from '../lib/paths';
@@ -15,7 +16,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	sizes: '100vw',
 })));
 ---
-<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor="#f5f1e8" image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor={artworkColor(slides[0]?.artwork.data.backgroundColor)} image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
 	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN" aria-hidden="true" hidden>
 		<span class="loading-wordmark" aria-hidden="true">EON<br />MUN</span>
 		<a class="loading-fallback" data-loading-fallback href="/artworks" hidden>View artworks</a>
@@ -24,6 +25,8 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		{slides.map((slide, i) => (
 			<figure
 				class:list={['slide', { 'is-current': i === 0 }]}
+				data-tint={artworkColor(slide.artwork.data.backgroundColor)}
+				style={`--slide-tint: ${artworkColor(slide.artwork.data.backgroundColor)}`}
 				aria-hidden={i === 0 ? undefined : 'true'}
 				inert={i === 0 ? undefined : true}
 			>
@@ -117,31 +120,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		};
 
 		const applySlideTint = (index: number) => {
-			const image = pictures[index];
-			let color = '#f5f1e8';
-			try {
-				const canvas = document.createElement('canvas');
-				canvas.width = canvas.height = 16;
-				const context = canvas.getContext('2d', { willReadFrequently: true });
-				if (!context) return;
-				// Sample the visible cover crop rather than artwork outside the screen.
-				const scale = Math.max(root.clientWidth / image.naturalWidth, root.clientHeight / image.naturalHeight);
-				const width = root.clientWidth / scale;
-				const height = root.clientHeight / scale;
-				context.drawImage(image, (image.naturalWidth - width) / 2, (image.naturalHeight - height) / 2, width, height, 0, 0, 16, 16);
-				const pixels = context.getImageData(0, 0, 16, 16).data;
-				const channels = [0, 0, 0];
-				let weight = 0;
-				for (let i = 0; i < pixels.length; i += 4) {
-					const alpha = pixels[i + 3] / 255;
-					weight += alpha;
-					for (let channel = 0; channel < 3; channel++) channels[channel] += pixels[i + channel] * alpha;
-				}
-				if (weight) color = `rgb(${channels.map((value) => Math.round(value / weight)).join(' ')})`;
-			} catch {
-				// Cross-origin fallback images may display but cannot be sampled by canvas.
-			}
-			slides[index].style.setProperty('--slide-tint', color);
+			const color = slides[index].dataset.tint!;
 			document.documentElement.style.setProperty('--homepage-tint', color);
 			document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
 		};
@@ -189,7 +168,6 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 				return;
 			}
 			applySlideTint(0);
-			new ResizeObserver(() => applySlideTint(current)).observe(root);
 			loadingScreen?.classList.add('is-hidden');
 			loadingScreen?.setAttribute('aria-hidden', 'true');
 			if (reducedMotion) return;

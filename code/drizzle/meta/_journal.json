@@ -127,6 +127,13 @@
       "when": 1791010200000,
       "tag": "0017_remove_artwork_size_facets",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1791072000000,
+      "tag": "0018_artwork_background_color",
+      "breakpoints": true
     }
   ]
 }

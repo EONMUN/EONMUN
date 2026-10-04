@@ -22,7 +22,7 @@ export const POST: APIRoute = async (context) => {
         const input = parseArtworkInput(payload);
 		const before = await getAdminArtwork(env, params.slug);
 		const artwork = await updateArtworkAdmin(env, params.slug, input);
-		if (artworkContentChanged(before, input)) {
+		if (artworkContentChanged(before, input) || before?.backgroundColor !== artwork.backgroundColor) {
 			await refreshPublicContent(context, {
 				kind: "artwork", oldSlug: params.slug, slug: artwork.slug, published: artwork.publishedAt !== null,
 			});

@@ -13,6 +13,7 @@ export type Env = {
 	TURSO_DATABASE_URL?: string;
 	TURSO_AUTH_TOKEN?: string;
 	R2_BUCKET?: R2Bucket;
+	IMAGES?: ImagesBinding;
 	PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
 	STRIPE_SECRET_KEY?: string;
 	STRIPE_WEBHOOK_SECRET?: string;

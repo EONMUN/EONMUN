@@ -18,7 +18,7 @@ interface Props {
 const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdge } = Astro.props;
 ---
 <!doctype html>
-<html lang="en" class="dark:bg-gray-900 dark:text-white">
+<html lang="en" class="dark:bg-gray-900 dark:text-white" style={iosEdgeToEdge && themeColor ? `--homepage-tint: ${themeColor}` : undefined}>
 	<head>
 		<BaseHead
 			title={title}

@@ -40,6 +40,8 @@ export const artworks = sqliteTable(
 		description: text("description"),
 		artist: text("artist"),
 		year: integer("year"),
+		backgroundColor: text("background_color"),
+		backgroundImageUrl: text("background_image_url"),
 		width: real("width"),
 		height: real("height"),
 		depth: real("depth"),
