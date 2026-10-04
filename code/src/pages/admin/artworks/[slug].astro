@@ -16,8 +16,10 @@ if (!slug) return new Response('Not found', { status: 404 });
 const [artwork, collections, facets] = await Promise.all([getAdminArtwork(env, slug), getAdminCollections(env), getAdminFacets(env)]);
 if (!artwork) return new Response('Not found', { status: 404 });
 const pinterestState = Astro.url.searchParams.get('pinterest');
+const googleState = Astro.url.searchParams.get('google');
 const rawBatchId = Astro.url.searchParams.get('pinterestBatch');
 const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) ? rawBatchId : null;
+const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `artwork-${artwork.id}` ? `artwork-${artwork.id}` : undefined;
 ---
 <ConsoleShell
 	title={`Edit ${artwork.title} — EONMUN admin`}
@@ -27,8 +29,12 @@ const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) 
 	backLabel="Artwork"
 >
 	{pinterestState === 'not-connected' && <p role="alert">Artwork saved. Pinterest is not connected yet. <a href="/admin/pinterest">View Pinterest setup →</a></p>}
+	{googleState === 'not-connected' && <p role="alert">Artwork saved. Google Merchant API is not connected yet.</p>}
+	{googleState === 'failed' && <p role="alert">Artwork saved, but Google Merchant sync failed. Check Worker logs before retrying.</p>}
+	{googleState === 'submitted' && <p role="status">Artwork saved and submitted to Google Merchant Center for processing.</p>}
+	{googleState === 'removed' && <p role="status">Artwork saved and removed from the Google Merchant API source.</p>}
 	{pinterestState === 'failed' && <p role="alert">Artwork saved, but Pinterest sync failed. <a href="/admin/pinterest">Retry the catalog sync →</a></p>}
-	{pinterestBatchId && <p role="status" data-pinterest-batch={pinterestBatchId}>Artwork saved. Pinterest is processing the catalog update…</p>}
+	{pinterestBatchId && <p role="status" data-pinterest-batch={pinterestBatchId} data-pinterest-deletion={pinterestDeletion}>Artwork saved. Pinterest is processing the catalog update…</p>}
 	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets} />
 </ConsoleShell>
 
@@ -36,20 +42,20 @@ const pinterestBatchId = rawBatchId && /^[a-zA-Z0-9_-]{1,64}$/.test(rawBatchId) 
 	const status = document.querySelector<HTMLElement>('[data-pinterest-batch]');
 	if (status) {
 		const batchId = status.dataset.pinterestBatch;
+		const deletionIds = status.dataset.pinterestDeletion ? [status.dataset.pinterestDeletion] : [];
 		const check = async () => {
 			const response = await fetch('/api/admin/pinterest', {
-				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ batchId }),
+				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ batchId, deletionIds }),
 			});
 			if (!response.ok) throw new Error('Could not check Pinterest status');
-			return response.json() as Promise<{ status: string; items: Array<{ status: string }> }>;
+			return response.json() as Promise<{ status: string; failed: boolean }>;
 		};
 		(async () => {
 			try {
 				for (let attempt = 0; attempt < 12; attempt++) {
 					const result = await check();
 					if (result.status === 'COMPLETED' || result.status === 'FAILED') {
-						const failed = result.items.some((item) => item.status === 'FAILURE');
-						status.textContent = result.status === 'COMPLETED' && !failed
+						status.textContent = result.status === 'COMPLETED' && !result.failed
 							? 'Pinterest reported the artwork update complete.'
 							: 'Pinterest rejected the artwork update. Use the Pinterest catalog page to retry.';
 						return;

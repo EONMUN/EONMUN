@@ -5,6 +5,7 @@ import { isCurrentArtworkEditor, parseArtworkInput } from "../../../../lib/admin
 import { artworkContentChanged, refreshPublicContent } from "../../../../lib/cache";
 import { getRuntimeEnv } from "../../../../lib/runtime-env";
 import { isPinterestConfigured, syncPinterestArtwork } from "../../../../lib/pinterest-sync";
+import { isGoogleMerchantConfigured, syncGoogleArtwork } from "../../../../lib/google-merchant";
 
 export const prerender = false;
 export const POST: APIRoute = async (context) => {
@@ -28,15 +29,26 @@ export const POST: APIRoute = async (context) => {
 		}
 		const redirect = new URL(`/admin/artworks/${artwork.slug}`, request.url);
 		if ((input.available && input.published) || (before?.publishedAt && (before.product?.quantity ?? 0) > 0)) {
+			if (!isGoogleMerchantConfigured(env)) {
+				redirect.searchParams.set("google", "not-connected");
+			} else {
+				try {
+					redirect.searchParams.set("google", await syncGoogleArtwork(env, artwork.id));
+				} catch (error) {
+					console.error(JSON.stringify({ message: "Google Merchant artwork sync failed", artworkId: artwork.id, error: error instanceof Error ? error.message : "Unknown error" }));
+					redirect.searchParams.set("google", "failed");
+				}
+			}
 			if (!isPinterestConfigured(env)) {
 				redirect.searchParams.set("pinterest", "not-connected");
 			} else {
 				try {
 					const batch = await syncPinterestArtwork(env, artwork.id);
-					if (batch.status === "FAILED" || batch.items.some((item) => item.status === "FAILURE")) {
+					if (batch.failed) {
 						redirect.searchParams.set("pinterest", "failed");
 					} else if (batch.batch_id) {
 						redirect.searchParams.set("pinterestBatch", batch.batch_id);
+						if (batch.deletionIds.length) redirect.searchParams.set("pinterestDeletion", batch.deletionIds[0]);
 					}
 				} catch (error) {
 					console.error(JSON.stringify({ message: "Pinterest artwork sync failed", artworkId: artwork.id, error: error instanceof Error ? error.message : "Unknown error" }));

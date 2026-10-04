@@ -21,7 +21,7 @@ for (const {artwork} of orientationArtworks) {
         <p class="text-sm text-gray-500" data-artwork-count aria-live="polite">{artworks.length} artwork{artworks.length === 1 ? '' : 's'}</p>
     </div>
     <ArtworkGrid artworks={artworks} collectionSlug={collectionSlug} />
-    <p data-orientation-empty hidden class="py-12 text-center text-gray-500">No artworks match this orientation.</p>
+    <p data-orientation-empty hidden={artworks.length !== 0} class="py-12 text-center text-gray-500">No artworks published here yet.</p>
 </div>
 <script>
     for (const gallery of document.querySelectorAll<HTMLElement>('[data-artwork-gallery]')) {
@@ -42,7 +42,9 @@ for (const {artwork} of orientationArtworks) {
                 if (!card.hidden) count++;
             }
             gallery.querySelector('[data-artwork-count]')!.textContent = `${count} artwork${count === 1 ? '' : 's'}`;
-            gallery.querySelector<HTMLElement>('[data-orientation-empty]')!.hidden = count !== 0;
+            const empty = gallery.querySelector<HTMLElement>('[data-orientation-empty]')!;
+            empty.textContent = select.value ? 'No artworks match this orientation.' : 'No artworks published here yet.';
+            empty.hidden = count !== 0;
         };
         select.addEventListener('change', () => {
             const url = new URL(location.href);

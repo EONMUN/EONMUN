@@ -38,7 +38,7 @@ const configured = isPinterestConfigured(env);
 				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
 			});
 			const result = await response.json() as {
-				error?: string; status?: string; batch_id?: string | null;
+				error?: string; status?: string; failed: boolean; batch_id?: string | null; deletionIds?: string[];
 				items?: Array<{ item_id?: string; status: string; errors: string[] }>;
 			};
 			if (!response.ok) throw new Error(result.error ?? 'Pinterest sync failed');
@@ -53,12 +53,14 @@ const configured = isPinterestConfigured(env);
 				for (let attempt = 0; result.status === 'PROCESSING' && result.batch_id && attempt < 12; attempt++) {
 					status.textContent = 'Pinterest is processing the batch…';
 					await new Promise((resolve) => setTimeout(resolve, 5000));
-					result = await call({ batchId: result.batch_id });
+					result = await call({ batchId: result.batch_id, deletionIds: result.deletionIds });
 				}
 				const failed = result.items?.filter((item) => item.status === 'FAILURE') ?? [];
+				const absent = result.items?.filter((item) => item.status === 'ALREADY_ABSENT').length ?? 0;
+				const submitted = result.items?.filter((item) => item.status === 'SUCCESS' && !result.deletionIds?.includes(item.item_id ?? '')).length ?? 0;
 				status.textContent = result.status === 'NOTHING_TO_SYNC' ? 'No catalog changes to submit.'
 					: result.status === 'PROCESSING' ? `Pinterest is still processing batch ${result.batch_id}. Check the catalog later.`
-					: result.status === 'COMPLETED' && failed.length === 0 ? 'Pinterest reported the batch completed with no item failures.'
+					: result.status === 'COMPLETED' && !result.failed ? `Pinterest accepted ${submitted} artwork listing(s). ${absent} unavailable artwork(s) were already absent. No item failures.`
 					: `Pinterest batch ${result.status ?? 'UNKNOWN'}; ${failed.length} item(s) failed.`;
 				for (const item of failed) {
 					const row = document.createElement('li');
