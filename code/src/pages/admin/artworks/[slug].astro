@@ -48,15 +48,14 @@ const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `a
 				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ batchId, deletionIds }),
 			});
 			if (!response.ok) throw new Error('Could not check Pinterest status');
-			return response.json() as Promise<{ status: string; items: Array<{ status: string }> }>;
+			return response.json() as Promise<{ status: string; failed: boolean }>;
 		};
 		(async () => {
 			try {
 				for (let attempt = 0; attempt < 12; attempt++) {
 					const result = await check();
 					if (result.status === 'COMPLETED' || result.status === 'FAILED') {
-						const failed = result.items.some((item) => item.status === 'FAILURE');
-						status.textContent = result.status === 'COMPLETED' && !failed
+						status.textContent = result.status === 'COMPLETED' && !result.failed
 							? 'Pinterest reported the artwork update complete.'
 							: 'Pinterest rejected the artwork update. Use the Pinterest catalog page to retry.';
 						return;

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { buildPinterestOperations, getPinterestBatchStatus, PinterestSyncError, syncPinterestCatalog } from "../src/lib/pinterest-sync";
-import type { PinterestCatalogArtwork } from "../src/lib/pinterest-feed";
+import type { CatalogArtwork } from "../src/lib/catalog-artwork";
 
-const artwork: PinterestCatalogArtwork = {
+const artwork: CatalogArtwork = {
 	id: 41,
 	slug: "test-work",
 	title: "Test work",
@@ -109,7 +109,9 @@ describe("Pinterest catalog sync", () => {
 				: { batch_id: "b12345", status: "COMPLETED", items: [{ item_id: "artwork-41", status: "SUCCESS" }] });
 		}) as typeof fetch;
 		const env = { PINTEREST_APP_ID: "123", PINTEREST_APP_SECRET: "test-secret", PINTEREST_CATALOG_ID: "456" };
-		expect((await getPinterestBatchStatus(env, "b12345", mockFetch)).items[0].status).toBe("SUCCESS");
+		const result = await getPinterestBatchStatus(env, "b12345", mockFetch);
+		expect(result.items[0].status).toBe("SUCCESS");
+		expect(result.failed).toBe(false);
 		expect(calls[1]).toBe("https://api.pinterest.com/v5/catalogs/items/batch/b12345");
 	});
 
@@ -133,6 +135,7 @@ describe("Pinterest catalog sync", () => {
 		const polled = await getPinterestBatchStatus(env, "batch1", apiFetch, initial.deletionIds);
 		expect(polled.items.map((item) => item.status)).toEqual(["FAILURE", "ALREADY_ABSENT", "FAILURE", "FAILURE", "FAILURE"]);
 		expect(polled.items).toEqual(initial.items);
+		expect(polled.failed).toBe(true);
 		const withoutContext = await getPinterestBatchStatus(env, "batch1", apiFetch);
 		expect(withoutContext.items.every((item) => item.status === "FAILURE")).toBe(true);
 	});
@@ -145,6 +148,7 @@ describe("Pinterest catalog sync", () => {
 				: { batch_id: "b1", status: "FAILED", items })) as typeof fetch;
 			const result = await getPinterestBatchStatus(env, "b1", apiFetch, ["artwork-42"]);
 			expect(result.status).toBe(items.length ? "COMPLETED" : "FAILED");
+			expect(result.failed).toBe(items.length === 0);
 			expect(result.providerStatus).toBe("FAILED");
 			expect((await getPinterestBatchStatus(env, "b1", apiFetch, ["artwork-41"])).status).toBe("FAILED");
 		}

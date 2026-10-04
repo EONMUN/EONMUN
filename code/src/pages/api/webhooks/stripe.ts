@@ -14,10 +14,13 @@ export const POST: APIRoute = async ({ request }) => {
 		env.STRIPE_WEBHOOK_SECRET,
 		async (eventId, productId, artworkSlug) => {
 			const marked = await markArtworkPaid(env, eventId, productId, artworkSlug);
-			// A replay can retry a Pinterest removal whose earlier async batch failed.
-			if (isPinterestConfigured(env)) {
+			// Replays retry catalog removals whose earlier background work failed.
+			const pinterest = isPinterestConfigured(env);
+			const google = isGoogleMerchantConfigured(env);
+			const artworkIdPromise = pinterest || google ? getArtworkIdByProductId(env, productId) : Promise.resolve(null);
+			if (pinterest) {
 				waitUntil((async () => {
-					const artworkId = await getArtworkIdByProductId(env, productId);
+					const artworkId = await artworkIdPromise;
 					if (artworkId === null) return;
 					let batch = await syncPinterestArtwork(env, artworkId);
 					if (batch.batch_id) {
@@ -27,7 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
 						await new Promise((resolve) => setTimeout(resolve, 3000));
 						batch = await getPinterestBatchStatus(env, batch.batch_id, fetch, batch.deletionIds);
 					}
-					if (batch.status === "FAILED" || batch.items.some((item) => item.status === "FAILURE")) {
+					if (batch.failed) {
 						console.error(JSON.stringify({ message: "Pinterest sale removal failed", artworkId, batchId: batch.batch_id }));
 					} else if (batch.status === "PROCESSING") {
 						console.warn(JSON.stringify({ message: "Pinterest sale removal still processing; reconcile from admin", artworkId, batchId: batch.batch_id }));
@@ -36,9 +39,9 @@ export const POST: APIRoute = async ({ request }) => {
 					console.error(JSON.stringify({ message: "Pinterest sale removal failed", productId, error: error instanceof Error ? error.message : "Unknown error" }));
 				}));
 			}
-			if (isGoogleMerchantConfigured(env)) {
+			if (google) {
 				waitUntil((async () => {
-					const artworkId = await getArtworkIdByProductId(env, productId);
+					const artworkId = await artworkIdPromise;
 					if (artworkId !== null) await syncGoogleArtwork(env, artworkId);
 				})().catch((error) => {
 					console.error(JSON.stringify({ message: "Google Merchant sale removal failed", productId, error: error instanceof Error ? error.message : "Unknown error" }));

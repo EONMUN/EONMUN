@@ -44,7 +44,7 @@ export const POST: APIRoute = async (context) => {
 			} else {
 				try {
 					const batch = await syncPinterestArtwork(env, artwork.id);
-					if (batch.status === "FAILED" || batch.items.some((item) => item.status === "FAILURE")) {
+					if (batch.failed) {
 						redirect.searchParams.set("pinterest", "failed");
 					} else if (batch.batch_id) {
 						redirect.searchParams.set("pinterestBatch", batch.batch_id);

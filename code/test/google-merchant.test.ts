@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { activateGoogleMerchant, ensureGoogleMerchantServiceAccount, googleProductInput, hasGoogleMerchantAccess, registerGoogleMerchantProject, syncGoogleArtwork, syncGoogleCatalog } from "../src/lib/google-merchant";
-import type { PinterestCatalogArtwork } from "../src/lib/pinterest-feed";
+import type { CatalogArtwork } from "../src/lib/catalog-artwork";
 
-const artwork: PinterestCatalogArtwork = {
+const artwork: CatalogArtwork = {
 	id: 41, slug: "elephants-bw", title: "Elephants B&W", description: "Original <b>artwork</b>",
 	imageUrl: "https://images.example.com/artwork.jpg", priceCents: 25000,
 };

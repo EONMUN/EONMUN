@@ -1,6 +1,7 @@
 import type { Env } from "../db";
 import { getAvailableArtworkById } from "../db/catalog";
-import { toPinterestCatalogItem, type PinterestCatalogArtwork } from "./pinterest-feed";
+import { toPinterestCatalogItem } from "./pinterest-feed";
+import type { CatalogArtwork } from "./catalog-artwork";
 
 const apiBase = "https://api.pinterest.com/v5";
 const scopes = "catalogs:read,catalogs:write";
@@ -88,7 +89,7 @@ async function pinterestRequest<T>(path: string, token: string, apiFetch: ApiFet
 }
 
 export function buildPinterestOperations(
-	artworks: PinterestCatalogArtwork[],
+	artworks: CatalogArtwork[],
 	knownIds: string[],
 	site = new URL("https://eonmun.com"),
 ) {
@@ -117,7 +118,7 @@ export function buildPinterestOperations(
 
 export async function syncPinterestCatalog(
 	env: Env,
-	artworks: PinterestCatalogArtwork[],
+	artworks: CatalogArtwork[],
 	knownIds: string[],
 	apiFetch: ApiFetch = fetch,
 ) {
@@ -130,7 +131,7 @@ export async function syncPinterestCatalog(
 	if (feeds.items?.length) throw new PinterestSyncError("Pinterest already has a feed for this catalog; choose one catalog writer", 409);
 	// Pinterest item lookup requires user OAuth; batch writes support app credentials.
 	const operations = buildPinterestOperations(artworks, knownIds);
-	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [], deletionIds: [] as string[] };
+	if (operations.length === 0) return { status: "NOTHING_TO_SYNC", batch_id: null, items: [], deletionIds: [] as string[], failed: false };
 	if (operations.length > 1000) throw new PinterestSyncError("Catalog exceeds the current 1,000-operation sync limit", 409);
 	const batch = await pinterestRequest<Batch>(withAdAccount("/catalogs/items/batch", adAccountId), token, apiFetch, "catalog batch write", {
 		catalog_type: "RETAIL",
@@ -157,8 +158,10 @@ function summarizeBatch(batch: Batch, deletionIds: string[] = []) {
 		return { item_id: item.item_id, status: absent ? "ALREADY_ABSENT" : item.status ?? "UNKNOWN", errors };
 	});
 	const allAbsent = items.length > 0 && items.length === deletions.size && items.every((item) => item.status === "ALREADY_ABSENT");
+	const status = batch.status === "FAILED" && allAbsent ? "COMPLETED" : batch.status ?? "UNKNOWN";
 	return {
-		status: batch.status === "FAILED" && allAbsent ? "COMPLETED" : batch.status ?? "UNKNOWN",
+		status,
+		failed: status === "FAILED" || items.some((item) => item.status === "FAILURE"),
 		providerStatus: batch.status ?? "UNKNOWN",
 		batch_id: batch.batch_id ?? null,
 		deletionIds,

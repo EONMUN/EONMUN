@@ -1,7 +1,8 @@
 import type { Env } from "../db";
 import { getAvailableArtworkById } from "../db/catalog";
 import { R2_PUBLIC_ORIGIN } from "./media";
-import type { PinterestCatalogArtwork } from "./pinterest-feed";
+import { catalogArtworkFields, type CatalogArtwork } from "./catalog-artwork";
+import { SITE_URL } from "../consts";
 
 const tokenUrl = "https://oauth2.googleapis.com/token";
 const apiBase = "https://merchantapi.googleapis.com/products/v1";
@@ -132,23 +133,24 @@ export async function activateGoogleMerchant(env: Env, apiFetch: ApiFetch = fetc
 	if (!source.ok) throw new GoogleMerchantError(`Google Merchant data source access failed (HTTP ${source.status}). Check the service account permissions and API data source.`);
 }
 
-export function googleProductInput(artwork: PinterestCatalogArtwork) {
+export function googleProductInput(artwork: CatalogArtwork) {
+	const fields = catalogArtworkFields(artwork);
 	const image = new URL(artwork.imageUrl);
 	let imageLink = artwork.imageUrl;
 	if (image.origin === R2_PUBLIC_ORIGIN) {
 		// Normalize uploaded camera images to JPEG for Merchant Center's image decoder.
-		const normalized = new URL("/_image", "https://eonmun.com");
+		const normalized = new URL("/_image", SITE_URL);
 		normalized.search = new URLSearchParams({ href: image.href, w: "1600", q: "90", f: "jpeg", fit: "scale-down" }).toString();
 		imageLink = normalized.href;
 	}
 	return {
-		offerId: `artwork-${artwork.id}`,
+		offerId: fields.id,
 		contentLanguage: "en",
 		feedLabel: "US",
 		productAttributes: {
-			title: artwork.title,
-			description: artwork.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
-			link: new URL(`/artworks/${encodeURIComponent(artwork.slug)}`, "https://eonmun.com").toString(),
+			title: fields.title,
+			description: fields.description,
+			link: fields.link,
 			imageLink,
 			availability: "IN_STOCK",
 			condition: "NEW",
@@ -169,14 +171,14 @@ async function merchantRequest(url: string, token: string, apiFetch: ApiFetch, m
 	if (!response.ok) throw new GoogleMerchantError(`Google Merchant product ${method === "POST" ? "submission" : "removal"} failed (HTTP ${response.status})`);
 }
 
-export async function syncGoogleArtwork(env: Env, artworkId: number, apiFetch: ApiFetch = fetch, available?: PinterestCatalogArtwork | null) {
+export async function syncGoogleArtwork(env: Env, artworkId: number, apiFetch: ApiFetch = fetch, available?: CatalogArtwork | null) {
 	const { account, dataSource, credentials } = config(env);
 	const artwork = available === undefined ? await getAvailableArtworkById(env, artworkId) : available;
 	const token = await accessToken(credentials, apiFetch);
 	return submitArtwork(account, dataSource, token, artworkId, artwork, apiFetch);
 }
 
-async function submitArtwork(account: string, dataSource: string, token: string, artworkId: number, artwork: PinterestCatalogArtwork | null, apiFetch: ApiFetch) {
+async function submitArtwork(account: string, dataSource: string, token: string, artworkId: number, artwork: CatalogArtwork | null, apiFetch: ApiFetch) {
 	const source = encodeURIComponent(dataSource);
 	if (artwork) {
 		await merchantRequest(`${apiBase}/accounts/${account}/productInputs:insert?dataSource=${source}`,
@@ -189,7 +191,7 @@ async function submitArtwork(account: string, dataSource: string, token: string,
 	return "removed" as const;
 }
 
-export async function syncGoogleCatalog(env: Env, artworks: PinterestCatalogArtwork[], ids: string[], apiFetch: ApiFetch = fetch) {
+export async function syncGoogleCatalog(env: Env, artworks: CatalogArtwork[], ids: string[], apiFetch: ApiFetch = fetch) {
 	const { account, dataSource, credentials } = config(env);
 	const available = new Map(artworks.map((artwork) => [artwork.id, artwork]));
 	const token = await accessToken(credentials, apiFetch);
