@@ -119,8 +119,9 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			return promise;
 		};
 
-		const applySlideTint = (index: number) => {
+		const applySlideTint = (index: number, animate = false) => {
 			const color = slides[index].dataset.tint!;
+			if (animate) document.documentElement.setAttribute('data-animate-homepage-tint', '');
 			document.documentElement.style.setProperty('--homepage-tint', color);
 			document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
 		};
@@ -135,7 +136,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 					if (document.hidden) return;
 					const previous = slides[current];
 					const incoming = slides[next];
-					applySlideTint(next);
+					applySlideTint(next, true);
 					incoming.classList.add('is-entering');
 					incoming.removeAttribute('inert');
 					incoming.removeAttribute('aria-hidden');
@@ -190,10 +191,12 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	body > main { position: relative; flex: none; height: 100%; min-height: 0; }
 	html, body {
 		background: var(--homepage-tint, #f5f1e8) !important;
-		transition: background-color 1.6s linear;
 	}
-	@media (prefers-reduced-motion: reduce) {
-		html, body { transition: none; }
+	/* The first reveal is immediate; only later slide changes crossfade the tint. */
+	@media (prefers-reduced-motion: no-preference) {
+		html[data-animate-homepage-tint], html[data-animate-homepage-tint] body {
+			transition: background-color 1.6s linear;
+		}
 	}
 </style>
 
