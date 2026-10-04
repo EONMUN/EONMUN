@@ -296,8 +296,10 @@ journal ensures each SQL migration runs once. A migration failure stops
 deployment. Preview uploads do not modify the database. No image download or
 artwork-specific backfill script runs during deployment.
 
-The homepage embeds the first saved color in its initial HTML and includes each
-slide's color for transitions. No visitor-side image sampling is needed. On iOS only, soft
+The homepage starts with ivory page and browser-bar colors. Each slide's saved
+color is embedded in the HTML, but the first tint is applied only after the
+loading overlay has finished fading away. If the image fails, the loading
+screen and browser tint stay ivory. Later tints follow slide transitions. No visitor-side image sampling is needed. On iOS only, soft
 gradients blend the artwork edges toward that color; desktop and Android display
 the artwork without this overlay. The CSS feature query uses the iOS-only
 `-webkit-touch-callout` property, so it takes effect before JavaScript runs. Colors use the whole

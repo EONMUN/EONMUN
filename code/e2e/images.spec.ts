@@ -41,7 +41,7 @@ test('home preloads one slide ahead and waits for it before advancing', async ({
 	await expect(slides.nth(1)).toHaveClass(/is-current/);
 });
 
-test('home keeps the loading screen until the first image is ready', async ({ page }) => {
+test('home keeps the loading screen and browser tint ivory until the first image is revealed', async ({ page }) => {
 	let releaseImage: (() => void) | undefined;
 	const imageAllowed = new Promise<void>((resolve) => { releaseImage = resolve; });
 	await page.route(/\/_image\?/, async (route) => {
@@ -53,8 +53,13 @@ test('home keeps the loading screen until the first image is ready', async ({ pa
 	await page.clock.runFor(2_000);
 	const loading = page.locator('[data-loading-screen]');
 	await expect(loading).toBeVisible();
+	await expect(loading).toHaveCSS('background-color', 'rgb(245, 241, 232)');
+	await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(245, 241, 232)');
+	await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f5f1e8');
 	releaseImage!();
 	await expect(loading).toHaveClass(/is-hidden/);
+	await expect(loading).toBeHidden();
+	await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#223344');
 });
 
 test('home keeps a shown loading screen for its minimum time', async ({ page }) => {
@@ -140,13 +145,13 @@ test('artwork and post cards prefetch the exact detail image for visible cards',
 	}
 });
 
- test('homepage includes its saved tint before images or scripts run', async ({ browser }) => {
+ test('homepage starts ivory and embeds saved slide colors before images or scripts run', async ({ browser }) => {
  const context = await browser.newContext({ javaScriptEnabled: false });
  const page = await context.newPage();
  await page.route(/\/_image\?/, route => route.abort());
  await page.goto('/', { waitUntil: 'domcontentloaded' });
- await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#223344');
- await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(34, 51, 68)');
+ await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f5f1e8');
+ await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(245, 241, 232)');
  await expect(page.locator('[data-hero-carousel] .slide').first()).toHaveAttribute('data-tint', '#223344');
  await context.close();
 });
