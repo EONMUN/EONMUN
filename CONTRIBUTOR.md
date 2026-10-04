@@ -258,7 +258,47 @@ the installed app. From other pages, the logo returns home normally. Only
 allowlisted Google accounts can access administration. The app requires a network connection; it
 does not cache pages for offline use.
 
-The homepage uses warm ivory for its browser theme, loading screen, and page
-background in both light and dark mode. Other pages retain their own themes.
-Check browser chrome and home-screen launch on a physical iPhone; desktop browser
-tests do not reproduce Safari toolbar or installed-app behavior.
+The homepage includes the first artwork's saved tint in its initial HTML for
+the browser theme and page background. Its loading screen remains warm ivory;
+ivory also serves as the fallback when no saved color is available. The homepage is locked to the dynamic
+viewport height without page scrolling, with navigation overlaid on the artwork.
+The slideshow resizes with browser controls and device rotation; caption links
+stay inside the visible viewport. It is not a fixed, solid-color layer that
+Safari can use to tint its toolbars. The homepage also
+opts into a translucent status bar when launched from the iPhone home screen;
+navigation and captions respect device safe areas. Other routes retain their own
+viewport and status-bar behavior. iOS can keep the homepage status-bar treatment
+while navigating within the installed app, so do not rely on that chrome change
+alone to distinguish routes.
+
+Acceptance requires checking both a Safari tab and the installed app on a
+physical iPhone, in portrait and landscape, confirming the homepage does not scroll, and navigating to another
+route and back. Desktop browser tests do not reproduce Safari toolbar, safe-area,
+or installed-app behavior.
+
+### Saved homepage colors
+
+Migration `0018_artwork_background_color.sql` adds nullable `background_color`
+and `background_image_url` columns to artwork records. Admin saves calculate a
+small image average with the Cloudflare Images binding when the cover changes
+or its color is missing. Unchanged covers reuse their saved color. Removing a
+cover clears it. Failed calculations leave the color empty and retry next save.
+Only owned media is fetched, without following redirects.
+
+From `code/`, with the intended Turso credentials available, run
+`node --experimental-strip-types scripts/backfill-artwork-colors.ts --apply` to apply migrations and backfill
+missing cover colors. Without `--apply`, it calculates and reports pending
+colors without writing (the schema must already exist). Cover identity is
+rechecked at write time so a concurrent cover change is not overwritten.
+The production release workflow runs this command after building and before
+promoting the Worker, using the production Turso GitHub secrets. SQL migrations
+run first, followed by the image-processing backfill. Already populated colors
+are skipped on subsequent releases. Any migration or backfill failure stops
+deployment; failed covers are reported by artwork ID and processing stage.
+Preview uploads do not modify the database.
+
+The homepage embeds the first saved color in its initial HTML and includes each
+slide's color for transitions. No visitor-side image sampling is needed. Soft
+gradients blend the artwork edges toward that color. Colors use the whole
+cover, so rotation does not change the tint. Safari still controls its own
+bars; physical iPhone acceptance is required for toolbar colors and transitions.

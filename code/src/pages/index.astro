@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { artworkColor } from '../lib/artwork-color-value';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getHomepageSlides } from '../lib/homepage-content';
 import { getCollectionHref } from '../lib/paths';
@@ -15,7 +16,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	sizes: '100vw',
 })));
 ---
-<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor="#f5f1e8" image={slides[0]?.defaultImageUrl ?? undefined}>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor={artworkColor(slides[0]?.artwork.data.backgroundColor)} image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
 	<div class="loading-screen" data-loading-screen data-min-ms="1200" role="status" aria-label="Loading EON MUN" aria-hidden="true" hidden>
 		<span class="loading-wordmark" aria-hidden="true">EON<br />MUN</span>
 		<a class="loading-fallback" data-loading-fallback href="/artworks" hidden>View artworks</a>
@@ -24,6 +25,8 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		{slides.map((slide, i) => (
 			<figure
 				class:list={['slide', { 'is-current': i === 0 }]}
+				data-tint={artworkColor(slide.artwork.data.backgroundColor)}
+				style={`--slide-tint: ${artworkColor(slide.artwork.data.backgroundColor)}`}
 				aria-hidden={i === 0 ? undefined : 'true'}
 				inert={i === 0 ? undefined : true}
 			>
@@ -116,6 +119,12 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			return promise;
 		};
 
+		const applySlideTint = (index: number) => {
+			const color = slides[index].dataset.tint!;
+			document.documentElement.style.setProperty('--homepage-tint', color);
+			document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
+		};
+
 		const schedule = () => {
 			if (reducedMotion || document.hidden || slides.length < 2) return;
 			window.clearTimeout(timer);
@@ -126,6 +135,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 					if (document.hidden) return;
 					const previous = slides[current];
 					const incoming = slides[next];
+					applySlideTint(next);
 					incoming.classList.add('is-entering');
 					incoming.removeAttribute('inert');
 					incoming.removeAttribute('aria-hidden');
@@ -157,6 +167,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 				loadingScreen?.querySelector<HTMLElement>('[data-loading-fallback]')?.removeAttribute('hidden');
 				return;
 			}
+			applySlideTint(0);
 			loadingScreen?.classList.add('is-hidden');
 			loadingScreen?.setAttribute('aria-hidden', 'true');
 			if (reducedMotion) return;
@@ -170,15 +181,23 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 </script>
 
 <style is:global>
-	/* Homepage is a fullscreen carousel — the page is itself the hero. Hide
-	   the layout footer here only; other routes keep theirs. */
+	/* The artwork is the homepage; other routes keep the layout footer. */
 	body > footer { display: none; }
-	html, body { background: #f5f1e8 !important; }
+	html, body { height: 100%; overflow: hidden; }
+	body { min-height: 0; height: 100dvh; }
+	body > main { position: relative; flex: none; height: 100%; min-height: 0; }
+	html, body {
+		background: var(--homepage-tint, #f5f1e8) !important;
+		transition: background-color 1.6s linear;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		html, body { transition: none; }
+	}
 </style>
 
 <style>
 	.loading-screen {
-		position: fixed;
+		position: absolute;
 		inset: 0;
 		z-index: 100;
 		display: flex;
@@ -206,10 +225,10 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	.loading-fallback { color: inherit; text-decoration: underline; text-underline-offset: 0.25em; }
 	.loading-fallback[hidden] { display: none; }
 	.hero-carousel {
-		position: fixed;
-		inset: 0;
+		/* Safari clips fixed layers at its controls and extends their solid tint. */
+		position: relative;
+		height: 100%;
 		z-index: 0;
-		background: #f5f1e8;
 	}
 	.slide {
 		position: absolute;
@@ -217,6 +236,13 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		margin: 0;
 		opacity: 0;
 		transition: opacity 1.6s linear;
+	}
+	.slide::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: linear-gradient(to bottom, var(--slide-tint, transparent), transparent 14%, transparent 86%, var(--slide-tint, transparent));
 	}
 	.slide.is-current { opacity: 1; z-index: 1; }
 	.slide.is-entering { opacity: 1; z-index: 2; }
@@ -229,11 +255,14 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 	/* Keep artwork details legible over the image. */
 	.artwork-info {
 		position: absolute;
-		right: 1rem;
-		bottom: 1.25rem;
+		left: calc(1rem + env(safe-area-inset-left));
+		right: calc(1rem + env(safe-area-inset-right));
+		bottom: calc(1.25rem + env(safe-area-inset-bottom));
 		z-index: 50;
 		display: flex;
 		flex-direction: column;
+		width: fit-content;
+		margin-left: auto;
 		gap: 0.5rem;
 		padding: 0.75rem;
 		text-align: right;

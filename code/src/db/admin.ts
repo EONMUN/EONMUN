@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { computeArtworkColor } from "../lib/artwork-color";
 
 import { artworkAttributes, dimensionOrientation, managedArtworkKeys, type ArtworkFacet } from "../lib/artwork-facets";
 import type { ArtworkAdminInput, CollectionAdminInput } from "../lib/admin-input";
@@ -91,11 +92,14 @@ async function replaceArtworkFacets(tx: Transaction, artworkId: number, input: A
 }
 
 export async function createArtworkAdmin(env: Env, input: ArtworkAdminInput, db = getDb(env)) {
+	const backgroundImageUrl = defaultImageUrl(input);
+	const backgroundColor = await computeArtworkColor(env, backgroundImageUrl);
 	await validateIds(db, collections, input.collectionIds, "collections");
 	return db.transaction(async (tx) => {
 		const [artwork] = await tx.insert(artworks).values({
 			...artworkValues(input),
 			publishedAt: null,
+			backgroundColor, backgroundImageUrl,
 		}).returning();
 		if (input.images.length) {
 			await tx.insert(artworkImages).values(input.images.map((image) => ({ ...image, artworkId: artwork.id })));
@@ -124,6 +128,11 @@ export async function createArtworkAdmin(env: Env, input: ArtworkAdminInput, db 
 }
 
 export async function updateArtworkAdmin(env: Env, currentSlug: string, input: ArtworkAdminInput, db = getDb(env)) {
+ const [previous] = await db.select({ backgroundColor: artworks.backgroundColor, backgroundImageUrl: artworks.backgroundImageUrl }).from(artworks).where(eq(artworks.slug, currentSlug));
+ if (!previous) throw new Error("Artwork not found");
+ const backgroundImageUrl = defaultImageUrl(input);
+ const backgroundColor = previous.backgroundImageUrl === backgroundImageUrl && previous.backgroundColor
+  ? previous.backgroundColor : await computeArtworkColor(env, backgroundImageUrl);
 	await validateIds(db, collections, input.collectionIds, "collections");
 	return db.transaction(async (tx) => {
 		const [current] = await tx.select().from(artworks).where(eq(artworks.slug, currentSlug));
@@ -131,6 +140,7 @@ export async function updateArtworkAdmin(env: Env, currentSlug: string, input: A
 		const [artwork] = await tx.update(artworks).set({
 			...artworkValues(input),
 			publishedAt: input.published ? (current.publishedAt ?? new Date()) : null,
+			backgroundColor, backgroundImageUrl,
 		}).where(eq(artworks.id, current.id)).returning();
 
 		const [previousDefaultImage] = await tx.select({ url: artworkImages.url })

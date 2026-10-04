@@ -19,6 +19,12 @@ inputs:
     description: 'Live Stripe API secret used only for explicit provisioning'
     required: false
     default: ''
+  turso-database-url:
+    description: 'Production database URL for migrations and artwork color backfill (deploy only)'
+    required: false
+  turso-auth-token:
+    description: 'Production database token (deploy only)'
+    required: false
   node-version:
     description: 'Node.js version'
     required: false
@@ -93,6 +99,20 @@ runs:
       shell: bash
       working-directory: code
       run: bun run astro build
+
+    - name: Migrate production database and backfill artwork colors
+      if: inputs.mode == 'deploy'
+      shell: bash
+      working-directory: code
+      env:
+        TURSO_DATABASE_URL: ${{ inputs.turso-database-url }}
+        TURSO_AUTH_TOKEN: ${{ inputs.turso-auth-token }}
+      run: |
+        if [ -z "$TURSO_DATABASE_URL" ] || [ -z "$TURSO_AUTH_TOKEN" ]; then
+          echo "::error::Production Turso credentials are required before deployment."
+          exit 1
+        fi
+        node --experimental-strip-types scripts/backfill-artwork-colors.ts --apply
 
     # Worker bindings are separate from GitHub Actions secrets.
     - name: Configure production Stripe checkout and webhook

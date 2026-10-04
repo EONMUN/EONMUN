@@ -9,6 +9,7 @@ interface Props {
 	type?: 'website' | 'article';
 	publishedTime?: string;
 	themeColor?: string;
+	iosEdgeToEdge?: boolean;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -20,6 +21,7 @@ const {
 	type = 'website',
 	publishedTime,
 	themeColor,
+	iosEdgeToEdge = false,
 } = Astro.props;
 
 let imageURL = new URL(image, Astro.site).toString();
@@ -36,7 +38,13 @@ if (new URL(imageURL).origin === 'https://r2.eonmun.com') {
 }
 ---
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content={`width=device-width,initial-scale=1${iosEdgeToEdge ? ',viewport-fit=cover' : ''}`} />
+{iosEdgeToEdge && (
+	<>
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	</>
+)}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
