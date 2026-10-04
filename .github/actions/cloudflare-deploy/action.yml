@@ -20,7 +20,7 @@ inputs:
     required: false
     default: ''
   turso-database-url:
-    description: 'Production database URL for migrations and artwork color backfill (deploy only)'
+    description: 'Production database URL for migrations (deploy only)'
     required: false
   turso-auth-token:
     description: 'Production database token (deploy only)'
@@ -100,7 +100,7 @@ runs:
       working-directory: code
       run: bun run astro build
 
-    - name: Migrate production database and backfill artwork colors
+    - name: Migrate production database
       if: inputs.mode == 'deploy'
       shell: bash
       working-directory: code
@@ -112,7 +112,7 @@ runs:
           echo "::error::Production Turso credentials are required before deployment."
           exit 1
         fi
-        node --experimental-strip-types scripts/backfill-artwork-colors.ts --apply
+        bun run db:migrate
 
     # Worker bindings are separate from GitHub Actions secrets.
     - name: Configure production Stripe checkout and webhook

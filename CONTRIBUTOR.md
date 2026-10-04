@@ -285,17 +285,16 @@ or its color is missing. Unchanged covers reuse their saved color. Removing a
 cover clears it. Failed calculations leave the color empty and retry next save.
 Only owned media is fetched, without following redirects.
 
-From `code/`, with the intended Turso credentials available, run
-`node --experimental-strip-types scripts/backfill-artwork-colors.ts --apply` to apply migrations and backfill
-missing cover colors. Without `--apply`, it calculates and reports pending
-colors without writing (the schema must already exist). Cover identity is
-rechecked at write time so a concurrent cover change is not overwritten.
-The production release workflow runs this command after building and before
-promoting the Worker, using the production Turso GitHub secrets. SQL migrations
-run first, followed by the image-processing backfill. Already populated colors
-are skipped on subsequent releases. Any migration or backfill failure stops
-deployment; failed covers are reported by artwork ID and processing stage.
-Preview uploads do not modify the database.
+Migration `0019_backfill_artwork_background_colors.sql` contains the precomputed
+colors for existing covers. It matches exact default-image URLs, fills missing
+or stale values, and preserves colors already saved for the current cover.
+Migration `0018` remains unchanged because it has already been applied.
+
+Production CI runs the standard `bun run db:migrate` after building and before
+promoting the Worker, using the production Turso GitHub secrets. The migration
+journal ensures each SQL migration runs once. A migration failure stops
+deployment. Preview uploads do not modify the database. No image download or
+artwork-specific backfill script runs during deployment.
 
 The homepage embeds the first saved color in its initial HTML and includes each
 slide's color for transitions. No visitor-side image sampling is needed. Soft
