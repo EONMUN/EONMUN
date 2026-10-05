@@ -1,0 +1,49 @@
+CREATE TABLE orders (
+	id TEXT PRIMARY KEY NOT NULL,
+	stripe_checkout_session_id TEXT NOT NULL,
+	stripe_payment_intent_id TEXT,
+	stripe_customer_id TEXT,
+	stripe_event_id TEXT NOT NULL,
+	stripe_event_type TEXT NOT NULL,
+	livemode INTEGER NOT NULL,
+	product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+	artwork_id INTEGER REFERENCES artworks(id) ON DELETE SET NULL,
+	artwork_slug TEXT,
+	artwork_title TEXT NOT NULL,
+	item_amount INTEGER NOT NULL,
+	currency TEXT NOT NULL,
+	amount_subtotal INTEGER,
+	amount_discount INTEGER,
+	amount_shipping INTEGER,
+	amount_tax INTEGER,
+	amount_total INTEGER,
+	buyer_email TEXT,
+	buyer_name TEXT,
+	buyer_business_name TEXT,
+	buyer_phone TEXT,
+	billing_line1 TEXT,
+	billing_line2 TEXT,
+	billing_city TEXT,
+	billing_state TEXT,
+	billing_postal_code TEXT,
+	billing_country TEXT,
+	recipient_name TEXT,
+	recipient_phone TEXT,
+	shipping_line1 TEXT,
+	shipping_line2 TEXT,
+	shipping_city TEXT,
+	shipping_state TEXT,
+	shipping_postal_code TEXT,
+	shipping_country TEXT,
+	paid_at INTEGER NOT NULL,
+	fulfillment_status TEXT NOT NULL DEFAULT 'unfulfilled' CHECK (fulfillment_status IN ('unfulfilled', 'shipped', 'delivered', 'cancelled')),
+	attention_reason TEXT CHECK (attention_reason IN ('artwork_already_sold', 'artwork_not_found')),
+	created_at INTEGER NOT NULL,
+	updated_at INTEGER NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX orders_stripe_checkout_session_unique ON orders (stripe_checkout_session_id);
+--> statement-breakpoint
+CREATE INDEX orders_paid_at_idx ON orders (paid_at);
+--> statement-breakpoint
+CREATE INDEX orders_product_idx ON orders (product_id);

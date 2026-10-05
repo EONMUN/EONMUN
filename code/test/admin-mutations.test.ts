@@ -15,7 +15,9 @@ import {
 	updateCollectionAdmin,
 } from "../src/db/admin";
 import { getAllArtworks, getArtworkBySlug, getHomepageSlides, getPublishedArtworkImages } from "../src/db/queries";
-import { markArtworkPaid } from "../src/db/checkout";
+import { recordPaidOrder } from "../src/db/orders";
+import { parsePaidCheckoutEvent } from "../src/lib/stripe-order";
+import { paidCheckoutEvent } from "./helpers/stripe-checkout";
 import { artworks, artworksToCollections, artworksToFacets, collections, facets, homepageArtworks, products } from "../src/db";
 import { parseArtworkInput, parseCollectionInput } from "../src/lib/admin-input";
 import { artworkContentChanged, collectionContentChanged } from "../src/lib/cache";
@@ -267,8 +269,12 @@ describe("admin mutations", () => {
 		const artwork = await createArtworkAdmin(env, artworkInput({ available: true, priceCents: 125000 }), db);
 		await updateArtworkAdmin(env, artwork.slug, artworkInput({ published: true, available: true, priceCents: 125000 }), db);
 		const [product] = await db.select().from(products).where(eq(products.artworkId, artwork.id));
-		expect(await markArtworkPaid(env, "evt_paid", product.id, artwork.slug, db)).toBe(true);
-		expect(await markArtworkPaid(env, "evt_paid", product.id, artwork.slug, db)).toBe(false);
+		const checkout = parsePaidCheckoutEvent(paidCheckoutEvent({ session: { metadata: { artworkSlug: artwork.slug, productId: String(product.id) } } }))!;
+		const first = await recordPaidOrder(env, checkout, db);
+		const replay = await recordPaidOrder(env, checkout, db);
+		expect([first.created, first.attentionReason]).toEqual([true, null]);
+		expect([replay.created, replay.attentionReason]).toEqual([false, null]);
+		expect(replay.notification).toEqual(first.notification);
 		const [sold] = await db.select().from(products).where(eq(products.id, product.id));
 		expect(sold.quantity).toBe(0);
 		expect(sold.soldAt).toBeInstanceOf(Date);
@@ -287,8 +293,12 @@ describe("admin mutations", () => {
 			priceCents: 125000,
 		}), db);
 
-		expect(await markArtworkPaid(env, "evt_renamed", product.id, checkoutSlug, db)).toBe(true);
-		expect(await markArtworkPaid(env, "evt_renamed", product.id, checkoutSlug, db)).toBe(false);
+		const order = await recordPaidOrder(env, parsePaidCheckoutEvent(paidCheckoutEvent({
+			eventId: "evt_renamed",
+			session: { metadata: { artworkSlug: checkoutSlug, productId: String(product.id) } },
+		}))!, db);
+		expect(order.attentionReason).toBeNull();
+		expect(order.notification.artworkTitle).toBe("Renamed study");
 		const [sold] = await db.select().from(products).where(eq(products.id, product.id));
 		expect(sold.quantity).toBe(0);
 		expect(sold.soldAt).toBeInstanceOf(Date);

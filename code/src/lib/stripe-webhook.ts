@@ -1,3 +1,6 @@
+import { driverErrorMessage } from "./driver-error";
+import { parsePaidCheckoutEvent, type PaidCheckout, type PaidOrderResult } from "./stripe-order";
+
 const SIGNATURE_TOLERANCE_SECONDS = 300;
 const MAX_WEBHOOK_BYTES = 1024 * 1024;
 
@@ -36,16 +39,10 @@ export async function verifyStripeSignature(
 	return false;
 }
 
-interface StripeCheckoutEvent {
-	id: string;
-	type: string;
-	data?: { object?: { payment_status?: string; metadata?: { artworkSlug?: string; productId?: string } } };
-}
-
 export async function handleStripeWebhook(
 	request: Request,
 	secret: string | undefined,
-	markPaid: (eventId: string, productId: number, artworkSlug: string) => Promise<boolean>,
+	recordPaidOrder: (checkout: PaidCheckout) => Promise<PaidOrderResult>,
 	now = Date.now(),
 ) {
 	if (!secret) return Response.json({ error: "Webhook is unavailable" }, { status: 503 });
@@ -57,36 +54,37 @@ export async function handleStripeWebhook(
 	if (!signature || !await verifyStripeSignature(body, signature, secret, now)) {
 		return Response.json({ error: "Invalid Stripe signature" }, { status: 400 });
 	}
-	let event: StripeCheckoutEvent;
+	let checkout: PaidCheckout | null;
 	try {
-		event = JSON.parse(new TextDecoder().decode(body)) as StripeCheckoutEvent;
+		checkout = parsePaidCheckoutEvent(JSON.parse(new TextDecoder().decode(body)));
 	} catch {
 		return Response.json({ error: "Invalid Stripe event" }, { status: 400 });
 	}
-	const checkout = event.data?.object;
-	const isPaidEvent =
-		event.type === "checkout.session.async_payment_succeeded" ||
-		(event.type === "checkout.session.completed" && checkout?.payment_status === "paid");
-	if (isPaidEvent) {
-		if (!checkout) return Response.json({ error: "Invalid Stripe event" }, { status: 400 });
-		const artworkSlug = checkout.metadata?.artworkSlug;
-		const productId = Number(checkout.metadata?.productId);
-		if (!event.id || !artworkSlug || !Number.isInteger(productId) || productId <= 0) {
-			return Response.json({ error: "Invalid Stripe metadata" }, { status: 400 });
-		}
-		// CRITICAL: checkout creates a Stripe session without reserving inventory, so two
-		// buyers can pay for the same one-of-a-kind artwork. markPaid only updates while
-		// soldAt IS NULL, so a false result is either a Stripe replay of an event already
-		// applied or a genuine second payment that now needs a refund. Both are invisible
-		// unless recorded here.
-		if (!await markPaid(event.id, productId, artworkSlug)) {
-			console.error(JSON.stringify({
-				message: "stripe paid event did not mark an artwork sold",
-				eventId: event.id,
-				productId,
-				artworkSlug,
-			}));
-		}
+	if (!checkout) return Response.json({ received: true });
+	const references = { eventId: checkout.eventId, checkoutSessionId: checkout.checkoutSessionId };
+	let order: PaidOrderResult;
+	try {
+		order = await recordPaidOrder(checkout);
+	} catch (error) {
+		// SECURITY: log only Stripe references and the driver's message; buyer
+		// names, emails, and addresses must never reach Worker logs.
+		console.error(JSON.stringify({
+			message: "stripe paid order could not be processed",
+			...references,
+			error: driverErrorMessage(error, "Unknown error"),
+		}));
+		// A 5xx makes Stripe retry, so the payment is not discarded.
+		return Response.json({ error: "Order could not be recorded" }, { status: 500 });
+	}
+	if (order.created && order.attentionReason) {
+		console.error(JSON.stringify({
+			message: "stripe paid order needs attention",
+			reason: order.attentionReason,
+			orderId: order.notification.orderId,
+			...references,
+			productId: checkout.productId,
+			artworkSlug: checkout.artworkSlug,
+		}));
 	}
 	return Response.json({ received: true });
 }

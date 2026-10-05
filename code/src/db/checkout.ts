@@ -53,29 +53,3 @@ export async function getCheckoutItemByArtworkSlug(
 	));
 	return row ?? null;
 }
-
-export async function markArtworkPaid(
-	env: Env,
-	_eventId: string,
-	productId: number,
-	_artworkSlug: string,
-	db = getDb(env),
-) {
-	const [product] = await db.select({ id: products.id }).from(products).innerJoin(
-			artworks,
-			eq(products.artworkId, artworks.id),
-		).where(and(eq(products.id, productId), eq(products.type, "artwork")));
-	if (!product) throw new Error("Stripe event does not match an artwork product");
-	const updated = await db.update(products).set({
-		soldAt: new Date(),
-		quantity: 0,
-		updatedAt: new Date(),
-	}).where(and(eq(products.id, productId), isNull(products.soldAt))).returning({ id: products.id });
-	return updated.length === 1;
-}
-
-export async function getArtworkIdByProductId(env: Env, productId: number, db = getDb(env)) {
-	const [row] = await db.select({ artworkId: products.artworkId })
-		.from(products).where(and(eq(products.id, productId), eq(products.type, "artwork")));
-	return row?.artworkId ?? null;
-}

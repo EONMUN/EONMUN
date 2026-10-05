@@ -68,7 +68,7 @@ Turso is the production source for artwork, collections, relationships, products
 
 Use `/admin/artworks` to create and publish artwork. Uploads go through the authenticated Worker endpoint to the bound R2 bucket. Prices are stored in USD cents and shown on published artwork pages only while the product is available for purchase.
 
-The public Pinterest catalog feed is `https://eonmun.com/pinterest-catalog.csv`. It includes only published artwork marked available for purchase with a positive price and an image. The admin price and availability fields control it automatically. It remains available for inspection, but the current Pinterest proof uses direct API batches instead of registering the CSV as a data source. The artwork page and checkout check live availability even while Pinterest is processing a catalog change. Checkout does not reserve inventory yet; a timed reservation is a separate inventory change.
+The public Pinterest catalog feed is `https://eonmun.com/pinterest-catalog.csv`. It includes only published artwork marked available for purchase with a positive price and an image. The admin price and availability fields control it automatically. It remains available for inspection, but the current Pinterest proof uses direct API batches instead of registering the CSV as a data source. The artwork page and checkout check live availability even while Pinterest is processing a catalog change. Checkout does not reserve inventory yet; a timed reservation is a separate inventory change. A second paid order for an already-sold artwork is recorded and flagged on `/admin/orders`.
 
 With the Pinterest app secret configured, saving a published artwork as available for purchase submits that artwork to Pinterest automatically. Later price, content, availability, and publication changes update or remove that artwork. The editor checks the submitted batch and shows a warning if Pinterest rejects it. A confirmed Stripe sale submits a removal and checks briefly for an asynchronous failure; later failures require manual reconciliation. `/admin/pinterest` remains a full-catalog retry and reconciliation tool. It derives USD item prices from the same sale-eligible catalog query as the CSV feed and checks each item's asynchronous result. It removes previously submitted artworks that still exist in the site database when they become unavailable. Do not attach the CSV feed to the same Pinterest catalog while using the batch API. The existing 24-hour test token lacks `catalogs:write` and cannot run this sync.
 
@@ -151,6 +151,35 @@ Historical SQL migrations remain necessary for fresh databases and migration his
 
 
 Configure Stripe to send `checkout.session.completed` and `checkout.session.async_payment_succeeded` events to `https://eonmun.com/api/webhooks/stripe`. Contact-email secrets are required only by the contact runtime endpoint.
+
+## Orders
+
+Migration `0020_stripe_orders.sql` adds the `orders` table. Apply it before deploying the webhook change; production CI runs `bun run db:migrate` before promoting the Worker.
+
+The Stripe webhook stores one order per paid Checkout Session: `checkout.session.completed` with `payment_status` `paid`, or `checkout.session.async_payment_succeeded`. Unpaid completions are ignored until the delayed payment succeeds. Only signed events are processed. The order and the artwork's sold mark are written in one transaction, so neither exists without the other.
+
+Each order keeps:
+
+- Stripe Checkout Session, PaymentIntent, Customer (when Stripe created one), and the recording event ID and type
+- buyer email, name, business name, phone, and complete billing address
+- recipient name and shipping address, with a recipient phone only when Stripe supplies one separately
+- currency, purchased artwork amount, subtotal, discount, shipping, tax, and total
+- a snapshot of the artwork ID, slug, and title at payment time, payment time, fulfillment status, and an attention flag
+
+Card details and the raw webhook payload are never stored. Missing optional Stripe fields are stored as empty.
+
+The webhook endpoint uses the Stripe account's default API version. Since `2025-03-31.basil`, Checkout reports shipping under `collected_information.shipping_details`; older versions use top-level `shipping_details`. The parser reads both.
+
+Checkout requires a full billing address and a phone number (`billing_address_collection=required`, `phone_number_collection[enabled]=true`). Stripe collects one phone number for the buyer; the shipping label falls back to it. Remove the phone setting in `code/src/lib/checkout.ts` if checkout friction outweighs carrier contact.
+
+Repeated deliveries for a session return the stored order and do not change inventory or raise a flag. Orders need attention when:
+
+- `artwork_already_sold`: a separate paid session bought an artwork another order already sold. Refund it in Stripe.
+- `artwork_not_found`: the session has no matching artwork product, such as a Payment Link created in Stripe. The payment is kept rather than discarded.
+
+`/admin/orders` lists paid orders newest first. Each order page shows buyer, recipient, addresses, totals, Stripe dashboard links, a copyable shipping label, and a fulfillment status control (`To ship`, `Shipped`, `Delivered`, `Cancelled`). Admin and API routes are `no-store`; Worker logs carry Stripe references only, never buyer details.
+
+Sales made before migration `0020` have no order row. If Stripe retries one of those events after deployment, it is recorded as a new order flagged `artwork_already_sold`; confirm it against Stripe before refunding.
 
 ## Validation
 

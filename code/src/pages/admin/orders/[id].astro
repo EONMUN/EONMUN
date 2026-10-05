@@ -1,0 +1,268 @@
+---
+import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
+import ErrorBanner from '../../../components/admin/ErrorBanner.astro';
+import FormFieldset from '../../../components/admin/FormFieldset.astro';
+import SubmitButton from '../../../components/admin/SubmitButton.astro';
+import { FULFILLMENT_STATUSES } from '../../../db/schema/orders';
+import { getAdminOrder } from '../../../db/orders';
+import { requireAdminPage } from '../../../lib/admin-guard';
+import {
+	ATTENTION_LABELS,
+	FULFILLMENT_LABELS,
+	addressLines,
+	formatOrderAmount,
+	isOrderId,
+	shippingLabel,
+	stripeDashboardUrl,
+} from '../../../lib/order-admin';
+import { getRuntimeEnv } from '../../../lib/runtime-env';
+
+export const prerender = false;
+
+const env = getRuntimeEnv();
+const access = await requireAdminPage(Astro.request, env, Astro.url.pathname);
+if ('response' in access) return access.response;
+const { session } = access;
+const id = Astro.params.id;
+if (!isOrderId(id)) return new Response('Not found', { status: 404 });
+const order = await getAdminOrder(env, id);
+if (!order) return new Response('Not found', { status: 404 });
+
+const money = (cents: number | null) => formatOrderAmount(cents, order.currency);
+const paidAt = new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }).format(order.paidAt);
+const billing = addressLines(order, 'billing');
+const shipping = addressLines(order, 'shipping');
+const label = shippingLabel(order);
+const attention = order.attentionReason ? ATTENTION_LABELS[order.attentionReason] : null;
+const totals = [
+	['Artwork', order.itemAmount],
+	['Subtotal', order.amountSubtotal === order.itemAmount ? null : order.amountSubtotal],
+	['Discount', order.amountDiscount],
+	['Shipping', order.amountShipping],
+	['Tax', order.amountTax],
+] as const;
+---
+<ConsoleShell
+	title={`Order for ${order.artworkTitle} — EONMUN admin`}
+	heading={order.artworkTitle}
+	email={session.user.email}
+	backHref="/admin/orders"
+	backLabel="Orders"
+>
+	<div class="order">
+		{attention && (
+			<p class="error-banner attention"><strong>{attention.label}.</strong> {attention.detail}</p>
+		)}
+		{!order.livemode && <p class="note">Stripe test-mode payment. No money was collected.</p>}
+
+		<form class="fulfillment" data-order-fulfillment-form data-action={`/api/admin/orders/${order.id}`}>
+			<FormFieldset legend="Fulfillment" layout="columns">
+				<label>
+					Status
+					<select class="admin-input" name="fulfillmentStatus">
+						{FULFILLMENT_STATUSES.map((status) => (
+							<option value={status} selected={status === order.fulfillmentStatus}>{FULFILLMENT_LABELS[status]}</option>
+						))}
+					</select>
+				</label>
+				<div class="form-actions">
+					<SubmitButton label="Save status" />
+					<p class="saved" role="status" aria-live="polite" data-saved></p>
+				</div>
+			</FormFieldset>
+			<ErrorBanner />
+		</form>
+
+		<div class="panels">
+			<section class="panel">
+				<h2>Ship to</h2>
+				{label ? (
+					<>
+						<pre class="label" data-shipping-label>{label}</pre>
+						<button type="button" class="copy" data-copy-label>Copy label</button>
+					</>
+				) : (
+					<p class="muted">Stripe did not supply a shipping address.</p>
+				)}
+				<dl>
+					<dt>Recipient</dt><dd>{order.recipientName ?? 'Not supplied'}</dd>
+					<dt>Recipient phone</dt><dd>{order.recipientPhone ? <a href={`tel:${order.recipientPhone}`}>{order.recipientPhone}</a> : 'Not supplied separately'}</dd>
+					<dt>Address</dt><dd>{shipping.length ? shipping.map((line) => <span class="line">{line}</span>) : 'Not supplied'}</dd>
+				</dl>
+			</section>
+
+			<section class="panel">
+				<h2>Buyer</h2>
+				<dl>
+					<dt>Name</dt><dd>{order.buyerName ?? 'Not supplied'}</dd>
+					{order.buyerBusinessName && <><dt>Business</dt><dd>{order.buyerBusinessName}</dd></>}
+					<dt>Email</dt><dd>{order.buyerEmail ? <a href={`mailto:${order.buyerEmail}`}>{order.buyerEmail}</a> : 'Not supplied'}</dd>
+					<dt>Phone</dt><dd>{order.buyerPhone ? <a href={`tel:${order.buyerPhone}`}>{order.buyerPhone}</a> : 'Not supplied'}</dd>
+					<dt>Billing address</dt><dd>{billing.length ? billing.map((line) => <span class="line">{line}</span>) : 'Not supplied'}</dd>
+				</dl>
+			</section>
+
+			<section class="panel">
+				<h2>Payment</h2>
+				<dl>
+					<dt>Paid</dt><dd>{paidAt} UTC</dd>
+					{totals.filter(([, cents]) => cents !== null).map(([name, cents]) => (
+						<><dt>{name}</dt><dd class="amount">{money(cents)}</dd></>
+					))}
+					<dt>Total</dt><dd class="amount total">{money(order.amountTotal)}</dd>
+					<dt>Artwork record</dt>
+					<dd>{order.artworkSlug && order.artworkId !== null ? <a href={`/admin/artworks/${order.artworkSlug}`}>{order.artworkSlug}</a> : (order.artworkSlug ?? 'Not linked')}</dd>
+				</dl>
+			</section>
+
+			<section class="panel">
+				<h2>Stripe references</h2>
+				<dl class="references">
+					<dt>Checkout Session</dt><dd><code>{order.stripeCheckoutSessionId}</code></dd>
+					<dt>Payment</dt>
+					<dd>{order.stripePaymentIntentId ? <a href={stripeDashboardUrl('payments', order.stripePaymentIntentId, order.livemode)} rel="noreferrer" target="_blank"><code>{order.stripePaymentIntentId}</code></a> : 'Not supplied'}</dd>
+					<dt>Customer</dt>
+					<dd>{order.stripeCustomerId ? <a href={stripeDashboardUrl('customers', order.stripeCustomerId, order.livemode)} rel="noreferrer" target="_blank"><code>{order.stripeCustomerId}</code></a> : 'Guest checkout'}</dd>
+					<dt>Recorded from</dt>
+					<dd><a href={stripeDashboardUrl('events', order.stripeEventId, order.livemode)} rel="noreferrer" target="_blank"><code>{order.stripeEventId}</code></a> <span class="muted">{order.stripeEventType}</span></dd>
+					<dt>Order ID</dt><dd><code>{order.id}</code></dd>
+				</dl>
+			</section>
+		</div>
+	</div>
+</ConsoleShell>
+
+<script is:inline>
+	const form = document.querySelector('[data-order-fulfillment-form]');
+	if (form) form.addEventListener('submit', async (event) => {
+		event.preventDefault(); const errorBox = form.querySelector('[data-error]'); const saved = form.querySelector('[data-saved]');
+		errorBox.hidden = true; saved.textContent = '';
+		try {
+			const response = await fetch(form.dataset.action, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ fulfillmentStatus: new FormData(form).get('fulfillmentStatus') }) });
+			const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Save failed'); saved.textContent = 'Saved';
+		} catch (error) { errorBox.hidden = false; errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; }
+	});
+	const copy = document.querySelector('[data-copy-label]');
+	const shippingLabel = document.querySelector('[data-shipping-label]');
+	if (copy && shippingLabel) copy.addEventListener('click', async () => {
+		try { await navigator.clipboard.writeText(shippingLabel.textContent ?? ''); copy.textContent = 'Copied'; }
+		catch { copy.textContent = 'Select the label to copy'; }
+	});
+</script>
+
+<style>
+	.order {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+		margin-top: 2rem;
+	}
+
+	.note, .muted {
+		color: var(--muted);
+	}
+
+	.note {
+		margin: 0;
+		font-size: 0.85rem;
+	}
+
+	.fulfillment {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.form-actions {
+		display: flex;
+		align-items: flex-end;
+		gap: 1rem;
+	}
+
+	.saved {
+		margin: 0 0 0.9rem;
+		font-size: 0.85rem;
+		color: var(--muted);
+	}
+
+	.panels {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+		gap: 1.5rem;
+	}
+
+	.panel {
+		padding: clamp(1rem, 2.5vw, 1.75rem);
+		border: 1px solid var(--hair);
+	}
+
+	.panel h2 {
+		margin: 0 0 1rem;
+		font-size: 0.72rem;
+		font-weight: normal;
+		letter-spacing: 0.28em;
+		text-transform: uppercase;
+		color: var(--seal-text);
+	}
+
+	dl {
+		display: grid;
+		grid-template-columns: minmax(7rem, auto) 1fr;
+		gap: 0.6rem 1rem;
+		margin: 0;
+		font-size: 0.9rem;
+	}
+
+	dt {
+		color: var(--muted);
+	}
+
+	dd {
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+
+	dd a {
+		color: var(--paper);
+		text-decoration: underline;
+		text-decoration-color: var(--hair);
+		text-underline-offset: 0.2em;
+	}
+
+	.line {
+		display: block;
+	}
+
+	.amount {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.total {
+		color: var(--paper);
+		font-weight: bold;
+	}
+
+	.label {
+		margin: 0 0 0.75rem;
+		padding: 0.9rem 1rem;
+		font: inherit;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		white-space: pre-wrap;
+		background: rgba(8, 8, 10, 0.6);
+		border: 1px solid var(--hair);
+		user-select: all;
+	}
+
+	.copy {
+		margin-bottom: 1.25rem;
+		padding: 0.5rem 1rem;
+		font-size: 0.75rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+	}
+
+	code {
+		font-size: 0.8rem;
+	}
+</style>
