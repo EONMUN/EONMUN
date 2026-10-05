@@ -86,8 +86,10 @@ export function attachAdminFormSave(form: HTMLFormElement, options: AdminFormSav
 	};
 
 	const unlock = (afterEnable?: () => void) => {
-		release?.(afterEnable);
+		// Cleared first, so a throwing callback cannot leave every later submit refused.
+		const restore = release;
 		release = null;
+		restore?.(afterEnable);
 	};
 
 	form.addEventListener("submit", async (event) => {
