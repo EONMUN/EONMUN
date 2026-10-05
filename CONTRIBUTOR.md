@@ -127,6 +127,8 @@ Pull requests from branches in this repository get a versioned Cloudflare previe
 
 Astro 7 route rules cache the home page, artwork gallery and detail pages, posts, and sitemaps at the Cloudflare edge for five minutes, with one minute of stale-while-revalidate. Successful admin artwork and collection writes purge their shared `public-content` cache tag, then request the canonical public pages to fill the cache with the saved content before responding. Other runtime routes, including admin, checkout, auth, and inventory, are not cached. Post changes require a deploy; each Worker version starts with a separate cache.
 
+The navbar logo and links use Astro's native `data-astro-prefetch="load"`, so each page fetches the other navbar pages in the background after load. Astro skips the current page and honors data-saver and slow-network signals. Reuse depends on the browser's HTTP cache; there is no service-worker page cache or offline support.
+
 To check a deployed preview, request a public route twice and confirm `CF-Cache-Status` changes from `MISS` to `HIT`; subsequent hits include `Age`. Confirm admin and inventory routes show `BYPASS`. Cloudflare consumes the provider's cache control and tag headers, so they may not appear in client responses. Local Astro dev and preview do not reproduce the deployed Worker cache or its purge API.
 
 Normal deploys preserve the Stripe secrets configured directly on `eonmun-astro`. `PUBLIC_STRIPE_PUBLISHABLE_KEY` is a public Wrangler variable exposed to the browser through the purchase form's `data-stripe-publishable-key` attribute. Checkout uses a server-created Stripe session and a redirect, so it does not require Stripe.js on the artwork page.
