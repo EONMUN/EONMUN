@@ -137,12 +137,13 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 	.push-panel, .push-section { max-width: 48rem; margin: 2rem 0; }
 	.push-state { font-size: 1.1rem; }
 	.push-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
-	.secondary-button { border: 1px solid var(--hair); padding: .8rem 1.2rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+	.secondary-button { min-height: 2.75rem; border: 1px solid var(--admin-border-strong); border-radius: .35rem; padding: .7rem 1.2rem; background: var(--admin-surface); color: var(--admin-text); font: inherit; font-weight: 600; cursor: pointer; }
+	.secondary-button:hover { border-color: var(--admin-accent); color: var(--admin-accent-hover); }
 	button:disabled { cursor: wait; opacity: .6; }
-	.guide { padding: 1rem 1.25rem; border: 1px solid var(--hair); }
+	.guide { padding: 1rem 1.25rem; border: 1px solid var(--hair); background: var(--admin-surface); }
 	.guide ol { margin: .5rem 0 0; padding-left: 1.25rem; }
-	h2 { font-size: .8rem; letter-spacing: .28em; text-transform: uppercase; color: var(--seal-text); }
+	h2 { font-size: 1.25rem; color: var(--admin-text); }
 	.push-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
-	.push-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1rem; padding: .9rem 0; border-bottom: 1px solid var(--hair); overflow-wrap: anywhere; }
+	.push-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1rem; padding: .9rem; border-bottom: 1px solid var(--hair); background: var(--admin-surface); overflow-wrap: anywhere; }
 	.push-list .hint { flex-basis: 100%; }
 </style>

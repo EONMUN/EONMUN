@@ -17,12 +17,14 @@ interface Props {
 	// autocapture and session recording, and the Pinterest tag, never load on
 	// them. Navigation is full-page, so no tracker carries over from a public page.
 	privateData?: boolean;
+	// Admin routes supply their own light and dark themes through the head slot.
+	adminAppearance?: boolean;
 }
 
-const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdge, privateData = false } = Astro.props;
+const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdge, privateData = false, adminAppearance = false } = Astro.props;
 ---
 <!doctype html>
-<html lang="en" class="dark:bg-gray-900 dark:text-white" style={iosEdgeToEdge && themeColor ? `--homepage-tint: ${themeColor}` : undefined}>
+<html lang="en" class={adminAppearance ? 'admin-page' : 'dark:bg-gray-900 dark:text-white'} style={iosEdgeToEdge && themeColor ? `--homepage-tint: ${themeColor}` : undefined}>
 	<head>
 		<BaseHead
 			title={title}
@@ -33,9 +35,10 @@ const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdg
 			themeColor={themeColor}
 			iosEdgeToEdge={iosEdgeToEdge}
 		/>
+		<slot name="head" />
 		{!privateData && <PinterestTag />}
 	</head>
-	<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen flex flex-col">
+	<body class:list={['min-h-screen flex flex-col', !adminAppearance && 'bg-white text-gray-900 dark:bg-gray-900 dark:text-white']}>
 		<Navbar />
 		<main class="flex-1 w-full">
 			<slot />

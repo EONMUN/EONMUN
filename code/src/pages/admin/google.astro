@@ -70,7 +70,8 @@ const connectionMessage = error === 'google_merchant_account_changed'
 </script>
 <style>
 	.google-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
-	.retry-button { border: 1px solid var(--hair); padding: .8rem 1.2rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+	.retry-button { min-height: 2.75rem; border: 1px solid var(--admin-border-strong); border-radius: .35rem; padding: .7rem 1.2rem; background: var(--admin-surface); color: var(--admin-text); font: inherit; font-weight: 600; cursor: pointer; }
+	.retry-button:hover { border-color: var(--admin-accent); color: var(--admin-accent-hover); }
 	button:disabled { cursor: wait; opacity: .6; }
 	[data-google-status], [role="alert"] { overflow-wrap: anywhere; }
 </style>

@@ -12,7 +12,7 @@
 		</div>
 		<p data-range class="note"></p>
 		<svg viewBox="0 0 720 210" role="img" aria-label="Daily pageviews and seven-day moving average" data-chart></svg>
-		<div class="legend"><span>Daily views</span><span>— Seven-day average</span></div>
+		<div class="legend"><span class="views">Daily views</span><span class="average">Seven-day average</span></div>
 		<div class="breakdowns">
 			<div><h3>Referring websites</h3><ol data-sources></ol></div>
 			<div><h3>Countries</h3><ol data-countries></ol></div>
@@ -56,18 +56,18 @@
 			const max = Math.max(1, ...daily.flatMap(day => [day.views, day.average]));
 			const width = 660 / daily.length;
 			const y = (value: number) => 180 - value / max * 150;
-			add('line', { x1: '40', y1: '180', x2: '700', y2: '180', stroke: '#56534f' });
-			add('text', { x: '0', y: '30', fill: '#a9a397', 'font-size': '12' }, number.format(max));
-			add('text', { x: '20', y: '180', fill: '#a9a397', 'font-size': '12' }, '0');
+			add('line', { x1: '40', y1: '180', x2: '700', y2: '180', class: 'axis' });
+			add('text', { x: '0', y: '30' }, number.format(max));
+			add('text', { x: '18', y: '180' }, '0');
 			for (const [i, day] of daily.entries()) {
-				const bar = add('rect', { x: String(40 + i * width), y: String(y(day.views)), width: String(Math.max(1, width - 2)), height: String(180 - y(day.views)), fill: '#b4a285' });
+				const bar = add('rect', { x: String(40 + i * width), y: String(y(day.views)), width: String(Math.max(1, width - 2)), height: String(180 - y(day.views)), class: 'bar' });
 				const title = document.createElementNS(svg.namespaceURI, 'title');
 				title.textContent = `${day.date}: ${day.views} views; seven-day average ${number.format(day.average)}`;
 				bar.append(title);
 			}
-			add('polyline', { points: daily.map((day, i) => `${40 + (i + .5) * width},${y(day.average)}`).join(' '), fill: 'none', stroke: '#f0e7d7', 'stroke-width': '2' });
-			add('text', { x: '40', y: '205', fill: '#a9a397', 'font-size': '12' }, daily[0]?.date);
-			add('text', { x: '700', y: '205', fill: '#a9a397', 'font-size': '12', 'text-anchor': 'end' }, daily.at(-1)?.date);
+			add('polyline', { points: daily.map((day, i) => `${40 + (i + .5) * width},${y(day.average)}`).join(' '), class: 'average' });
+			add('text', { x: '40', y: '205' }, daily[0]?.date);
+			add('text', { x: '700', y: '205', 'text-anchor': 'end' }, daily.at(-1)?.date);
 		};
 		const load = async () => {
 			active?.abort();
@@ -97,22 +97,29 @@
 	}
 </script>
 <style>
-	.analytics { margin-bottom: 3rem; padding: 1.5rem; border: 1px solid var(--hair, #36332f); border-radius: .75rem; background: #0e0e10; }
+	.analytics { margin-bottom: 3rem; padding: 1.5rem; border: 1px solid var(--admin-border); border-radius: .75rem; background: var(--admin-surface); }
 	header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
 	h2 { font-size: 1.6rem; margin: 0; }
-	.eyebrow, .summary span, .note, label, [data-status] { color: #b5afa4; }
-	.eyebrow { text-transform: uppercase; letter-spacing: .15em; font-size: .75rem; }
-	select { margin-left: .5rem; background: #171719; color: #ece7dd; padding: .5rem; border: 1px solid #56534f; border-radius: .3rem; }
+	.eyebrow, .summary span, .note, label, [data-status] { color: var(--admin-muted); }
+	.eyebrow { font-weight: 700; font-size: .875rem; }
+	select { min-height: 2.75rem; margin-left: .5rem; background: var(--admin-surface); color: var(--admin-text); padding: .5rem; border: 1px solid var(--admin-border-strong); border-radius: .3rem; }
 	.summary { display: flex; flex-wrap: wrap; gap: 1.5rem 3rem; margin: 1.5rem 0; }
 	.summary span, .summary strong { display: block; }
 	.summary strong { font-size: 2rem; }
-	.note, .legend { font-size: .8rem; }
+	.note, .legend { font-size: .875rem; }
 	svg { width: 100%; height: auto; }
-	.legend { display: flex; gap: 1.5rem; color: #b4a285; }
-	.legend span:last-child { color: #f0e7d7; }
+	/* Chart marks are created by the script, so they carry no scope id. */
+	svg :global(.axis) { stroke: var(--admin-border-strong); }
+	svg :global(text) { fill: var(--admin-muted); font-size: 14px; }
+	svg :global(.bar) { fill: var(--admin-chart-bar); }
+	svg :global(.average) { fill: none; stroke: var(--admin-chart-line); stroke-width: 3; }
+	.legend { display: flex; gap: 1.5rem; color: var(--admin-muted); }
+	.legend span { display: flex; align-items: center; gap: .5rem; }
+	.legend span::before { content: ''; width: .9rem; height: .9rem; background: var(--admin-chart-bar); }
+	.legend .average::before { height: 3px; background: var(--admin-chart-line); }
 	.breakdowns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; margin: 1.5rem 0; }
 	h3 { font-size: 1rem; }
 	ol { list-style: none; padding: 0; }
-	ol :global(li) { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #29272a; padding: .4rem 0; overflow-wrap: anywhere; }
+	ol :global(li) { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--admin-border); padding: .55rem 0; overflow-wrap: anywhere; }
 	@media (max-width: 600px) { .breakdowns { grid-template-columns: 1fr; gap: 1rem; } .analytics { padding: 1rem; } }
 </style>

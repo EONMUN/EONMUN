@@ -1,8 +1,9 @@
 ---
-// The admin console's frame: the dark ground, the palette every console
-// component reads through inherited custom properties, and the masthead.
+// The admin console's frame: the themed workspace, the shared console control
+// styles, and the masthead with the theme picker.
 // Pages supply their own sections through the default slot.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminTheme from './AdminTheme.astro';
 
 interface Props {
 	title: string;
@@ -26,7 +27,8 @@ const {
 	privateData = false,
 } = Astro.props;
 ---
-<BaseLayout title={title} description={description} themeColor="#050506" privateData={privateData}>
+<BaseLayout title={title} description={description} themeColor="#f5f3ee" privateData={privateData} adminAppearance>
+	<AdminTheme slot="head" />
 	{email && <script is:inline>
 		// This shell is rendered after server-side admin authorization.
 		if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) {
@@ -34,7 +36,6 @@ const {
 		}
 	</script>}
 	<div class="console">
-		<div class="ground" aria-hidden="true"></div>
 		<div class="wrap">
 			<header class="masthead">
 				<div>
@@ -47,6 +48,14 @@ const {
 				</div>
 				<div class="identity">
 					{email && <span class="email">{email}</span>}
+					<label class="theme">
+						Theme
+						<select data-admin-theme-picker>
+							<option value="system">System</option>
+							<option value="light">Light</option>
+							<option value="dark">Dark</option>
+						</select>
+					</label>
 					<button class="signout" type="button" data-sign-out>Sign out</button>
 				</div>
 			</header>
@@ -56,81 +65,24 @@ const {
 </BaseLayout>
 
 <style is:global>
-	/* The console commits to dark on its own routes, so the footer and any
-	   overscroll stay in the same room as the page. */
-	body:has(.console) {
-		background: #050506;
-		color: #ece7dd;
-	}
-
-	/* Tokens live on .console so every console component's scoped styles can
-	   read them through inheritance. */
-	.console {
-		--ink: #08080a;
-		--paper: #ece7dd;
-		--muted: rgba(236, 231, 221, 0.55);
-		--hair: rgba(236, 231, 221, 0.16);
-		--seal: #c1452c;
-		/* The accent needs three values, not one: #c1452c reads as a border or a
-		   large glyph, but paper on it is 4.10:1 and it on the ground is 4.03:1 --
-		   both under AA for the small text that uses them. Darken to fill, lighten
-		   to write. */
-		--seal-fill: #a93b24;
-		--seal-text: #d4523a;
-		--button-bg: var(--seal-fill);
-		--button-text: var(--paper);
-		--button-hover-bg: transparent;
-		--button-hover-text: var(--seal-text);
-		--button-radius: 0;
-	}
-
-	/* The console paints its own near-black ground, so it owes the keyboard a
-	   focus ring it has actually checked against that ground. */
-	.console :focus-visible {
-		outline: 2px solid var(--paper);
-		outline-offset: 2px;
-	}
-
-	/* One motion primitive, owned here: the shell staggers whatever a page puts
-	   in it, so no page hand-numbers animation delays. */
-	.console .wrap > * {
-		animation: console-rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-	}
-
-	.console .wrap > :nth-child(2) { animation-delay: 60ms; }
-	.console .wrap > :nth-child(3) { animation-delay: 120ms; }
-	.console .wrap > :nth-child(4) { animation-delay: 180ms; }
-	.console .wrap > :nth-child(5) { animation-delay: 240ms; }
-	.console .wrap > :nth-child(6) { animation-delay: 300ms; }
-	.console .wrap > :nth-child(n + 7) { animation-delay: 360ms; }
-
-	@keyframes console-rise {
-		from { opacity: 0; transform: translateY(1.25rem); }
-		to { opacity: 1; transform: none; }
-	}
-
 	/* The framed surface a card sits in, shared by every card type so the
 	   chrome cannot drift between them. */
 	.console .frame {
 		position: relative;
 		display: block;
 		overflow: hidden;
-		background: #101013;
+		background: var(--admin-surface);
 		border: 1px solid var(--hair);
 	}
 
 	/* An empty frame is common for posts, which usually carry no cover.
 	   Hatching reads as a prepared surface rather than a hole in the page. */
 	.console .frame.is-empty {
-		background-image: repeating-linear-gradient(
-			-45deg,
-			rgba(236, 231, 221, 0.05) 0 1px,
-			transparent 1px 9px
-		);
+		background-image: repeating-linear-gradient(-45deg, var(--admin-surface-muted) 0 1px, transparent 1px 9px);
 	}
 
 	.console a.card:hover .frame {
-		border-color: rgba(236, 231, 221, 0.4);
+		border-color: var(--admin-accent);
 	}
 
 	.console .no-image {
@@ -138,9 +90,7 @@ const {
 		inset: 0;
 		display: grid;
 		place-items: center;
-		font-size: 0.75rem;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
+		font-size: 0.875rem;
 		color: var(--muted);
 	}
 
@@ -152,9 +102,8 @@ const {
 
 	.console label {
 		display: block;
-		font-size: 0.72rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
+		font-size: 0.875rem;
+		font-weight: 600;
 		color: var(--muted);
 	}
 
@@ -162,21 +111,23 @@ const {
 		display: block;
 		width: 100%;
 		margin-top: 0.5rem;
+		min-height: 2.75rem;
 		padding: 0.7rem 0.85rem;
 		font: inherit;
-		font-size: 0.95rem;
+		/* iOS zooms into any focused field set below 16px. */
+		font-size: 1rem;
+		font-weight: normal;
 		letter-spacing: normal;
 		text-transform: none;
-		color: var(--paper);
-		background: rgba(8, 8, 10, 0.6);
-		/* A control's boundary owes 3:1; --hair is a decorative edge at 1.4:1. */
-		border: 1px solid rgba(236, 231, 221, 0.45);
-		border-radius: 0;
+		color: var(--admin-text);
+		background: var(--admin-surface);
+		border: 1px solid var(--admin-border-strong);
+		border-radius: 0.35rem;
 		transition: border-color 200ms;
 	}
 
 	.console .admin-input:hover {
-		border-color: rgba(236, 231, 221, 0.7);
+		border-color: var(--admin-text);
 	}
 
 	.console .admin-input:focus-visible {
@@ -192,13 +143,13 @@ const {
 		margin: 0;
 		padding: clamp(1rem, 2.5vw, 1.75rem);
 		border: 1px solid var(--hair);
+		background: var(--admin-surface);
 	}
 
 	.console legend {
 		padding: 0 0.75rem;
-		font-size: 0.72rem;
-		letter-spacing: 0.28em;
-		text-transform: uppercase;
+		font-size: 0.875rem;
+		font-weight: 700;
 		color: var(--seal-text);
 	}
 
@@ -210,8 +161,9 @@ const {
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
-		font-size: 0.85rem;
-		letter-spacing: 0.06em;
+		font-size: 1rem;
+		font-weight: normal;
+		letter-spacing: normal;
 		text-transform: none;
 		color: var(--paper);
 	}
@@ -219,43 +171,43 @@ const {
 	.console input[type="checkbox"],
 	.console input[type="radio"] {
 		accent-color: var(--seal);
-		width: 1rem;
-		height: 1rem;
+		width: 1.15rem;
+		height: 1.15rem;
 		flex: none;
 	}
 
 	.console input[type="file"] {
-		font-size: 0.85rem;
+		font-size: 0.875rem;
+		font-weight: normal;
 		color: var(--muted);
 		text-transform: none;
 		letter-spacing: normal;
 	}
 
 	.console .primary-button {
-		padding: 0.9rem 2rem;
-		font-size: 0.85rem;
-		letter-spacing: 0.22em;
-		text-transform: uppercase;
+		min-height: 2.75rem;
+		padding: 0.75rem 1.4rem;
+		font-size: 1rem;
 	}
 
 	.console .error-banner {
 		padding: 0.9rem 1.1rem;
-		font-size: 0.85rem;
-		color: var(--paper);
-		background: rgba(193, 69, 44, 0.16);
-		border: 1px solid var(--seal);
+		font-size: 0.95rem;
+		color: var(--admin-text);
+		background: var(--admin-danger-soft);
+		border: 1px solid var(--admin-danger);
 	}
 
 	/* WCAG 3.3.2: mark required fields visibly and say what the mark means once,
 	   at the top of the form. The `required` attribute already carries the fact
 	   to assistive technology, so the glyph is decorative. */
 	.console .req {
-		color: var(--seal-text);
+		color: var(--admin-danger);
 		font-size: 0.9em;
 	}
 
 	.console .required-note {
-		font-size: 0.8rem;
+		font-size: 0.875rem;
 		letter-spacing: normal;
 		text-transform: none;
 		color: var(--muted);
@@ -265,11 +217,12 @@ const {
 	   moment it renders, and flagging it before the user has touched it reads as
 	   an error they have not made yet. */
 	.console .admin-input:user-invalid {
-		border-color: var(--seal-text);
+		border-color: var(--admin-danger);
 	}
 
 	.console .hint {
-		font-size: 0.8rem;
+		font-size: 0.875rem;
+		font-weight: normal;
 		letter-spacing: normal;
 		text-transform: none;
 		color: var(--muted);
@@ -293,14 +246,14 @@ const {
 		width: 5rem;
 		height: 5rem;
 		object-fit: cover;
-		border: 1px solid var(--hair);
+		border: 1px solid var(--admin-border-strong);
 	}
 
 	.console .link-button {
 		font: inherit;
-		font-size: 0.72rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
+		min-height: 2.75rem;
+		padding: 0.55rem 0.75rem;
+		font-size: 0.875rem;
 		color: var(--muted);
 		background: none;
 		border: 0;
@@ -312,34 +265,42 @@ const {
 		color: var(--seal-text);
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.console .wrap > * { animation: none; }
+	.console a:not(.primary-button) {
+		text-underline-offset: 0.2em;
+	}
+
+	/* Page alerts report a saved change whose follow-up step needs attention;
+	   form errors use .error-banner. */
+	.console [role="alert"]:not(.error-banner) {
+		padding: 0.9rem 1rem;
+		color: var(--admin-text);
+		background: var(--admin-warning-soft);
+		border-left: 4px solid var(--admin-warning);
+	}
+
+	.console [role="status"]:not(:empty) {
+		color: var(--admin-text);
+		padding: 0.75rem 1rem;
+		background: var(--admin-accent-soft);
+		border-left: 4px solid var(--admin-accent);
+	}
+
+	.console [role="alert"] a,
+	.console [role="status"] a {
+		color: inherit;
+		font-weight: 600;
+		text-decoration: underline;
 	}
 </style>
 
 <style>
 	.console {
 		position: relative;
-		min-height: 100vh;
+		min-height: calc(100vh - 4.5rem);
 		margin-top: -4.5rem;
 		padding: 4.5rem 0 6rem;
-		color: var(--paper);
-	}
-
-	.ground {
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		background: radial-gradient(120% 80% at 50% -10%, #17161a 0%, var(--ink) 55%, #050506 100%);
-	}
-
-	.ground::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		opacity: 0.28;
-		mix-blend-mode: overlay;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+		color: var(--admin-text);
+		background: var(--admin-bg);
 	}
 
 	.wrap {
@@ -351,10 +312,10 @@ const {
 	.masthead {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: flex-end;
+		align-items: center;
 		justify-content: space-between;
 		gap: 1.5rem;
-		padding: clamp(2.5rem, 7vw, 5rem) 0 2rem;
+		padding: clamp(2rem, 5vw, 3.5rem) 0 1.5rem;
 		border-bottom: 1px solid var(--hair);
 	}
 
@@ -362,14 +323,13 @@ const {
 	.back {
 		display: inline-block;
 		margin: 0 0 0.75rem;
-		font-size: 0.7rem;
-		text-transform: uppercase;
-		letter-spacing: 0.42em;
+		font-size: 0.875rem;
+		font-weight: 600;
 		color: var(--seal-text);
 	}
 
 	.back {
-		letter-spacing: 0.24em;
+		letter-spacing: normal;
 		transition: color 200ms;
 	}
 
@@ -379,19 +339,35 @@ const {
 
 	.title {
 		margin: 0;
-		font-size: clamp(2.5rem, 9vw, 6rem);
-		line-height: 0.85;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
+		font-size: clamp(2rem, 5vw, 3.5rem);
+		line-height: 1.05;
+		letter-spacing: -0.025em;
 	}
 
 	.identity {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 1.25rem;
-		font-size: 0.78rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
+		gap: 0.75rem 1.25rem;
+		font-size: 0.875rem;
+	}
+
+	.theme {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.theme select {
+		min-height: 2.75rem;
+		padding: 0.5rem 0.75rem;
+		font: inherit;
+		font-size: 1rem;
+		font-weight: normal;
+		color: var(--admin-text);
+		background: var(--admin-surface);
+		border: 1px solid var(--admin-border-strong);
+		border-radius: 0.35rem;
 	}
 
 	.email {
@@ -399,15 +375,17 @@ const {
 	}
 
 	.signout {
-		padding: 0.5rem 1.1rem;
-		border: 1px solid var(--hair);
+		min-height: 2.75rem;
+		padding: 0.55rem 1rem;
+		border: 1px solid var(--admin-border-strong);
+		border-radius: 0.35rem;
 		color: var(--paper);
 		transition: border-color 200ms, color 200ms;
 	}
 
 	.signout:hover {
 		border-color: var(--seal);
-		color: var(--seal);
+		color: var(--admin-accent-hover);
 	}
 </style>
 

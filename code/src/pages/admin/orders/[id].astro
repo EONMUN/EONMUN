@@ -173,7 +173,7 @@ const totals = [
 
 	.note {
 		margin: 0;
-		font-size: 0.85rem;
+		font-size: 0.875rem;
 	}
 
 	.fulfillment {
@@ -190,7 +190,7 @@ const totals = [
 
 	.saved {
 		margin: 0 0 0.9rem;
-		font-size: 0.85rem;
+		font-size: 0.875rem;
 		color: var(--muted);
 	}
 
@@ -203,15 +203,14 @@ const totals = [
 	.panel {
 		padding: clamp(1rem, 2.5vw, 1.75rem);
 		border: 1px solid var(--hair);
+		background: var(--admin-surface);
 	}
 
 	.panel h2 {
 		margin: 0 0 1rem;
-		font-size: 0.72rem;
-		font-weight: normal;
-		letter-spacing: 0.28em;
-		text-transform: uppercase;
-		color: var(--seal-text);
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--admin-text);
 	}
 
 	dl {
@@ -219,7 +218,7 @@ const totals = [
 		grid-template-columns: minmax(7rem, auto) 1fr;
 		gap: 0.6rem 1rem;
 		margin: 0;
-		font-size: 0.9rem;
+		font-size: 0.95rem;
 	}
 
 	dt {
@@ -234,7 +233,7 @@ const totals = [
 	dd a {
 		color: var(--paper);
 		text-decoration: underline;
-		text-decoration-color: var(--hair);
+		text-decoration-color: var(--admin-border-strong);
 		text-underline-offset: 0.2em;
 	}
 
@@ -258,20 +257,26 @@ const totals = [
 		font-size: 0.95rem;
 		line-height: 1.5;
 		white-space: pre-wrap;
-		background: rgba(8, 8, 10, 0.6);
-		border: 1px solid var(--hair);
+		background: var(--admin-surface-muted);
+		border: 1px solid var(--admin-border-strong);
 		user-select: all;
 	}
 
 	.copy {
 		margin-bottom: 1.25rem;
-		padding: 0.5rem 1rem;
-		font-size: 0.75rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
+		min-height: 2.75rem;
+		padding: 0.55rem 1rem;
+		font: inherit;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--admin-text);
+		background: var(--admin-surface);
+		border: 1px solid var(--admin-border-strong);
+		border-radius: .35rem;
+		cursor: pointer;
 	}
 
 	code {
-		font-size: 0.8rem;
+		font-size: 0.875rem;
 	}
 </style>

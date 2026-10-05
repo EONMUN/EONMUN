@@ -7,7 +7,7 @@ const links = [
 ];
 
 const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
-const onDarkSurface = pathname === '/' || pathname.startsWith('/admin');
+const onDarkSurface = pathname === '/';
 ---
 <nav class:list={['sticky top-0 z-50 p-2 flex justify-between items-center gap-2 bg-transparent', { 'homepage-navigation': pathname === '/' }]}>
 	<a href="/" data-home-logo class:list={['touch-manipulation pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold', onDarkSurface ? 'text-white' : 'text-gray-900 dark:text-white']}>
@@ -40,6 +40,37 @@ const onDarkSurface = pathname === '/' || pathname.startsWith('/admin');
 		padding-top: calc(0.5rem + env(safe-area-inset-top));
 		padding-right: calc(0.5rem + env(safe-area-inset-right));
 		padding-left: calc(0.5rem + env(safe-area-inset-left));
+	}
+
+	/* Admin routes follow the admin theme rather than the public dark chrome. */
+	:global(html.admin-page) nav {
+		background: var(--admin-bg);
+	}
+
+	:global(html.admin-page) [data-home-logo] {
+		font-size: 1.25rem;
+		letter-spacing: normal;
+		color: var(--admin-text);
+	}
+
+	:global(html.admin-page) nav > div {
+		text-transform: none;
+		letter-spacing: normal;
+		background: var(--admin-surface);
+		border-color: var(--admin-border);
+		box-shadow: none;
+	}
+
+	:global(html.admin-page) nav > div a {
+		padding: 0.5rem 0.25rem;
+		font-size: 0.875rem;
+		color: var(--admin-muted);
+	}
+
+	:global(html.admin-page) nav > div a:hover {
+		color: var(--admin-text);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
 	}
 </style>
 
