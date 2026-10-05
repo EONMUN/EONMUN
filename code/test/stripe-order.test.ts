@@ -91,7 +91,7 @@ describe("paid Checkout parsing", () => {
 });
 
 describe("Stripe line item lookup", () => {
-	test("reads the first line item name with server credentials and no redirects", async () => {
+	test("reads the first line item name with server credentials without following redirects", async () => {
 		const requests: Array<[string, RequestInit | undefined]> = [];
 		const title = await fetchCheckoutLineItemTitle("sk_test_key", "cs_test_abc123", async (url, init) => {
 			requests.push([String(url), init]);
@@ -101,7 +101,9 @@ describe("Stripe line item lookup", () => {
 		expect(requests).toHaveLength(1);
 		expect(requests[0][0]).toBe("https://api.stripe.com/v1/checkout/sessions/cs_test_abc123/line_items?limit=1");
 		expect(requests[0][1]?.headers).toEqual({ authorization: "Bearer sk_test_key" });
-		expect(requests[0][1]?.redirect).toBe("error");
+		// Workers accept only "follow" or "manual".
+		expect(requests[0][1]?.redirect).toBe("manual");
+		expect(requests[0][1]?.signal).toBeInstanceOf(AbortSignal);
 	});
 
 	test("returns null for a session with no line items", async () => {
@@ -111,6 +113,18 @@ describe("Stripe line item lookup", () => {
 	test("throws without echoing Stripe's response body", async () => {
 		const failure = fetchCheckoutLineItemTitle("sk_test_key", "cs_test_abc123", async () => Response.json({ error: { message: "secret detail" } }, { status: 401 }));
 		await expect(failure).rejects.toThrow(/^Stripe line item lookup returned HTTP 401$/);
+	});
+
+	test("rejects a redirect instead of following it with the secret key", async () => {
+		for (const status of [301, 302, 307, 308]) {
+			let calls = 0;
+			const failure = fetchCheckoutLineItemTitle("sk_test_key", "cs_test_abc123", async () => {
+				calls += 1;
+				return new Response(null, { status, headers: { location: "https://elsewhere.test/collect" } });
+			});
+			await expect(failure).rejects.toThrow(new RegExp(`^Stripe line item lookup refused a redirect \\(HTTP ${status}\\)$`));
+			expect(calls).toBe(1);
+		}
 	});
 
 	test("refuses a malformed session ID before contacting Stripe", async () => {

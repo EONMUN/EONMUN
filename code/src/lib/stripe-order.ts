@@ -182,9 +182,14 @@ export async function fetchCheckoutLineItemTitle(
 	if (!CHECKOUT_SESSION_ID.test(checkoutSessionId)) throw new Error("Invalid Checkout Session ID for line item lookup");
 	const response = await fetcher(`https://api.stripe.com/v1/checkout/sessions/${checkoutSessionId}/line_items?limit=1`, {
 		headers: { authorization: `Bearer ${secretKey}` },
-		redirect: "error",
+		// Workers reject redirect "error"; "manual" returns the 3xx unfollowed, so
+		// the bearer key never leaves api.stripe.com.
+		redirect: "manual",
 		signal: AbortSignal.timeout(5000),
 	});
+	if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
+		throw new Error(`Stripe line item lookup refused a redirect (HTTP ${response.status})`);
+	}
 	if (!response.ok) throw new Error(`Stripe line item lookup returned HTTP ${response.status}`);
 	const list = record(await response.json());
 	const items = Array.isArray(list?.data) ? list.data : [];
