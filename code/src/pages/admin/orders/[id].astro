@@ -62,23 +62,25 @@ const totals = [
 		)}
 		{!order.livemode && <p class="note">Stripe test-mode payment. No money was collected.</p>}
 
-		<form class="fulfillment" data-order-fulfillment-form data-action={`/api/admin/orders/${order.id}`}>
-			<FormFieldset legend="Fulfillment" layout="columns">
-				<label>
-					Status
-					<select class="admin-input" name="fulfillmentStatus">
-						{FULFILLMENT_STATUSES.map((status) => (
-							<option value={status} selected={status === order.fulfillmentStatus}>{FULFILLMENT_LABELS[status]}</option>
-						))}
-					</select>
-				</label>
-				<div class="form-actions">
-					<SubmitButton label="Save status" />
-					<p class="saved" role="status" aria-live="polite" data-saved></p>
-				</div>
-			</FormFieldset>
-			<ErrorBanner />
-		</form>
+		{/* The save status line is inserted after the form; the wrapper keeps that empty line out of the flex gap. */}
+		<div>
+			<form class="fulfillment" data-order-fulfillment-form data-action={`/api/admin/orders/${order.id}`}>
+				<FormFieldset legend="Fulfillment" layout="columns">
+					<label>
+						Status
+						<select class="admin-input" name="fulfillmentStatus">
+							{FULFILLMENT_STATUSES.map((status) => (
+								<option value={status} selected={status === order.fulfillmentStatus}>{FULFILLMENT_LABELS[status]}</option>
+							))}
+						</select>
+					</label>
+					<div class="form-actions">
+						<SubmitButton label="Save status" />
+					</div>
+				</FormFieldset>
+				<ErrorBanner />
+			</form>
+		</div>
 
 		<div class="panels">
 			<section class="panel">
@@ -141,16 +143,19 @@ const totals = [
 	</div>
 </ConsoleShell>
 
-<script is:inline>
-	const form = document.querySelector('[data-order-fulfillment-form]');
-	if (form) form.addEventListener('submit', async (event) => {
-		event.preventDefault(); const errorBox = form.querySelector('[data-error]'); const saved = form.querySelector('[data-saved]');
-		errorBox.hidden = true; saved.textContent = '';
-		try {
-			const response = await fetch(form.dataset.action, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ fulfillmentStatus: new FormData(form).get('fulfillmentStatus') }) });
-			const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Save failed'); saved.textContent = 'Saved';
-		} catch (error) { errorBox.hidden = false; errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; }
+<script>
+	import { attachAdminFormSave, postAdminJson } from '../../../lib/admin-form-save';
+
+	const form = document.querySelector<HTMLFormElement>('[data-order-fulfillment-form]');
+	if (form) attachAdminFormSave(form, {
+		save: async (data) => {
+			await postAdminJson(form.dataset.action!, { fulfillmentStatus: data.get('fulfillmentStatus') });
+			return { message: 'Saved' };
+		},
 	});
+</script>
+
+<script is:inline>
 	const copy = document.querySelector('[data-copy-label]');
 	const shippingLabel = document.querySelector('[data-shipping-label]');
 	if (copy && shippingLabel) copy.addEventListener('click', async () => {
@@ -186,12 +191,6 @@ const totals = [
 		display: flex;
 		align-items: flex-end;
 		gap: 1rem;
-	}
-
-	.saved {
-		margin: 0 0 0.9rem;
-		font-size: 0.875rem;
-		color: var(--admin-muted);
 	}
 
 	.panels {
