@@ -203,7 +203,7 @@ The PR validation workflow runs the Astro build, Bun tests, and Playwright artwo
 
 Admins can receive a Web Push alert on each device when an order is paid. Alerts use the standard Push API, so no Apple Developer membership or Firebase project is needed. Each admin enables alerts per device in the Notifications section of `/admin/settings`, linked from `/admin`.
 
-On iPhone and iPad, Web Push requires iOS or iPadOS 16.4 or later and the Home Screen app. Add EONMUN to the Home Screen from Safari, open it, sign in to admin inside the app (it does not share Safari's session), then tap **Enable notifications**. The permission prompt appears only from that tap. Desktop Safari, Chrome, Edge, and Firefox work from a normal tab. The page also shows device status, a one-tap test notification, and per-device removal.
+On iPhone and iPad, Web Push requires iOS or iPadOS 16.4 or later and the Home Screen app. Add EONMUN to the Home Screen from Safari, open it, sign in to admin inside the app (it does not share Safari's session), then tap **Enable notifications**. The permission prompt appears only from that tap. Desktop Safari, Chrome, Edge, and Firefox work from a normal tab. The page also shows device status, per-device removal, and a test that notifies every admin device.
 
 Alerts read "Order paid" with the artwork title and amount, and open `/admin/orders/<orderId>`. They never include buyer names, emails, or addresses, because they appear on lock screens.
 
@@ -219,7 +219,7 @@ To enable production alerts, from `code/`:
 
 1. Run `bun run scripts/generate-vapid-keys.ts | bunx wrangler secret put VAPID_PRIVATE_KEY --name eonmun-astro`. The script refuses to print the private key to a terminal; it prints only the public key.
 2. Add the printed `VAPID_PUBLIC_KEY` to `vars` in `wrangler.jsonc` and deploy. Deployment applies migration `0021_admin_push`.
-3. Each admin enables alerts on each device and sends a test notification.
+3. Each admin enables alerts on each device. Then send a test notification to all admins.
 
 Never commit the private key or put it in `vars`. Without both keys, the page reports that push is not configured and orders work without alerts. Replacing the key pair invalidates every enrolled device; admins must enable alerts again.
 
@@ -385,4 +385,4 @@ the artwork without this overlay. The CSS feature query uses the iOS-only
 cover, so rotation does not change the tint. Safari still controls its own
 bars; physical iPhone acceptance is required for toolbar colors and transitions.
 
-Admins can use **Admin → Settings → Notifications → Test an admin device** to send a fixed sample alert to any currently allowed admin’s enrolled device. The recipient must enable notifications first. Tests are limited to one per device per minute; push-service acceptance does not confirm display on the phone.
+Admins can use **Admin → Settings → Notifications → Send test notification to all admins** to send a fixed sample alert to every device that would receive a paid-order alert: all enrolled devices of currently allowed admins. The sending browser does not need notifications enabled. Each admin must enable notifications on their own devices first. Tests are limited to one per device per minute, and one request reaches at most 20 devices; send again to reach the rest. The result counts devices the push service accepted, devices tested within the last minute, removed expired or old-key devices, failures, and devices not attempted. Push-service acceptance does not confirm display on the phone. Tests do not create order alerts or delivery records.

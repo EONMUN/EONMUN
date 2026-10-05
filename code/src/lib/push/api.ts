@@ -4,7 +4,7 @@ import { requireAdminMutation } from "../admin-guard";
 import { isAllowedAdminEmail, type AuthEnv } from "../auth";
 import { eq } from "drizzle-orm";
 import { getVapidPublicKey } from "./config";
-import { sendTestNotification, type AdminPushEnv } from "./dispatch";
+import { sendTestBroadcast, sendTestNotification, type AdminPushEnv } from "./dispatch";
 import { deviceLabel, parseEndpointBody, parsePushEndpoint, parseSubscriptionInput, PushInputError, readJsonBody } from "./subscription-input";
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -74,7 +74,7 @@ export function subscriptionStatus(request: Request, env: AdminPushEnv, options:
 	});
 }
 
-// Admins can test an enrolled device by ID without exposing its delivery endpoint.
+// Targets one device by ID or endpoint; the settings page uses sendTestToAllAdmins.
 export function sendTest(request: Request, env: AdminPushEnv, options: PushApiOptions = {}) {
 	return pushMutation(request, env, options, async ({ owner, body, db }) => {
 		const id = (body as { deviceId?: unknown } | null)?.deviceId;
@@ -94,5 +94,13 @@ export function sendTest(request: Request, env: AdminPushEnv, options: PushApiOp
 		if (subscription === "rate_limited") return json({ error: "Wait a minute before sending another test." }, 429);
 		const result = await sendTestNotification(env, subscription, { db, fetchImpl: options.fetchImpl });
 		return json(result, result.ok ? 200 : 502);
+	});
+}
+
+// Sends the sample to every device that would receive an order alert, whether or not this browser is enrolled.
+export function sendTestToAllAdmins(request: Request, env: AdminPushEnv, options: PushApiOptions = {}) {
+	return pushMutation(request, env, options, async ({ db }) => {
+		const result = await sendTestBroadcast(env, { db, fetchImpl: options.fetchImpl });
+		return result.ok ? json(result.summary) : json({ error: result.error }, 503);
 	});
 }

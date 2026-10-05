@@ -14,12 +14,13 @@ const { ownerId } = Astro.props;
 const env = getRuntimeEnv() as AdminPushEnv;
 const publicKey = getVapidPublicKey(env);
 let devices: Awaited<ReturnType<typeof listAdminPushDevices>> = [];
-let testDevices: typeof devices = [];
+let recipients: typeof devices = [];
 let alerts: Awaited<ReturnType<typeof listRecentOrderNotifications>> = [];
 let loadError = false;
 try {
-	[devices, alerts, testDevices] = await Promise.all([listAdminPushDevices(env, ownerId), listRecentOrderNotifications(env), listAdminPushDevices(env, undefined)]);
-	testDevices = testDevices.filter((device) => isAllowedAdminEmail(device.ownerEmail, env));
+	[devices, alerts, recipients] = await Promise.all([listAdminPushDevices(env, ownerId), listRecentOrderNotifications(env), listAdminPushDevices(env, undefined)]);
+	// Matches order alert recipients: every device of a currently allowed admin.
+	recipients = recipients.filter((device) => isAllowedAdminEmail(device.ownerEmail, env));
 } catch {
 	// Keeps the page usable before the push migration is applied.
 	loadError = true;
@@ -42,7 +43,6 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 		<p class="push-state" role="status" aria-live="polite" data-push-status>Checking this device…</p>
 		<div class="push-actions">
 			<button type="button" class="primary-button" data-push-enable hidden disabled>Enable notifications</button>
-			<button type="button" class="secondary-button" data-push-test hidden>Send test notification</button>
 			<button type="button" class="secondary-button" data-push-disable hidden>Turn off on this device</button>
 		</div>
 		<div class="guide" data-push-guide="install" hidden>
@@ -81,15 +81,13 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 		</section>
 
 		<section class="push-section" aria-labelledby="test-heading">
-			<h3 id="test-heading">Test an admin device</h3>
-			<p>Send a sample notification to an admin who has enabled notifications on their device. Each device can receive one test per minute.</p>
-			{testDevices.length === 0 ? <p>No admin devices are enabled yet.</p> : <ul class="push-list">
-				{testDevices.map((device) => <li>
-					<span>{device.ownerEmail} · {device.deviceLabel ?? 'Device'}</span>
-					<button type="button" class="secondary-button" data-admin-test-device={device.id}>Send test</button>
-				</li>)}
-			</ul>}
+			<h3 id="test-heading">Test notifications</h3>
+			<p>Send a sample notification to every device that receives paid-order alerts, for all admins. Each device can receive one test per minute.</p>
+			<button type="button" class="primary-button" data-admin-test-all disabled={!publicKey}>Send test notification to all admins</button>
 			<p role="status" aria-live="polite" data-admin-test-result></p>
+			{recipients.length === 0 ? <p class="hint">No admin devices are enabled yet.</p> : <ul class="push-list" aria-label="Devices that receive alerts">
+				{recipients.map((device) => <li><span>{device.ownerEmail} · {device.deviceLabel ?? 'Device'}</span></li>)}
+			</ul>}
 		</section>
 
 		<section class="push-section" aria-labelledby="alerts-heading">
@@ -117,19 +115,32 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 	import { attachPushSettings } from '../../../lib/push-client';
 	const root = document.querySelector<HTMLElement>('[data-push-settings]');
 	if (root) attachPushSettings(root, { navigator, window, fetchImpl: fetch.bind(window) });
-	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-admin-test-device]')) {
-		button.addEventListener('click', async () => {
-			const status = document.querySelector<HTMLElement>('[data-admin-test-result]')!;
-			button.disabled = true;
-			status.textContent = 'Sending test…';
-			try {
-				const response = await fetch('/api/admin/push/test', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ deviceId: Number(button.dataset.adminTestDevice) }) });
-				const result = await response.json();
-				status.textContent = response.ok ? 'Test accepted by the push service. Check the selected device.' : result.error ?? 'Could not send the test.';
-			} catch { status.textContent = 'Could not send the test. Check your connection.'; }
-			finally { button.disabled = false; }
-		});
-	}
+	const testAll = document.querySelector<HTMLButtonElement>('[data-admin-test-all]');
+	const testResult = document.querySelector<HTMLElement>('[data-admin-test-result]');
+	const devices = (count: number) => `${count} device${count === 1 ? '' : 's'}`;
+	testAll?.addEventListener('click', async () => {
+		if (!testResult) return;
+		testAll.disabled = true;
+		testResult.textContent = 'Sending test notifications…';
+		try {
+			const response = await fetch('/api/admin/push/test-all', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+			const result = await response.json() as Partial<Record<'eligible' | 'accepted' | 'rateLimited' | 'removed' | 'failed' | 'notAttempted', number>> & { error?: string };
+			if (!response.ok || result.eligible === undefined) {
+				testResult.textContent = result.error ?? 'Could not send test notifications.';
+			} else if (result.eligible === 0) {
+				testResult.textContent = 'No admin devices have notifications enabled. Each admin must enable them on their own device first.';
+			} else {
+				// Push-service acceptance is not proof the device displayed the alert.
+				const parts = [`Push service accepted the test for ${result.accepted ?? 0} of ${devices(result.eligible)}.`];
+				if (result.rateLimited) parts.push(`${devices(result.rateLimited)} already tested in the last minute; try again shortly.`);
+				if (result.removed) parts.push(`${devices(result.removed)} removed (expired or old key); enable notifications on them again.`);
+				if (result.failed) parts.push(`${devices(result.failed)} failed.`);
+				if (result.notAttempted) parts.push(`${devices(result.notAttempted)} not attempted; send again to reach them.`);
+				testResult.textContent = parts.join(' ');
+			}
+		} catch { testResult.textContent = 'Could not send test notifications. Check your connection.'; }
+		finally { testAll.disabled = false; }
+	});
 </script>
 <style>
 	.push-panel, .push-section { max-width: 48rem; margin: 2rem 0; }
