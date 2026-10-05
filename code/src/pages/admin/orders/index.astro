@@ -89,8 +89,8 @@ const place = (order: (typeof orders)[number]) =>
 		font-size: 0.875rem;
 		font-weight: 700;
 		text-align: left;
-		color: var(--muted);
-		border-bottom: 1px solid var(--hair);
+		color: var(--admin-muted);
+		border-bottom: 1px solid var(--admin-border);
 	}
 
 	td {
@@ -100,14 +100,14 @@ const place = (order: (typeof orders)[number]) =>
 	}
 
 	td a {
-		color: var(--paper);
+		color: var(--admin-text);
 		text-decoration: underline;
 		text-decoration-color: var(--admin-border-strong);
 		text-underline-offset: 0.2em;
 	}
 
 	td a:hover {
-		text-decoration-color: var(--seal-text);
+		text-decoration-color: var(--admin-accent);
 	}
 
 	.amount {
@@ -129,8 +129,8 @@ const place = (order: (typeof orders)[number]) =>
 		padding: 0.1rem 0.45rem;
 		font-size: 0.875rem;
 		font-weight: 700;
-		color: var(--muted);
-		border: 1px solid var(--hair);
+		color: var(--admin-muted);
+		border: 1px solid var(--admin-border);
 	}
 
 	.flag.is-alert {

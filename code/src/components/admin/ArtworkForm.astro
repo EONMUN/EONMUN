@@ -337,7 +337,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	/* The in-flight state is `aria-disabled`, not `disabled`, so the button keeps
 	   its place in the focus order. The handler refuses the second activation. */
 	.add-collection[aria-disabled='true'] {
-		color: var(--muted);
+		color: var(--admin-muted);
 		cursor: progress;
 	}
 
@@ -361,7 +361,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	.image-list:empty::after {
 		content: 'No images yet.';
 		font-size: 0.875rem;
-		color: var(--muted);
+		color: var(--admin-muted);
 	}
 
 	.upload :global(.admin-input) {

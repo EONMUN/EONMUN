@@ -86,7 +86,7 @@ const totals = [
 				{label ? (
 					<>
 						<pre class="label" data-shipping-label>{label}</pre>
-						<button type="button" class="copy" data-copy-label>Copy label</button>
+						<button type="button" class="copy secondary-button" data-copy-label>Copy label</button>
 					</>
 				) : (
 					<p class="muted">Stripe did not supply a shipping address.</p>
@@ -168,7 +168,7 @@ const totals = [
 	}
 
 	.note, .muted {
-		color: var(--muted);
+		color: var(--admin-muted);
 	}
 
 	.note {
@@ -191,7 +191,7 @@ const totals = [
 	.saved {
 		margin: 0 0 0.9rem;
 		font-size: 0.875rem;
-		color: var(--muted);
+		color: var(--admin-muted);
 	}
 
 	.panels {
@@ -202,7 +202,7 @@ const totals = [
 
 	.panel {
 		padding: clamp(1rem, 2.5vw, 1.75rem);
-		border: 1px solid var(--hair);
+		border: 1px solid var(--admin-border);
 		background: var(--admin-surface);
 	}
 
@@ -222,7 +222,7 @@ const totals = [
 	}
 
 	dt {
-		color: var(--muted);
+		color: var(--admin-muted);
 	}
 
 	dd {
@@ -231,7 +231,7 @@ const totals = [
 	}
 
 	dd a {
-		color: var(--paper);
+		color: var(--admin-text);
 		text-decoration: underline;
 		text-decoration-color: var(--admin-border-strong);
 		text-underline-offset: 0.2em;
@@ -246,7 +246,7 @@ const totals = [
 	}
 
 	.total {
-		color: var(--paper);
+		color: var(--admin-text);
 		font-weight: bold;
 	}
 
@@ -262,19 +262,7 @@ const totals = [
 		user-select: all;
 	}
 
-	.copy {
-		margin-bottom: 1.25rem;
-		min-height: 2.75rem;
-		padding: 0.55rem 1rem;
-		font: inherit;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--admin-text);
-		background: var(--admin-surface);
-		border: 1px solid var(--admin-border-strong);
-		border-radius: .35rem;
-		cursor: pointer;
-	}
+	.copy { margin-bottom: 1.25rem; }
 
 	code {
 		font-size: 0.875rem;

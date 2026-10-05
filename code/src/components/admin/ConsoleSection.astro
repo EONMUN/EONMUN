@@ -34,7 +34,7 @@ const { index, title, tally, links = [] } = Astro.props;
 		align-items: baseline;
 		gap: 0.75rem 1.5rem;
 		padding-bottom: 1rem;
-		border-bottom: 1px solid var(--hair);
+		border-bottom: 1px solid var(--admin-border);
 	}
 
 	.entity-head h2 {
@@ -45,14 +45,14 @@ const { index, title, tally, links = [] } = Astro.props;
 	.index {
 		margin-right: 0.75rem;
 		font-size: 0.875rem;
-		color: var(--seal-text);
+		color: var(--admin-gold);
 		vertical-align: 0.35em;
 	}
 
 	.tally {
 		margin: 0;
 		font-size: 0.875rem;
-		color: var(--muted);
+		color: var(--admin-muted);
 	}
 
 	.entity-links {
@@ -64,12 +64,12 @@ const { index, title, tally, links = [] } = Astro.props;
 	.ghost {
 		font-size: 0.875rem;
 		font-weight: 600;
-		color: var(--muted);
+		color: var(--admin-muted);
 		transition: color 200ms;
 	}
 
 	.ghost:hover {
-		color: var(--seal-text);
+		color: var(--admin-gold);
 	}
 
 </style>
