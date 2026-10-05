@@ -320,7 +320,8 @@ blocks its admin access.
 The site includes a standalone web app manifest and home-screen icons. In Safari,
 use Share → Add to Home Screen. The manifest launches `/?launch=pwa`. After an authorized admin page opens inside
 the installed app, a local-storage preference makes future fresh launches open
-`/admin`. This preference has no application expiry and survives sign-out; an
+`/admin`. A fresh launch also checks the existing admin session when the preference
+is absent, so already-signed-in admins are recognized automatically. This preference has no application expiry and survives sign-out; an
 expired session still requires sign-in. Clearing site data removes the preference.
 Normal browser tabs and internal navigation to the public homepage are unaffected.
 Older installations using `/` detect a fresh navigation with no same-origin
