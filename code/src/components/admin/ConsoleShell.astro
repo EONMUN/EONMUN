@@ -222,6 +222,13 @@ const {
 		cursor: progress;
 	}
 
+	/* iOS Safari fades disabled controls through text fill and opacity, which
+	   `color` alone does not override. */
+	.console form[aria-busy="true"] :disabled {
+		-webkit-text-fill-color: currentColor;
+		opacity: 1;
+	}
+
 	.console form[aria-busy="true"] .admin-input {
 		background: var(--admin-surface-muted);
 	}
