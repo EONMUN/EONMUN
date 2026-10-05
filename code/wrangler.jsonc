@@ -44,6 +44,8 @@
 		{ "pattern": "eonmun.com", "custom_domain": true }
 	],
 	"vars": {
+		"VAPID_PUBLIC_KEY": "BPq2rb_NP60NLoIsKkCJETqM6yKSFwxvQrV_derrNfHBFLx_Li_oLRjR7rjc4-amtuLz4SK-Ye6C52Xk6aSTVlY",
+		"VAPID_SUBJECT": "https://eonmun.com",
 		"PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_live_51RJPybGjv0l1gAEDpBd5mpyArg8CcUbxbffCG93tASbbu38w7pnJgvBHiVaDeOw9VNdPKwu6lA6D57dQkyhxtB3C00Wb7Vf4Dj",
 		"AUTH_GOOGLE_ID": "155891318260-8svnveu1achtgut2oft9pmr31jpmlk2q.apps.googleusercontent.com",
 		"AUTH_PROXY_URL": "https://eonmun.com",
