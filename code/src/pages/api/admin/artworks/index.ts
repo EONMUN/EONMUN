@@ -15,7 +15,7 @@ export const POST: APIRoute = async (context) => {
         if (!isCurrentArtworkEditor(payload)) {
             return Response.json({ error: "This editor is out of date. Reload the page before saving." }, { status: 409 });
         }
-        const artwork = await createArtworkAdmin(env, parseArtworkInput(payload));
+        const artwork = await createArtworkAdmin(env, parseArtworkInput(payload, { deriveSlug: true }));
 		return Response.json({ artwork, redirect: `/admin/artworks/${artwork.slug}` }, { status: 201 });
 	} catch (error) {
 		return mutationError(error);
