@@ -318,8 +318,15 @@ blocks its admin access.
 ## Home-screen app
 
 The site includes a standalone web app manifest and home-screen icons. In Safari,
-use Share → Add to Home Screen. The manifest launches `/`; saving another page
-does not reliably select a different launch route. Admin sign-in is available
+use Share → Add to Home Screen. The manifest launches `/?launch=pwa`. After an authorized admin page opens inside
+the installed app, a local-storage preference makes future fresh launches open
+`/admin`. A fresh launch also checks the existing admin session when the preference
+is absent, so already-signed-in admins are recognized automatically. This preference has no application expiry and survives sign-out; an
+expired session still requires sign-in. Clearing site data removes the preference.
+Normal browser tabs and internal navigation to the public homepage are unaffected.
+Older installations using `/` detect a fresh navigation with no same-origin
+referrer; reloads and history navigation stay on the public page. Resuming an
+already-open app leaves its current page in place. Admin sign-in is available
 directly at `/admin`, which can be saved as a private browser bookmark. It is not
 linked in the public navigation. On the homepage, tap the EONMUN logo five times
 with less than 1.5 seconds between taps to open admin sign-in, including inside

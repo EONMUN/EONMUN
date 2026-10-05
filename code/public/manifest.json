@@ -2,7 +2,7 @@
   "name": "EONMUN Artwork",
   "short_name": "EONMUN",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/?launch=pwa",
   "scope": "/",
   "icons": [
     {

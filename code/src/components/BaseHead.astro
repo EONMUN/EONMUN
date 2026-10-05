@@ -38,6 +38,48 @@ if (new URL(imageURL).origin === 'https://r2.eonmun.com') {
 }
 ---
 <meta charset="utf-8" />
+<script is:inline>
+	(() => {
+		if (location.pathname !== '/') return;
+		const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+		if (!standalone) return;
+		const url = new URL(location.href);
+		const markedLaunch = url.searchParams.get('launch') === 'pwa';
+		const navigation = performance.getEntriesByType('navigation')[0];
+		let internalNavigation = false;
+		try { internalNavigation = new URL(document.referrer).origin === location.origin; } catch {}
+		// Older installations still launch at /. Internal links, reloads, and Back
+		// must leave the public homepage available after the admin opens it.
+		const legacyLaunch = !internalNavigation && !url.search && !url.hash
+			&& (!navigation || navigation.type === 'navigate');
+		if (markedLaunch) {
+			url.searchParams.delete('launch');
+			history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+		}
+		if (!markedLaunch && !legacyLaunch) return;
+		try {
+			// SECURITY: this remembers a destination only; /admin checks the session.
+			if (localStorage.getItem('eonmun.pwa.admin-start') === '1') {
+				location.replace('/admin');
+				return;
+			}
+		} catch { /* Session detection still works when storage is unavailable. */ }
+		// Recognize admins already signed in before this preference was introduced.
+		let untouchedLaunch = true;
+		document.addEventListener('pointerdown', () => { untouchedLaunch = false; }, { once: true, capture: true });
+		document.addEventListener('keydown', () => { untouchedLaunch = false; }, { once: true, capture: true });
+		document.addEventListener('click', () => { untouchedLaunch = false; }, { once: true, capture: true });
+		window.addEventListener('pagehide', () => { untouchedLaunch = false; }, { once: true });
+		fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(3000) })
+			.then((response) => response.ok ? response.json() : null)
+			.then((session) => {
+				if (!session?.user?.id) return;
+				try { localStorage.setItem('eonmun.pwa.admin-start', '1'); } catch {}
+				if (untouchedLaunch) location.replace('/admin');
+			})
+			.catch(() => { /* An unavailable session endpoint leaves the homepage usable. */ });
+	})();
+</script>
 <meta name="viewport" content={`width=device-width,initial-scale=1${iosEdgeToEdge ? ',viewport-fit=cover' : ''}`} />
 {iosEdgeToEdge && (
 	<>
