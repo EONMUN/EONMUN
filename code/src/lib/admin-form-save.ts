@@ -133,11 +133,11 @@ export function attachAdminFormSave(form: HTMLFormElement, options: AdminFormSav
 		}
 	});
 
-	// A page restored from the back-forward cache would otherwise come back
-	// locked mid-redirect, with nothing left to unlock it.
+	// A page restored from the back-forward cache comes back locked mid-redirect,
+	// holding content that was already saved. Unlocking it would show stale image
+	// rows and let a create be sent twice, so it is fetched fresh instead.
 	window.addEventListener("pageshow", (event) => {
 		if (!event.persisted || !release) return;
-		unlock();
-		status.textContent = "";
+		window.location.reload();
 	});
 }
