@@ -67,7 +67,7 @@ export function orderAlertPayload(order: Pick<OrderNotificationInput, "orderId" 
 export const TEST_PAYLOAD: PushPayload = {
 	title: "EONMUN test notification",
 	body: "Paid-order alerts are enabled on this device.",
-	url: "/admin/notifications",
+	url: "/admin/settings#notifications",
 	tag: "eonmun-test",
 };
 

@@ -1,13 +1,10 @@
 ---
-import ConsoleShell from '../../components/admin/ConsoleShell.astro';
-import { requireAdminPage } from '../../lib/admin-guard';
-import { getRuntimeEnv } from '../../lib/runtime-env';
-import { hasGoogleMerchantAccess, isGoogleMerchantConfigured } from '../../lib/google-merchant';
+// Rendered only by the admin settings page, after its admin guard. Google
+// Merchant OAuth returns here with `error` and `error_description` query params.
+import { getRuntimeEnv } from '../../../lib/runtime-env';
+import { hasGoogleMerchantAccess, isGoogleMerchantConfigured } from '../../../lib/google-merchant';
 
-export const prerender = false;
 const env = getRuntimeEnv();
-const access = await requireAdminPage(Astro.request, env, '/admin/google');
-if ('response' in access) return access.response;
 const configured = isGoogleMerchantConfigured(env);
 const connected = await hasGoogleMerchantAccess(env);
 const error = Astro.url.searchParams.get('error');
@@ -19,7 +16,7 @@ const connectionMessage = error === 'google_merchant_account_changed'
 			? Astro.url.searchParams.get('error_description') ?? 'Google Merchant connection failed. Please retry.'
 			: error ? 'Google authorization was not completed. Please try again.' : null;
 ---
-<ConsoleShell title="Google Merchant — EONMUN admin" heading="Google Merchant sync" email={access.session.user.email} backHref="/admin" backLabel="Admin">
+<div class="google-merchant">
 	<p>Once connected, saleable artwork is sent to Google Merchant Center when saved and removed after a confirmed Stripe sale. Google reviews submitted products before they can appear in listings.</p>
 	{connectionMessage && <p role="alert">{connectionMessage}</p>}
 	{connected && <p role="status">Google Merchant account access is verified. Use the retry button to sync existing artwork.</p>}
@@ -31,7 +28,7 @@ const connectionMessage = error === 'google_merchant_account_changed'
 		</div>
 	</> : <p role="status">Google Merchant API is not configured yet.</p>}
 	<p role="status" aria-live="polite" data-google-status></p>
-</ConsoleShell>
+</div>
 <script>
 	const button = document.querySelector<HTMLButtonElement>('[data-google-sync]');
 	const status = document.querySelector<HTMLElement>('[data-google-status]');
@@ -69,6 +66,7 @@ const connectionMessage = error === 'google_merchant_account_changed'
 	});
 </script>
 <style>
+	.google-merchant { max-width: 48rem; }
 	.google-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
 	button:disabled { cursor: wait; opacity: .6; }
 	[data-google-status], [role="alert"] { overflow-wrap: anywhere; }

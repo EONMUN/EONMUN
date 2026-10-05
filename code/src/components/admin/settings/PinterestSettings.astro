@@ -1,32 +1,24 @@
 ---
-import ConsoleShell from '../../components/admin/ConsoleShell.astro';
-import { requireAdminPage } from '../../lib/admin-guard';
-import { getRuntimeEnv } from '../../lib/runtime-env';
-import { isPinterestConfigured } from '../../lib/pinterest-sync';
+// Rendered only by the admin settings page, after its admin guard.
+import { getRuntimeEnv } from '../../../lib/runtime-env';
+import { isPinterestConfigured } from '../../../lib/pinterest-sync';
 
-export const prerender = false;
-
-const env = getRuntimeEnv();
-const access = await requireAdminPage(Astro.request, env, '/admin/pinterest');
-if ('response' in access) return access.response;
-const configured = isPinterestConfigured(env);
+const configured = isPinterestConfigured(getRuntimeEnv());
 ---
-<ConsoleShell title="Pinterest — EONMUN admin" heading="Pinterest sync status" email={access.session.user.email} backHref="/admin" backLabel="Admin">
-	<section class="pinterest-sync">
-		<p>When Pinterest is connected, saving a published artwork marked available for sale submits it to the catalog automatically. Prices are sent in USD. When an artwork sells, its listing is submitted for removal.</p>
-		<p>Website collections are not yet mirrored to Pinterest product groups. No extra step is needed to list their saleable artworks.</p>
-		{configured ? (
-			<>
-				<button type="button" class="primary-button" data-pinterest-sync>Retry all artwork listings</button>
-				<p class="hint">Use this if Pinterest missed a change or to backfill existing listings. Pinterest processes changes asynchronously; this page checks each item's result.</p>
-			</>
-		) : (
-			<p role="status">Pinterest is not connected yet. Configure the app secret on the production Worker to enable syncing.</p>
-		)}
-		<p role="status" aria-live="polite" data-pinterest-status></p>
-		<ul data-pinterest-items></ul>
-	</section>
-</ConsoleShell>
+<div class="pinterest-sync">
+	<p>When Pinterest is connected, saving a published artwork marked available for sale submits it to the catalog automatically. Prices are sent in USD. When an artwork sells, its listing is submitted for removal.</p>
+	<p>Website collections are not yet mirrored to Pinterest product groups. No extra step is needed to list their saleable artworks.</p>
+	{configured ? (
+		<>
+			<button type="button" class="primary-button" data-pinterest-sync>Retry all artwork listings</button>
+			<p class="hint">Use this if Pinterest missed a change or to backfill existing listings. Pinterest processes changes asynchronously; this page checks each item's result.</p>
+		</>
+	) : (
+		<p role="status">Pinterest is not connected yet. Configure the app secret on the production Worker to enable syncing.</p>
+	)}
+	<p role="status" aria-live="polite" data-pinterest-status></p>
+	<ul data-pinterest-items></ul>
+</div>
 
 <script>
 	const button = document.querySelector<HTMLButtonElement>('[data-pinterest-sync]');

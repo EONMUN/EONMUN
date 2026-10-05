@@ -28,12 +28,12 @@ const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `a
 	backHref="/admin/artworks"
 	backLabel="Artwork"
 >
-	{pinterestState === 'not-connected' && <p role="alert">Artwork saved. Pinterest is not connected yet. <a href="/admin/pinterest">View Pinterest setup →</a></p>}
+	{pinterestState === 'not-connected' && <p role="alert">Artwork saved. Pinterest is not connected yet. <a href="/admin/settings#pinterest">View Pinterest setup →</a></p>}
 	{googleState === 'not-connected' && <p role="alert">Artwork saved. Google Merchant API is not connected yet.</p>}
 	{googleState === 'failed' && <p role="alert">Artwork saved, but Google Merchant sync failed. Check Worker logs before retrying.</p>}
 	{googleState === 'submitted' && <p role="status">Artwork saved and submitted to Google Merchant Center for processing.</p>}
 	{googleState === 'removed' && <p role="status">Artwork saved and removed from the Google Merchant API source.</p>}
-	{pinterestState === 'failed' && <p role="alert">Artwork saved, but Pinterest sync failed. <a href="/admin/pinterest">Retry the catalog sync →</a></p>}
+	{pinterestState === 'failed' && <p role="alert">Artwork saved, but Pinterest sync failed. <a href="/admin/settings#pinterest">Retry the catalog sync →</a></p>}
 	{pinterestBatchId && <p role="status" data-pinterest-batch={pinterestBatchId} data-pinterest-deletion={pinterestDeletion}>Artwork saved. Pinterest is processing the catalog update…</p>}
 	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets} />
 </ConsoleShell>
@@ -57,13 +57,13 @@ const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `a
 					if (result.status === 'COMPLETED' || result.status === 'FAILED') {
 						status.textContent = result.status === 'COMPLETED' && !result.failed
 							? 'Pinterest reported the artwork update complete.'
-							: 'Pinterest rejected the artwork update. Use the Pinterest catalog page to retry.';
+							: 'Pinterest rejected the artwork update. Use the Pinterest section of Settings to retry.';
 						return;
 					}
 					await new Promise((resolve) => setTimeout(resolve, 5000));
 				}
 				status.textContent = 'Pinterest is still processing the artwork update. Check the catalog later.';
-			} catch { status.textContent = 'Artwork saved, but Pinterest status could not be checked. Use the Pinterest catalog page to retry.'; }
+			} catch { status.textContent = 'Artwork saved, but Pinterest status could not be checked. Use the Pinterest section of Settings to retry.'; }
 		})();
 	}
 </script>

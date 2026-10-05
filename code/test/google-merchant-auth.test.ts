@@ -73,7 +73,7 @@ test.each([
 		expect(userAccessChecks).toBe(scenario.connects ? 1 : 0);
 		const destination = response.headers.get('location')!;
 		if (scenario.connects) {
-			expect(destination).toBe(`${origin}/admin/google`);
+			expect(destination).toBe(`${origin}/admin/settings#google`);
 			const cookies = response.headers.getSetCookie();
 			expect(cookies.some(c => c.includes('account_data'))).toBe(false);
 			const session = await getSession(new Request(`${origin}/admin`, { headers: { cookie: cookies.map(c => c.split(';')[0]).join('; ') } }), config);

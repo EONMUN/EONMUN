@@ -1,9 +1,9 @@
-// Admin paid-order alerts. Registered from /admin/notifications with scope /admin/.
+// Admin paid-order alerts. Registered from /admin/settings with scope /admin/.
 //
 // CRITICAL: there is deliberately no fetch handler. Admin pages, checkout, and
 // API responses must never be served from a service worker cache.
 
-const FALLBACK_URL = "/admin/notifications";
+const FALLBACK_URL = "/admin/settings#notifications";
 
 function adminUrl(value) {
 	try {
