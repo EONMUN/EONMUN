@@ -4,6 +4,7 @@ import { listAdminPushDevices, listRecentOrderNotifications } from '../../db/adm
 import { requireAdminPage } from '../../lib/admin-guard';
 import { getVapidPublicKey } from '../../lib/push/config';
 import { formatOrderAmount, MAX_ATTEMPTS, type AdminPushEnv } from '../../lib/push/dispatch';
+import { isAllowedAdminEmail } from '../../lib/auth';
 import { getRuntimeEnv } from '../../lib/runtime-env';
 
 export const prerender = false;
@@ -13,10 +14,12 @@ if ('response' in access) return access.response;
 const publicKey = getVapidPublicKey(env);
 const ownerId = access.session.user.id ?? '';
 let devices: Awaited<ReturnType<typeof listAdminPushDevices>> = [];
+let testDevices: typeof devices = [];
 let alerts: Awaited<ReturnType<typeof listRecentOrderNotifications>> = [];
 let loadError = false;
 try {
-	[devices, alerts] = await Promise.all([listAdminPushDevices(env, ownerId), listRecentOrderNotifications(env)]);
+	[devices, alerts, testDevices] = await Promise.all([listAdminPushDevices(env, ownerId), listRecentOrderNotifications(env), listAdminPushDevices(env, undefined)]);
+	testDevices = testDevices.filter((device) => isAllowedAdminEmail(device.ownerEmail, env));
 } catch {
 	// Keeps the page usable before the push migration is applied.
 	loadError = true;
@@ -78,6 +81,18 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 				)}
 			</section>
 
+			<section class="push-section" aria-labelledby="test-heading">
+				<h2 id="test-heading">Test an admin device</h2>
+				<p>Send a sample notification to an admin who has enabled notifications on their device. Each device can receive one test per minute.</p>
+				{testDevices.length === 0 ? <p>No admin devices are enabled yet.</p> : <ul class="push-list">
+					{testDevices.map((device) => <li>
+						<span>{device.ownerEmail} · {device.deviceLabel ?? 'Device'}</span>
+						<button type="button" class="secondary-button" data-admin-test-device={device.id}>Send test</button>
+					</li>)}
+				</ul>}
+				<p role="status" aria-live="polite" data-admin-test-result></p>
+			</section>
+
 			<section class="push-section" aria-labelledby="alerts-heading">
 				<h2 id="alerts-heading">Recent order alerts</h2>
 				{alerts.length === 0 ? <p class="hint">No paid-order alerts yet.</p> : (
@@ -104,6 +119,19 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 	import { attachPushSettings } from '../../lib/push-client';
 	const root = document.querySelector<HTMLElement>('[data-push-settings]');
 	if (root) attachPushSettings(root, { navigator, window, fetchImpl: fetch.bind(window) });
+	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-admin-test-device]')) {
+		button.addEventListener('click', async () => {
+			const status = document.querySelector<HTMLElement>('[data-admin-test-result]')!;
+			button.disabled = true;
+			status.textContent = 'Sending test…';
+			try {
+				const response = await fetch('/api/admin/push/test', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ deviceId: Number(button.dataset.adminTestDevice) }) });
+				const result = await response.json();
+				status.textContent = response.ok ? 'Test accepted by the push service. Check the selected device.' : result.error ?? 'Could not send the test.';
+			} catch { status.textContent = 'Could not send the test. Check your connection.'; }
+			finally { button.disabled = false; }
+		});
+	}
 </script>
 <style>
 	.push-panel, .push-section { max-width: 48rem; margin: 2rem 0; }

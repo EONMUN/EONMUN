@@ -1,7 +1,8 @@
 import { claimTestSend, getOwnedSubscription, MAX_DEVICES_PER_ADMIN, removeOwnedSubscription, upsertAdminPushSubscription } from "../../db/admin-push";
-import { getDb, type Database } from "../../db";
+import { adminPushSubscriptions, getDb, type Database } from "../../db";
 import { requireAdminMutation } from "../admin-guard";
-import type { AuthEnv } from "../auth";
+import { isAllowedAdminEmail, type AuthEnv } from "../auth";
+import { eq } from "drizzle-orm";
 import { getVapidPublicKey } from "./config";
 import { sendTestNotification, type AdminPushEnv } from "./dispatch";
 import { deviceLabel, parseEndpointBody, parsePushEndpoint, parseSubscriptionInput, PushInputError, readJsonBody } from "./subscription-input";
@@ -73,10 +74,22 @@ export function subscriptionStatus(request: Request, env: AdminPushEnv, options:
 	});
 }
 
-// Sends a fixed message to the caller's own device only; there is no free-text broadcast.
+// Admins can test an enrolled device by ID without exposing its delivery endpoint.
 export function sendTest(request: Request, env: AdminPushEnv, options: PushApiOptions = {}) {
 	return pushMutation(request, env, options, async ({ owner, body, db }) => {
-		const subscription = await claimTestSend(env, owner.id, parseEndpointBody(body), new Date(), db);
+		const id = (body as { deviceId?: unknown } | null)?.deviceId;
+		let targetOwner = owner.id;
+		let endpoint: string;
+		if (id !== undefined) {
+			if (typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0) throw new PushInputError("Invalid device");
+			const [target] = await db.select().from(adminPushSubscriptions).where(eq(adminPushSubscriptions.id, id));
+			if (!target || !isAllowedAdminEmail(target.ownerEmail, env)) return json({ error: "Device not found" }, 404);
+			targetOwner = target.ownerId;
+			endpoint = target.endpoint;
+		} else {
+			endpoint = parseEndpointBody(body);
+		}
+		const subscription = await claimTestSend(env, targetOwner, endpoint, new Date(), db);
 		if (subscription === null) return json({ error: "Device not found" }, 404);
 		if (subscription === "rate_limited") return json({ error: "Wait a minute before sending another test." }, 429);
 		const result = await sendTestNotification(env, subscription, { db, fetchImpl: options.fetchImpl });

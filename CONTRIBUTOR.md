@@ -375,3 +375,5 @@ the artwork without this overlay. The CSS feature query uses the iOS-only
 `-webkit-touch-callout` property, so it takes effect before JavaScript runs. Colors use the whole
 cover, so rotation does not change the tint. Safari still controls its own
 bars; physical iPhone acceptance is required for toolbar colors and transitions.
+
+Admins can use **Admin → Notifications → Test an admin device** to send a fixed sample alert to any currently allowed admin’s enrolled device. The recipient must enable notifications first. Tests are limited to one per device per minute; push-service acceptance does not confirm display on the phone.

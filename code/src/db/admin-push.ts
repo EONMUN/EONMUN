@@ -137,14 +137,15 @@ export async function recordSubscriptionOutcome(db: Database, subscriptionId: nu
 		.where(eq(adminPushSubscriptions.id, subscriptionId));
 }
 
-export async function listAdminPushDevices(env: Env, ownerId: string, db: Database = getDb(env)) {
+export async function listAdminPushDevices(env: Env, ownerId: string | undefined, db: Database = getDb(env)) {
 	return db.select({
 		id: adminPushSubscriptions.id,
+		ownerEmail: adminPushSubscriptions.ownerEmail,
 		deviceLabel: adminPushSubscriptions.deviceLabel,
 		createdAt: adminPushSubscriptions.createdAt,
 		lastSuccessAt: adminPushSubscriptions.lastSuccessAt,
 		lastFailureAt: adminPushSubscriptions.lastFailureAt,
-	}).from(adminPushSubscriptions).where(eq(adminPushSubscriptions.ownerId, ownerId)).orderBy(desc(adminPushSubscriptions.createdAt));
+	}).from(adminPushSubscriptions).where(ownerId === undefined ? undefined : eq(adminPushSubscriptions.ownerId, ownerId)).orderBy(desc(adminPushSubscriptions.createdAt));
 }
 
 /**

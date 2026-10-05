@@ -96,6 +96,23 @@ describe("subscription validation", () => {
 });
 
 describe("device ownership", () => {
+	test("admins can test an enrolled device by ID with shared rate limits and recipient access checks", async () => {
+		const { body, keys } = await subscription();
+		await subscribe(request("/api/admin/push/subscription", body, { cookie: await other() }), env, db());
+		const [device] = await store.db.select().from(adminPushSubscriptions);
+		const server = pushServer();
+		const options = { db: store.db, fetchImpl: server.fetchImpl };
+		const cookie = await admin();
+		expect((await sendTest(request("/api/admin/push/test", { deviceId: device.id }), env, options)).status).toBe(401);
+		expect((await sendTest(request("/api/admin/push/test", { deviceId: device.id }, { cookie, origin: "https://evil.test" }), env, options)).status).toBe(403);
+		expect((await sendTest(request("/api/admin/push/test", { deviceId: device.id }, { cookie }), env, options)).status).toBe(200);
+		expect(await decryptPush(server.calls[0].body, keys)).toMatchObject({ title: "EONMUN test notification" });
+		expect((await sendTest(request("/api/admin/push/test", { endpoint: body.endpoint }, { cookie: await other() }), env, options)).status).toBe(429);
+		expect((await sendTest(request("/api/admin/push/test", { deviceId: device.id }, { cookie }), { ...env, ADMIN_EMAILS: "admin@example.com" }, options)).status).toBe(404);
+		expect((await sendTest(request("/api/admin/push/test", { deviceId: -1 }, { cookie }), env, options)).status).toBe(400);
+		expect(server.calls).toHaveLength(1);
+	});
+
 	test("registers a device to the signed-in admin and reports its status", async () => {
 		const cookie = await admin();
 		const { body } = await subscription();
@@ -109,7 +126,7 @@ describe("device ownership", () => {
 		expect(await otherStatus.json()).toEqual({ registered: false });
 	});
 
-	test("another admin cannot remove or test someone else's device", async () => {
+	test("another admin cannot remove a device or test it using a private endpoint", async () => {
 		const { body } = await subscription();
 		await subscribe(request("/api/admin/push/subscription", body, { cookie: await admin() }), env, db());
 		const intruder = await other();
