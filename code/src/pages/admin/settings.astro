@@ -1,0 +1,53 @@
+---
+import ConsoleSection from '../../components/admin/ConsoleSection.astro';
+import ConsoleShell from '../../components/admin/ConsoleShell.astro';
+import GoogleMerchantSettings from '../../components/admin/settings/GoogleMerchantSettings.astro';
+import NotificationSettings from '../../components/admin/settings/NotificationSettings.astro';
+import PinterestSettings from '../../components/admin/settings/PinterestSettings.astro';
+import { requireAdminPage } from '../../lib/admin-guard';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+export const prerender = false;
+
+const access = await requireAdminPage(Astro.request, getRuntimeEnv(), '/admin/settings');
+if ('response' in access) return access.response;
+---
+<ConsoleShell title="Settings — EONMUN admin" heading="Settings" email={access.session.user.email} backHref="/admin" backLabel="Admin">
+	<nav class="settings-nav" aria-label="Settings sections">
+		<a href="#pinterest">Pinterest</a>
+		<a href="#google">Google Merchant</a>
+		<a href="#notifications">Notifications</a>
+	</nav>
+	<ConsoleSection id="pinterest" index="01" title="Pinterest">
+		<PinterestSettings />
+	</ConsoleSection>
+	<ConsoleSection id="google" index="02" title="Google Merchant">
+		<GoogleMerchantSettings />
+	</ConsoleSection>
+	<ConsoleSection id="notifications" index="03" title="Notifications">
+		<NotificationSettings ownerId={access.session.user.id ?? ''} />
+	</ConsoleSection>
+</ConsoleShell>
+
+<style>
+	.settings-nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1.5rem;
+		margin: 2rem 0 3rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
+
+	.settings-nav a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 2.75rem;
+		color: var(--admin-muted);
+		transition: color 200ms;
+	}
+
+	.settings-nav a:hover {
+		color: var(--admin-gold);
+	}
+</style>

@@ -111,9 +111,9 @@ export function createAuth(env: AuthEnv, request: Request) {
 			// SECURITY: bind Merchant setup to the initiating admin inside validated OAuth state.
 			await addOAuthServerContext({ googleMerchantAdminId: session.user.id });
 			ctx.body.scopes = [GOOGLE_MERCHANT_SCOPE];
-			ctx.body.callbackURL = `${origin}/admin/google`;
+			ctx.body.callbackURL = `${origin}/admin/settings#google`;
 			ctx.body.newUserCallbackURL = ctx.body.callbackURL;
-			ctx.body.errorCallbackURL = `${origin}/admin/google`;
+			ctx.body.errorCallbackURL = `${origin}/admin/settings#google`;
 		}) },
 		user: {
 			additionalFields: { googleId: { type: "string", required: false, input: false } },

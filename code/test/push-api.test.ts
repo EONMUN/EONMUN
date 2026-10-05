@@ -155,7 +155,7 @@ describe("device ownership", () => {
 		const server = pushServer();
 		const first = await sendTest(request("/api/admin/push/test", { endpoint: body.endpoint, title: "Injected" }, { cookie }), env, { db: store.db, fetchImpl: server.fetchImpl });
 		expect(first.status).toBe(200);
-		expect(await decryptPush(server.calls[0].body, keys)).toMatchObject({ title: "EONMUN test notification", url: "/admin/notifications" });
+		expect(await decryptPush(server.calls[0].body, keys)).toMatchObject({ title: "EONMUN test notification", url: "/admin/settings#notifications" });
 		const second = await sendTest(request("/api/admin/push/test", { endpoint: body.endpoint }, { cookie }), env, { db: store.db, fetchImpl: server.fetchImpl });
 		expect(second.status).toBe(429);
 		expect(server.calls).toHaveLength(1);

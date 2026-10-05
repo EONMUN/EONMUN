@@ -44,7 +44,7 @@ describe("push service worker", () => {
 		await worker.fire("push", pushEvent("not json"));
 		expect(worker.shown).toHaveLength(2);
 		expect(worker.shown[0]).toMatchObject({ title: "Order paid", options: { body: "Camelia · $1,250.00", tag: "order-ord_1", data: { url: "https://eonmun.test/admin/orders/ord_1" } } });
-		expect(worker.shown[1]).toMatchObject({ title: "EONMUN", options: { data: { url: "https://eonmun.test/admin/notifications" } } });
+		expect(worker.shown[1]).toMatchObject({ title: "EONMUN", options: { data: { url: "https://eonmun.test/admin/settings#notifications" } } });
 	});
 
 	test("only opens this site's admin pages", async () => {
@@ -52,7 +52,7 @@ describe("push service worker", () => {
 		for (const url of ["https://evil.test/admin/x", "//evil.test/admin", "javascript:alert(1)", "/checkout", "/artworks/x"]) {
 			await worker.fire("push", pushEvent({ title: "x", url }));
 		}
-		expect(worker.shown.map((entry) => (entry.options.data as { url: string }).url)).toEqual(Array(5).fill("https://eonmun.test/admin/notifications"));
+		expect(worker.shown.map((entry) => (entry.options.data as { url: string }).url)).toEqual(Array(5).fill("https://eonmun.test/admin/settings#notifications"));
 	});
 
 	test("focuses an open order window or opens a new one", async () => {
@@ -64,7 +64,7 @@ describe("push service worker", () => {
 		await worker.fire("notificationclick", click("https://eonmun.test/admin/orders/ord_2"));
 		await worker.fire("notificationclick", click("https://evil.test/"));
 		expect(focused).toEqual([target]);
-		expect(worker.opened).toEqual(["https://eonmun.test/admin/orders/ord_2", "https://eonmun.test/admin/notifications"]);
+		expect(worker.opened).toEqual(["https://eonmun.test/admin/orders/ord_2", "https://eonmun.test/admin/settings#notifications"]);
 	});
 
 	test("replaces a rotated subscription only after the new one is stored", async () => {
