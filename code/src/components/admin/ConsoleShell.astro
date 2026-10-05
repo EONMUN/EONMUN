@@ -12,6 +12,7 @@ interface Props {
 	description?: string;
 	backHref?: string;
 	backLabel?: string;
+	privateData?: boolean;
 }
 
 const {
@@ -22,9 +23,10 @@ const {
 	description = 'EONMUN studio console.',
 	backHref,
 	backLabel,
+	privateData = false,
 } = Astro.props;
 ---
-<BaseLayout title={title} description={description} themeColor="#050506">
+<BaseLayout title={title} description={description} themeColor="#050506" privateData={privateData}>
 	<div class="console">
 		<div class="ground" aria-hidden="true"></div>
 		<div class="wrap">

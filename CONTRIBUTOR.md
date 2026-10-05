@@ -164,20 +164,22 @@ Each order keeps:
 - buyer email, name, business name, phone, and complete billing address
 - recipient name and shipping address, with a recipient phone only when Stripe supplies one separately
 - currency, purchased artwork amount, subtotal, discount, shipping, tax, and total
-- a snapshot of the artwork ID, slug, and title at payment time, payment time, fulfillment status, and an attention flag
+- the artwork title and slug shown when Checkout was created, the linked artwork and product IDs, payment time, fulfillment status, and an attention flag
 
 Card details and the raw webhook payload are never stored. Missing optional Stripe fields are stored as empty.
 
 The webhook endpoint uses the Stripe account's default API version. Since `2025-03-31.basil`, Checkout reports shipping under `collected_information.shipping_details`; older versions use top-level `shipping_details`. The parser reads both.
 
-Checkout requires a full billing address and a phone number (`billing_address_collection=required`, `phone_number_collection[enabled]=true`). Stripe collects one phone number for the buyer; the shipping label falls back to it. Remove the phone setting in `code/src/lib/checkout.ts` if checkout friction outweighs carrier contact.
+Checkout requires a full billing address (`billing_address_collection=required`). It does not ask for a phone number: Stripe makes an enabled phone field mandatory. A phone is stored when Stripe supplies one, for example from a wallet, and the shipping label uses it.
+
+Checkout writes the artwork title and slug into the session metadata, and the order keeps those values, so renaming an artwork while Checkout is open or before a delayed payment settles does not change the order. Sessions without title metadata, created before this change or outside the site, use the Stripe line item name, fetched with `STRIPE_SECRET_KEY` only for a new order. If Stripe cannot answer, the webhook returns 500 and Stripe retries. Without a key or a line item, the order uses the catalog title and marks that source. The order page links to the artwork's current admin page.
 
 Repeated deliveries for a session return the stored order and do not change inventory or raise a flag. Orders need attention when:
 
 - `artwork_already_sold`: a separate paid session bought an artwork another order already sold. Refund it in Stripe.
 - `artwork_not_found`: the session has no matching artwork product, such as a Payment Link created in Stripe. The payment is kept rather than discarded.
 
-`/admin/orders` lists paid orders newest first. Each order page shows buyer, recipient, addresses, totals, Stripe dashboard links, a copyable shipping label, and a fulfillment status control (`To ship`, `Shipped`, `Delivered`, `Cancelled`). Admin and API routes are `no-store`; Worker logs carry Stripe references only, never buyer details.
+`/admin/orders` lists paid orders newest first. Each order page shows buyer, recipient, addresses, totals, Stripe dashboard links, a copyable shipping label, and a fulfillment status control (`To ship`, `Shipped`, `Delivered`, `Cancelled`). Admin and API routes are `no-store`; Worker logs carry Stripe references only, never buyer details. Order pages set the layout's `privateData` option, which leaves out PostHog and the Pinterest tag, so autocapture and session recording never see buyer details.
 
 Sales made before migration `0020` have no order row. If Stripe retries one of those events after deployment, it is recorded as a new order flagged `artwork_already_sold`; confirm it against Stripe before refunding.
 

@@ -37,10 +37,9 @@ export async function createStripeCheckoutSession(
 		"line_items[0][price_data][currency]": "usd",
 		"line_items[0][price_data][unit_amount]": String(item.priceCents),
 		"line_items[0][price_data][product_data][name]": item.name,
-		// Fulfillment needs a complete billing address and a contact phone for the
-		// carrier; Checkout otherwise collects only what the card network requires.
+		// Orders keep a complete billing address; Checkout otherwise collects only
+		// what the card network requires.
 		billing_address_collection: "required",
-		"phone_number_collection[enabled]": "true",
 		"shipping_address_collection[allowed_countries][0]": "US",
 		"shipping_options[0][shipping_rate_data][type]": "fixed_amount",
 		"shipping_options[0][shipping_rate_data][display_name]": "U.S. shipping included",
@@ -48,6 +47,9 @@ export async function createStripeCheckoutSession(
 		"shipping_options[0][shipping_rate_data][fixed_amount][currency]": "usd",
 		"metadata[artworkSlug]": item.artworkSlug,
 		"metadata[productId]": String(item.productId),
+		// CRITICAL: orders snapshot the title the buyer saw from this value, not
+		// from the catalog when payment arrives. Stripe caps metadata values at 500.
+		"metadata[artworkTitle]": item.name.slice(0, 500),
 		success_url: `${artworkUrl}?checkout=success`,
 		cancel_url: `${artworkUrl}?checkout=cancelled`,
 	});

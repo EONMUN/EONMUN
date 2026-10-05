@@ -10,6 +10,7 @@ CREATE TABLE orders (
 	artwork_id INTEGER REFERENCES artworks(id) ON DELETE SET NULL,
 	artwork_slug TEXT,
 	artwork_title TEXT NOT NULL,
+	artwork_title_source TEXT NOT NULL CHECK (artwork_title_source IN ('checkout', 'stripe_line_item', 'catalog', 'unmatched')),
 	item_amount INTEGER NOT NULL,
 	currency TEXT NOT NULL,
 	amount_subtotal INTEGER,

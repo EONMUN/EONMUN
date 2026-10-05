@@ -269,9 +269,9 @@ describe("admin mutations", () => {
 		const artwork = await createArtworkAdmin(env, artworkInput({ available: true, priceCents: 125000 }), db);
 		await updateArtworkAdmin(env, artwork.slug, artworkInput({ published: true, available: true, priceCents: 125000 }), db);
 		const [product] = await db.select().from(products).where(eq(products.artworkId, artwork.id));
-		const checkout = parsePaidCheckoutEvent(paidCheckoutEvent({ session: { metadata: { artworkSlug: artwork.slug, productId: String(product.id) } } }))!;
-		const first = await recordPaidOrder(env, checkout, db);
-		const replay = await recordPaidOrder(env, checkout, db);
+		const checkout = parsePaidCheckoutEvent(paidCheckoutEvent({ session: { metadata: { artworkSlug: artwork.slug, artworkTitle: artwork.title, productId: String(product.id) } } }))!;
+		const first = await recordPaidOrder(env, checkout, null, db);
+		const replay = await recordPaidOrder(env, checkout, null, db);
 		expect([first.created, first.attentionReason]).toEqual([true, null]);
 		expect([replay.created, replay.attentionReason]).toEqual([false, null]);
 		expect(replay.notification).toEqual(first.notification);
@@ -295,10 +295,12 @@ describe("admin mutations", () => {
 
 		const order = await recordPaidOrder(env, parsePaidCheckoutEvent(paidCheckoutEvent({
 			eventId: "evt_renamed",
-			session: { metadata: { artworkSlug: checkoutSlug, productId: String(product.id) } },
-		}))!, db);
+			session: { metadata: { artworkSlug: checkoutSlug, artworkTitle: "Study", productId: String(product.id) } },
+		}))!, null, db);
 		expect(order.attentionReason).toBeNull();
-		expect(order.notification.artworkTitle).toBe("Renamed study");
+		expect(order.artworkId).toBe(artwork.id);
+		// The order names what Checkout showed, not the later catalog title.
+		expect(order.notification.artworkTitle).toBe("Study");
 		const [sold] = await db.select().from(products).where(eq(products.id, product.id));
 		expect(sold.quantity).toBe(0);
 		expect(sold.soldAt).toBeInstanceOf(Date);

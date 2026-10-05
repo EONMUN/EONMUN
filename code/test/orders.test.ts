@@ -22,7 +22,7 @@ let artworkId: number;
 function checkout(overrides: Parameters<typeof paidCheckoutEvent>[0] = {}): PaidCheckout {
 	return parsePaidCheckoutEvent(paidCheckoutEvent({
 		...overrides,
-		session: { metadata: { artworkSlug: "study", productId: String(productId) }, ...overrides.session },
+		session: { metadata: { artworkSlug: "study", artworkTitle: "Study", productId: String(productId) }, ...overrides.session },
 	}))!;
 }
 
@@ -55,7 +55,7 @@ afterEach(async () => {
 
 describe("paid orders", () => {
 	test("stores the buyer, billing address, recipient, shipping address, totals, and Stripe references", async () => {
-		const result = await recordPaidOrder(env, checkout({ session: { customer: "cus_123", amount_total: 133531, total_details: { amount_discount: 500, amount_shipping: 0, amount_tax: 9031 } } }), db);
+		const result = await recordPaidOrder(env, checkout({ session: { customer: "cus_123", amount_total: 133531, total_details: { amount_discount: 500, amount_shipping: 0, amount_tax: 9031 } } }), null, db);
 		expect(result).toEqual({
 			notification: { orderId: expect.any(String), artworkTitle: "Study", amountTotal: 133531, currency: "usd" },
 			created: true,
@@ -76,6 +76,7 @@ describe("paid orders", () => {
 			artworkId,
 			artworkSlug: "study",
 			artworkTitle: "Study",
+			artworkTitleSource: "checkout",
 			itemAmount: 125000,
 			amountSubtotal: 125000,
 			amountDiscount: 500,
@@ -112,13 +113,13 @@ describe("paid orders", () => {
 	});
 
 	test("replays and later events for the same session return the stored order without a false double-sale", async () => {
-		const first = await recordPaidOrder(env, checkout(), db);
+		const first = await recordPaidOrder(env, checkout(), null, db);
 		const soldAt = (await product()).soldAt;
 		await db.update(artworks).set({ title: "Renamed study" }).where(eq(artworks.id, artworkId));
 		await db.update(products).set({ price: 1 }).where(eq(products.id, productId));
 
-		const replay = await recordPaidOrder(env, checkout(), db);
-		const delayed = await recordPaidOrder(env, checkout({ eventId: "evt_async", type: "checkout.session.async_payment_succeeded" }), db);
+		const replay = await recordPaidOrder(env, checkout(), null, db);
+		const delayed = await recordPaidOrder(env, checkout({ eventId: "evt_async", type: "checkout.session.async_payment_succeeded" }), null, db);
 		for (const result of [replay, delayed]) {
 			expect(result.created).toBe(false);
 			expect(result.attentionReason).toBeNull();
@@ -130,7 +131,7 @@ describe("paid orders", () => {
 	});
 
 	test("records a delayed payment confirmed by checkout.session.async_payment_succeeded", async () => {
-		const result = await recordPaidOrder(env, checkout({ eventId: "evt_async", type: "checkout.session.async_payment_succeeded" }), db);
+		const result = await recordPaidOrder(env, checkout({ eventId: "evt_async", type: "checkout.session.async_payment_succeeded" }), null, db);
 		const order = await getAdminOrder(env, result.notification.orderId, db);
 		expect(order?.stripeEventType).toBe("checkout.session.async_payment_succeeded");
 		expect(order?.stripeEventId).toBe("evt_async");
@@ -138,11 +139,11 @@ describe("paid orders", () => {
 	});
 
 	test("records a separate paid session for an already-sold artwork and flags it", async () => {
-		const first = await recordPaidOrder(env, checkout(), db);
+		const first = await recordPaidOrder(env, checkout(), null, db);
 		const second = await recordPaidOrder(env, checkout({
 			eventId: "evt_second",
 			session: { id: "cs_test_second", payment_intent: "pi_test_second", customer_details: { email: "second@example.com", name: "Second Buyer" } },
-		}), db);
+		}), null, db);
 		expect(second.created).toBe(true);
 		expect(second.attentionReason).toBe("artwork_already_sold");
 		expect(second.notification.orderId).not.toBe(first.notification.orderId);
@@ -152,22 +153,23 @@ describe("paid orders", () => {
 		expect(stored).toContainEqual({ session: "cs_test_paid", attention: null, email: "buyer@example.com" });
 		expect(stored).toContainEqual({ session: "cs_test_second", attention: "artwork_already_sold", email: "second@example.com" });
 		// Replaying the flagged session keeps it flagged without adding a third row.
-		const replay = await recordPaidOrder(env, checkout({ eventId: "evt_second", session: { id: "cs_test_second" } }), db);
+		const replay = await recordPaidOrder(env, checkout({ eventId: "evt_second", session: { id: "cs_test_second" } }), null, db);
 		expect([replay.created, replay.attentionReason, replay.notification.orderId]).toEqual([false, "artwork_already_sold", second.notification.orderId]);
 		expect(await db.select().from(orders)).toHaveLength(2);
 	});
 
 	test("keeps a paid session with no matching artwork product instead of discarding it", async () => {
-		const result = await recordPaidOrder(env, checkout({ session: { metadata: {} } }), db);
+		const result = await recordPaidOrder(env, checkout({ session: { metadata: {} } }), null, db);
 		expect(result).toMatchObject({ created: true, attentionReason: "artwork_not_found", artworkId: null, productId: null });
 		expect(result.notification).toMatchObject({ artworkTitle: "Unmatched Stripe payment", amountTotal: 125000 });
+		expect((await getAdminOrder(env, result.notification.orderId, db))?.artworkTitleSource).toBe("unmatched");
 		expect((await product()).soldAt).toBeNull();
 	});
 
 	test("rolls back the sold mark when the order cannot be stored", async () => {
 		const invalid = { ...checkout(), currency: null } as unknown as PaidCheckout;
 		// The product update runs first, so this proves the insert failure undoes it.
-		expect(await failure(() => recordPaidOrder(env, invalid, db))).toContain("NOT NULL constraint failed: orders.currency");
+		expect(await failure(() => recordPaidOrder(env, invalid, null, db))).toContain("NOT NULL constraint failed: orders.currency");
 		const unsold = await product();
 		expect(unsold.soldAt).toBeNull();
 		expect(unsold.quantity).toBe(1);
@@ -175,17 +177,68 @@ describe("paid orders", () => {
 	});
 
 	test("the unique session index rejects a second row for one Checkout Session", async () => {
-		const { notification } = await recordPaidOrder(env, checkout(), db);
+		const { notification } = await recordPaidOrder(env, checkout(), null, db);
 		const [row] = await db.select().from(orders).where(eq(orders.id, notification.orderId));
 		expect(await failure(async () => db.insert(orders).values({ ...row, id: crypto.randomUUID() }))).toContain("UNIQUE constraint failed: orders.stripe_checkout_session_id");
 	});
 
 	test("lists newest orders first and updates fulfillment status", async () => {
-		const older = await recordPaidOrder(env, checkout({ created: 1_791_100_000 }), db);
-		const newer = await recordPaidOrder(env, checkout({ eventId: "evt_newer", created: 1_791_300_000, session: { id: "cs_test_newer" } }), db);
+		const older = await recordPaidOrder(env, checkout({ created: 1_791_100_000 }), null, db);
+		const newer = await recordPaidOrder(env, checkout({ eventId: "evt_newer", created: 1_791_300_000, session: { id: "cs_test_newer" } }), null, db);
 		expect((await getAdminOrders(env, db)).map((order) => order.id)).toEqual([newer.notification.orderId, older.notification.orderId]);
 		expect(await updateOrderFulfillment(env, older.notification.orderId, "shipped", db)).toEqual({ id: older.notification.orderId, fulfillmentStatus: "shipped" });
 		expect(await updateOrderFulfillment(env, crypto.randomUUID(), "shipped", db)).toBeNull();
 		expect(await failure(async () => db.update(orders).set({ fulfillmentStatus: "lost" as never }).where(eq(orders.id, older.notification.orderId)))).toContain("CHECK constraint failed");
+	});
+
+	test("keeps the title and slug shown at Checkout when the artwork is renamed before payment", async () => {
+		const opened = checkout();
+		const delayedOpen = checkout({ eventId: "evt_delayed", type: "checkout.session.async_payment_succeeded", session: { id: "cs_test_delayed" } });
+		await db.update(artworks).set({ title: "Renamed study", slug: "renamed-study" }).where(eq(artworks.id, artworkId));
+		const lookups: string[] = [];
+		const lookup = async (sessionId: string) => { lookups.push(sessionId); return "Stripe line item"; };
+
+		for (const paid of [opened, delayedOpen]) {
+			const result = await recordPaidOrder(env, paid, lookup, db);
+			expect(result.notification.artworkTitle).toBe("Study");
+			expect(result.artworkId).toBe(artworkId);
+			expect(result.productId).toBe(productId);
+			const order = await getAdminOrder(env, result.notification.orderId, db);
+			expect(order).toMatchObject({ artworkTitle: "Study", artworkTitleSource: "checkout", artworkSlug: "study", currentArtworkSlug: "renamed-study" });
+		}
+		// Checkout metadata already names the purchase, so Stripe is never asked.
+		expect(lookups).toEqual([]);
+	});
+
+	test("asks Stripe for the line item name of a session created without title metadata", async () => {
+		const legacy = checkout({ session: { metadata: { artworkSlug: "study", productId: String(productId) } } });
+		await db.update(artworks).set({ title: "Renamed study", slug: "renamed-study" }).where(eq(artworks.id, artworkId));
+		const lookups: string[] = [];
+		const lookup = async (sessionId: string) => { lookups.push(sessionId); return "Study"; };
+
+		const first = await recordPaidOrder(env, legacy, lookup, db);
+		expect(first.notification.artworkTitle).toBe("Study");
+		expect(await getAdminOrder(env, first.notification.orderId, db)).toMatchObject({ artworkTitleSource: "stripe_line_item", artworkSlug: "study" });
+		const replay = await recordPaidOrder(env, legacy, lookup, db);
+		expect(replay.notification).toEqual(first.notification);
+		expect(lookups).toEqual(["cs_test_paid"]);
+	});
+
+	test("labels a catalog title when Stripe has no line item name or no key is configured", async () => {
+		const legacy = (id: string) => checkout({ eventId: `evt_${id}`, session: { id, metadata: { artworkSlug: "study", productId: String(productId) } } });
+		const empty = await recordPaidOrder(env, legacy("cs_test_empty"), async () => null, db);
+		const unconfigured = await recordPaidOrder(env, legacy("cs_test_nokey"), null, db);
+		for (const result of [empty, unconfigured]) {
+			expect(result.notification.artworkTitle).toBe("Study");
+			expect((await getAdminOrder(env, result.notification.orderId, db))?.artworkTitleSource).toBe("catalog");
+		}
+	});
+
+	test("stores nothing when the Stripe line item lookup fails, so Stripe retries", async () => {
+		const legacy = checkout({ session: { metadata: { artworkSlug: "study", productId: String(productId) } } });
+		const message = await failure(() => recordPaidOrder(env, legacy, async () => { throw new Error("Stripe line item lookup returned HTTP 503"); }, db));
+		expect(message).toBe("Stripe line item lookup returned HTTP 503");
+		expect(await db.select().from(orders)).toHaveLength(0);
+		expect((await product()).soldAt).toBeNull();
 	});
 });

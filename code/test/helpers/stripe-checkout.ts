@@ -28,7 +28,7 @@ export function paidCheckoutEvent(overrides: {
 				customer: null,
 				customer_email: null,
 				payment_intent: "pi_test_paid",
-				metadata: { artworkSlug: "study", productId: "1" },
+				metadata: { artworkSlug: "study", artworkTitle: "Study", productId: "1" },
 				customer_details: {
 					email: "buyer@example.com",
 					name: "Ada Buyer",

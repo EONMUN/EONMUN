@@ -34,6 +34,12 @@ const billing = addressLines(order, 'billing');
 const shipping = addressLines(order, 'shipping');
 const label = shippingLabel(order);
 const attention = order.attentionReason ? ATTENTION_LABELS[order.attentionReason] : null;
+const titleNote = {
+	checkout: null,
+	stripe_line_item: 'Title from the Stripe line item.',
+	catalog: 'Title from the catalog when payment was recorded; Stripe had no line item name.',
+	unmatched: 'No artwork title was available.',
+}[order.artworkTitleSource];
 const totals = [
 	['Artwork', order.itemAmount],
 	['Subtotal', order.amountSubtotal === order.itemAmount ? null : order.amountSubtotal],
@@ -46,6 +52,7 @@ const totals = [
 	title={`Order for ${order.artworkTitle} — EONMUN admin`}
 	heading={order.artworkTitle}
 	email={session.user.email}
+	privateData
 	backHref="/admin/orders"
 	backLabel="Orders"
 >
@@ -110,8 +117,10 @@ const totals = [
 						<><dt>{name}</dt><dd class="amount">{money(cents)}</dd></>
 					))}
 					<dt>Total</dt><dd class="amount total">{money(order.amountTotal)}</dd>
+					<dt>Purchased as</dt>
+					<dd>{order.artworkTitle}{order.artworkSlug && <span class="muted"> · {order.artworkSlug}</span>}{titleNote && <span class="line muted">{titleNote}</span>}</dd>
 					<dt>Artwork record</dt>
-					<dd>{order.artworkSlug && order.artworkId !== null ? <a href={`/admin/artworks/${order.artworkSlug}`}>{order.artworkSlug}</a> : (order.artworkSlug ?? 'Not linked')}</dd>
+					<dd>{order.currentArtworkSlug ? <a href={`/admin/artworks/${order.currentArtworkSlug}`}>Open current artwork</a> : 'Not linked'}</dd>
 				</dl>
 			</section>
 

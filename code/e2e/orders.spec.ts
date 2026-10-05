@@ -7,13 +7,14 @@ test('a signed paid Checkout event becomes a private admin order', async ({ page
 	const run = `${Date.now()}`;
 	const buyer = `Ada Buyer ${run}`;
 	const sessionId = `cs_test_e2e_${run}`;
-	// No artwork metadata, so the seeded inventory other specs buy stays available.
+	const title = `Commission ${run}`;
+	// No product metadata, so the seeded inventory other specs buy stays available.
 	const body = JSON.stringify(paidCheckoutEvent({
 		eventId: `evt_e2e_${run}`,
 		created: Math.floor(Date.now() / 1000),
 		session: {
 			id: sessionId,
-			metadata: {},
+			metadata: { artworkTitle: title },
 			customer_details: { email: 'buyer@example.com', name: buyer, phone: '+15125550100', address: { line1: '1 Billing Way', city: 'Austin', state: 'TX', postal_code: '78701', country: 'US' } },
 		},
 	}));
@@ -31,16 +32,28 @@ test('a signed paid Checkout event becomes a private admin order', async ({ page
 	expect(update.status()).toBe(401);
 
 	await context.addCookies(await adminCookies(`http://127.0.0.1:${process.env.EONMUN_E2E_PORT}`));
+	// Positive control: the dev-mode tracker markers are present on a public page.
+	const publicHtml = await (await page.request.get('/artworks')).text();
+	expect(publicHtml).toContain('Analytics.astro');
+	expect(publicHtml).toContain('pintrk');
 	const list = await page.goto('/admin/orders');
 	expect(list?.headers()['cache-control']).toBe('no-store');
+	const listHtml = await list!.text();
+	expect(listHtml).toContain(buyer);
+	expect(listHtml).not.toContain('Analytics.astro');
+	expect(listHtml).not.toContain('pintrk');
 	const row = page.getByRole('row').filter({ hasText: buyer });
 	await expect(row).toHaveCount(1);
 	await expect(row).toContainText('Santa Fe, NM, US');
 	await expect(row).toContainText('$1,250.00');
 	await expect(row).toContainText('Unmatched artwork');
-	await row.getByRole('link', { name: 'Unmatched Stripe payment' }).click();
+	await row.getByRole('link', { name: title }).click();
 
-	await expect(page.getByRole('heading', { level: 1, name: 'Unmatched Stripe payment' })).toBeVisible();
+	await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+	const detailHtml = await (await page.request.get(page.url())).text();
+	expect(detailHtml).toContain('buyer@example.com');
+	expect(detailHtml).not.toContain('Analytics.astro');
+	expect(detailHtml).not.toContain('pintrk');
 	await expect(page.getByText('Stripe did not identify an artwork product')).toBeVisible();
 	await expect(page.locator('[data-shipping-label]')).toHaveText('Grace Recipient\n9 Gallery Rd\nSanta Fe, NM 87501\nUS\n+15125550100');
 	await expect(page.getByRole('link', { name: 'buyer@example.com' })).toHaveAttribute('href', 'mailto:buyer@example.com');

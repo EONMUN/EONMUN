@@ -19,7 +19,10 @@ export interface PaidCheckout {
 	paymentIntentId: string | null;
 	customerId: string | null;
 	productId: number | null;
+	// Title and slug written into the session when Checkout was created, so a
+	// later catalog rename cannot change what the buyer was shown.
 	artworkSlug: string | null;
+	artworkTitle: string | null;
 	currency: string;
 	amountSubtotal: number | null;
 	amountDiscount: number | null;
@@ -61,6 +64,11 @@ export interface PaidOrderResult {
 }
 
 export class StripeEventError extends Error {}
+
+// Returns the purchased item's name as Stripe stored it, or null when the
+// session has no line items. Throws when Stripe cannot answer, so the webhook
+// fails and Stripe retries instead of a guessed title being stored.
+export type PurchasedTitleLookup = (checkoutSessionId: string) => Promise<string | null>;
 
 type Fields = Record<string, unknown>;
 
@@ -137,6 +145,7 @@ export function parsePaidCheckoutEvent(value: unknown): PaidCheckout | null {
 		customerId: reference(session.customer),
 		productId: Number.isSafeInteger(productId) && productId > 0 ? productId : null,
 		artworkSlug: text(metadata?.artworkSlug),
+		artworkTitle: text(metadata?.artworkTitle),
 		currency: text(session.currency)?.toLowerCase() ?? "usd",
 		amountSubtotal: amount(session.amount_subtotal),
 		amountDiscount: amount(totals?.amount_discount),
@@ -159,4 +168,25 @@ export function parsePaidCheckoutEvent(value: unknown): PaidCheckout | null {
 		},
 		paidAt: created === null ? new Date() : new Date(created * 1000),
 	};
+}
+
+const CHECKOUT_SESSION_ID = /^cs_(test|live)_[A-Za-z0-9]+$/;
+
+// Only sessions created before Checkout carried artworkTitle metadata, or
+// created outside this site, need this lookup.
+export async function fetchCheckoutLineItemTitle(
+	secretKey: string,
+	checkoutSessionId: string,
+	fetcher: typeof fetch = fetch,
+): Promise<string | null> {
+	if (!CHECKOUT_SESSION_ID.test(checkoutSessionId)) throw new Error("Invalid Checkout Session ID for line item lookup");
+	const response = await fetcher(`https://api.stripe.com/v1/checkout/sessions/${checkoutSessionId}/line_items?limit=1`, {
+		headers: { authorization: `Bearer ${secretKey}` },
+		redirect: "error",
+		signal: AbortSignal.timeout(5000),
+	});
+	if (!response.ok) throw new Error(`Stripe line item lookup returned HTTP ${response.status}`);
+	const list = record(await response.json());
+	const items = Array.isArray(list?.data) ? list.data : [];
+	return text(record(items[0])?.description);
 }

@@ -4,6 +4,12 @@ import { artworks, products } from "./artworks";
 export const FULFILLMENT_STATUSES = ["unfulfilled", "shipped", "delivered", "cancelled"] as const;
 export type FulfillmentStatus = (typeof FULFILLMENT_STATUSES)[number];
 
+// Where artwork_title came from: the Checkout Session metadata written at
+// checkout, Stripe's stored line item for older sessions, the catalog when
+// Stripe had neither, or nothing matched at all.
+export const ORDER_TITLE_SOURCES = ["checkout", "stripe_line_item", "catalog", "unmatched"] as const;
+export type OrderTitleSource = (typeof ORDER_TITLE_SOURCES)[number];
+
 export const ORDER_ATTENTION_REASONS = ["artwork_already_sold", "artwork_not_found"] as const;
 export type OrderAttentionReason = (typeof ORDER_ATTENTION_REASONS)[number];
 
@@ -24,6 +30,7 @@ export const orders = sqliteTable(
 		artworkId: integer("artwork_id").references(() => artworks.id, { onDelete: "set null" }),
 		artworkSlug: text("artwork_slug"),
 		artworkTitle: text("artwork_title").notNull(),
+		artworkTitleSource: text("artwork_title_source", { enum: ORDER_TITLE_SOURCES }).notNull(),
 		itemAmount: integer("item_amount").notNull(),
 		currency: text("currency").notNull(),
 		amountSubtotal: integer("amount_subtotal"),

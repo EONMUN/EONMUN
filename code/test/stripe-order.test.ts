@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parsePaidCheckoutEvent, StripeEventError } from "../src/lib/stripe-order";
+import { fetchCheckoutLineItemTitle, parsePaidCheckoutEvent, StripeEventError } from "../src/lib/stripe-order";
 import { paidCheckoutEvent } from "./helpers/stripe-checkout";
 
 describe("paid Checkout parsing", () => {
@@ -16,6 +16,7 @@ describe("paid Checkout parsing", () => {
 			customerId: "cus_123",
 			productId: 1,
 			artworkSlug: "study",
+			artworkTitle: "Study",
 			currency: "usd",
 			amountSubtotal: 125000,
 			amountDiscount: 500,
@@ -79,11 +80,43 @@ describe("paid Checkout parsing", () => {
 		expect(checkout?.recipient).toEqual({ name: null, phone: null, address: null });
 		expect(checkout?.paymentIntentId).toBe("pi_expanded");
 		expect(checkout?.productId).toBeNull();
+		expect(checkout?.artworkTitle).toBeNull();
 		expect(checkout?.amountTax).toBeNull();
 	});
 
 	test("rejects a paid event without a Checkout Session ID", () => {
 		expect(() => parsePaidCheckoutEvent(paidCheckoutEvent({ session: { id: undefined } }))).toThrow(StripeEventError);
 		expect(() => parsePaidCheckoutEvent({ id: "evt", type: "checkout.session.async_payment_succeeded", data: {} })).toThrow(StripeEventError);
+	});
+});
+
+describe("Stripe line item lookup", () => {
+	test("reads the first line item name with server credentials and no redirects", async () => {
+		const requests: Array<[string, RequestInit | undefined]> = [];
+		const title = await fetchCheckoutLineItemTitle("sk_test_key", "cs_test_abc123", async (url, init) => {
+			requests.push([String(url), init]);
+			return Response.json({ object: "list", data: [{ object: "item", description: "Study" }], has_more: false });
+		});
+		expect(title).toBe("Study");
+		expect(requests).toHaveLength(1);
+		expect(requests[0][0]).toBe("https://api.stripe.com/v1/checkout/sessions/cs_test_abc123/line_items?limit=1");
+		expect(requests[0][1]?.headers).toEqual({ authorization: "Bearer sk_test_key" });
+		expect(requests[0][1]?.redirect).toBe("error");
+	});
+
+	test("returns null for a session with no line items", async () => {
+		expect(await fetchCheckoutLineItemTitle("sk_test_key", "cs_test_abc123", async () => Response.json({ data: [] }))).toBeNull();
+	});
+
+	test("throws without echoing Stripe's response body", async () => {
+		const failure = fetchCheckoutLineItemTitle("sk_test_key", "cs_test_abc123", async () => Response.json({ error: { message: "secret detail" } }, { status: 401 }));
+		await expect(failure).rejects.toThrow(/^Stripe line item lookup returned HTTP 401$/);
+	});
+
+	test("refuses a malformed session ID before contacting Stripe", async () => {
+		let calls = 0;
+		const failure = fetchCheckoutLineItemTitle("sk_test_key", "cs_test_abc/../../customers", async () => { calls += 1; return Response.json({}); });
+		await expect(failure).rejects.toThrow("Invalid Checkout Session ID");
+		expect(calls).toBe(0);
 	});
 });

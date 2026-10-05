@@ -4,6 +4,7 @@ import { recordPaidOrder } from "../../../db/orders";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
 import { getPinterestBatchStatus, isPinterestConfigured, syncPinterestArtwork } from "../../../lib/pinterest-sync";
 import { isGoogleMerchantConfigured, syncGoogleArtwork } from "../../../lib/google-merchant";
+import { fetchCheckoutLineItemTitle } from "../../../lib/stripe-order";
 import { handleStripeWebhook } from "../../../lib/stripe-webhook";
 
 export const prerender = false;
@@ -15,7 +16,8 @@ export const POST: APIRoute = async ({ request }) => {
 		async (checkout) => {
 			// Every paid delivery, including a replay, resolves to the same stored
 			// order; order.notification is { orderId, artworkTitle, amountTotal, currency }.
-			const order = await recordPaidOrder(env, checkout);
+			const secretKey = env.STRIPE_SECRET_KEY;
+			const order = await recordPaidOrder(env, checkout, secretKey ? (sessionId) => fetchCheckoutLineItemTitle(secretKey, sessionId) : null);
 			const { artworkId } = order;
 			// Replays retry catalog removals whose earlier background work failed.
 			if (artworkId !== null && isPinterestConfigured(env)) {
