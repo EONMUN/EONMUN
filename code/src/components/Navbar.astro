@@ -10,7 +10,7 @@ const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
 const onDarkSurface = pathname === '/';
 ---
 <nav class:list={['sticky top-0 z-50 p-2 flex justify-between items-center gap-2 bg-transparent', { 'homepage-navigation': pathname === '/' }]}>
-	<a href="/" data-home-logo class:list={['touch-manipulation pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold', onDarkSurface ? 'text-white' : 'text-gray-900 dark:text-white']}>
+	<a href="/" data-home-logo data-astro-prefetch="load" class:list={['touch-manipulation pl-2 tracking-[0.1em] sm:tracking-[0.363636em] text-lg sm:text-2xl lg:text-3xl font-bold', onDarkSurface ? 'text-white' : 'text-gray-900 dark:text-white']}>
 		EONMUN
 	</a>
 	<div class="backdrop-blur-lg border shadow-xl bg-black/30 border-gray-500/30 flex flex-wrap gap-2 sm:gap-4 uppercase justify-between p-2 sm:p-4 rounded-lg font-bold tracking-wider sm:tracking-widest w-full sm:w-auto items-center">
@@ -20,6 +20,7 @@ const onDarkSurface = pathname === '/';
 				<a
 					href={href}
 					aria-current={isActive ? 'page' : undefined}
+					data-astro-prefetch="load"
 					class:list={[
 						'text-xs sm:text-sm transition-colors',
 						isActive ? 'text-white underline underline-offset-4' : 'text-white/70 hover:text-white',
