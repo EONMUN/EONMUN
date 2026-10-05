@@ -68,7 +68,7 @@ Turso is the production source for artwork, collections, relationships, products
 
 Use `/admin/artworks` to create and publish artwork. Uploads go through the authenticated Worker endpoint to the bound R2 bucket. Prices are stored in USD cents and shown on published artwork pages only while the product is available for purchase.
 
-The public Pinterest catalog feed is `https://eonmun.com/pinterest-catalog.csv`. It includes only published artwork marked available for purchase with a positive price and an image. The admin price and availability fields control it automatically. It remains available for inspection, but the current Pinterest proof uses direct API batches instead of registering the CSV as a data source. The artwork page and checkout check live availability even while Pinterest is processing a catalog change. Checkout does not reserve inventory yet; a timed reservation is a separate inventory change.
+The public Pinterest catalog feed is `https://eonmun.com/pinterest-catalog.csv`. It includes only published artwork marked available for purchase with a positive price and an image. The admin price and availability fields control it automatically. It remains available for inspection, but the current Pinterest proof uses direct API batches instead of registering the CSV as a data source. The artwork page and checkout check live availability even while Pinterest is processing a catalog change. Checkout does not reserve inventory yet; a timed reservation is a separate inventory change. A second paid order for an already-sold artwork is recorded and flagged on `/admin/orders`.
 
 With the Pinterest app secret configured, saving a published artwork as available for purchase submits that artwork to Pinterest automatically. Later price, content, availability, and publication changes update or remove that artwork. The editor checks the submitted batch and shows a warning if Pinterest rejects it. A confirmed Stripe sale submits a removal and checks briefly for an asynchronous failure; later failures require manual reconciliation. `/admin/pinterest` remains a full-catalog retry and reconciliation tool. It derives USD item prices from the same sale-eligible catalog query as the CSV feed and checks each item's asynchronous result. It removes previously submitted artworks that still exist in the site database when they become unavailable. Do not attach the CSV feed to the same Pinterest catalog while using the batch API. The existing 24-hour test token lacks `catalogs:write` and cannot run this sync.
 
@@ -152,6 +152,37 @@ Historical SQL migrations remain necessary for fresh databases and migration his
 
 Configure Stripe to send `checkout.session.completed` and `checkout.session.async_payment_succeeded` events to `https://eonmun.com/api/webhooks/stripe`. Contact-email secrets are required only by the contact runtime endpoint.
 
+## Orders
+
+Migration `0020_stripe_orders.sql` adds the `orders` table. Apply it before deploying the webhook change; production CI runs `bun run db:migrate` before promoting the Worker.
+
+The Stripe webhook stores one order per paid Checkout Session: `checkout.session.completed` with `payment_status` `paid`, or `checkout.session.async_payment_succeeded`. Unpaid completions are ignored until the delayed payment succeeds. Only signed events are processed. The order and the artwork's sold mark are written in one transaction, so neither exists without the other.
+
+Each order keeps:
+
+- Stripe Checkout Session, PaymentIntent, Customer (when Stripe created one), and the recording event ID and type
+- buyer email, name, business name, phone, and complete billing address
+- recipient name and shipping address, with a recipient phone only when Stripe supplies one separately
+- currency, purchased artwork amount, subtotal, discount, shipping, tax, and total
+- the artwork title and slug shown when Checkout was created, the linked artwork and product IDs, payment time, fulfillment status, and an attention flag
+
+Card details and the raw webhook payload are never stored. Missing optional Stripe fields are stored as empty.
+
+The webhook endpoint uses the Stripe account's default API version. Since `2025-03-31.basil`, Checkout reports shipping under `collected_information.shipping_details`; older versions use top-level `shipping_details`. The parser reads both.
+
+Checkout requires a full billing address (`billing_address_collection=required`). It does not ask for a phone number: Stripe makes an enabled phone field mandatory. A phone is stored when Stripe supplies one, for example from a wallet, and the shipping label uses it.
+
+Checkout writes the artwork title and slug into the session metadata, and the order keeps those values, so renaming an artwork while Checkout is open or before a delayed payment settles does not change the order. Sessions without title metadata, created before this change or outside the site, use the Stripe line item name, fetched with `STRIPE_SECRET_KEY` only for a new order. If Stripe cannot answer, the webhook returns 500 and Stripe retries. Without a key or a line item, the order uses the catalog title and marks that source. The order page links to the artwork's current admin page.
+
+Repeated deliveries for a session return the stored order and do not change inventory or raise a flag. Orders need attention when:
+
+- `artwork_already_sold`: a separate paid session bought an artwork another order already sold. Refund it in Stripe.
+- `artwork_not_found`: the session has no matching artwork product, such as a Payment Link created in Stripe. The payment is kept rather than discarded.
+
+`/admin/orders` lists paid orders newest first. Each order page shows buyer, recipient, addresses, totals, Stripe dashboard links, a copyable shipping label, and a fulfillment status control (`To ship`, `Shipped`, `Delivered`, `Cancelled`). Admin and API routes are `no-store`; Worker logs carry Stripe references only, never buyer details. Order pages set the layout's `privateData` option, which leaves out PostHog and the Pinterest tag, so autocapture and session recording never see buyer details.
+
+Sales made before migration `0020` have no order row. If Stripe retries one of those events after deployment, it is recorded as a new order flagged `artwork_already_sold`; confirm it against Stripe before refunding.
+
 ## Validation
 
 Before opening or merging a PR, run:
@@ -165,6 +196,44 @@ bun run test:e2e
 ```
 
 The PR validation workflow runs the Astro build, Bun tests, and Playwright artwork flows. Playwright uses an isolated local database and a test Better Auth session; its purchase test mocks the checkout redirect while `code/test/checkout.test.ts` checks server-side Stripe session creation.
+
+## Admin order notifications
+
+Admins can receive a Web Push alert on each device when an order is paid. Alerts use the standard Push API, so no Apple Developer membership or Firebase project is needed. Each admin enables alerts per device at `/admin/notifications`, linked from `/admin`.
+
+On iPhone and iPad, Web Push requires iOS or iPadOS 16.4 or later and the Home Screen app. Add EONMUN to the Home Screen from Safari, open it, sign in to admin inside the app (it does not share Safari's session), then tap **Enable notifications**. The permission prompt appears only from that tap. Desktop Safari, Chrome, Edge, and Firefox work from a normal tab. The page also shows device status, a one-tap test notification, and per-device removal.
+
+Alerts read "Order paid" with the artwork title and amount, and open `/admin/orders/<orderId>`. They never include buyer names, emails, or addresses, because they appear on lock screens.
+
+### Configuration
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `VAPID_PUBLIC_KEY` | Public var in `wrangler.jsonc` | Base64url uncompressed P-256 public key |
+| `VAPID_PRIVATE_KEY` | Worker secret | Base64url P-256 private key |
+| `VAPID_SUBJECT` | Optional public var | `mailto:` address or HTTPS URL; defaults to `https://eonmun.com` |
+
+To enable production alerts, from `code/`:
+
+1. Run `bun run scripts/generate-vapid-keys.ts | bunx wrangler secret put VAPID_PRIVATE_KEY --name eonmun-astro`. The script refuses to print the private key to a terminal; it prints only the public key.
+2. Add the printed `VAPID_PUBLIC_KEY` to `vars` in `wrangler.jsonc` and deploy. Deployment applies migration `0021_admin_push`.
+3. Each admin enables alerts on each device and sends a test notification.
+
+Never commit the private key or put it in `vars`. Without both keys, the page reports that push is not configured and orders work without alerts. Replacing the key pair invalidates every enrolled device; admins must enable alerts again.
+
+### Integration and delivery
+
+The Stripe webhook calls `enqueueAdminOrderNotification(env, order.notification)` from `code/src/lib/admin-order-notifications.ts` after storing the order, on every verified paid delivery, including replays. The alert carries the stored order ID, artwork title, total in the currency's minor unit, and currency. The function never throws; it returns `queued`, `duplicate`, `not_configured`, `invalid`, or `failed`. Repeated calls for one order ID send nothing new. If the alert cannot be recorded (`failed` or `invalid`), the webhook returns 500 after the order is stored. Stripe's retry finds the existing order and records the alert. Disabled push (`not_configured`) and push delivery failures never fail the webhook. Recipients are the allowlisted admins' devices enrolled when the order is first recorded, so a device enrolled later never receives an older order.
+
+Delivery starts after the webhook response. The `* * * * *` Worker cron retries queued alerts; the scheduled handler routes by trigger, so the Monday `0 9 * * 1` Google Merchant refresh still runs weekly. Each run sends at most 10 alerts with a 10-second timeout per request. Transient failures (network errors, timeouts, HTTP 408, 429, and 5xx) are retried after 1, 2, 5, 15, and 30 minutes, honouring `Retry-After` up to an hour; the sixth failure is final. Alerts older than 24 hours are not sent. A 404 or 410 response removes the device. Devices of admins removed from `ADMIN_EMAILS`, and devices enrolled under a previous key, are removed instead of receiving alerts. `/admin/notifications` shows the delivery state of recent alerts.
+
+Each delivery is claimed with a short lease, so the cron and the post-webhook attempt do not send the same alert. If a Worker stops mid-send, the alert may be sent again after the lease expires; the push `Topic` and notification tag collapse such duplicates.
+
+SECURITY: subscription endpoints must be HTTPS URLs on Apple (`*.push.apple.com`), Google (`fcm.googleapis.com`), Mozilla (`*.push.services.mozilla.com`), or Windows (`*.notify.windows.com`) push services. Redirects are not followed. A new browser push service needs an allowlist entry in `code/src/lib/push/subscription-input.ts`.
+
+The service worker at `/push-sw.js` is scoped to `/admin/` and has no fetch handler, so it caches nothing.
+
+Automated tests mock the browser and push services. Acceptance requires a physical iPhone: install the Home Screen app, enable alerts, close the app, confirm a test notification and a test-mode paid order both arrive, and confirm that tapping the order alert opens its admin page.
 
 ## Analytics
 
@@ -306,3 +375,5 @@ the artwork without this overlay. The CSS feature query uses the iOS-only
 `-webkit-touch-callout` property, so it takes effect before JavaScript runs. Colors use the whole
 cover, so rotation does not change the tint. Safari still controls its own
 bars; physical iPhone acceptance is required for toolbar colors and transitions.
+
+Admins can use **Admin → Notifications → Test an admin device** to send a fixed sample alert to any currently allowed admin’s enrolled device. The recipient must enable notifications first. Tests are limited to one per device per minute; push-service acceptance does not confirm display on the phone.

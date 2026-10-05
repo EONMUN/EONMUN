@@ -21,7 +21,7 @@ export default async function setup(databaseUrl: string) {
  await client.execute(`UPDATE artworks SET background_color = CASE WHEN id = (SELECT artwork_id FROM homepage_artworks ORDER BY position LIMIT 1) THEN '#223344' ELSE '#884422' END,
  background_image_url = (SELECT url FROM artwork_images WHERE artwork_id = artworks.id AND is_default = 1)`);
  client.close();
-	writeFileSync(varsPath, `${marker}\nTURSO_DATABASE_URL="${databaseUrl}"\nAUTH_SECRET="eonmun-playwright-only-secret-at-least-32"\nAUTH_GOOGLE_ID="playwright-google-client"\nAUTH_GOOGLE_SECRET="playwright-google-secret"\nSTRIPE_SECRET_KEY="sk_test_playwright"\n`);
+	writeFileSync(varsPath, `${marker}\nTURSO_DATABASE_URL="${databaseUrl}"\nAUTH_SECRET="eonmun-playwright-only-secret-at-least-32"\nAUTH_GOOGLE_ID="playwright-google-client"\nAUTH_GOOGLE_SECRET="playwright-google-secret"\nSTRIPE_SECRET_KEY="sk_test_playwright"\nSTRIPE_WEBHOOK_SECRET="whsec_playwright"\n`);
 	return () => {
 		if (existsSync(varsPath) && readFileSync(varsPath, 'utf8').startsWith(marker)) unlinkSync(varsPath);
 		if (existsSync(backupPath)) renameSync(backupPath, varsPath);

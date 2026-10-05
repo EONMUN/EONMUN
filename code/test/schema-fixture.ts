@@ -1,4 +1,5 @@
 import type { Client } from "@libsql/client";
+import { readFile } from "node:fs/promises";
 
 // One hand-written copy of the catalog schema for the whole suite. Two copies
 // drift: a column added to one leaves the other testing a schema the queries no
@@ -16,4 +17,10 @@ export async function createCatalogSchema(client: Client) {
 		CREATE TABLE products (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, artwork_id INTEGER REFERENCES artworks(id) ON DELETE SET NULL, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, description TEXT, image_url TEXT, price INTEGER NOT NULL, quantity INTEGER, listed_at INTEGER NOT NULL, sold_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 		CREATE TABLE homepage_artworks (id INTEGER PRIMARY KEY AUTOINCREMENT, artwork_id INTEGER NOT NULL REFERENCES artworks(id) ON DELETE CASCADE, position INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 	`);
+	// Orders come from the shipped migration itself, so tests exercise its
+	// constraints and unique session index rather than a copy of them.
+	const orders = await readFile(new URL("../drizzle/0020_stripe_orders.sql", import.meta.url), "utf8");
+	for (const statement of orders.split("--> statement-breakpoint")) {
+		if (statement.trim()) await client.execute(statement);
+	}
 }

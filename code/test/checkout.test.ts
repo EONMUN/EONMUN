@@ -102,6 +102,11 @@ describe("checkout", () => {
 		expect(stripeBody).toContain("success_url=https%3A%2F%2Feonmun.test%2Fartworks%2Fwork%3Fcheckout%3Dsuccess");
 		const params = new URLSearchParams(stripeBody);
 		expect(params.get("shipping_address_collection[allowed_countries][0]")).toBe("US");
+		expect(params.get("billing_address_collection")).toBe("required");
+		// Stripe makes an enabled phone field mandatory; buyers are not required to give one.
+		expect(params.get("phone_number_collection[enabled]")).toBeNull();
+		expect(params.get("metadata[artworkTitle]")).toBe("Work");
+		expect(params.get("metadata[artworkSlug]")).toBe("work");
 		expect(params.get("shipping_options[0][shipping_rate_data][fixed_amount][amount]")).toBe("0");
 		expect(params.get("shipping_options[0][shipping_rate_data][display_name]")).toBe("U.S. shipping included");
 	});

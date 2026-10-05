@@ -1,15 +1,10 @@
 import { handle } from "@astrojs/cloudflare/handler";
-import { getArtworkCatalogIds, getAvailableArtworkCatalog } from "./db/catalog";
 import type { Env } from "./db";
-import { isGoogleMerchantConfigured, syncGoogleCatalog } from "./lib/google-merchant";
+import { runScheduled } from "./lib/scheduled";
 
 export default {
 	fetch: handle,
-	async scheduled(_controller, env) {
-		if (!isGoogleMerchantConfigured(env)) return;
-		const [artworks, ids] = await Promise.all([getAvailableArtworkCatalog(env), getArtworkCatalogIds(env)]);
-		const result = await syncGoogleCatalog(env, artworks, ids);
-		if (result.failed.length) console.error(JSON.stringify({ message: "Google Merchant catalog refresh partially failed", ...result }));
-		else console.info(JSON.stringify({ message: "Google Merchant catalog refreshed", ...result }));
+	async scheduled(controller, env) {
+		await runScheduled(controller.cron, env);
 	},
 } satisfies ExportedHandler<Env>;

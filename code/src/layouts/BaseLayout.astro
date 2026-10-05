@@ -13,9 +13,13 @@ interface Props {
 	publishedTime?: string;
 	themeColor?: string;
 	iosEdgeToEdge?: boolean;
+	// SECURITY: pages that render buyer contact details set this so PostHog
+	// autocapture and session recording, and the Pinterest tag, never load on
+	// them. Navigation is full-page, so no tracker carries over from a public page.
+	privateData?: boolean;
 }
 
-const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdge } = Astro.props;
+const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdge, privateData = false } = Astro.props;
 ---
 <!doctype html>
 <html lang="en" class="dark:bg-gray-900 dark:text-white" style={iosEdgeToEdge && themeColor ? `--homepage-tint: ${themeColor}` : undefined}>
@@ -29,7 +33,7 @@ const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdg
 			themeColor={themeColor}
 			iosEdgeToEdge={iosEdgeToEdge}
 		/>
-		<PinterestTag />
+		{!privateData && <PinterestTag />}
 	</head>
 	<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-h-screen flex flex-col">
 		<Navbar />
@@ -37,7 +41,7 @@ const { title, description, image, type, publishedTime, themeColor, iosEdgeToEdg
 			<slot />
 		</main>
 		<Footer />
-		<Analytics />
+		{!privateData && <Analytics />}
 		<script>
 			document.addEventListener('error', (event) => {
 				const image = event.target;

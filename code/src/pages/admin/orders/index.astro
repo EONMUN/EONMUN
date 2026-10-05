@@ -1,0 +1,141 @@
+---
+import ConsoleSection from '../../../components/admin/ConsoleSection.astro';
+import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
+import EmptyState from '../../../components/admin/EmptyState.astro';
+import { getAdminOrders } from '../../../db/orders';
+import { requireAdminPage } from '../../../lib/admin-guard';
+import { ATTENTION_LABELS, FULFILLMENT_LABELS, formatOrderAmount } from '../../../lib/order-admin';
+import { getRuntimeEnv } from '../../../lib/runtime-env';
+
+export const prerender = false;
+
+const env = getRuntimeEnv();
+const access = await requireAdminPage(Astro.request, env, '/admin/orders');
+if ('response' in access) return access.response;
+const { session } = access;
+
+const orders = await getAdminOrders(env);
+const toShip = orders.filter((order) => order.fulfillmentStatus === 'unfulfilled').length;
+const attention = orders.filter((order) => order.attentionReason !== null).length;
+const tally = `${orders.length} paid · ${toShip} to ship · ${attention} need attention`;
+const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+const place = (order: (typeof orders)[number]) =>
+	[order.shippingCity, order.shippingState, order.shippingCountry].filter(Boolean).join(', ') || 'No shipping address';
+---
+<ConsoleShell
+	title="Orders — EONMUN admin"
+	heading="Orders"
+	email={session.user.email}
+	privateData
+	backHref="/admin"
+	backLabel="Console"
+>
+	<ConsoleSection title="Paid orders" tally={tally}>
+		{orders.length === 0 ? (
+			<EmptyState label="No paid orders yet. Stripe payments appear here once confirmed." />
+		) : (
+			<div class="table-wrap">
+				<table class="orders">
+					<thead>
+						<tr>
+							<th scope="col">Paid (UTC)</th>
+							<th scope="col">Artwork</th>
+							<th scope="col">Buyer</th>
+							<th scope="col">Ship to</th>
+							<th scope="col" class="amount">Total</th>
+							<th scope="col">Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						{orders.map((order) => (
+							<tr class:list={{ 'needs-attention': order.attentionReason !== null }}>
+								<td>{dateFormatter.format(order.paidAt)}</td>
+								<td>
+									<a href={`/admin/orders/${order.id}`}>{order.artworkTitle}</a>
+									{!order.livemode && <span class="flag">Test</span>}
+								</td>
+								<td>{order.buyerName ?? order.buyerEmail ?? 'Not supplied'}</td>
+								<td>{order.recipientName && <span class="recipient">{order.recipientName}</span>}{place(order)}</td>
+								<td class="amount">{formatOrderAmount(order.amountTotal ?? order.itemAmount, order.currency)}</td>
+								<td>
+									{FULFILLMENT_LABELS[order.fulfillmentStatus]}
+									{order.attentionReason && <span class="flag is-alert">{ATTENTION_LABELS[order.attentionReason].label}</span>}
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		)}
+	</ConsoleSection>
+</ConsoleShell>
+
+<style>
+	.table-wrap {
+		margin-top: 1.75rem;
+		overflow-x: auto;
+	}
+
+	.orders {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.9rem;
+	}
+
+	th {
+		padding: 0.6rem 0.75rem;
+		font-size: 0.7rem;
+		font-weight: normal;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		text-align: left;
+		color: var(--muted);
+		border-bottom: 1px solid var(--hair);
+	}
+
+	td {
+		padding: 0.9rem 0.75rem;
+		vertical-align: top;
+		border-bottom: 1px solid rgba(236, 231, 221, 0.08);
+	}
+
+	td a {
+		color: var(--paper);
+		text-decoration: underline;
+		text-decoration-color: var(--hair);
+		text-underline-offset: 0.2em;
+	}
+
+	td a:hover {
+		text-decoration-color: var(--seal-text);
+	}
+
+	.amount {
+		text-align: right;
+		white-space: nowrap;
+	}
+
+	.recipient {
+		display: block;
+	}
+
+	.needs-attention td:first-child {
+		box-shadow: inset 3px 0 0 var(--seal);
+	}
+
+	.flag {
+		display: inline-block;
+		margin-left: 0.5rem;
+		padding: 0.1rem 0.45rem;
+		font-size: 0.65rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--muted);
+		border: 1px solid var(--hair);
+	}
+
+	.flag.is-alert {
+		color: var(--seal-text);
+		border-color: var(--seal);
+	}
+</style>

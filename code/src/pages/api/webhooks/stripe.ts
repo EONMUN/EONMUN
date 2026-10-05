@@ -1,9 +1,11 @@
 import type { APIRoute } from "astro";
 import { waitUntil } from "cloudflare:workers";
-import { getArtworkIdByProductId, markArtworkPaid } from "../../../db/checkout";
+import { recordPaidOrder } from "../../../db/orders";
+import { enqueueAdminOrderNotification } from "../../../lib/admin-order-notifications";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
 import { getPinterestBatchStatus, isPinterestConfigured, syncPinterestArtwork } from "../../../lib/pinterest-sync";
 import { isGoogleMerchantConfigured, syncGoogleArtwork } from "../../../lib/google-merchant";
+import { fetchCheckoutLineItemTitle } from "../../../lib/stripe-order";
 import { handleStripeWebhook } from "../../../lib/stripe-webhook";
 
 export const prerender = false;
@@ -12,16 +14,15 @@ export const POST: APIRoute = async ({ request }) => {
 	return handleStripeWebhook(
 		request,
 		env.STRIPE_WEBHOOK_SECRET,
-		async (eventId, productId, artworkSlug) => {
-			const marked = await markArtworkPaid(env, eventId, productId, artworkSlug);
+		async (checkout) => {
+			// Every paid delivery, including a replay, resolves to the same stored
+			// order; order.notification is { orderId, artworkTitle, amountTotal, currency }.
+			const secretKey = env.STRIPE_SECRET_KEY;
+			const order = await recordPaidOrder(env, checkout, secretKey ? (sessionId) => fetchCheckoutLineItemTitle(secretKey, sessionId) : null);
+			const { artworkId } = order;
 			// Replays retry catalog removals whose earlier background work failed.
-			const pinterest = isPinterestConfigured(env);
-			const google = isGoogleMerchantConfigured(env);
-			const artworkIdPromise = pinterest || google ? getArtworkIdByProductId(env, productId) : Promise.resolve(null);
-			if (pinterest) {
+			if (artworkId !== null && isPinterestConfigured(env)) {
 				waitUntil((async () => {
-					const artworkId = await artworkIdPromise;
-					if (artworkId === null) return;
 					let batch = await syncPinterestArtwork(env, artworkId);
 					if (batch.batch_id) {
 						console.info(JSON.stringify({ message: "Pinterest sale removal submitted", artworkId, batchId: batch.batch_id }));
@@ -36,18 +37,18 @@ export const POST: APIRoute = async ({ request }) => {
 						console.warn(JSON.stringify({ message: "Pinterest sale removal still processing; reconcile from admin", artworkId, batchId: batch.batch_id }));
 					}
 				})().catch((error) => {
-					console.error(JSON.stringify({ message: "Pinterest sale removal failed", productId, error: error instanceof Error ? error.message : "Unknown error" }));
+					console.error(JSON.stringify({ message: "Pinterest sale removal failed", artworkId, error: error instanceof Error ? error.message : "Unknown error" }));
 				}));
 			}
-			if (google) {
-				waitUntil((async () => {
-					const artworkId = await artworkIdPromise;
-					if (artworkId !== null) await syncGoogleArtwork(env, artworkId);
-				})().catch((error) => {
-					console.error(JSON.stringify({ message: "Google Merchant sale removal failed", productId, error: error instanceof Error ? error.message : "Unknown error" }));
+			if (artworkId !== null && isGoogleMerchantConfigured(env)) {
+				waitUntil(syncGoogleArtwork(env, artworkId).catch((error) => {
+					console.error(JSON.stringify({ message: "Google Merchant sale removal failed", artworkId, error: error instanceof Error ? error.message : "Unknown error" }));
 				}));
 			}
-			return marked;
+			return order;
 		},
+		// Disabled push (`not_configured`) and delivery failures never fail the webhook;
+		// delivery retries stay in the alert queue.
+		{ notifyAdmins: (order) => enqueueAdminOrderNotification(env, order.notification) },
 	);
 };
