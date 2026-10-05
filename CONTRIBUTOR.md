@@ -197,6 +197,44 @@ bun run test:e2e
 
 The PR validation workflow runs the Astro build, Bun tests, and Playwright artwork flows. Playwright uses an isolated local database and a test Better Auth session; its purchase test mocks the checkout redirect while `code/test/checkout.test.ts` checks server-side Stripe session creation.
 
+## Admin order notifications
+
+Admins can receive a Web Push alert on each device when an order is paid. Alerts use the standard Push API, so no Apple Developer membership or Firebase project is needed. Each admin enables alerts per device at `/admin/notifications`, linked from `/admin`.
+
+On iPhone and iPad, Web Push requires iOS or iPadOS 16.4 or later and the Home Screen app. Add EONMUN to the Home Screen from Safari, open it, sign in to admin inside the app (it does not share Safari's session), then tap **Enable notifications**. The permission prompt appears only from that tap. Desktop Safari, Chrome, Edge, and Firefox work from a normal tab. The page also shows device status, a one-tap test notification, and per-device removal.
+
+Alerts read "Order paid" with the artwork title and amount, and open `/admin/orders/<orderId>`. They never include buyer names, emails, or addresses, because they appear on lock screens.
+
+### Configuration
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `VAPID_PUBLIC_KEY` | Public var in `wrangler.jsonc` | Base64url uncompressed P-256 public key |
+| `VAPID_PRIVATE_KEY` | Worker secret | Base64url P-256 private key |
+| `VAPID_SUBJECT` | Optional public var | `mailto:` address or HTTPS URL; defaults to `https://eonmun.com` |
+
+To enable production alerts, from `code/`:
+
+1. Run `bun run scripts/generate-vapid-keys.ts | bunx wrangler secret put VAPID_PRIVATE_KEY --name eonmun-astro`. The script refuses to print the private key to a terminal; it prints only the public key.
+2. Add the printed `VAPID_PUBLIC_KEY` to `vars` in `wrangler.jsonc` and deploy. Deployment applies migration `0021_admin_push`.
+3. Each admin enables alerts on each device and sends a test notification.
+
+Never commit the private key or put it in `vars`. Without both keys, the page reports that push is not configured and orders work without alerts. Replacing the key pair invalidates every enrolled device; admins must enable alerts again.
+
+### Integration and delivery
+
+`enqueueAdminOrderNotification(env, { orderId, artworkTitle, amountTotal, currency })` in `code/src/lib/admin-order-notifications.ts` records an alert. Call it after the order commits on every verified paid Stripe event, including replays. `amountTotal` is in the currency's minor unit, as Stripe reports it. The function never throws. It returns `queued`, `duplicate`, `not_configured`, `invalid`, or `failed`. Repeated calls for one order ID send nothing new. Recipients are the allowlisted admins' devices enrolled when the order is first recorded, so a device enrolled later never receives an older order.
+
+Delivery starts after the webhook response. The `* * * * *` Worker cron retries queued alerts; the scheduled handler routes by trigger, so the Monday `0 9 * * 1` Google Merchant refresh still runs weekly. Each run sends at most 10 alerts with a 10-second timeout per request. Transient failures (network errors, timeouts, HTTP 408, 429, and 5xx) are retried after 1, 2, 5, 15, and 30 minutes, honouring `Retry-After` up to an hour; the sixth failure is final. Alerts older than 24 hours are not sent. A 404 or 410 response removes the device. Devices of admins removed from `ADMIN_EMAILS`, and devices enrolled under a previous key, are removed instead of receiving alerts. `/admin/notifications` shows the delivery state of recent alerts.
+
+Each delivery is claimed with a short lease, so the cron and the post-webhook attempt do not send the same alert. If a Worker stops mid-send, the alert may be sent again after the lease expires; the push `Topic` and notification tag collapse such duplicates.
+
+SECURITY: subscription endpoints must be HTTPS URLs on Apple (`*.push.apple.com`), Google (`fcm.googleapis.com`), Mozilla (`*.push.services.mozilla.com`), or Windows (`*.notify.windows.com`) push services. Redirects are not followed. A new browser push service needs an allowlist entry in `code/src/lib/push/subscription-input.ts`.
+
+The service worker at `/push-sw.js` is scoped to `/admin/` and has no fetch handler, so it caches nothing.
+
+Automated tests mock the browser and push services. Acceptance requires a physical iPhone: install the Home Screen app, enable alerts, close the app, confirm a test notification and a test-mode paid order both arrive, and confirm that tapping the order alert opens its admin page.
+
 ## Analytics
 
 The Astro base layout loads PostHog into the existing US project on `eonmun.com`

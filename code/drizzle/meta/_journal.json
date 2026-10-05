@@ -148,6 +148,13 @@
       "when": 1791180000000,
       "tag": "0020_stripe_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1791288000000,
+      "tag": "0021_admin_push",
+      "breakpoints": true
     }
   ]
 }

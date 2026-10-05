@@ -25,6 +25,9 @@ export type Env = {
 	GOOGLE_MERCHANT_DATA_SOURCE_ID?: string;
 	GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON?: string;
 	OPENAI_API_KEY?: string;
+	VAPID_PUBLIC_KEY?: string;
+	VAPID_PRIVATE_KEY?: string;
+	VAPID_SUBJECT?: string;
 };
 
 export function getDb(env: Env) {
