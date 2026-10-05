@@ -48,6 +48,13 @@ describe("enqueueOrderNotification", () => {
 		expect(notification.currency).toBe("USD");
 	});
 
+	test("replays never add recipients, even after the allowlist changes", async () => {
+		await enroll({ id: "google-later", email: "later@example.com" });
+		expect(await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) })).toEqual({ status: "queued", recipients: 0 });
+		env.ADMIN_EMAILS += ",later@example.com";
+		expect(await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0 + 60_000) })).toEqual({ status: "duplicate", recipients: 0 });
+	});
+
 	test("records an alert with no devices truthfully and skips admins no longer allowlisted", async () => {
 		await enroll({ id: "google-former", email: "former@example.com" });
 		expect(await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) })).toEqual({ status: "queued", recipients: 0 });
@@ -126,6 +133,17 @@ describe("dispatchAdminPush", () => {
 		expect(server.calls).toHaveLength(MAX_ATTEMPTS);
 	});
 
+	test("closes a delivery that already used its attempts without sending again", async () => {
+		await enroll();
+		await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) });
+		// A run sent the sixth attempt, then died before recording it; its lease has expired.
+		await store.db.update(adminPushDeliveries).set({ attempts: MAX_ATTEMPTS, leaseUntil: new Date(t0) });
+		const server = pushServer();
+		expect(await dispatch(server.fetchImpl, t0 + 60_000)).toMatchObject({ claimed: 1, sent: 0, failed: 1 });
+		expect(server.calls).toEqual([]);
+		expect((await deliveries())[0]).toMatchObject({ status: "failed", lastError: "Retry budget exhausted", leaseUntil: null });
+	});
+
 	test("treats a network error or timeout as retryable", async () => {
 		await enroll();
 		await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) });
@@ -145,6 +163,33 @@ describe("dispatchAdminPush", () => {
 		expect(rows.map((row) => [row.status, row.subscriptionId])).toEqual([["expired", null], ["expired", null]]);
 		expect(await dispatch(server.fetchImpl, t0 + 120_000)).toMatchObject({ claimed: 0 });
 		expect(server.calls).toHaveLength(1);
+	});
+
+	test("keeps a device re-enrolled while its old registration was being rejected", async () => {
+		await enroll();
+		await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) });
+		await enqueueOrderNotification(env, { ...order, orderId: "ord_456" }, { db: store.db, now: new Date(t0) });
+		const server = pushServer(async () => {
+			// The browser refreshes its keys on the same endpoint mid-send.
+			await enroll(admin, "https://web.push.apple.com/device-1", t0 + 1500);
+			return new Response(null, { status: 410 });
+		});
+		expect(await dispatch(server.fetchImpl, t0 + 2000, order.orderId)).toMatchObject({ failed: 1 });
+		expect(await store.db.select().from(adminPushSubscriptions)).toHaveLength(1);
+		const rows = await deliveries();
+		expect(rows.map((row) => [row.orderId, row.status, row.subscriptionId])).toEqual([["ord_123", "expired", 1], ["ord_456", "pending", 1]]);
+	});
+
+	test("a run whose lease was taken over removes and records nothing", async () => {
+		await enroll();
+		await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) });
+		const server = pushServer(async () => {
+			await store.db.update(adminPushDeliveries).set({ leaseUntil: new Date(t0 + 999_999) });
+			return new Response(null, { status: 410 });
+		});
+		await dispatch(server.fetchImpl, t0 + 1000);
+		expect(await store.db.select().from(adminPushSubscriptions)).toHaveLength(1);
+		expect((await deliveries())[0]).toMatchObject({ status: "pending", subscriptionId: 1, leaseUntil: new Date(t0 + 999_999) });
 	});
 
 	test("does not send to an admin whose access was revoked after the sale", async () => {

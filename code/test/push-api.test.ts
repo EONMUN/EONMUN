@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { adminPushSubscriptions } from "../src/db";
+import { upsertAdminPushSubscription } from "../src/db/admin-push";
 import { sendTest, subscribe, subscriptionStatus, unsubscribe } from "../src/lib/push/api";
 import type { AdminPushEnv } from "../src/lib/push/dispatch";
 import { parsePushEndpoint } from "../src/lib/push/subscription-input";
@@ -151,6 +152,42 @@ describe("device ownership", () => {
 		const response = await sendTest(request("/api/admin/push/test", { endpoint: body.endpoint }, { cookie }), env, { db: store.db, fetchImpl: server.fetchImpl });
 		expect(response.status).toBe(502);
 		expect(await store.db.select().from(adminPushSubscriptions)).toEqual([]);
+	});
+
+	test("an admin can remove a device while push keys are not configured", async () => {
+		const cookie = await admin();
+		const { body } = await subscription();
+		await subscribe(request("/api/admin/push/subscription", body, { cookie }), env, db());
+		const unconfigured = { ...env, VAPID_PUBLIC_KEY: "", VAPID_PRIVATE_KEY: "" };
+		expect((await unsubscribe(request("/api/admin/push/subscription", { endpoint: body.endpoint }, { cookie: await other(), method: "DELETE" }), unconfigured, db())).status).toBe(404);
+		expect((await unsubscribe(request("/api/admin/push/subscription", { endpoint: body.endpoint }, { cookie, method: "DELETE" }), unconfigured, db())).status).toBe(200);
+		expect(await store.db.select().from(adminPushSubscriptions)).toEqual([]);
+		expect((await subscribe(request("/api/admin/push/subscription", body, { cookie }), unconfigured, db())).status).toBe(503);
+	});
+
+	test("concurrent enrolments cannot exceed the device limit", async () => {
+		const owner = { id: "google-admin", email: "admin@example.com" };
+		const enrol = async (endpoint: string) => {
+			const { body } = await subscription(endpoint);
+			return upsertAdminPushSubscription(env, owner, { endpoint, p256dh: body.keys.p256dh, auth: body.keys.auth }, env.VAPID_PUBLIC_KEY!, null, new Date(), store.db);
+		};
+		for (let index = 0; index < 8; index++) await enrol(`https://fcm.googleapis.com/fcm/send/existing-${index}`);
+		const results = await Promise.all(Array.from({ length: 6 }, (_, index) => enrol(`https://fcm.googleapis.com/fcm/send/race-${index}`)));
+		expect(results.filter((result) => result === "created")).toHaveLength(2);
+		expect(results.filter((result) => result === "limit")).toHaveLength(4);
+		expect(await store.db.select().from(adminPushSubscriptions)).toHaveLength(10);
+	});
+
+	test("a full admin cannot take over another admin's device", async () => {
+		const { body } = await subscription("https://web.push.apple.com/shared");
+		await subscribe(request("/api/admin/push/subscription", body, { cookie: await other() }), env, db());
+		const cookie = await admin();
+		for (let index = 0; index < 10; index++) {
+			await subscribe(request("/api/admin/push/subscription", (await subscription(`https://fcm.googleapis.com/fcm/send/full-${index}`)).body, { cookie }), env, db());
+		}
+		expect((await subscribe(request("/api/admin/push/subscription", body, { cookie }), env, db())).status).toBe(409);
+		const shared = (await store.db.select().from(adminPushSubscriptions)).filter((row) => row.endpoint === body.endpoint);
+		expect(shared.map((row) => row.ownerId)).toEqual(["google-other"]);
 	});
 
 	test("limits devices per admin", async () => {

@@ -13,14 +13,21 @@ type Context = { owner: Owner; body: unknown; publicKey: string; db: Database };
 export type PushApiOptions = { db?: Database; fetchImpl?: typeof fetch };
 
 // Shared gate: same-origin admin session, push configured, bounded JSON body.
-async function pushMutation(request: Request, env: AdminPushEnv, options: PushApiOptions, handler: (context: Context) => Promise<Response>) {
+async function pushMutation(
+	request: Request,
+	env: AdminPushEnv,
+	options: PushApiOptions,
+	handler: (context: Context) => Promise<Response>,
+	// Removing a device must keep working while keys are absent, or it would resume alerts once they return.
+	requiresKeys = true,
+) {
 	const guard = await requireAdminMutation(request, env as AuthEnv);
 	if ("response" in guard) return guard.response;
 	// getSession maps `id` to the stable Google account ID.
 	const id = guard.session.user.id;
 	if (!id) return json({ error: "Unauthorized" }, 401);
-	const publicKey = getVapidPublicKey(env);
-	if (!publicKey) return json({ error: "Push notifications are not configured" }, 503);
+	const publicKey = getVapidPublicKey(env) ?? "";
+	if (requiresKeys && !publicKey) return json({ error: "Push notifications are not configured" }, 503);
 	let body: unknown;
 	try {
 		body = await readJsonBody(request);
@@ -41,6 +48,7 @@ export function subscribe(request: Request, env: AdminPushEnv, options: PushApiO
 		const input = await parseSubscriptionInput(body);
 		const result = await upsertAdminPushSubscription(env, owner, input, publicKey, deviceLabel(request.headers.get("user-agent")), new Date(), db);
 		if (result === "limit") return json({ error: `Remove an older device first; each admin can enable up to ${MAX_DEVICES_PER_ADMIN}.` }, 409);
+		if (result === "conflict") return json({ error: "This device was registered at the same time elsewhere. Try again." }, 409);
 		return json({ registered: true }, result === "created" ? 201 : 200);
 	});
 }
@@ -54,7 +62,7 @@ export function unsubscribe(request: Request, env: AdminPushEnv, options: PushAp
 		else throw new PushInputError("Specify a device");
 		// Another admin's device and a missing one answer the same way.
 		return await removeOwnedSubscription(env, owner.id, target, new Date(), db) ? json({ removed: true }) : json({ error: "Device not found" }, 404);
-	});
+	}, false);
 }
 
 // POST keeps the endpoint, a delivery capability, out of URLs and logs.

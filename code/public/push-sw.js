@@ -60,7 +60,10 @@ self.addEventListener("pushsubscriptionchange", (event) => {
 	event.waitUntil((async () => {
 		const next = event.newSubscription || await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
 		const headers = { "content-type": "application/json" };
-		await fetch("/api/admin/push/subscription", { method: "POST", headers, credentials: "same-origin", body: JSON.stringify(next.toJSON()) });
+		const registered = await fetch("/api/admin/push/subscription", { method: "POST", headers, credentials: "same-origin", body: JSON.stringify(next.toJSON()) });
+		// Keep the old registration unless the new one is stored; a refreshed key
+		// can keep the same endpoint, and deleting it would remove the device.
+		if (!registered.ok || next.endpoint === previous.endpoint) return;
 		await fetch("/api/admin/push/subscription", { method: "DELETE", headers, credentials: "same-origin", body: JSON.stringify({ endpoint: previous.endpoint }) });
 	})().catch(() => undefined));
 });

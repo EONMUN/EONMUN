@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import {
 	adminOrderNotifications,
 	adminPushDeliveries,
@@ -26,7 +26,7 @@ export interface OrderNotificationInput {
 	currency: string;
 }
 
-export type SubscribeResult = "created" | "updated" | "limit";
+export type SubscribeResult = "created" | "updated" | "limit" | "conflict";
 
 export async function upsertAdminPushSubscription(
 	env: Env,
@@ -46,28 +46,56 @@ export async function upsertAdminPushSubscription(
 		}).where(and(eq(adminPushSubscriptions.id, existing.id), eq(adminPushSubscriptions.ownerId, owner.id)));
 		return "updated";
 	}
-	const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(adminPushSubscriptions)
-		.where(eq(adminPushSubscriptions.ownerId, owner.id));
-	if (count >= MAX_DEVICES_PER_ADMIN) return "limit";
+	// The capacity check is part of each statement, so concurrent enrolments
+	// cannot push an admin past the limit.
+	const hasCapacity = sql`(SELECT count(*) FROM admin_push_subscriptions WHERE owner_id = ${owner.id}) < ${MAX_DEVICES_PER_ADMIN}`;
+	const at = now.getTime();
+	const insert = db.run(sql`INSERT INTO admin_push_subscriptions
+		(owner_id, owner_email, endpoint, p256dh, auth, vapid_public_key, device_label, created_at, updated_at)
+		SELECT ${owner.id}, ${owner.email}, ${input.endpoint}, ${input.p256dh}, ${input.auth}, ${vapidPublicKey}, ${label}, ${at}, ${at}
+		WHERE ${hasCapacity}
+		ON CONFLICT(endpoint) DO NOTHING`);
 	// A browser profile holds one subscription per origin. When another admin signs in
 	// on it, the device moves to them as a new enrolment with no inherited alerts.
-	const insert = db.insert(adminPushSubscriptions).values({
-		ownerId: owner.id, ownerEmail: owner.email, endpoint: input.endpoint, p256dh: input.p256dh, auth: input.auth,
-		vapidPublicKey, deviceLabel: label, createdAt: now, updatedAt: now,
-	});
-	if (existing) await db.batch([...removeSubscriptionQueries(db, existing.id, "cancelled", now), insert]);
-	else await insert;
-	return "created";
+	const results = existing
+		? await db.batch([...removeSubscriptionQueries(db, existing.id, "cancelled", now, hasCapacity), insert])
+		: [await insert];
+	if (results.at(-1)!.rowsAffected === 1) return "created";
+	const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(adminPushSubscriptions)
+		.where(eq(adminPushSubscriptions.ownerId, owner.id));
+	// Otherwise a concurrent request registered the same endpoint first.
+	return count >= MAX_DEVICES_PER_ADMIN ? "limit" : "conflict";
 }
 
-export function removeSubscriptionQueries(db: Database, subscriptionId: number, status: AdminPushDeliveryStatus, now: Date) {
-	// Delivery rows survive as history; foreign-key enforcement is not assumed.
+/**
+ * Removes a device and closes its queued alerts, keeping delivery rows as history.
+ * `guard` must hold for every statement: callers acting on a snapshot pass a
+ * condition proving the row has not changed since they read it. Deliveries
+ * leased by a dispatcher are left for that dispatcher to settle.
+ */
+export function removeSubscriptionQueries(
+	db: Database,
+	subscriptionId: number,
+	status: AdminPushDeliveryStatus,
+	now: Date,
+	guard: SQL | undefined = undefined,
+) {
 	return [
-		db.update(adminPushDeliveries).set({ status, leaseUntil: null, updatedAt: now })
-			.where(and(eq(adminPushDeliveries.subscriptionId, subscriptionId), eq(adminPushDeliveries.status, "pending"))),
-		db.update(adminPushDeliveries).set({ subscriptionId: null }).where(eq(adminPushDeliveries.subscriptionId, subscriptionId)),
-		db.delete(adminPushSubscriptions).where(eq(adminPushSubscriptions.id, subscriptionId)),
+		db.update(adminPushDeliveries).set({ status, leaseUntil: null, updatedAt: now }).where(and(
+			eq(adminPushDeliveries.subscriptionId, subscriptionId),
+			eq(adminPushDeliveries.status, "pending"),
+			or(isNull(adminPushDeliveries.leaseUntil), lt(adminPushDeliveries.leaseUntil, now)),
+			guard,
+		)),
+		db.update(adminPushDeliveries).set({ subscriptionId: null }).where(and(eq(adminPushDeliveries.subscriptionId, subscriptionId), guard)),
+		// Foreign-key enforcement is not assumed, so the delete runs last.
+		db.delete(adminPushSubscriptions).where(and(eq(adminPushSubscriptions.id, subscriptionId), guard)),
 	] as const;
+}
+
+// True while the subscription row is exactly the version a caller read.
+export function subscriptionUnchanged(subscriptionId: number, updatedAt: Date) {
+	return sql`EXISTS (SELECT 1 FROM admin_push_subscriptions WHERE id = ${subscriptionId} AND updated_at = ${updatedAt.getTime()})`;
 }
 
 export async function removeOwnedSubscription(
@@ -122,9 +150,10 @@ export async function listAdminPushDevices(env: Env, ownerId: string, db: Databa
 /**
  * Records an order alert and snapshots its recipients in one transaction.
  *
- * CRITICAL: recipients are the allowlisted devices enrolled no later than the
- * alert's stored creation time. Replays reuse that stored time, so a device
- * enrolled after the first call never receives an old order.
+ * CRITICAL: recipients are chosen only by the call that creates the alert, from
+ * the devices and allowlist at that moment. The selection matches the stored
+ * creation time to this call's timestamp, so replays (which keep the original
+ * row) add no recipients even if devices or the allowlist changed since.
  */
 export async function insertOrderNotification(
 	env: Env,
@@ -142,7 +171,7 @@ export async function insertOrderNotification(
 			SELECT n.order_id, s.id, 'pending', 0, n.created_at, ${at}, ${at}
 			FROM admin_order_notifications n
 			JOIN admin_push_subscriptions s ON s.created_at <= n.created_at
-			WHERE n.order_id = ${order.orderId} AND lower(s.owner_email) IN (${emails})`),
+			WHERE n.order_id = ${order.orderId} AND n.created_at = ${at} AND lower(s.owner_email) IN (${emails})`),
 		db.select({ createdAt: adminOrderNotifications.createdAt }).from(adminOrderNotifications)
 			.where(eq(adminOrderNotifications.orderId, order.orderId)),
 	]);
@@ -180,6 +209,7 @@ export async function claimDueDeliveries(db: Database, now: Date, leaseUntil: Da
 		p256dh: adminPushSubscriptions.p256dh,
 		auth: adminPushSubscriptions.auth,
 		vapidPublicKey: adminPushSubscriptions.vapidPublicKey,
+		subscriptionUpdatedAt: adminPushSubscriptions.updatedAt,
 	}).from(adminPushDeliveries)
 		.innerJoin(adminOrderNotifications, eq(adminOrderNotifications.orderId, adminPushDeliveries.orderId))
 		.leftJoin(adminPushSubscriptions, eq(adminPushSubscriptions.id, adminPushDeliveries.subscriptionId))

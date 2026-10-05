@@ -3,11 +3,12 @@ import {
 	insertOrderNotification,
 	recordSubscriptionOutcome,
 	removeSubscriptionQueries,
+	subscriptionUnchanged,
 	type ClaimedDelivery,
 	type OrderNotificationInput,
 } from "../../db/admin-push";
 import { adminPushDeliveries, adminPushSubscriptions, getDb, type Database, type Env } from "../../db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getAllowedAdminEmails, isAllowedAdminEmail } from "../auth";
 import { getVapidConfig, isPushConfigured, type PushEnv } from "./config";
 import { pushTopic, sendPush, type PushOutcome, type PushPayload } from "./send";
@@ -136,6 +137,11 @@ export async function dispatchAdminPush(
 	if (!claimed.length) return summary;
 
 	const decisions = await Promise.all(claimed.map(async (delivery): Promise<[ClaimedDelivery, Decision]> => {
+		// Claiming counts the attempt, so a delivery whose earlier run died after
+		// sending is closed here rather than sent again past the budget.
+		if (delivery.attempts > MAX_ATTEMPTS) {
+			return [delivery, { kind: "skip", status: "failed", error: "Retry budget exhausted", remove: false }];
+		}
 		if (delivery.subscriptionId === null || !delivery.endpoint || !delivery.p256dh || !delivery.auth) {
 			return [delivery, { kind: "skip", status: "cancelled", error: "Device was removed", remove: false }];
 		}
@@ -165,15 +171,22 @@ export async function dispatchAdminPush(
 		const owned = and(eq(adminPushDeliveries.id, delivery.id), eq(adminPushDeliveries.leaseUntil, delivery.leaseUntil!));
 		const settle = (values: Partial<typeof adminPushDeliveries.$inferInsert>) =>
 			writes.push(db.update(adminPushDeliveries).set({ leaseUntil: null, updatedAt: finished, ...values }).where(owned));
+		// Runs before `settle` releases the lease. CRITICAL: removal applies only while
+		// this run still holds the lease and the device row is the version it read;
+		// a concurrent re-enrolment refreshes the row and keeps it.
 		const remove = (status: "revoked" | "stale" | "expired") => {
-			if (delivery.subscriptionId === null || removed.has(delivery.subscriptionId)) return;
+			if (delivery.subscriptionId === null || !delivery.subscriptionUpdatedAt || removed.has(delivery.subscriptionId)) return;
 			removed.add(delivery.subscriptionId);
-			writes.push(...removeSubscriptionQueries(db, delivery.subscriptionId, status, finished));
+			const guard = and(
+				subscriptionUnchanged(delivery.subscriptionId, delivery.subscriptionUpdatedAt),
+				sql`EXISTS (SELECT 1 FROM admin_push_deliveries WHERE id = ${delivery.id} AND lease_until = ${delivery.leaseUntil!.getTime()})`,
+			)!;
+			writes.push(...removeSubscriptionQueries(db, delivery.subscriptionId, status, finished, guard));
 		};
 		if (decision.kind === "skip") {
 			summary.failed++;
-			settle({ status: decision.status, lastError: decision.error, lastStatus: null });
 			if (decision.remove) remove(decision.status as "revoked" | "stale");
+			settle({ status: decision.status, lastError: decision.error, lastStatus: null });
 			continue;
 		}
 		const { outcome } = decision;
@@ -184,8 +197,8 @@ export async function dispatchAdminPush(
 			writes.push(db.update(adminPushSubscriptions).set({ lastSuccessAt: finished }).where(eq(adminPushSubscriptions.id, subscriptionId)));
 		} else if (outcome.kind === "gone") {
 			summary.failed++;
-			settle({ status: "expired", lastStatus: outcome.status, lastError: "Subscription expired" });
 			remove("expired");
+			settle({ status: "expired", lastStatus: outcome.status, lastError: "Subscription expired" });
 		} else if (outcome.kind === "retry" && delivery.attempts < MAX_ATTEMPTS) {
 			summary.retrying++;
 			settle({
@@ -206,7 +219,7 @@ export async function dispatchAdminPush(
 
 export async function sendTestNotification(
 	env: AdminPushEnv,
-	subscription: { id: number; endpoint: string; p256dh: string; auth: string; vapidPublicKey: string },
+	subscription: { id: number; endpoint: string; p256dh: string; auth: string; vapidPublicKey: string; updatedAt: Date },
 	options: { db?: Database; fetchImpl?: typeof fetch } = {},
 ) {
 	const configPromise = getVapidConfig(env);
@@ -216,7 +229,7 @@ export async function sendTestNotification(
 	const db = options.db ?? getDb(env);
 	const now = new Date();
 	if (subscription.vapidPublicKey !== config.publicKey) {
-		await db.batch(removeSubscriptionQueries(db, subscription.id, "stale", now));
+		await db.batch(removeSubscriptionQueries(db, subscription.id, "stale", now, subscriptionUnchanged(subscription.id, subscription.updatedAt)));
 		return { ok: false as const, error: "This device was enabled with an old key. Enable notifications again.", removed: true };
 	}
 	const outcome = await sendPush(config, subscription, TEST_PAYLOAD, { fetchImpl: options.fetchImpl });
@@ -225,7 +238,7 @@ export async function sendTestNotification(
 		return { ok: true as const };
 	}
 	if (outcome.kind === "gone") {
-		await db.batch(removeSubscriptionQueries(db, subscription.id, "expired", now));
+		await db.batch(removeSubscriptionQueries(db, subscription.id, "expired", now, subscriptionUnchanged(subscription.id, subscription.updatedAt)));
 		return { ok: false as const, error: "This device's subscription has expired. Enable notifications again.", removed: true };
 	}
 	await recordSubscriptionOutcome(db, subscription.id, false, now);
