@@ -36,7 +36,6 @@ export function attachPushSettings(root: HTMLElement, environment: PushSettingsE
 	const status = root.querySelector<HTMLElement>("[data-push-status]");
 	const enable = root.querySelector<HTMLButtonElement>("[data-push-enable]");
 	const disable = root.querySelector<HTMLButtonElement>("[data-push-disable]");
-	const test = root.querySelector<HTMLButtonElement>("[data-push-test]");
 	let registration: ServiceWorkerRegistration | null = null;
 	let key: Uint8Array<ArrayBuffer> | null = null;
 
@@ -57,12 +56,11 @@ export function attachPushSettings(root: HTMLElement, environment: PushSettingsE
 		for (const guide of root.querySelectorAll<HTMLElement>("[data-push-guide]")) guide.hidden = guide.dataset.pushGuide !== state;
 		if (enable) { enable.hidden = state !== "disabled"; enable.disabled = state !== "disabled"; }
 		if (disable) { disable.hidden = state !== "enabled"; disable.disabled = false; }
-		if (test) { test.hidden = state !== "enabled"; test.disabled = false; }
 	};
 
 	const post = async (path: string, body: unknown, method = "POST") => {
 		const response = await fetchImpl(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body), credentials: "same-origin" });
-		const result = await response.json().catch(() => ({})) as { error?: string; registered?: boolean; ok?: boolean };
+		const result = await response.json().catch(() => ({})) as { error?: string; registered?: boolean };
 		return { response, result };
 	};
 
@@ -121,22 +119,6 @@ export function attachPushSettings(root: HTMLElement, environment: PushSettingsE
 			show("disabled");
 		} catch (error) {
 			show("enabled", error instanceof Error ? error.message : "This device could not be removed.");
-		}
-	});
-
-	test?.addEventListener("click", async () => {
-		if (!registration) return;
-		test.disabled = true;
-		try {
-			const subscription = await registration.pushManager.getSubscription();
-			if (!subscription) return show("disabled");
-			const { response, result } = await post("/api/admin/push/test", { endpoint: subscription.endpoint });
-			if (status) status.textContent = response.ok ? "Test notification sent. It should appear shortly." : result.error ?? "The test notification failed.";
-			if (response.status === 404) show("disabled", "This device is not registered. Enable notifications again.");
-		} catch {
-			if (status) status.textContent = "The test notification failed.";
-		} finally {
-			test.disabled = false;
 		}
 	});
 

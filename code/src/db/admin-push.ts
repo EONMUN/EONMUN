@@ -120,15 +120,44 @@ export async function getOwnedSubscription(env: Env, ownerId: string, endpoint: 
 	return row ?? null;
 }
 
+const testSlotFree = (now: Date) =>
+	or(isNull(adminPushSubscriptions.lastTestAt), lt(adminPushSubscriptions.lastTestAt, new Date(now.getTime() - TEST_SEND_INTERVAL_MS)));
+
 // Claims the one-per-minute test slot atomically, so double taps send once.
 export async function claimTestSend(env: Env, ownerId: string, endpoint: string, now = new Date(), db: Database = getDb(env)) {
 	const [row] = await db.update(adminPushSubscriptions).set({ lastTestAt: now }).where(and(
 		eq(adminPushSubscriptions.ownerId, ownerId),
 		eq(adminPushSubscriptions.endpoint, endpoint),
-		or(isNull(adminPushSubscriptions.lastTestAt), lt(adminPushSubscriptions.lastTestAt, new Date(now.getTime() - TEST_SEND_INTERVAL_MS))),
+		testSlotFree(now),
 	)).returning();
 	if (row) return row;
 	return await getOwnedSubscription(env, ownerId, endpoint, db) ? "rate_limited" as const : null;
+}
+
+/**
+ * Claims test slots on every device an order alert would reach: all devices of
+ * currently allowlisted admins. Beyond `limit`, the least recently tested
+ * devices go first, so repeating the broadcast reaches the rest.
+ */
+export async function claimTestBroadcast(db: Database, allowedEmails: string[], now: Date, limit: number) {
+	if (!allowedEmails.length) return { eligible: 0, overLimit: 0, rateLimited: 0, claimed: [] };
+	const eligible = await db.select({ id: adminPushSubscriptions.id, free: sql<number>`${testSlotFree(now)}` }).from(adminPushSubscriptions)
+		.where(inArray(sql`lower(${adminPushSubscriptions.ownerEmail})`, allowedEmails))
+		.orderBy(asc(adminPushSubscriptions.lastTestAt), desc(adminPushSubscriptions.createdAt));
+	const free = eligible.filter((row) => row.free);
+	const targets = free.slice(0, limit).map((row) => row.id);
+	// The guard repeats the slot check, so a concurrent broadcast claims each device once.
+	const claimed = targets.length
+		? await db.update(adminPushSubscriptions).set({ lastTestAt: now })
+			.where(and(inArray(adminPushSubscriptions.id, targets), testSlotFree(now))).returning()
+		: [];
+	return {
+		eligible: eligible.length,
+		overLimit: free.length - targets.length,
+		// Includes a device removed between the two statements.
+		rateLimited: eligible.length - free.length + targets.length - claimed.length,
+		claimed,
+	};
 }
 
 export async function recordSubscriptionOutcome(db: Database, subscriptionId: number, success: boolean, now: Date) {

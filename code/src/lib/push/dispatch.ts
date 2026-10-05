@@ -1,5 +1,6 @@
 import {
 	claimDueDeliveries,
+	claimTestBroadcast,
 	insertOrderNotification,
 	recordSubscriptionOutcome,
 	removeSubscriptionQueries,
@@ -10,7 +11,7 @@ import {
 import { adminPushDeliveries, adminPushSubscriptions, getDb, type Database, type Env } from "../../db";
 import { and, eq, sql } from "drizzle-orm";
 import { getAllowedAdminEmails, isAllowedAdminEmail } from "../auth";
-import { getVapidConfig, isPushConfigured, type PushEnv } from "./config";
+import { getVapidConfig, isPushConfigured, type PushEnv, type VapidConfig } from "./config";
 import { pushTopic, sendPush, type PushOutcome, type PushPayload } from "./send";
 
 export type AdminPushEnv = Env & PushEnv;
@@ -218,30 +219,79 @@ export async function dispatchAdminPush(
 	return summary;
 }
 
-export async function sendTestNotification(
-	env: AdminPushEnv,
-	subscription: { id: number; endpoint: string; p256dh: string; auth: string; vapidPublicKey: string; updatedAt: Date },
-	options: { db?: Database; fetchImpl?: typeof fetch } = {},
-) {
+type TestSubscription = { id: number; endpoint: string; p256dh: string; auth: string; vapidPublicKey: string; updatedAt: Date };
+type TestResult = { ok: true } | { ok: false; error: string; removed?: true };
+
+async function loadTestConfig(env: AdminPushEnv): Promise<{ config: VapidConfig } | { error: string }> {
 	const configPromise = getVapidConfig(env);
-	if (!configPromise) return { ok: false as const, error: "Push notifications are not configured" };
+	if (!configPromise) return { error: "Push notifications are not configured" };
 	const config = await configPromise.catch(() => null);
-	if (!config) return { ok: false as const, error: "The server's push keys are misconfigured." };
-	const db = options.db ?? getDb(env);
+	return config ? { config } : { error: "The server's push keys are misconfigured." };
+}
+
+async function deliverTest(config: VapidConfig, db: Database, subscription: TestSubscription, fetchImpl?: typeof fetch): Promise<TestResult> {
 	const now = new Date();
 	if (subscription.vapidPublicKey !== config.publicKey) {
 		await db.batch(removeSubscriptionQueries(db, subscription.id, "stale", now, subscriptionUnchanged(subscription.id, subscription.updatedAt)));
-		return { ok: false as const, error: "This device was enabled with an old key. Enable notifications again.", removed: true };
+		return { ok: false, error: "This device was enabled with an old key. Enable notifications again.", removed: true };
 	}
-	const outcome = await sendPush(config, subscription, TEST_PAYLOAD, { fetchImpl: options.fetchImpl });
+	const outcome = await sendPush(config, subscription, TEST_PAYLOAD, { fetchImpl });
 	if (outcome.kind === "sent") {
 		await recordSubscriptionOutcome(db, subscription.id, true, now);
-		return { ok: true as const };
+		return { ok: true };
 	}
 	if (outcome.kind === "gone") {
 		await db.batch(removeSubscriptionQueries(db, subscription.id, "expired", now, subscriptionUnchanged(subscription.id, subscription.updatedAt)));
-		return { ok: false as const, error: "This device's subscription has expired. Enable notifications again.", removed: true };
+		return { ok: false, error: "This device's subscription has expired. Enable notifications again.", removed: true };
 	}
 	await recordSubscriptionOutcome(db, subscription.id, false, now);
-	return { ok: false as const, error: `The push service did not accept the test (${outcome.error}).` };
+	return { ok: false, error: `The push service did not accept the test (${outcome.error}).` };
+}
+
+export async function sendTestNotification(env: AdminPushEnv, subscription: TestSubscription, options: { db?: Database; fetchImpl?: typeof fetch } = {}) {
+	const loaded = await loadTestConfig(env);
+	if ("error" in loaded) return { ok: false as const, error: loaded.error };
+	return deliverTest(loaded.config, options.db ?? getDb(env), subscription, options.fetchImpl);
+}
+
+// One broadcast stays well under the Workers subrequest limit: a push and a write per device.
+export const TEST_BROADCAST_MAX_DEVICES = 20;
+
+export interface TestBroadcastSummary {
+	/** Devices an order alert would reach now. */
+	eligible: number;
+	/** Accepted by the push service; display on the device is not confirmed. */
+	accepted: number;
+	/** Tested within the last minute, so not sent again. */
+	rateLimited: number;
+	/** Expired or enabled with an old key; removed and must be enabled again. */
+	removed: number;
+	failed: number;
+	/** Beyond the per-request cap and not attempted. */
+	notAttempted: number;
+}
+
+export async function sendTestBroadcast(
+	env: AdminPushEnv,
+	options: { db?: Database; fetchImpl?: typeof fetch } = {},
+): Promise<{ ok: true; summary: TestBroadcastSummary } | { ok: false; error: string }> {
+	// Checked before claiming, so a key problem does not use up every device's test slot.
+	const loaded = await loadTestConfig(env);
+	if ("error" in loaded) return { ok: false, error: loaded.error };
+	const { config } = loaded;
+	const db = options.db ?? getDb(env);
+	const claim = await claimTestBroadcast(db, [...getAllowedAdminEmails(env)], new Date(), TEST_BROADCAST_MAX_DEVICES);
+	const summary: TestBroadcastSummary = {
+		eligible: claim.eligible, accepted: 0, rateLimited: claim.rateLimited, removed: 0, failed: 0, notAttempted: claim.overLimit,
+	};
+	const results = await Promise.allSettled(claim.claimed.map((subscription) => deliverTest(config, db, subscription, options.fetchImpl)));
+	for (const result of results) {
+		if (result.status === "rejected") {
+			summary.failed++;
+			console.error(JSON.stringify({ message: "Admin test notification failed", error: result.reason instanceof Error ? result.reason.message : "Unknown error" }));
+		} else if (result.value.ok) summary.accepted++;
+		else if (result.value.removed) summary.removed++;
+		else summary.failed++;
+	}
+	return { ok: true, summary };
 }

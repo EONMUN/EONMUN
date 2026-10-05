@@ -7,7 +7,6 @@ const decodedKey = Uint8Array.from(atob(serverKey.replace(/-/g, "+").replace(/_/
 const markup = `<div data-push-settings data-push-public-key="${serverKey}">
 	<p data-push-status></p>
 	<button data-push-enable hidden disabled>Enable notifications</button>
-	<button data-push-test hidden>Test</button>
 	<button data-push-disable hidden>Off</button>
 	<div data-push-guide="install" hidden></div><div data-push-guide="denied" hidden></div>
 	<ul><li><button data-push-remove-id="7">Remove</button></li></ul>
@@ -92,7 +91,6 @@ describe("admin push opt-in", () => {
 		await page.settle();
 		expect(page.log.at(-1)).toBe('POST /api/admin/push/subscription {"endpoint":"https://web.push.apple.com/device","keys":{"p256dh":"p","auth":"a"}}');
 		expect(page.state()).toBe("enabled");
-		expect(page.button("test").hidden).toBe(false);
 		expect(page.button("disable").hidden).toBe(false);
 	});
 
@@ -167,16 +165,5 @@ describe("admin push opt-in", () => {
 		await page.ready;
 		expect(page.log).toContain("unsubscribe");
 		expect(page.state()).toBe("disabled");
-	});
-
-	test("sends a test only on request", async () => {
-		const page = mount({ existing: { key: decodedKey }, registered: true, permission: "granted" });
-		await page.ready;
-		expect(page.log.some((entry) => entry.includes("/api/admin/push/test"))).toBe(false);
-		page.tap("test");
-		await page.settle();
-		await page.settle();
-		expect(page.log.at(-1)).toBe('POST /api/admin/push/test {"endpoint":"https://web.push.apple.com/device"}');
-		expect(page.status()).toContain("Test notification sent");
 	});
 });
