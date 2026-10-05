@@ -3,5 +3,5 @@ import { redirectResponse } from "../../lib/redirect";
 
 export const prerender = false;
 
-// Keeps bookmarks, saved-artwork links, and in-flight Google OAuth returns working; the query carries OAuth errors.
+// Keeps bookmarks and saved links to the former page working.
 export const GET: APIRoute = ({ url }) => redirectResponse(`/admin/settings${url.search}#pinterest`, 301);

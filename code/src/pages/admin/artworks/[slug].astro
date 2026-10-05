@@ -57,13 +57,13 @@ const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `a
 					if (result.status === 'COMPLETED' || result.status === 'FAILED') {
 						status.textContent = result.status === 'COMPLETED' && !result.failed
 							? 'Pinterest reported the artwork update complete.'
-							: 'Pinterest rejected the artwork update. Use the Pinterest catalog page to retry.';
+							: 'Pinterest rejected the artwork update. Use the Pinterest section of Settings to retry.';
 						return;
 					}
 					await new Promise((resolve) => setTimeout(resolve, 5000));
 				}
 				status.textContent = 'Pinterest is still processing the artwork update. Check the catalog later.';
-			} catch { status.textContent = 'Artwork saved, but Pinterest status could not be checked. Use the Pinterest catalog page to retry.'; }
+			} catch { status.textContent = 'Artwork saved, but Pinterest status could not be checked. Use the Pinterest section of Settings to retry.'; }
 		})();
 	}
 </script>
