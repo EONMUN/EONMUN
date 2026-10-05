@@ -55,6 +55,33 @@ describe("enqueueOrderNotification", () => {
 		expect(await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0 + 60_000) })).toEqual({ status: "duplicate", recipients: 0 });
 	});
 
+	test("a duplicate call in the same millisecond keeps the first snapshot and is not reported as created", async () => {
+		await enroll();
+		expect(await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) })).toEqual({ status: "queued", recipients: 1 });
+		// Between the calls: a previously excluded admin is allowlisted and a device with an eligible enrolment time appears.
+		await enroll({ id: "google-later", email: "later@example.com" }, "https://fcm.googleapis.com/fcm/send/later", t0 - 30_000);
+		env.ADMIN_EMAILS += ",later@example.com";
+		await enroll(admin, "https://updates.push.services.mozilla.com/wpush/v2/new", t0 - 1);
+		expect(await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) })).toEqual({ status: "duplicate", recipients: 1 });
+		expect((await deliveries()).map((row) => row.subscriptionId)).toEqual([1]);
+	});
+
+	test("concurrent calls in the same millisecond create one alert and one recipient set", async () => {
+		await enroll();
+		await enroll({ id: "google-other", email: "other@example.com" }, "https://fcm.googleapis.com/fcm/send/other");
+		const error = console.error;
+		console.error = () => undefined;
+		const results = await Promise.all(Array.from({ length: 4 }, () => enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) })))
+			.finally(() => { console.error = error; });
+		// Exactly one call owns the alert. A losing call either sees the conflict or
+		// meets the write lock and reports a retryable failure; none reports creation.
+		expect(results.filter((result) => result.status === "queued")).toEqual([{ status: "queued", recipients: 2 }]);
+		for (const result of results) expect(["queued", "duplicate", "failed"]).toContain(result.status);
+		expect(await deliveries()).toHaveLength(2);
+		expect(await store.db.select().from(adminOrderNotifications)).toHaveLength(1);
+		// A locked caller's Stripe retry is the same-millisecond duplicate case above.
+	});
+
 	test("records an alert with no devices truthfully and skips admins no longer allowlisted", async () => {
 		await enroll({ id: "google-former", email: "former@example.com" });
 		expect(await enqueueOrderNotification(env, order, { db: store.db, now: new Date(t0) })).toEqual({ status: "queued", recipients: 0 });

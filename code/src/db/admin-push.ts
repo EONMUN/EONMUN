@@ -148,12 +148,12 @@ export async function listAdminPushDevices(env: Env, ownerId: string, db: Databa
 }
 
 /**
- * Records an order alert and snapshots its recipients in one transaction.
+ * Records an order alert and snapshots its recipients in one write transaction.
  *
- * CRITICAL: recipients are chosen only by the call that creates the alert, from
- * the devices and allowlist at that moment. The selection matches the stored
- * creation time to this call's timestamp, so replays (which keep the original
- * row) add no recipients even if devices or the allowlist changed since.
+ * CRITICAL: only the call whose INSERT actually creates the alert row selects
+ * recipients, from the devices and allowlist at that moment. Every other call,
+ * including a replay or a concurrent call in the same millisecond, sees the
+ * conflict and adds none, so the original snapshot never grows.
  */
 export async function insertOrderNotification(
 	env: Env,
@@ -164,20 +164,20 @@ export async function insertOrderNotification(
 ) {
 	const at = now.getTime();
 	const emails = allowedEmails.length ? sql.join(allowedEmails.map((email) => sql`${email}`), sql`, `) : sql`NULL`;
-	const [, , existing] = await db.batch([
-		db.insert(adminOrderNotifications).values({ ...order, createdAt: now }).onConflictDoNothing(),
-		db.run(sql`INSERT OR IGNORE INTO admin_push_deliveries
-			(order_id, subscription_id, status, attempts, next_attempt_at, created_at, updated_at)
-			SELECT n.order_id, s.id, 'pending', 0, n.created_at, ${at}, ${at}
-			FROM admin_order_notifications n
-			JOIN admin_push_subscriptions s ON s.created_at <= n.created_at
-			WHERE n.order_id = ${order.orderId} AND n.created_at = ${at} AND lower(s.owner_email) IN (${emails})`),
-		db.select({ createdAt: adminOrderNotifications.createdAt }).from(adminOrderNotifications)
-			.where(eq(adminOrderNotifications.orderId, order.orderId)),
-	]);
-	const [{ recipients }] = await db.select({ recipients: sql<number>`count(*)` }).from(adminPushDeliveries)
-		.where(eq(adminPushDeliveries.orderId, order.orderId));
-	return { created: existing[0]?.createdAt.getTime() === at, recipients };
+	return db.transaction(async (tx) => {
+		const inserted = await tx.insert(adminOrderNotifications).values({ ...order, createdAt: now })
+			.onConflictDoNothing().returning({ orderId: adminOrderNotifications.orderId });
+		if (inserted.length) {
+			await tx.run(sql`INSERT INTO admin_push_deliveries
+				(order_id, subscription_id, status, attempts, next_attempt_at, created_at, updated_at)
+				SELECT ${order.orderId}, s.id, 'pending', 0, ${at}, ${at}, ${at}
+				FROM admin_push_subscriptions s
+				WHERE s.created_at <= ${at} AND lower(s.owner_email) IN (${emails})`);
+		}
+		const [{ recipients }] = await tx.select({ recipients: sql<number>`count(*)` }).from(adminPushDeliveries)
+			.where(eq(adminPushDeliveries.orderId, order.orderId));
+		return { created: inserted.length === 1, recipients };
+	});
 }
 
 export async function claimDueDeliveries(db: Database, now: Date, leaseUntil: Date, limit: number, orderId?: string) {
