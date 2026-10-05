@@ -42,11 +42,14 @@ export interface ArtworkAdminInput extends ArtworkAttributes, ArtworkMeasurement
 	images: { url: string; caption: string | null; altText: string | null; isDefault: boolean }[];
 }
 
-export function parseArtworkInput(value: unknown): ArtworkAdminInput {
+export function parseArtworkInput(value: unknown, options: { deriveSlug?: boolean } = {}): ArtworkAdminInput {
 	if (!value || typeof value !== "object") throw new Error("Invalid artwork payload");
 	const input = value as Record<string, unknown>;
 	const title = text(input.title, "Title", true)!;
-	const slug = text(input.slug, "Slug", true)!;
+	// Creation may derive an address; updates must keep an explicit slug.
+	const deriveSlug = options.deriveSlug === true && (input.slug == null || (typeof input.slug === "string" && !input.slug.trim()));
+	const slug = deriveSlug ? slugify(title) : text(input.slug, "Slug", true)!;
+	if (deriveSlug && !slug) throw new Error("Enter a slug using lowercase letters or numbers for this title");
 	if (!SLUG_PATTERN.test(slug)) throw new Error("Slug must use lowercase letters, numbers, and hyphens");
 	const year = optionalNumber(input.year, "Year");
 	if (year !== null && (!Number.isInteger(year) || year < 1000 || year > 9999)) throw new Error("Year is invalid");

@@ -25,17 +25,17 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 
 	<FormFieldset legend="Piece" layout="columns">
 		<label>Title <RequiredMark /> <input class="admin-input" name="title" required value={artwork?.title ?? ''} /></label>
-		<label>Slug <RequiredMark />
+		<label>Slug {artwork && <RequiredMark />}
 			<input
 				class="admin-input"
 				name="slug"
-				required
+				required={Boolean(artwork)}
 				pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
 				title="Lowercase letters, numbers, and single hyphens between them."
 				aria-describedby="slug-format"
 				value={artwork?.slug ?? ''}
 			/>
-			<span id="slug-format" class="hint" aria-hidden="true">Lowercase letters, numbers, and hyphens. It becomes the page address.</span>
+			<span id="slug-format" class="hint" aria-hidden="true">{artwork ? 'Lowercase letters, numbers, and hyphens. It becomes the page address.' : 'Leave blank to generate from the title, or enter lowercase letters, numbers, and hyphens.'}</span>
 		</label>
 		<label>Artist <input class="admin-input" name="artist" value={artwork?.artist ?? 'EONMUN'} /></label>
 		<label>Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
