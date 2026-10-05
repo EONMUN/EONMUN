@@ -86,7 +86,7 @@ const totals = [
 				{label ? (
 					<>
 						<pre class="label" data-shipping-label>{label}</pre>
-						<button type="button" class="copy" data-copy-label>Copy label</button>
+						<button type="button" class="copy secondary-button" data-copy-label>Copy label</button>
 					</>
 				) : (
 					<p class="muted">Stripe did not supply a shipping address.</p>
@@ -168,12 +168,12 @@ const totals = [
 	}
 
 	.note, .muted {
-		color: var(--muted);
+		color: var(--admin-muted);
 	}
 
 	.note {
 		margin: 0;
-		font-size: 0.85rem;
+		font-size: 0.875rem;
 	}
 
 	.fulfillment {
@@ -190,8 +190,8 @@ const totals = [
 
 	.saved {
 		margin: 0 0 0.9rem;
-		font-size: 0.85rem;
-		color: var(--muted);
+		font-size: 0.875rem;
+		color: var(--admin-muted);
 	}
 
 	.panels {
@@ -202,16 +202,15 @@ const totals = [
 
 	.panel {
 		padding: clamp(1rem, 2.5vw, 1.75rem);
-		border: 1px solid var(--hair);
+		border: 1px solid var(--admin-border);
+		background: var(--admin-surface);
 	}
 
 	.panel h2 {
 		margin: 0 0 1rem;
-		font-size: 0.72rem;
-		font-weight: normal;
-		letter-spacing: 0.28em;
-		text-transform: uppercase;
-		color: var(--seal-text);
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--admin-text);
 	}
 
 	dl {
@@ -219,11 +218,11 @@ const totals = [
 		grid-template-columns: minmax(7rem, auto) 1fr;
 		gap: 0.6rem 1rem;
 		margin: 0;
-		font-size: 0.9rem;
+		font-size: 0.95rem;
 	}
 
 	dt {
-		color: var(--muted);
+		color: var(--admin-muted);
 	}
 
 	dd {
@@ -232,9 +231,9 @@ const totals = [
 	}
 
 	dd a {
-		color: var(--paper);
+		color: var(--admin-text);
 		text-decoration: underline;
-		text-decoration-color: var(--hair);
+		text-decoration-color: var(--admin-border-strong);
 		text-underline-offset: 0.2em;
 	}
 
@@ -247,7 +246,7 @@ const totals = [
 	}
 
 	.total {
-		color: var(--paper);
+		color: var(--admin-text);
 		font-weight: bold;
 	}
 
@@ -258,20 +257,14 @@ const totals = [
 		font-size: 0.95rem;
 		line-height: 1.5;
 		white-space: pre-wrap;
-		background: rgba(8, 8, 10, 0.6);
-		border: 1px solid var(--hair);
+		background: var(--admin-surface-muted);
+		border: 1px solid var(--admin-border-strong);
 		user-select: all;
 	}
 
-	.copy {
-		margin-bottom: 1.25rem;
-		padding: 0.5rem 1rem;
-		font-size: 0.75rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-	}
+	.copy { margin-bottom: 1.25rem; }
 
 	code {
-		font-size: 0.8rem;
+		font-size: 0.875rem;
 	}
 </style>

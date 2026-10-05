@@ -74,40 +74,40 @@ const place = (order: (typeof orders)[number]) =>
 	.table-wrap {
 		margin-top: 1.75rem;
 		overflow-x: auto;
+		border: 1px solid var(--admin-border);
+		background: var(--admin-surface);
 	}
 
 	.orders {
 		width: 100%;
 		border-collapse: collapse;
-		font-size: 0.9rem;
+		font-size: 0.95rem;
 	}
 
 	th {
 		padding: 0.6rem 0.75rem;
-		font-size: 0.7rem;
-		font-weight: normal;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
+		font-size: 0.875rem;
+		font-weight: 700;
 		text-align: left;
-		color: var(--muted);
-		border-bottom: 1px solid var(--hair);
+		color: var(--admin-muted);
+		border-bottom: 1px solid var(--admin-border);
 	}
 
 	td {
 		padding: 0.9rem 0.75rem;
 		vertical-align: top;
-		border-bottom: 1px solid rgba(236, 231, 221, 0.08);
+		border-bottom: 1px solid var(--admin-border);
 	}
 
 	td a {
-		color: var(--paper);
+		color: var(--admin-text);
 		text-decoration: underline;
-		text-decoration-color: var(--hair);
+		text-decoration-color: var(--admin-border-strong);
 		text-underline-offset: 0.2em;
 	}
 
 	td a:hover {
-		text-decoration-color: var(--seal-text);
+		text-decoration-color: var(--admin-accent);
 	}
 
 	.amount {
@@ -120,22 +120,22 @@ const place = (order: (typeof orders)[number]) =>
 	}
 
 	.needs-attention td:first-child {
-		box-shadow: inset 3px 0 0 var(--seal);
+		box-shadow: inset 4px 0 0 var(--admin-danger);
 	}
 
 	.flag {
 		display: inline-block;
 		margin-left: 0.5rem;
 		padding: 0.1rem 0.45rem;
-		font-size: 0.65rem;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--muted);
-		border: 1px solid var(--hair);
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--admin-muted);
+		border: 1px solid var(--admin-border);
 	}
 
 	.flag.is-alert {
-		color: var(--seal-text);
-		border-color: var(--seal);
+		color: var(--admin-danger);
+		border-color: var(--admin-danger);
+		background: var(--admin-danger-soft);
 	}
 </style>

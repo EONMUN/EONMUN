@@ -34,30 +34,25 @@ const { index, title, tally, links = [] } = Astro.props;
 		align-items: baseline;
 		gap: 0.75rem 1.5rem;
 		padding-bottom: 1rem;
-		border-bottom: 1px solid var(--hair);
+		border-bottom: 1px solid var(--admin-border);
 	}
 
 	.entity-head h2 {
 		margin: 0;
 		font-size: 1.5rem;
-		text-transform: uppercase;
-		letter-spacing: 0.2em;
 	}
 
 	.index {
 		margin-right: 0.75rem;
-		font-size: 0.75rem;
-		letter-spacing: 0.2em;
-		color: var(--seal-text);
+		font-size: 0.875rem;
+		color: var(--admin-gold);
 		vertical-align: 0.35em;
 	}
 
 	.tally {
 		margin: 0;
-		font-size: 0.78rem;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--muted);
+		font-size: 0.875rem;
+		color: var(--admin-muted);
 	}
 
 	.entity-links {
@@ -67,15 +62,14 @@ const { index, title, tally, links = [] } = Astro.props;
 	}
 
 	.ghost {
-		font-size: 0.78rem;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--muted);
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--admin-muted);
 		transition: color 200ms;
 	}
 
 	.ghost:hover {
-		color: var(--seal-text);
+		color: var(--admin-gold);
 	}
 
 </style>

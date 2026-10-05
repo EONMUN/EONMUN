@@ -1,0 +1,111 @@
+---
+// Admin colour themes. Rendered into the document head so the stored choice
+// is applied before the first paint; ConsoleShell renders the picker.
+---
+<script is:inline>
+	(() => {
+		const root = document.documentElement;
+		const key = 'eonmun.admin.theme';
+		const dark = window.matchMedia('(prefers-color-scheme: dark)');
+		let choice = 'system';
+		try {
+			const stored = localStorage.getItem(key);
+			if (stored === 'light' || stored === 'dark') choice = stored;
+		} catch { /* Without storage the choice lasts for this page only. */ }
+		const apply = () => {
+			const theme = choice === 'system' ? (dark.matches ? 'dark' : 'light') : choice;
+			root.dataset.adminTheme = theme;
+			// CRITICAL: these match --admin-bg below.
+			document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#15181b' : '#f5f3ee');
+		};
+		apply();
+		dark.addEventListener('change', () => { if (choice === 'system') apply(); });
+		document.addEventListener('DOMContentLoaded', () => {
+			const picker = document.querySelector('[data-admin-theme-picker]');
+			if (!picker) return;
+			picker.value = choice;
+			picker.addEventListener('change', () => {
+				choice = picker.value;
+				try {
+					if (choice === 'system') localStorage.removeItem(key);
+					else localStorage.setItem(key, choice);
+				} catch { /* The choice still applies to this page. */ }
+				apply();
+			});
+		});
+	})();
+</script>
+
+<style is:global>
+	/* Light is the default, so the page stays readable if the script never runs. */
+	html.admin-page {
+		--admin-bg: #f5f3ee;
+		--admin-surface: #ffffff;
+		--admin-surface-muted: #eceae4;
+		--admin-text: #1b1d1c;
+		--admin-muted: #4d534f;
+		--admin-border: #d6d3cb;
+		/* Control boundaries owe 3:1 against both the page and a card. */
+		--admin-border-strong: #7a807b;
+		--admin-accent: #a93b24;
+		--admin-gold: #765414;
+		--admin-accent-hover: #852b19;
+		--admin-accent-soft: #f7e7e1;
+		--admin-on-accent: #ffffff;
+		--admin-danger: #a3301f;
+		--admin-danger-soft: #fbe8e4;
+		--admin-warning: #8a5000;
+		--admin-warning-soft: #fbefd8;
+		--admin-success: #22663a;
+		--admin-success-soft: #e2f1e6;
+		/* Bars hold 3:1 against the card and the average line holds 3:1 against the bars. */
+		--admin-chart-bar: #947020;
+		--admin-chart-line: #251907;
+		color-scheme: light;
+	}
+
+	html.admin-page[data-admin-theme="dark"] {
+		--admin-bg: #15181b;
+		--admin-surface: #1f2428;
+		--admin-surface-muted: #2a3036;
+		--admin-text: #eef1f3;
+		--admin-muted: #c3cad0;
+		--admin-border: #3a424a;
+		--admin-border-strong: #87919a;
+		--admin-accent: #ef9a80;
+		--admin-gold: #e3bd70;
+		--admin-accent-hover: #ffc0a8;
+		--admin-accent-soft: #40271f;
+		--admin-on-accent: #29130e;
+		--admin-danger: #ff9d8c;
+		--admin-danger-soft: #3f211c;
+		--admin-warning: #f0c46e;
+		--admin-warning-soft: #3a2d14;
+		--admin-success: #86d8a3;
+		--admin-success-soft: #183424;
+		--admin-chart-bar: #ad8432;
+		--admin-chart-line: #fff6df;
+		color-scheme: dark;
+	}
+
+	html.admin-page {
+		--button-bg: var(--admin-accent);
+		--button-text: var(--admin-on-accent);
+		--button-hover-bg: var(--admin-accent-hover);
+		--button-hover-text: var(--admin-on-accent);
+		--button-radius: 0.35rem;
+		--font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	}
+
+	html.admin-page,
+	html.admin-page body {
+		background: var(--admin-bg);
+		color: var(--admin-text);
+		font-size: 1rem;
+	}
+
+	html.admin-page :focus-visible {
+		outline: 3px solid var(--admin-accent);
+		outline-offset: 3px;
+	}
+</style>

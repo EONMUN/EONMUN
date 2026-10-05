@@ -17,7 +17,7 @@ const configured = isPinterestConfigured(env);
 		<p>Website collections are not yet mirrored to Pinterest product groups. No extra step is needed to list their saleable artworks.</p>
 		{configured ? (
 			<>
-				<button type="button" data-pinterest-sync>Retry all artwork listings</button>
+				<button type="button" class="primary-button" data-pinterest-sync>Retry all artwork listings</button>
 				<p class="hint">Use this if Pinterest missed a change or to backfill existing listings. Pinterest processes changes asynchronously; this page checks each item's result.</p>
 			</>
 		) : (
@@ -76,7 +76,8 @@ const configured = isPinterestConfigured(env);
 
 <style>
 	.pinterest-sync { max-width: 46rem; margin: 2rem 0; line-height: 1.6; }
-	button { padding: .8rem 1.2rem; cursor: pointer; }
+	button { min-height: 2.75rem; padding: .8rem 1.2rem; cursor: pointer; }
 	button:disabled { cursor: wait; opacity: .6; }
-	.hint { opacity: .7; }
+	.hint { color: var(--admin-muted); }
+	[data-pinterest-items] { padding-left: 1.25rem; color: var(--admin-danger); }
 </style>

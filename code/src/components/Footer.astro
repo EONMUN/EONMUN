@@ -14,3 +14,21 @@ const year = new Date().getFullYear();
 		</div>
 	</div>
 </footer>
+
+<style>
+	:global(html.admin-page) footer {
+		color: var(--admin-muted);
+		border-color: var(--admin-border);
+	}
+
+	/* The system font is wider than Abel, so the links need to wrap on phones. */
+	:global(html.admin-page) footer > div > div {
+		flex-wrap: wrap;
+	}
+
+	:global(html.admin-page) footer a:hover {
+		color: var(--admin-text);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+</style>

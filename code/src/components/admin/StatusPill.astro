@@ -1,7 +1,7 @@
 ---
 // The state badge both card types wear. It sits over user-uploaded artwork, so
-// the ground is near-opaque and every tone carries readable type: the seal
-// survives only as a border, never as the text colour.
+// its ground is the opaque theme surface and the tone colour is checked against
+// that surface rather than against the image.
 export type StatusTone = 'live' | 'draft' | 'sold';
 
 interface Props {
@@ -19,16 +19,15 @@ const { label, tone } = Astro.props;
 		top: 0.75rem;
 		left: 0.75rem;
 		z-index: 4;
-		padding: 0.25rem 0.6rem;
-		font-size: 0.68rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--paper);
-		background: rgba(8, 8, 10, 0.88);
-		border: 1px solid var(--hair);
+		padding: 0.3rem 0.6rem;
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--admin-muted);
+		background: var(--admin-surface);
+		border: 1px solid var(--admin-border-strong);
+		border-radius: 0.35rem;
 	}
 
-	.status.is-live { border-color: rgba(236, 231, 221, 0.45); }
-	.status.is-draft { border-color: rgba(193, 69, 44, 0.85); }
-	.status.is-sold { border-color: rgba(236, 231, 221, 0.25); }
+	.status.is-live { color: var(--admin-success); border-color: var(--admin-success); }
+	.status.is-draft { color: var(--admin-warning); border-color: var(--admin-warning); }
 </style>

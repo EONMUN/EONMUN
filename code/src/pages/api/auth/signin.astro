@@ -1,14 +1,16 @@
 ---
+import AdminTheme from '../../../components/admin/AdminTheme.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 export const prerender = false;
 const requestedPath = Astro.url.searchParams.get('callbackUrl') ?? '/admin';
 const callback = new URL(requestedPath, Astro.url);
 const callbackURL = callback.origin === Astro.url.origin ? callback.href : new URL('/admin', Astro.url).href;
 ---
-<BaseLayout title="Admin sign in" description="Sign in to the EONMUN studio console.">
+<BaseLayout title="Admin sign in" description="Sign in to the EONMUN studio console." themeColor="#f5f3ee" adminAppearance>
+	<AdminTheme slot="head" />
 	<section class="mx-auto max-w-lg px-6 py-20">
 		<h1 class="text-3xl mb-6">Admin sign in</h1>
-		<button type="button" data-google-signin data-callback={callbackURL} class="border rounded px-5 py-3">Continue with Google</button>
+		<button type="button" class="primary-button" data-google-signin data-callback={callbackURL}>Continue with Google</button>
 		<p role="status" class="mt-4"></p>
 	</section>
 </BaseLayout>
@@ -31,3 +33,10 @@ const callbackURL = callback.origin === Astro.url.origin ? callback.href : new U
 		}
 	});
 </script>
+
+<style>
+	button { min-height: 2.75rem; }
+	button:disabled { cursor: wait; opacity: .65; }
+	/* The only message this page reports is a sign-in failure. */
+	[role="status"]:not(:empty) { padding: .9rem 1rem; color: var(--admin-text); background: var(--admin-danger-soft); border-left: 4px solid var(--admin-danger); }
+</style>

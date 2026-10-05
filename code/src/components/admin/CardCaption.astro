@@ -24,16 +24,14 @@ const { title, meta, metaTone = 'default' } = Astro.props;
 
 	.card-title {
 		font-size: 1.05rem;
-		letter-spacing: 0.04em;
+		font-weight: 600;
 	}
 
 	.card-meta {
-		font-size: 0.75rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--muted);
+		font-size: 0.875rem;
+		color: var(--admin-muted);
 		white-space: nowrap;
 	}
 
-	.card-meta.seal { color: var(--seal-text); }
+	.card-meta.seal { color: var(--admin-accent); }
 </style>
