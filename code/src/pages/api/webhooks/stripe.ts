@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { waitUntil } from "cloudflare:workers";
 import { recordPaidOrder } from "../../../db/orders";
+import { enqueueAdminOrderNotification } from "../../../lib/admin-order-notifications";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
 import { getPinterestBatchStatus, isPinterestConfigured, syncPinterestArtwork } from "../../../lib/pinterest-sync";
 import { isGoogleMerchantConfigured, syncGoogleArtwork } from "../../../lib/google-merchant";
@@ -46,5 +47,8 @@ export const POST: APIRoute = async ({ request }) => {
 			}
 			return order;
 		},
+		// Disabled push (`not_configured`) and delivery failures never fail the webhook;
+		// delivery retries stay in the alert queue.
+		{ notifyAdmins: (order) => enqueueAdminOrderNotification(env, order.notification) },
 	);
 };

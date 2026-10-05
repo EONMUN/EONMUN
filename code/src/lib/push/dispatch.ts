@@ -32,12 +32,13 @@ export class OrderNotificationInputError extends Error {}
 
 export function parseOrderNotification(order: OrderNotificationInput): OrderNotificationInput {
 	if (typeof order?.orderId !== "string" || !ORDER_ID_PATTERN.test(order.orderId)) throw new OrderNotificationInputError("Invalid order ID");
-	if (typeof order.artworkTitle !== "string" || !order.artworkTitle.trim()) throw new OrderNotificationInputError("Invalid artwork title");
+	if (typeof order.artworkTitle !== "string") throw new OrderNotificationInputError("Invalid artwork title");
 	if (!Number.isSafeInteger(order.amountTotal) || order.amountTotal < 0) throw new OrderNotificationInputError("Invalid amount");
 	if (typeof order.currency !== "string" || !CURRENCY_PATTERN.test(order.currency)) throw new OrderNotificationInputError("Invalid currency");
 	return {
 		orderId: order.orderId,
-		artworkTitle: order.artworkTitle.trim().slice(0, 120),
+		// A blank stored title must not make the alert, and so the webhook, fail forever.
+		artworkTitle: order.artworkTitle.trim().slice(0, 120) || "Artwork",
 		amountTotal: order.amountTotal,
 		currency: order.currency.toUpperCase(),
 	};

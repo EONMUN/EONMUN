@@ -149,7 +149,7 @@ describe("Stripe webhook", () => {
 			await signedRequest(paidCheckoutEvent(), now, Math.floor(now / 1000) - 400),
 			SECRET,
 			async () => { calls += 1; return orderResult(); },
-			now,
+			{ now },
 		);
 		expect(response.status).toBe(400);
 		expect(calls).toBe(0);

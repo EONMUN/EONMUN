@@ -1,4 +1,5 @@
 import { driverErrorMessage } from "./driver-error";
+import type { EnqueueResult } from "./push/dispatch";
 import { parsePaidCheckoutEvent, type PaidCheckout, type PaidOrderResult } from "./stripe-order";
 
 const SIGNATURE_TOLERANCE_SECONDS = 300;
@@ -43,8 +44,9 @@ export async function handleStripeWebhook(
 	request: Request,
 	secret: string | undefined,
 	recordPaidOrder: (checkout: PaidCheckout) => Promise<PaidOrderResult>,
-	now = Date.now(),
+	options: { now?: number; notifyAdmins?: (order: PaidOrderResult) => Promise<EnqueueResult> } = {},
 ) {
+	const now = options.now ?? Date.now();
 	if (!secret) return Response.json({ error: "Webhook is unavailable" }, { status: 503 });
 	const length = Number(request.headers.get("content-length") ?? 0);
 	if (length > MAX_WEBHOOK_BYTES) return Response.json({ error: "Payload too large" }, { status: 413 });
@@ -85,6 +87,20 @@ export async function handleStripeWebhook(
 			productId: checkout.productId,
 			artworkSlug: checkout.artworkSlug,
 		}));
+	}
+	if (options.notifyAdmins) {
+		// Runs for every paid delivery, replays included; the alert queue deduplicates by order.
+		const notified = await options.notifyAdmins(order).catch((): EnqueueResult => ({ status: "failed", error: "Unexpected error" }));
+		if (notified.status === "failed" || notified.status === "invalid") {
+			console.error(JSON.stringify({
+				message: "admin order notification could not be queued",
+				status: notified.status,
+				orderId: order.notification.orderId,
+				...references,
+			}));
+			// The order is already stored; Stripe's retry finds it and queues the alert again.
+			return Response.json({ error: "Order notification could not be queued" }, { status: 500 });
+		}
 	}
 	return Response.json({ received: true });
 }

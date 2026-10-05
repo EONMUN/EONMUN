@@ -61,9 +61,14 @@ describe("enqueueOrderNotification", () => {
 	});
 
 	test("rejects malformed orders without throwing", async () => {
-		for (const bad of [{ ...order, orderId: "../x" }, { ...order, amountTotal: 1.5 }, { ...order, currency: "dollars" }, { ...order, artworkTitle: " " }]) {
+		for (const bad of [{ ...order, orderId: "../x" }, { ...order, amountTotal: 1.5 }, { ...order, currency: "dollars" }, { ...order, artworkTitle: 5 as unknown as string }]) {
 			expect((await enqueueOrderNotification(env, bad, { db: store.db })).status).toBe("invalid");
 		}
+	});
+
+	test("a stored order with a blank title still gets an alert", async () => {
+		expect((await enqueueOrderNotification(env, { ...order, artworkTitle: " " }, { db: store.db })).status).toBe("queued");
+		expect((await store.db.select().from(adminOrderNotifications))[0].artworkTitle).toBe("Artwork");
 	});
 
 	test("reports a storage failure instead of throwing", async () => {
