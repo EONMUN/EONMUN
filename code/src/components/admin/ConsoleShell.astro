@@ -214,6 +214,27 @@ const {
 		border: 1px solid var(--admin-danger);
 	}
 
+	/* A form mid-save (lib/admin-form-save.ts). Disabled fields keep their text
+	   colour, so they stay readable in both themes; the muted fill shows the lock. */
+	.console form[aria-busy="true"],
+	.console form[aria-busy="true"] :disabled,
+	.console form[aria-busy="true"] [aria-disabled="true"] {
+		cursor: progress;
+	}
+
+	.console form[aria-busy="true"] .admin-input {
+		background: var(--admin-surface-muted);
+	}
+
+	.console form[aria-busy="true"] .primary-button:hover {
+		background: var(--button-bg);
+		color: var(--button-text);
+	}
+
+	.console .form-status {
+		margin: 1rem 0 0;
+	}
+
 	/* WCAG 3.3.2: mark required fields visibly and say what the mark means once,
 	   at the top of the form. The `required` attribute already carries the fact
 	   to assistive technology, so the glyph is decorative. */

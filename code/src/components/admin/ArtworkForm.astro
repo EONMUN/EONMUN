@@ -142,19 +142,26 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	<SubmitButton label="Save artwork" />
 </form>
 
-<script is:inline>
-	const form = document.querySelector('[data-admin-artwork-form]');
+<script>
+	// Bundled, not `is:inline`: an inline script cannot import, and the inline
+	// collection creator is covered by a test that imports the same module.
+	import { attachAdminFormSave, postAdminJson } from '../../lib/admin-form-save';
+	import { attachInlineCollectionCreator } from '../../lib/inline-collection-creator';
+
+	type EditorImage = { url: string; caption: string | null; altText: string | null; isDefault: boolean };
+
+	const form = document.querySelector<HTMLFormElement>('[data-admin-artwork-form]');
 	if (form) {
-		let images = JSON.parse(form.dataset.images || '[]');
-		const attributeNames = JSON.parse(form.dataset.attributes);
-		const list = form.querySelector('[data-image-list]');
-		const errorBox = form.querySelector('[data-error]');
-		const showError = (message) => { errorBox.hidden = false; errorBox.textContent = message; };
+		const field = <T extends Element = HTMLInputElement>(name: string) => form.elements.namedItem(name) as unknown as T;
+		const images: EditorImage[] = JSON.parse(form.dataset.images || '[]');
+		const attributeNames: string[] = JSON.parse(form.dataset.attributes || '[]');
+		const list = form.querySelector<HTMLElement>('[data-image-list]')!;
+		const fileInput = field('imageFiles');
 		// parseArtworkInput rejects an available piece with no price. Mirror that
 		// here so the requirement is caught before a round trip, and so the field
 		// is only marked required while it actually is.
-		const available = form.elements.available;
-		const price = form.elements.priceDollars;
+		const available = field('available');
+		const price = field('priceDollars');
 		const syncPriceRequirement = () => { price.required = available.checked; };
 		available.addEventListener('change', syncPriceRequirement);
 		syncPriceRequirement();
@@ -177,85 +184,93 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 				row.append(preview, alt, caption, label, remove); list.append(row);
 			});
 		};
-		const uploadSelected = async () => {
-			const input = form.elements.imageFiles;
-			if (!input.files.length) return;
+		// Adds uploaded files to the image list model and clears the picker, so a
+		// retry after a failed save does not upload the same files again.
+		const uploadFiles = async (files: File[]) => {
+			if (!files.length) return false;
 			const body = new FormData();
-			for (const file of input.files) body.append('images', file);
+			for (const file of files) body.append('images', file);
 			const response = await fetch('/api/admin/media', { method: 'POST', body });
 			const payload = await response.json();
 			if (!response.ok) throw new Error(payload.error || 'Upload failed');
-			for (const uploaded of payload.images) images.push({ url: uploaded.url, caption: null, altText: null, isDefault: images.length === 0 });
-			input.value = ''; renderImages();
+			for (const uploaded of payload.images as Array<{ url: string }>) images.push({ url: uploaded.url, caption: null, altText: null, isDefault: images.length === 0 });
+			fileInput.value = '';
+			return true;
 		};
-		const suggest = form.querySelector('[data-suggest]');
-		const suggestion = form.querySelector('[data-suggestion]');
-		const status = form.querySelector('[data-suggest-status]');
-		let suggestedCoverUrl = null;
+		const suggest = form.querySelector<HTMLButtonElement>('[data-suggest]')!;
+		const suggestion = form.querySelector<HTMLElement>('[data-suggestion]')!;
+		const status = form.querySelector<HTMLElement>('[data-suggest-status]')!;
+		const suggested = (name: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-suggest-${name}]`)!;
+		let suggestedCoverUrl: string | null = null;
+		let suggesting = false;
 		suggest.addEventListener('click', async () => {
-			if (suggest.disabled) return;
-			suggest.disabled = true; status.textContent = 'Generating suggestions…'; suggestion.hidden = true;
+			if (suggesting) return;
+			suggesting = true; suggest.disabled = true; status.textContent = 'Generating suggestions…'; suggestion.hidden = true;
 			try {
-				await uploadSelected();
+				if (await uploadFiles(Array.from(fileInput.files ?? []))) renderImages();
 				const cover = images.find((image) => image.isDefault) || images[0];
 				if (!cover) throw new Error('Add a cover image first.');
 				const response = await fetch('/api/admin/artwork-suggestions', {
 					method: 'POST', headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ title: form.elements.title.value, artist: form.elements.artist.value, year: form.elements.year.value, description: form.elements.description.value, instructions: form.elements.aiInstructions.value, images: [{ url: cover.url, altText: cover.altText }] }),
+					body: JSON.stringify({ title: field('title').value, artist: field('artist').value, year: field('year').value, description: field('description').value, instructions: field('aiInstructions').value, images: [{ url: cover.url, altText: cover.altText }] }),
 				});
 				const payload = await response.json();
 				if (!response.ok) throw new Error(payload.error || 'Suggestions failed');
-				form.querySelector('[data-suggest-description]').value = payload.suggestion.description;
-				form.querySelector('[data-suggest-tags]').value = payload.suggestion.tags.join(', ');
-				form.querySelector('[data-suggest-alt]').value = payload.suggestion.altText;
+				suggested('description').value = payload.suggestion.description;
+				suggested('tags').value = payload.suggestion.tags.join(', ');
+				suggested('alt').value = payload.suggestion.altText;
 				suggestedCoverUrl = cover.url;
 				suggestion.hidden = false; status.textContent = 'Review and edit the suggestions, then apply them.';
 			} catch (error) { status.textContent = error instanceof Error ? error.message : 'Suggestions failed'; }
-			finally { suggest.disabled = false; }
+			finally { suggesting = false; suggest.disabled = false; }
 		});
-		form.querySelector('[data-apply-suggestion]').addEventListener('click', () => {
+		form.querySelector('[data-apply-suggestion]')!.addEventListener('click', () => {
 			const cover = images.find((image) => image.url === suggestedCoverUrl);
 			if (!cover) { status.textContent = 'The cover image changed. Generate fresh suggestions.'; return; }
-			form.elements.description.value = form.querySelector('[data-suggest-description]').value;
-			form.elements.tags.value = form.querySelector('[data-suggest-tags]').value;
-			cover.altText = form.querySelector('[data-suggest-alt]').value || null;
+			field('description').value = suggested('description').value;
+			field('tags').value = suggested('tags').value;
+			cover.altText = suggested('alt').value || null;
 			renderImages(); suggestion.hidden = true; status.textContent = 'Suggestions applied. Review the fields and save when ready.';
 		});
-		form.addEventListener('submit', async (event) => {
-			event.preventDefault(); errorBox.hidden = true;
-			try {
-				await uploadSelected();
-				const data = new FormData(form);
-				const payload = Object.fromEntries(data);
+
+		const collections = attachInlineCollectionCreator(form);
+		// The image rows are rebuilt only after a failed save has unlocked the
+		// form; rows built while locked would be editable mid-save.
+		let imagesChanged = false;
+		attachAdminFormSave(form, {
+			// Suggestions and a new collection each finish by editing this form.
+			// Saving first would send a payload without that edit, then let it land
+			// on a locked form.
+			blockedReason: () => suggesting ? 'Wait for the suggestions to finish, then save.'
+				: collections?.busy() ? 'Wait for the new collection to be added, then save.'
+				: null,
+			onFailure: () => { if (imagesChanged) renderImages(); imagesChanged = false; },
+			save: async (data) => {
+				const payload: Record<string, unknown> = Object.fromEntries(data);
 				payload.published = data.has('published'); payload.available = data.has('available');
-				payload.priceCents = price.value === '' ? '' : Math.round(Number(price.value) * 100);
-				delete payload.priceDollars;
-				payload.tags = form.elements.tags.value.split(',').map((tag) => tag.trim()).filter(Boolean);
+				const priceDollars = String(data.get('priceDollars') ?? '');
+				payload.priceCents = priceDollars === '' ? '' : Math.round(Number(priceDollars) * 100);
+				payload.tags = String(data.get('tags') ?? '').split(',').map((tag) => tag.trim()).filter(Boolean);
 				payload.editorVersion = 2;
-                payload.orientation = form.elements.orientation.value;
-                for (const name of attributeNames) {
-                    payload[name] = [...data.getAll(name), ...form.elements[name + 'New'].value.split(',').map(value => value.trim()).filter(Boolean)];
-                    delete payload[name + 'New'];
-                }
-				payload.collectionIds = data.getAll('collectionIds').map(Number); payload.images = images;
-				delete payload.imageFiles; delete payload.defaultImage; delete payload.aiInstructions;
-				const response = await fetch(form.dataset.action, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-				const result = await response.json();
-				if (!response.ok) throw new Error(result.error || 'Save failed');
-				window.location.assign(result.redirect);
-			} catch (error) { showError(error instanceof Error ? error.message : 'Save failed'); }
+				// Read from the control: a derived orientation disables the select,
+				// and FormData leaves disabled controls out.
+				payload.orientation = field<HTMLSelectElement>('orientation').value;
+				for (const name of attributeNames) {
+					payload[name] = [...data.getAll(name), ...String(data.get(`${name}New`) ?? '').split(',').map((value) => value.trim()).filter(Boolean)];
+					delete payload[`${name}New`];
+				}
+				payload.collectionIds = data.getAll('collectionIds').map(Number);
+				delete payload.priceDollars; delete payload.imageFiles; delete payload.defaultImage; delete payload.aiInstructions;
+				// An empty file picker still submits one nameless file.
+				const files = data.getAll('imageFiles').filter((file): file is File => file instanceof File && file.name !== '');
+				if (await uploadFiles(files)) imagesChanged = true;
+				payload.images = images;
+				const { redirect } = await postAdminJson<{ redirect: string }>(form.dataset.action!, payload);
+				return { redirect };
+			},
 		});
 		renderImages();
 	}
-</script>
-
-<script>
-	// Bundled, not `is:inline`: an inline script cannot import, and the inline
-	// collection creator is covered by a test that imports the same module.
-	import { attachInlineCollectionCreator } from '../../lib/inline-collection-creator';
-
-	const artworkForm = document.querySelector('[data-admin-artwork-form]');
-	if (artworkForm instanceof HTMLFormElement) attachInlineCollectionCreator(artworkForm);
 </script>
 
 <script>

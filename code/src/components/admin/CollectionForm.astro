@@ -57,16 +57,18 @@ const { action, collection, artworks } = Astro.props;
 	<SubmitButton label="Save collection" />
 </form>
 
-<script is:inline>
-	const form = document.querySelector('[data-admin-collection-form]');
-	if (form) form.addEventListener('submit', async (event) => {
-		event.preventDefault(); const data = new FormData(form); const errorBox = form.querySelector('[data-error]'); errorBox.hidden = true;
-		const payload = Object.fromEntries(data); payload.published = data.has('published'); payload.artworkIds = data.getAll('artworkIds').map(Number);
-		payload.defaultArtworkId = data.get('defaultArtworkId') ? Number(data.get('defaultArtworkId')) : null;
-		try {
-			const response = await fetch(form.dataset.action, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
-			const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Save failed'); window.location.assign(result.redirect);
-		} catch (error) { errorBox.hidden = false; errorBox.textContent = error instanceof Error ? error.message : 'Save failed'; }
+<script>
+	import { attachAdminFormSave, postAdminJson } from '../../lib/admin-form-save';
+
+	const form = document.querySelector<HTMLFormElement>('[data-admin-collection-form]');
+	if (form) attachAdminFormSave(form, {
+		save: async (data) => {
+			const payload: Record<string, unknown> = Object.fromEntries(data);
+			payload.published = data.has('published'); payload.artworkIds = data.getAll('artworkIds').map(Number);
+			payload.defaultArtworkId = data.get('defaultArtworkId') ? Number(data.get('defaultArtworkId')) : null;
+			const { redirect } = await postAdminJson<{ redirect: string }>(form.dataset.action!, payload);
+			return { redirect };
+		},
 	});
 </script>
 

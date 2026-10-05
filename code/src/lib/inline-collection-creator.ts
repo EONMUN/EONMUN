@@ -98,4 +98,6 @@ export function attachInlineCollectionCreator(
 		event.preventDefault();
 		void create();
 	});
+
+	return { busy: () => inFlight };
 }
