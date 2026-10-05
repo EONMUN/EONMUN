@@ -27,6 +27,12 @@ const {
 } = Astro.props;
 ---
 <BaseLayout title={title} description={description} themeColor="#050506" privateData={privateData}>
+	{email && <script is:inline>
+		// This shell is rendered after server-side admin authorization.
+		if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) {
+			try { localStorage.setItem('eonmun.pwa.admin-start', '1'); } catch {}
+		}
+	</script>}
 	<div class="console">
 		<div class="ground" aria-hidden="true"></div>
 		<div class="wrap">

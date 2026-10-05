@@ -38,6 +38,31 @@ if (new URL(imageURL).origin === 'https://r2.eonmun.com') {
 }
 ---
 <meta charset="utf-8" />
+<script is:inline>
+	(() => {
+		if (location.pathname !== '/') return;
+		const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+		if (!standalone) return;
+		const url = new URL(location.href);
+		const markedLaunch = url.searchParams.get('launch') === 'pwa';
+		const navigation = performance.getEntriesByType('navigation')[0];
+		let internalNavigation = false;
+		try { internalNavigation = new URL(document.referrer).origin === location.origin; } catch {}
+		// Older installations still launch at /. Internal links, reloads, and Back
+		// must leave the public homepage available after the admin opens it.
+		const legacyLaunch = !internalNavigation && !url.search && !url.hash
+			&& (!navigation || navigation.type === 'navigate');
+		if (markedLaunch) {
+			url.searchParams.delete('launch');
+			history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+		}
+		if (!markedLaunch && !legacyLaunch) return;
+		try {
+			// SECURITY: this remembers a destination only; /admin checks the session.
+			if (localStorage.getItem('eonmun.pwa.admin-start') === '1') location.replace('/admin');
+		} catch { /* Storage can be unavailable; the public homepage remains usable. */ }
+	})();
+</script>
 <meta name="viewport" content={`width=device-width,initial-scale=1${iosEdgeToEdge ? ',viewport-fit=cover' : ''}`} />
 {iosEdgeToEdge && (
 	<>
