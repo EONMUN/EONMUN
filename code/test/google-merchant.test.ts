@@ -19,6 +19,18 @@ async function testEnv() {
 }
 
 describe("Google Merchant sync", () => {
+	test("sends up to ten distinct additional images as JPEG derivatives while preserving the primary", () => {
+		const primary = "https://r2.eonmun.com/main.jpg";
+		const detail = "https://r2.eonmun.com/detail photo.jpg";
+		const product = googleProductInput({ ...artwork, imageUrl: primary, additionalImageUrls: [primary, detail, detail, ...Array.from({ length: 12 }, (_, i) => `https://r2.eonmun.com/${i}.jpg`)] });
+		expect(new URL(product.productAttributes.imageLink).searchParams.get("href")).toBe(primary);
+		const links = product.productAttributes.additionalImageLinks;
+		expect(links).toHaveLength(10);
+		expect(new URL(links[0]).searchParams.get("href")).toBe(new URL(detail).href);
+		for (const link of links) expect(new URL(link).searchParams.get("f")).toBe("jpeg");
+		expect(googleProductInput(artwork).productAttributes.additionalImageLinks).toEqual([]);
+	});
+
 	test.each(["missing", "existing", "read-only", "concurrent"])("grants the configured service account product access: %s", async (state) => {
 		const env = await testEnv();
 		const methods: string[] = [];

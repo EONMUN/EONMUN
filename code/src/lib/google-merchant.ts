@@ -133,16 +133,23 @@ export async function activateGoogleMerchant(env: Env, apiFetch: ApiFetch = fetc
 	if (!source.ok) throw new GoogleMerchantError(`Google Merchant data source access failed (HTTP ${source.status}). Check the service account permissions and API data source.`);
 }
 
-export function googleProductInput(artwork: CatalogArtwork) {
-	const fields = catalogArtworkFields(artwork);
-	const image = new URL(artwork.imageUrl);
-	let imageLink = artwork.imageUrl;
+function googleImageLink(url: string) {
+	const image = new URL(url);
+	let imageLink = url;
 	if (image.origin === R2_PUBLIC_ORIGIN) {
 		// Normalize uploaded camera images to JPEG for Merchant Center's image decoder.
 		const normalized = new URL("/_image", SITE_URL);
 		normalized.search = new URLSearchParams({ href: image.href, w: "1600", q: "90", f: "jpeg", fit: "scale-down" }).toString();
 		imageLink = normalized.href;
 	}
+	return imageLink;
+}
+
+export function googleProductInput(artwork: CatalogArtwork) {
+	const fields = catalogArtworkFields(artwork);
+	const imageLink = googleImageLink(artwork.imageUrl);
+	const additionalImageLinks = [...new Set((artwork.additionalImageUrls ?? []).map(googleImageLink))]
+		.filter((url) => url !== imageLink).slice(0, 10);
 	return {
 		offerId: fields.id,
 		contentLanguage: "en",
@@ -152,6 +159,7 @@ export function googleProductInput(artwork: CatalogArtwork) {
 			description: fields.description,
 			link: fields.link,
 			imageLink,
+			additionalImageLinks,
 			availability: "IN_STOCK",
 			condition: "NEW",
 			identifierExists: false,

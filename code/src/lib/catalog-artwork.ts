@@ -6,6 +6,7 @@ export interface CatalogArtwork {
 	title: string;
 	description: string;
 	imageUrl: string;
+	additionalImageUrls?: string[];
 	priceCents: number;
 }
 

@@ -1,4 +1,4 @@
-import { and, eq, gt, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, gt, isNotNull, isNull } from "drizzle-orm";
 import { artworkImages, artworks, getDb, products, type Env } from "./index";
 
 export async function getAvailableArtworkCatalog(env: Env, db = getDb(env), artworkId?: number) {
@@ -9,27 +9,35 @@ export async function getAvailableArtworkCatalog(env: Env, db = getDb(env), artw
 		description: artworks.description,
 		productDescription: products.description,
 		imageUrl: artworkImages.url,
+		isDefault: artworkImages.isDefault,
 		priceCents: products.price,
 	}).from(artworks).innerJoin(products, and(
 		eq(products.artworkId, artworks.id),
 		eq(products.type, "artwork"),
-	)).leftJoin(artworkImages, and(
-		eq(artworkImages.artworkId, artworks.id),
-		eq(artworkImages.isDefault, true),
-	)).where(and(
+	)).leftJoin(artworkImages, eq(artworkImages.artworkId, artworks.id)).where(and(
 		isNotNull(artworks.publishedAt),
 		gt(products.price, 0),
 		gt(products.quantity, 0),
 		isNull(products.soldAt),
 		artworkId === undefined ? undefined : eq(artworks.id, artworkId),
-	));
+	)).orderBy(asc(artworkImages.id));
 
-	return rows.map((row) => ({
+	const images = new Map<number, string[]>();
+	for (const row of rows) {
+		if (!row.imageUrl || row.isDefault) continue;
+		try { if (new URL(row.imageUrl).protocol !== "https:") continue; } catch { continue; }
+		const urls = images.get(row.id) ?? [];
+		urls.push(row.imageUrl);
+		images.set(row.id, urls);
+	}
+
+	return rows.filter((row) => row.isDefault).map((row) => ({
 		id: row.id,
 		slug: row.slug,
 		title: row.title,
 		description: row.description || row.productDescription || `Original artwork by EONMUN: ${row.title}`,
 		imageUrl: row.imageUrl,
+		additionalImageUrls: [...new Set(images.get(row.id) ?? [])].filter((url) => url !== row.imageUrl),
 		priceCents: row.priceCents,
 	})).filter((row): row is typeof row & { imageUrl: string } => {
 		if (!row.imageUrl) return false;

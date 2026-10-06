@@ -28,7 +28,13 @@ test("catalog follows publication, price, and live stock", async () => {
 			if (state !== "imageless") await client.execute({ sql: "INSERT INTO artwork_images (artwork_id, url, is_default, created_at, updated_at) VALUES (?, ?, 1, ?, ?)", args: [id, `https://r2.eonmun.com/${state}.jpg`, stamp, stamp] });
 			await client.execute({ sql: "INSERT INTO products (type, artwork_id, name, slug, price, quantity, sold_at, listed_at, created_at, updated_at) VALUES ('artwork', ?, ?, ?, ?, ?, ?, ?, ?, ?)", args: [id, state, state, price, quantity, soldAt, stamp, stamp, stamp] });
 		}
+		for (const url of ["https://r2.eonmun.com/detail.jpg", "https://r2.eonmun.com/live.jpg", "https://r2.eonmun.com/detail.jpg", "invalid", "http://example.com/image.jpg", "https://r2.eonmun.com/back.jpg"]) {
+			await client.execute({ sql: "INSERT INTO artwork_images (artwork_id, url, is_default, created_at, updated_at) VALUES (?, ?, 0, ?, ?)", args: [liveId, url, stamp, stamp] });
+		}
 		const catalog = await getAvailableArtworkCatalog({}, db);
+		expect(catalog[0].imageUrl).toBe("https://r2.eonmun.com/live.jpg");
+		expect(catalog[0].additionalImageUrls).toEqual(["https://r2.eonmun.com/detail.jpg", "https://r2.eonmun.com/back.jpg"]);
+		expect((await getAvailableArtworkCatalog({}, db, liveId))[0]).toEqual(catalog[0]);
 		expect(catalog.map((item) => [item.slug, item.priceCents])).toEqual([["live", 12345]]);
 		expect((await getAvailableArtworkCatalog({}, db, liveId)).map((item) => item.slug)).toEqual(["live"]);
 		expect(await getAvailableArtworkCatalog({}, db, liveId + 1)).toEqual([]);
