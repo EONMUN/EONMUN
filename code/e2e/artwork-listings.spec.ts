@@ -35,6 +35,14 @@ test('artwork editor shows review status, issues, links, and refreshes without s
 	});
 	await page.goto('/admin/artworks/limones-del-cobre');
 	const panel = page.getByRole('group', { name: 'Listings', exact: true });
+	const images = page.getByRole('group', { name: 'Images', exact: true });
+	await expect(images.locator('[data-image-list] img')).not.toHaveCount(0);
+	const imagesBox = await images.boundingBox();
+	const pieceBox = await page.getByRole('group', { name: 'Piece', exact: true }).boundingBox();
+	const formBox = await page.locator('[data-admin-artwork-form]').boundingBox();
+	const listingsBox = await panel.boundingBox();
+	expect(imagesBox!.y + imagesBox!.height).toBeLessThanOrEqual(pieceBox!.y);
+	expect(formBox!.y + formBox!.height).toBeLessThanOrEqual(listingsBox!.y);
 	await expect(panel.locator('[data-listing-label]').first()).toHaveText('In review');
 	await expect(panel.locator('[data-listing-issues]')).toContainText(['Image <img src=x> is being reviewed', '']);
 	await expect(panel.locator('img')).toHaveCount(0);

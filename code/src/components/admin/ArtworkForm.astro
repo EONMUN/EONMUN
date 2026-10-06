@@ -23,6 +23,14 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	<ErrorBanner />
 	<RequiredNote />
 
+	<FormFieldset legend="Images">
+		<label class="upload">Add images
+			<input class="admin-input" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
+		</label>
+		<p class="hint">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each. The piece marked Default is the cover shown everywhere else.</p>
+		<div data-image-list class="image-list"></div>
+	</FormFieldset>
+
 	<FormFieldset legend="Piece" layout="columns">
 		<label>Title <RequiredMark /> <input class="admin-input" name="title" required value={artwork?.title ?? ''} /></label>
 		<label>Slug {artwork && <RequiredMark />}
@@ -82,13 +90,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		</div>
 	</FormFieldset>
 
-	<FormFieldset legend="Images">
-		<label class="upload">Add images
-			<input class="admin-input" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
-		</label>
-		<p class="hint">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each. The piece marked Default is the cover shown everywhere else.</p>
-		<div data-image-list class="image-list"></div>
-	</FormFieldset>
+
 
 	<FormFieldset legend="Collections">
 		<div class="collection-list" data-collection-list>
