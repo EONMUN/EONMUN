@@ -45,10 +45,27 @@ export async function getResponsiveImageSource(
 	if (url.origin !== MEDIA_ORIGIN) return { src };
 
 	try {
+		if (!options.height) {
+			// Astro requires a height for remote srcsets, which would cap full-screen artwork.
+			const atWidth = (width: number) => `/_image?${new URLSearchParams({
+				href: src,
+				w: String(width),
+				f: 'webp',
+				q: '75',
+				fit: 'scale-down',
+			})}`;
+			return {
+				src: atWidth(options.width),
+				srcset: options.widths.map((width) => `${atWidth(width)} ${width}w`).join(', '),
+				sizes: options.sizes,
+				width: options.width,
+				fallback: src,
+			};
+		}
 		const image = await getImage({
 			src,
 			width: options.width,
-			...(options.height ? { height: options.height } : {}),
+			height: options.height,
 			widths: options.widths,
 			sizes: options.sizes,
 			format: 'webp',

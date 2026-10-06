@@ -4,7 +4,7 @@ import sharp from 'sharp';
 async function imageResponse(url: string, background = '#222') {
 	const params = new URL(url).searchParams;
 	const width = Number(params.get('w') ?? 1920);
-	const height = Number(params.get('h') ?? 1200);
+	const height = Number(params.get('h') ?? Math.round(width / 1.6));
 	// Chromium needs the mock's dimensions to match the srcset candidate.
 	const body = await sharp({ create: { width, height, channels: 3, background } }).webp({ lossless: true }).toBuffer();
 	return { status: 200, contentType: 'image/webp', body };
@@ -126,6 +126,21 @@ test('artwork cards use responsive image URLs', async ({ page }) => {
 	const image = page.locator('[data-artwork-card] img').first();
 	await expect(image).toHaveAttribute('srcset', /\/_image\?.* 480w, .* 960w/);
 	await expect(image).toHaveAttribute('sizes', /20vw/);
+});
+
+test('home offers width-only images through 6K and accounts for cover cropping', async ({ page }) => {
+	await page.route(/\/_image\?/, async (route) => route.fulfill(await imageResponse(route.request().url())));
+	await page.goto('/', { waitUntil: 'domcontentloaded' });
+	const image = page.locator('[data-hero-carousel] .slide').first().locator('img');
+	await expect(image).toHaveAttribute('sizes', 'max(100vw, 160vh)');
+	const candidates = (await image.getAttribute('srcset'))!.split(', ').map((candidate) => {
+		const [url, descriptor] = candidate.split(' ');
+		const params = new URL(url, 'https://eonmun.com').searchParams;
+		expect(params.has('h')).toBe(false);
+		expect(params.get('w')).toBe(descriptor.slice(0, -1));
+		return Number(params.get('w'));
+	});
+	expect(candidates).toEqual([480, 960, 1600, 2560, 3840, 5120, 6144]);
 });
 
 test('artwork and post cards prefetch the exact detail image for visible cards', async ({ page }) => {

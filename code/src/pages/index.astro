@@ -11,9 +11,9 @@ export const prerender = false;
 const slides = await getHomepageSlides();
 const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(slide.defaultImageUrl!, {
 	width: 1920,
-	height: 1200,
-	widths: [480, 960, 1920],
-	sizes: '100vw',
+	widths: [480, 960, 1600, 2560, 3840, 5120, 6144],
+	// The image covers the viewport, so tall screens display it wider than 100vw.
+	sizes: 'max(100vw, 160vh)',
 })));
 ---
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} themeColor={FALLBACK_ARTWORK_COLOR} image={slides[0]?.defaultImageUrl ?? undefined} iosEdgeToEdge>
