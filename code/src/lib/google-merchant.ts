@@ -11,6 +11,26 @@ type ApiFetch = typeof fetch;
 
 export class GoogleMerchantError extends Error {}
 
+export interface GoogleProcessedProduct {
+	offerId?: string;
+	productStatus?: {
+		destinationStatuses?: Array<{ reportingContext?: string; approvedCountries?: string[]; pendingCountries?: string[]; disapprovedCountries?: string[] }>;
+		itemLevelIssues?: Array<{ description?: string; detail?: string; documentation?: string; severity?: string; applicableCountries?: string[] }>;
+		lastUpdateDate?: string;
+	};
+}
+
+export async function getGoogleArtworkProduct(env: Env, artworkId: number, apiFetch: ApiFetch = fetch): Promise<GoogleProcessedProduct | null> {
+	const { account, credentials } = config(env);
+	const token = await accessToken(credentials, apiFetch);
+	const response = await apiFetch(`${apiBase}/accounts/${account}/products/en~US~artwork-${artworkId}`, {
+		headers: { Authorization: `Bearer ${token}` }, redirect: "manual",
+	});
+	if (response.status === 404) return null;
+	if (!response.ok) throw new GoogleMerchantError(`Google Merchant status could not be checked (HTTP ${response.status})`);
+	return response.json();
+}
+
 export function isGoogleMerchantConfigured(env: Env) {
 	return Boolean(env.GOOGLE_MERCHANT_ACCOUNT_ID && env.GOOGLE_MERCHANT_DATA_SOURCE_ID && env.GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON);
 }

@@ -9,6 +9,7 @@
 //   STRIPE_SECRET_KEY    — Stripe Checkout API secret
 //   STRIPE_WEBHOOK_SECRET — Stripe Checkout webhook signing secret
 //   PINTEREST_APP_SECRET — Pinterest app client secret for catalog sync
+//   PINTEREST_CATALOG_ACCESS_TOKEN — optional user-authorized token for catalog status and Product Pin lookup
 //   GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON — Google Merchant API service account JSON key
 //   VAPID_PRIVATE_KEY    — Web Push signing key for admin order alerts (CONTRIBUTOR.md)
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
