@@ -24,11 +24,11 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	<RequiredNote />
 
 	<FormFieldset legend="Images">
+		<div data-image-list class="image-list"></div>
 		<label class="upload">Add images
 			<input class="admin-input" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
 		</label>
 		<p class="hint">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each. The piece marked Default is the cover shown everywhere else.</p>
-		<div data-image-list class="image-list"></div>
 	</FormFieldset>
 
 	<FormFieldset legend="Piece" layout="columns">
@@ -89,8 +89,6 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 			<button type="button" class="add-collection" data-apply-suggestion>Use these suggestions</button>
 		</div>
 	</FormFieldset>
-
-
 
 	<FormFieldset legend="Collections">
 		<div class="collection-list" data-collection-list>
@@ -170,20 +168,26 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 
 		const renderImages = () => {
 			list.replaceChildren();
-			images.forEach((image, index) => {
+			images.map((image, index) => ({ image, index })).sort((a, b) => Number(b.image.isDefault) - Number(a.image.isDefault)).forEach(({ image, index }) => {
 				const row = document.createElement('div');
-				row.className = 'image-row';
-				const preview = document.createElement('img'); preview.src = image.url; preview.alt = ''; preview.className = 'image-thumb';
+				row.className = 'artwork-image-row';
+				const preview = document.createElement('img'); preview.src = image.url; preview.alt = image.altText || ''; preview.className = 'artwork-image-preview';
 				const caption = document.createElement('input'); caption.className = 'admin-input'; caption.placeholder = 'Caption (optional)'; caption.value = image.caption || '';
 				caption.addEventListener('input', () => { image.caption = caption.value || null; });
-				const alt = document.createElement('input'); alt.className = 'admin-input'; alt.placeholder = 'Describe this image for alt text'; alt.setAttribute('aria-label', 'Image alt text'); alt.value = image.altText || '';
-				alt.addEventListener('input', () => { image.altText = alt.value || null; });
+				const alt = document.createElement('textarea'); alt.rows = 4; alt.className = 'admin-input'; alt.placeholder = 'Describe this image for alt text'; alt.setAttribute('aria-label', 'Image alt text'); alt.value = image.altText || '';
+				alt.addEventListener('input', () => { image.altText = alt.value || null; preview.alt = alt.value; });
 				const label = document.createElement('label'); const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'defaultImage'; radio.checked = image.isDefault;
 				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); renderImages(); });
 				label.append(radio, ' Default');
 				const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
 				remove.addEventListener('click', () => { images.splice(index, 1); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); });
-				row.append(preview, alt, caption, label, remove); list.append(row);
+				const details = document.createElement('div'); details.className = 'artwork-image-details';
+				const altLabel = document.createElement('label'); altLabel.append('Alt text', alt);
+				const altHint = document.createElement('p'); altHint.className = 'hint'; altHint.textContent = 'Describe the artwork for people using screen readers.';
+				const captionLabel = document.createElement('label'); captionLabel.append('Caption (optional)', caption);
+				const actions = document.createElement('div'); actions.className = 'artwork-image-actions'; actions.append(label, remove);
+				details.append(altLabel, altHint, captionLabel, actions);
+				row.append(preview, details); list.append(row);
 			});
 		};
 		// Adds uploaded files to the image list model and clears the picker, so a
@@ -298,11 +302,17 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
     .attribute-field { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: .75rem; background: transparent; }
     .attribute-field legend { font-weight: 600; margin-bottom: .75rem; }
 
-	form {
+	form[data-admin-artwork-form] {
+		max-width: none;
 		display: flex;
 		flex-direction: column;
 		gap: 1.75rem;
 		margin-top: 2.5rem;
+	}
+
+	form > :global(fieldset:not(:first-of-type)) {
+		width: 100%;
+		max-width: 56rem;
 	}
 
 	.span-all {
@@ -373,6 +383,41 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+
+	.image-list :global(.artwork-image-row) {
+		display: grid;
+		grid-template-columns: minmax(0, 3fr) minmax(15rem, 1fr);
+		align-items: start;
+		gap: 1.5rem;
+	}
+
+	.image-list :global(.artwork-image-preview) {
+		display: block;
+		width: 100%;
+		height: min(75vh, 48rem);
+		object-fit: contain;
+		background: var(--admin-surface);
+	}
+
+	.image-list :global(.artwork-image-details) {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		min-width: 0;
+	}
+
+	.image-list :global(.artwork-image-actions) {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	@media (max-width: 48rem) {
+		.image-list :global(.artwork-image-row) { grid-template-columns: minmax(0, 1fr); }
+		.image-list :global(.artwork-image-preview) { height: auto; max-height: 75vh; }
 	}
 
 	.image-list:empty::after {

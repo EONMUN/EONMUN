@@ -19,7 +19,7 @@ test('listing status requires an admin session and a same-origin request', async
 	expect(invalid.status()).toBe(400);
 });
 
-test('artwork editor shows review status, issues, links, and refreshes without saving', async ({ page, context }) => {
+test('artwork editor shows review status, issues, links, and refreshes without saving', async ({ page, context }, testInfo) => {
 	await context.addCookies(await adminCookies(`http://127.0.0.1:${process.env.EONMUN_E2E_PORT}`));
 	let checks = 0;
 	let approved = false;
@@ -37,6 +37,13 @@ test('artwork editor shows review status, issues, links, and refreshes without s
 	const panel = page.getByRole('group', { name: 'Listings', exact: true });
 	const images = page.getByRole('group', { name: 'Images', exact: true });
 	await expect(images.locator('[data-image-list] img')).not.toHaveCount(0);
+	const preview = images.locator('[data-image-list] img').first();
+	const previewBox = await preview.boundingBox();
+	expect(previewBox!.width).toBeGreaterThan(600);
+	expect(previewBox!.height).toBeGreaterThan(400);
+	await expect(images.getByText('Alt text', { exact: true }).first()).toBeVisible();
+	await preview.scrollIntoViewIfNeeded();
+	await page.screenshot({ path: testInfo.outputPath('artwork-desktop.png') });
 	const imagesBox = await images.boundingBox();
 	const pieceBox = await page.getByRole('group', { name: 'Piece', exact: true }).boundingBox();
 	const formBox = await page.locator('[data-admin-artwork-form]').boundingBox();
@@ -55,4 +62,12 @@ test('artwork editor shows review status, issues, links, and refreshes without s
 	await expect(panel.locator('[data-listing-issues]').first()).toBeHidden();
 	await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue('Unsaved title');
 	expect(checks).toBe(initialChecks + 1);
+	await page.setViewportSize({ width: 390, height: 844 });
+	const mobilePreview = await preview.boundingBox();
+	const mobileDetails = await images.locator('.artwork-image-details').first().boundingBox();
+	expect(mobilePreview!.width).toBeGreaterThan(280);
+	expect(mobileDetails!.y).toBeGreaterThanOrEqual(mobilePreview!.y + mobilePreview!.height);
+	await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
+	await preview.scrollIntoViewIfNeeded();
+	await page.screenshot({ path: testInfo.outputPath('artwork-mobile.png') });
 });
