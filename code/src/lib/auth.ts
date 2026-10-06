@@ -83,6 +83,7 @@ export function createAuth(env: AuthEnv, request: Request) {
 	let googleId: string | undefined;
 	let merchantToken: string | undefined;
 	const googleOptions = {
+		prompt: "select_account" as const,
 		clientId: getStringEnv(env, "GOOGLE_CLIENT_ID") ?? getStringEnv(env, "AUTH_GOOGLE_ID") ?? "",
 		clientSecret: getStringEnv(env, "GOOGLE_CLIENT_SECRET") ?? getStringEnv(env, "AUTH_GOOGLE_SECRET") ?? "",
 		// SECURITY: ordinary and preview logins must not inherit previously granted Merchant scope.
