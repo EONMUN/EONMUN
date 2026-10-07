@@ -48,6 +48,9 @@ test('artwork editor shows review status, issues, links, and refreshes without s
 	expect(previewBox!.width).toBeLessThan(250);
 	expect(previewBox!.height).toBeGreaterThan(70);
 	await expect(images.getByText('Alt text', { exact: true }).first()).toBeVisible();
+	await images.getByRole('button', {name:'Edit image 1, cover',exact:true}).focus();
+	await images.getByRole('button', {name:'Edit image 1, cover',exact:true}).press('Enter');
+	await expect(images.getByRole('textbox', {name:'Image alt text'})).toBeFocused();
 	await preview.scrollIntoViewIfNeeded();
 	await page.screenshot({ path: testInfo.outputPath('artwork-desktop.png') });
 	const imagesBox = await images.boundingBox();

@@ -165,23 +165,24 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		syncPriceRequirement();
 
 		const renderImages = () => {
+			selectedImage = Math.max(0, Math.min(selectedImage, images.length - 1));
 			list.replaceChildren();
 			let selectedDetails: HTMLElement | undefined;
 			images.map((image, index) => ({ image, index })).sort((a, b) => Number(b.image.isDefault) - Number(a.image.isDefault)).forEach(({ image, index }) => {
 				const row = document.createElement('div');
 				row.className = 'artwork-image-row';
 				const select = document.createElement('button'); select.type = 'button'; select.className = 'image-tile'; select.setAttribute('aria-label', `Edit image ${index + 1}${image.isDefault ? ', cover' : ''}`); select.setAttribute('aria-pressed', String(selectedImage === index));
-				select.addEventListener('click', () => { selectedImage = index; renderImages(); });
+				select.addEventListener('click', () => { selectedImage = index; renderImages(); list.querySelector<HTMLTextAreaElement>('[aria-label="Image alt text"]')?.focus(); });
 				const preview = document.createElement('img'); preview.src = image.url; preview.alt = image.altText || ''; preview.className = 'artwork-image-preview';
 				const caption = document.createElement('input'); caption.className = 'admin-input'; caption.placeholder = 'Caption (optional)'; caption.value = image.caption || '';
 				caption.addEventListener('input', () => { image.caption = caption.value || null; dirty.mark(); });
 				const alt = document.createElement('textarea'); alt.rows = 4; alt.className = 'admin-input'; alt.placeholder = 'Describe this image for alt text'; alt.setAttribute('aria-label', 'Image alt text'); alt.value = image.altText || '';
 				alt.addEventListener('input', () => { image.altText = alt.value || null; preview.alt = alt.value; dirty.mark(); });
 				const label = document.createElement('label'); const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'defaultImage'; radio.checked = image.isDefault;
-				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); dirty.mark(); renderImages(); });
+				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); dirty.mark(); renderImages(); list.querySelector<HTMLInputElement>('[name="defaultImage"]')?.focus(); });
 				label.append(radio, ' Cover image');
 				const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
-				remove.addEventListener('click', () => { images.splice(index, 1); selectedImage = Math.min(selectedImage, images.length - 1); dirty.mark(); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); });
+				remove.addEventListener('click', () => { images.splice(index, 1); selectedImage = Math.max(0, Math.min(selectedImage, images.length - 1)); dirty.mark(); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); (list.querySelector<HTMLButtonElement>('.image-tile[aria-pressed="true"]') ?? fileInput).focus(); });
 				const details = document.createElement('div'); details.className = 'artwork-image-details';
 				const altLabel = document.createElement('label'); altLabel.append('Alt text', alt);
 				const altHint = document.createElement('p'); altHint.className = 'hint'; altHint.textContent = 'Describe the artwork for people using screen readers.';
