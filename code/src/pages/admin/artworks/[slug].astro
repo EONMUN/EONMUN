@@ -1,5 +1,6 @@
 ---
 import ArtworkForm from '../../../components/admin/ArtworkForm.astro';
+import ArtworkListings from '../../../components/admin/ArtworkListings.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
 import { getAdminArtwork, getAdminCollections, getAdminFacets } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
@@ -34,36 +35,6 @@ const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `a
 	{googleState === 'submitted' && <p role="status">Artwork saved and submitted to Google Merchant Center for processing.</p>}
 	{googleState === 'removed' && <p role="status">Artwork saved and removed from the Google Merchant API source.</p>}
 	{pinterestState === 'failed' && <p role="alert">Artwork saved, but Pinterest sync failed. <a href="/admin/settings#pinterest">Retry the catalog sync →</a></p>}
-	{pinterestBatchId && <p role="status" data-pinterest-batch={pinterestBatchId} data-pinterest-deletion={pinterestDeletion}>Artwork saved. Pinterest is processing the catalog update…</p>}
 	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets} />
+	<ArtworkListings slug={artwork.slug} pinterestBatchId={pinterestBatchId} pinterestDeletion={Boolean(pinterestDeletion)} />
 </ConsoleShell>
-
-<script>
-	const status = document.querySelector<HTMLElement>('[data-pinterest-batch]');
-	if (status) {
-		const batchId = status.dataset.pinterestBatch;
-		const deletionIds = status.dataset.pinterestDeletion ? [status.dataset.pinterestDeletion] : [];
-		const check = async () => {
-			const response = await fetch('/api/admin/pinterest', {
-				method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ batchId, deletionIds }),
-			});
-			if (!response.ok) throw new Error('Could not check Pinterest status');
-			return response.json() as Promise<{ status: string; failed: boolean }>;
-		};
-		(async () => {
-			try {
-				for (let attempt = 0; attempt < 12; attempt++) {
-					const result = await check();
-					if (result.status === 'COMPLETED' || result.status === 'FAILED') {
-						status.textContent = result.status === 'COMPLETED' && !result.failed
-							? 'Pinterest reported the artwork update complete.'
-							: 'Pinterest rejected the artwork update. Use the Pinterest section of Settings to retry.';
-						return;
-					}
-					await new Promise((resolve) => setTimeout(resolve, 5000));
-				}
-				status.textContent = 'Pinterest is still processing the artwork update. Check the catalog later.';
-			} catch { status.textContent = 'Artwork saved, but Pinterest status could not be checked. Use the Pinterest section of Settings to retry.'; }
-		})();
-	}
-</script>

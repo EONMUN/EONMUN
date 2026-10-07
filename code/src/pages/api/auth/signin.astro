@@ -5,13 +5,19 @@ export const prerender = false;
 const requestedPath = Astro.url.searchParams.get('callbackUrl') ?? '/admin';
 const callback = new URL(requestedPath, Astro.url);
 const callbackURL = callback.origin === Astro.url.origin ? callback.href : new URL('/admin', Astro.url).href;
+const errorCallback = new URL('/api/auth/signin', Astro.url);
+errorCallback.searchParams.set('callbackUrl', new URL(callbackURL).pathname + new URL(callbackURL).search);
+const signInError = Astro.url.searchParams.get('error');
+const errorMessage = signInError === 'admin_access_denied'
+	? 'This Google account does not have admin access. Continue with Google and choose your authorized admin account.'
+	: signInError ? 'Sign in could not be completed. Please try again.' : '';
 ---
 <BaseLayout title="Admin sign in" description="Sign in to the EONMUN studio console." themeColor="#f5f3ee" adminAppearance>
 	<AdminTheme slot="head" />
 	<section class="mx-auto max-w-lg px-6 py-20">
 		<h1 class="text-3xl mb-6">Admin sign in</h1>
-		<button type="button" class="primary-button" data-google-signin data-callback={callbackURL}>Continue with Google</button>
-		<p role="status" class="mt-4"></p>
+		<button type="button" class="primary-button" data-google-signin data-callback={callbackURL} data-error-callback={errorCallback.href}>Continue with Google</button>
+		<p role="status" class="mt-4">{errorMessage}</p>
 	</section>
 </BaseLayout>
 <script>
@@ -21,7 +27,7 @@ const callbackURL = callback.origin === Astro.url.origin ? callback.href : new U
 		try {
 			const response = await fetch('/api/auth/sign-in/social', {
 				method: 'POST', headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ provider: 'google', callbackURL: button.dataset.callback }),
+				body: JSON.stringify({ provider: 'google', callbackURL: button.dataset.callback, errorCallbackURL: button.dataset.errorCallback }),
 			});
 			if (!response.ok) throw new Error('Sign in failed');
 			const { url } = await response.json();

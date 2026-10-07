@@ -7,7 +7,7 @@ const apiBase = "https://api.pinterest.com/v5";
 const scopes = "catalogs:read,catalogs:write";
 
 type ApiFetch = typeof fetch;
-type BatchItem = { item_id?: string; status?: string; errors?: Array<{ message?: string }> };
+type BatchItem = { item_id?: string; status?: string; errors?: Array<{ message?: string }>; warnings?: Array<{ message?: string }> };
 type Batch = { batch_id?: string; status?: string; items?: BatchItem[] };
 
 export class PinterestSyncError extends Error {
@@ -16,6 +16,28 @@ export class PinterestSyncError extends Error {
 
 export function isPinterestConfigured(env: Env) {
 	return Boolean(env.PINTEREST_APP_ID && env.PINTEREST_APP_SECRET && env.PINTEREST_CATALOG_ID);
+}
+
+export interface PinterestCatalogItem {
+	attributes?: { item_id?: string };
+	item_id?: string;
+	pins?: Array<{ id?: string }>;
+	errors?: Array<{ message?: string }>;
+	locale_errors?: Array<{ message?: string }>;
+}
+
+export async function getPinterestArtworkItem(env: Env, artworkId: number, apiFetch: ApiFetch = fetch): Promise<PinterestCatalogItem | null> {
+	const { catalogId, adAccountId } = requireConfig(env);
+	// Catalog item and Pin lookup requires user authorization; app tokens support batch sync.
+	const token = env.PINTEREST_CATALOG_ACCESS_TOKEN;
+	if (!token) throw new PinterestSyncError("Pinterest catalog lookup is not connected", 503);
+	const result = await pinterestRequest<{ items?: PinterestCatalogItem[] }>(
+		withAdAccount("/catalogs/items", adAccountId), token, apiFetch, "catalog item lookup", {
+			country: "US", language: "en-US",
+			filters: { catalog_type: "RETAIL", catalog_id: catalogId, item_ids: [`artwork-${artworkId}`] },
+		},
+	);
+	return result.items?.find((item) => (item.attributes?.item_id ?? item.item_id) === `artwork-${artworkId}`) ?? null;
 }
 
 function requireConfig(env: Env) {
@@ -155,7 +177,8 @@ function summarizeBatch(batch: Batch, deletionIds: string[] = []) {
 		// Only a known deletion with this exact response has already reached its desired state.
 		const absent = item.status === "FAILURE" && deletions.has(item.item_id ?? "")
 			&& errors.length === 1 && errors[0] === "Item is not found in the system.";
-		return { item_id: item.item_id, status: absent ? "ALREADY_ABSENT" : item.status ?? "UNKNOWN", errors };
+		return { item_id: item.item_id, status: absent ? "ALREADY_ABSENT" : item.status ?? "UNKNOWN", errors,
+			warnings: (item.warnings ?? []).map((warning) => warning.message ?? "Pinterest reported a catalog warning") };
 	});
 	const allAbsent = items.length > 0 && items.length === deletions.size && items.every((item) => item.status === "ALREADY_ABSENT");
 	const status = batch.status === "FAILED" && allAbsent ? "COMPLETED" : batch.status ?? "UNKNOWN";

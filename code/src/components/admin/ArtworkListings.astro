@@ -1,0 +1,108 @@
+---
+import FormFieldset from './FormFieldset.astro';
+
+interface Props {
+	slug: string;
+	pinterestBatchId: string | null;
+	pinterestDeletion: boolean;
+}
+const { slug, pinterestBatchId, pinterestDeletion } = Astro.props;
+---
+<div class="artwork-listings" data-artwork-listings data-endpoint={`/api/admin/artworks/${encodeURIComponent(slug)}/listings`} data-pinterest-batch-id={pinterestBatchId ?? undefined} data-pinterest-deletion={String(pinterestDeletion)}>
+	<FormFieldset legend="Listings">
+		<div class="listing-actions">
+			<button class="secondary-button" type="button" data-refresh-listings>Refresh status</button>
+			<a href="/admin/settings">Integration settings →</a>
+		</div>
+		<p class="hint" data-listing-check role="status" aria-live="polite">Checking listing status…</p>
+		<div class="listing-providers">
+			{[{ key: 'google', name: 'Google Merchant', url: 'https://merchants.google.com/mc/products', link: 'Open Merchant Center' },
+				{ key: 'pinterest', name: 'Pinterest', url: 'https://www.pinterest.com/business/hub/', link: 'Open Pinterest Business' }].map((provider) => (
+				<section data-listing-provider={provider.key} aria-labelledby={`listing-${provider.key}`}>
+					<h2 id={`listing-${provider.key}`}>{provider.name}</h2>
+					<p class="listing-label" data-listing-label>Checking…</p>
+					<p class="hint" data-listing-message></p>
+					<dl data-listing-destinations></dl>
+					<ul data-listing-issues hidden></ul>
+					<div class="listing-links" data-listing-links><a href={provider.url} target="_blank" rel="noopener noreferrer">{provider.link} ↗</a></div>
+				</section>
+			))}
+		</div>
+	</FormFieldset>
+</div>
+
+<script>
+	import type { ListingProviderStatus } from '../../lib/artwork-listing-status';
+	const root = document.querySelector<HTMLElement>('[data-artwork-listings]');
+	if (root) {
+		const refresh = root.querySelector<HTMLButtonElement>('[data-refresh-listings]')!;
+		const check = root.querySelector<HTMLElement>('[data-listing-check]')!;
+		let processingChecks = 0;
+		let timer: number | undefined;
+		const render = (provider: string, result: ListingProviderStatus) => {
+			const section = root.querySelector<HTMLElement>(`[data-listing-provider="${provider}"]`)!;
+			section.querySelector<HTMLElement>('[data-listing-label]')!.textContent = result.label;
+			section.querySelector<HTMLElement>('[data-listing-message]')!.textContent = result.message;
+			const destinations = section.querySelector<HTMLElement>('[data-listing-destinations]')!;
+			destinations.replaceChildren(...result.destinations.flatMap((destination) => {
+				const name = document.createElement('dt'); name.textContent = destination.label;
+				const value = document.createElement('dd'); value.textContent = destination.status;
+				return [name, value];
+			}));
+			const issues = section.querySelector<HTMLElement>('[data-listing-issues]')!;
+			issues.hidden = result.issues.length === 0;
+			issues.replaceChildren(...result.issues.map((issue) => {
+				const item = document.createElement('li'); item.textContent = issue.message;
+				if (issue.url) {
+					const link = document.createElement('a'); link.href = issue.url; link.textContent = ' Help ↗';
+					link.target = '_blank'; link.rel = 'noopener noreferrer'; item.append(link);
+				}
+				return item;
+			}));
+			section.querySelector<HTMLElement>('[data-listing-links]')!.replaceChildren(...result.links.map((entry) => {
+				const link = document.createElement('a'); link.href = entry.url; link.textContent = `${entry.label} ↗`;
+				link.target = '_blank'; link.rel = 'noopener noreferrer'; return link;
+			}));
+		};
+		const load = async () => {
+			if (refresh.disabled || !root.isConnected) return;
+			window.clearTimeout(timer);
+			refresh.disabled = true;
+			root.setAttribute('aria-busy', 'true');
+			check.textContent = 'Checking listing status…';
+			try {
+				const response = await fetch(root.dataset.endpoint!, {
+					method: 'POST', headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ pinterestBatchId: root.dataset.pinterestBatchId, pinterestDeletion: root.dataset.pinterestDeletion === 'true' }),
+				});
+				if (!response.ok) throw new Error(response.status === 401 ? 'Sign in again to check listing status.' : 'Listing status could not be checked. Try refreshing.');
+				const result = await response.json() as { google: ListingProviderStatus; pinterest: ListingProviderStatus; checkedAt: string };
+				render('google', result.google); render('pinterest', result.pinterest);
+				check.textContent = `Last checked ${new Date(result.checkedAt).toLocaleString()}.`;
+				if (result.pinterest.label === 'Processing' && processingChecks++ < 12 && !document.hidden) {
+					timer = window.setTimeout(() => { void load(); }, 5000);
+				}
+			} catch (error) {
+				check.textContent = error instanceof Error ? error.message : 'Listing status could not be checked.';
+				for (const label of root.querySelectorAll<HTMLElement>('[data-listing-label]')) {
+					if (label.textContent === 'Checking…') label.textContent = 'Status unavailable';
+				}
+			} finally { refresh.disabled = false; root.removeAttribute('aria-busy'); }
+		};
+		refresh.addEventListener('click', () => { processingChecks = 0; void load(); });
+		void load();
+	}
+</script>
+
+<style>
+	.artwork-listings { max-width: 56rem; }
+	.listing-actions, .listing-links { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+	.listing-providers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1.5rem; }
+	section { padding: 1rem; background: var(--admin-surface); border: 1px solid var(--admin-border); }
+	h2 { font-size: 1rem; font-weight: 600; }
+	.listing-label { margin: .5rem 0; font-weight: 600; }
+	dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem; margin: 1rem 0; }
+	dd { font-weight: 600; }
+	ul { padding-left: 1.25rem; color: var(--admin-danger); margin: 1rem 0; }
+	.listing-links { margin-top: 1rem; }
+</style>

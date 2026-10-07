@@ -12,6 +12,7 @@ test('preview sends Google to production and rejects external callback origins',
 	const url = new URL((await response.json()).url);
 	expect(url.hostname).toBe('accounts.google.com');
 	expect(url.searchParams.get('redirect_uri')).toBe('https://eonmun.com/api/auth/callback/google');
+	expect(url.searchParams.get('prompt')).toBe('select_account');
 	expect(url.searchParams.get('state')).toBeTruthy();
 	const badRequest = new Request(request.url, { method: 'POST', headers: { origin: preview, 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'google', callbackURL: 'https://evil.example/admin' }) });
 	expect((await createAuth(env, badRequest).handler(badRequest)).status).toBe(403);
@@ -32,7 +33,7 @@ test.each([
 	{ email: 'outsider@example.com', verified: true, allowed: false },
 	{ email: 'admin@example.com', verified: false, allowed: false },
 ])('proxy callback enforces admin access: %j', async ({ email, verified, allowed }) => {
-	const start = new Request(`${preview}/api/auth/sign-in/social`, { method: 'POST', headers: { origin: preview, 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'google', callbackURL: `${preview}/admin` }) });
+	const start = new Request(`${preview}/api/auth/sign-in/social`, { method: 'POST', headers: { origin: preview, 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'google', callbackURL: `${preview}/admin`, errorCallbackURL: `${preview}/api/auth/signin?callbackUrl=%2Fadmin` }) });
 	const initiated = await createAuth(env, start).handler(start);
 	const google = new URL((await initiated.json()).url);
 	const stateCookies = initiated.headers.getSetCookie().map(value => value.split(';')[0]).join('; ');
@@ -59,7 +60,13 @@ test.each([
 		const previewRequest = new Request(returnURL, { headers: { cookie: stateCookies } });
 		const completed = await createAuth(env, previewRequest).handler(previewRequest);
 		if (allowed) expect(completed.headers.get('location')).toBe(`${preview}/admin`);
-		else expect(completed.headers.get('location')).toContain('error=admin_access_denied');
+		else {
+			const denied = new URL(completed.headers.get('location')!);
+			expect(denied.origin).toBe(preview);
+			expect(denied.pathname).toBe('/api/auth/signin');
+			expect(denied.searchParams.get('error')).toBe('admin_access_denied');
+			expect(denied.searchParams.get('callbackUrl')).toBe('/admin');
+		}
 		const cookie = completed.headers.getSetCookie().map(value => value.split(';')[0]).join('; ');
 		const sessionRequest = new Request(`${preview}/admin`, { headers: { cookie } });
 		const session = await getSession(sessionRequest, env);
