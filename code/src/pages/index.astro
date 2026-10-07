@@ -66,8 +66,16 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			</figure>
 		))}
 		{slides.length > 1 && <>
-			<button type="button" class="carousel-arrow previous" data-slide-direction="-1" aria-label="Previous artwork" disabled><span aria-hidden="true">‹</span></button>
-			<button type="button" class="carousel-arrow next" data-slide-direction="1" aria-label="Next artwork" disabled><span aria-hidden="true">›</span></button>
+			<button type="button" class="carousel-arrow previous" data-slide-direction="-1" aria-label="Previous artwork" disabled>
+				<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M15.5 5 8.5 12 15.5 19" />
+				</svg>
+			</button>
+			<button type="button" class="carousel-arrow next" data-slide-direction="1" aria-label="Next artwork" disabled>
+				<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m8.5 5 7 7-7 7" />
+				</svg>
+			</button>
 		</>}
 	</div>
 	<script is:inline>
@@ -278,8 +286,9 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		border-radius: 50%;
 		background: rgba(0, 0, 0, 0.35);
 		color: white;
-		font-size: 2.5rem;
-		line-height: 1;
+		display: grid;
+		place-items: center;
+		padding: 0;
 		cursor: pointer;
 	}
 	.carousel-arrow.previous { left: calc(1rem + env(safe-area-inset-left)); }
@@ -318,7 +327,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		position: absolute;
 		left: calc(1rem + env(safe-area-inset-left));
 		right: calc(1rem + env(safe-area-inset-right));
-		bottom: calc(1.25rem + env(safe-area-inset-bottom));
+		bottom: calc(2.5rem + env(safe-area-inset-bottom));
 		z-index: 50;
 		display: flex;
 		flex-direction: column;
