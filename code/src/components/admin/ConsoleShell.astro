@@ -1,9 +1,6 @@
 ---
-// The admin console's frame: the themed workspace, the shared console control
-// styles, and the masthead with the theme picker.
-// Pages supply their own sections through the default slot.
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import AdminTheme from './AdminTheme.astro';
+// Shared admin navigation and workspace; pages supply their own sections.
+import AdminLayout from '../../layouts/AdminLayout.astro';
 
 interface Props {
 	title: string;
@@ -26,9 +23,17 @@ const {
 	backLabel,
 	privateData = false,
 } = Astro.props;
+const links = [
+	{ href: '/admin', label: 'Overview' },
+	{ href: '/admin/artworks', label: 'Artwork' },
+	{ href: '/admin/collections', label: 'Collections' },
+	{ href: '/admin/orders', label: 'Orders' },
+	{ href: '/admin/settings', label: 'Settings' },
+];
+const path = Astro.url.pathname.replace(/\/$/, '');
+const active = (href: string) => href === '/admin' ? path === href : path === href || path.startsWith(`${href}/`);
 ---
-<BaseLayout title={title} description={description} themeColor="#f5f3ee" privateData={privateData} adminAppearance>
-	<AdminTheme slot="head" />
+<AdminLayout title={title} description={description} privateData={privateData}>
 	{email && <script is:inline>
 		// This shell is rendered after server-side admin authorization.
 		if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) {
@@ -36,33 +41,55 @@ const {
 		}
 	</script>}
 	<div class="console">
-		<div class="wrap">
-			<header class="masthead">
-				<div>
-					{backHref ? (
-						<a class="back" href={backHref}>&larr; {backLabel ?? 'Back'}</a>
-					) : (
-						<p class="eyebrow">{eyebrow}</p>
-					)}
-					<h1 class="title">{heading}</h1>
-				</div>
-				<div class="identity">
-					{email && <span class="email">{email}</span>}
-					<label class="theme">
-						Theme
-						<select data-admin-theme-picker>
+		<a class="skip-link" href="#console-content">Skip to content</a>
+		<aside class="sidebar" aria-label="Studio sidebar">
+			<a class="brand" href="/admin">EONMUN <span>Studio</span></a>
+			<nav aria-label="Admin navigation">
+				{links.map(link => <a href={link.href} aria-current={active(link.href) ? 'page' : undefined}>{link.label}</a>)}
+			</nav>
+			<a class="website" href="/">View website ↗</a>
+		</aside>
+		<div class="workspace">
+			<header class="topbar">
+				<button class="menu-button" type="button" data-open-navigation aria-haspopup="dialog" aria-controls="mobile-navigation">Menu</button>
+				<nav class="breadcrumb" aria-label="Breadcrumb">
+					{backHref && <><a href={backHref}>{backLabel ?? 'Back'}</a><span aria-hidden="true">/</span></>}
+					<span aria-current="page">{heading}</span>
+				</nav>
+				<details class="account">
+					<summary>Account</summary>
+					<div class="account-panel">
+						<label class="theme" for="admin-theme">Theme</label>
+						<select id="admin-theme" data-admin-theme-picker>
 							<option value="system">System</option>
 							<option value="light">Light</option>
 							<option value="dark">Dark</option>
 						</select>
-					</label>
-					<button class="signout" type="button" data-sign-out>Sign out</button>
-				</div>
+						{email && <button class="signout" type="button" data-sign-out>Sign out</button>}
+						<p class="account-error" role="alert" hidden></p>
+					</div>
+				</details>
 			</header>
-			<slot />
+			<main class="wrap" id="console-content" tabindex="-1">
+				<header class="masthead">
+					<p class="eyebrow">{eyebrow}</p>
+					<h1 class="title">{heading}</h1>
+				</header>
+				<slot />
+			</main>
 		</div>
+		<dialog id="mobile-navigation" class="mobile-navigation" aria-label="Admin navigation">
+			<div class="drawer-heading">
+				<span class="brand">EONMUN <span>Studio</span></span>
+				<button type="button" data-close-navigation aria-label="Close navigation">Close</button>
+			</div>
+			<nav aria-label="Mobile admin navigation">
+				{links.map(link => <a href={link.href} aria-current={active(link.href) ? 'page' : undefined}>{link.label}</a>)}
+			</nav>
+			<a class="website" href="/">View website ↗</a>
+		</dialog>
 	</div>
-</BaseLayout>
+</AdminLayout>
 
 <style is:global>
 	.console .secondary-button {
@@ -339,104 +366,268 @@ const {
 
 <style>
 	.console {
-		position: relative;
-		min-height: calc(100vh - 4.5rem);
-		margin-top: -4.5rem;
-		padding: 4.5rem 0 6rem;
+		min-height: 100dvh;
 		color: var(--admin-text);
 		background: var(--admin-bg);
 	}
-
+	.sidebar {
+		position: fixed;
+		inset: 0 auto 0 0;
+		width: 15rem;
+		padding: 2rem 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 2.5rem;
+		border-right: 1px solid var(--admin-border);
+		background: var(--admin-surface);
+	}
+	.brand {
+		font-size: 1.15rem;
+		font-weight: 700;
+		letter-spacing: .08em;
+	}
+	.brand span {
+		display: block;
+		margin-top: .35rem;
+		font-size: .75rem;
+		font-weight: 500;
+		letter-spacing: .04em;
+		color: var(--admin-muted);
+	}
+	nav:not(.breadcrumb) {
+		display: grid;
+		gap: .35rem;
+	}
+	nav:not(.breadcrumb) a {
+		padding: .8rem 1rem;
+		border-radius: .45rem;
+		font-weight: 500;
+	}
+	nav:not(.breadcrumb) a:hover {
+		background: var(--admin-surface-muted);
+	}
+	nav:not(.breadcrumb) a[aria-current="page"] {
+		background: var(--admin-accent-soft);
+		color: var(--admin-accent);
+		font-weight: 650;
+	}
+	.website {
+		margin-top: auto;
+		padding: .8rem 1rem;
+		font-size: .875rem;
+		color: var(--admin-muted);
+	}
+	.workspace {
+		margin-left: 15rem;
+		min-width: 0;
+	}
+	.topbar {
+		position: sticky;
+		top: 0;
+		z-index: 20;
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		min-height: 4.5rem;
+		padding: .75rem clamp(1rem, 3vw, 2.5rem);
+		background: var(--admin-surface);
+		border-bottom: 1px solid var(--admin-border);
+	}
+	.breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: .65rem;
+		min-width: 0;
+		font-size: .875rem;
+		color: var(--admin-muted);
+	}
+	.breadcrumb [aria-current] {
+		color: var(--admin-text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.breadcrumb a {
+		flex-shrink: 0;
+	}
+	.account {
+		margin-left: auto;
+		position: relative;
+		flex-shrink: 0;
+	}
+	summary, .menu-button, .signout, .drawer-heading button {
+		min-height: 2.75rem;
+		padding: .6rem .85rem;
+		border: 1px solid var(--admin-border);
+		border-radius: .45rem;
+		font: inherit;
+		font-size: .875rem;
+		background: var(--admin-surface);
+		cursor: pointer;
+	}
+	summary {
+		display: block;
+		list-style: none;
+	}
+	summary::-webkit-details-marker {
+		display: none;
+	}
+	summary::after {
+		content: ' ▾';
+	}
+	.account-panel {
+		position: absolute;
+		right: 0;
+		top: calc(100% + .5rem);
+		width: 15rem;
+		padding: 1rem;
+		display: grid;
+		gap: 1rem;
+		border: 1px solid var(--admin-border);
+		border-radius: .6rem;
+		background: var(--admin-surface);
+		box-shadow: 0 .5rem 1.5rem #0002;
+	}
+	.account-panel select {
+		display: block;
+		margin-top: .5rem;
+		width: 100%;
+		min-height: 2.75rem;
+		padding: .5rem;
+		font: inherit;
+		font-size: 1rem;
+		border: 1px solid var(--admin-border-strong);
+		border-radius: .35rem;
+		background: var(--admin-surface);
+		color: var(--admin-text);
+	}
+	.account-error {
+		font-size: .875rem;
+	}
+	.account-error[hidden] {
+		display: none;
+	}
 	.wrap {
 		width: min(88rem, 100%);
 		margin: 0 auto;
-		padding: 0 clamp(1rem, 4vw, 3.5rem);
+		padding: 2rem clamp(1rem, 3vw, 2.5rem) 5rem;
 	}
-
 	.masthead {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1.5rem;
-		padding: clamp(2rem, 5vw, 3.5rem) 0 1.5rem;
-		border-bottom: 1px solid var(--admin-border);
+		margin-bottom: 2rem;
 	}
-
-	.eyebrow,
-	.back {
-		display: inline-block;
-		margin: 0 0 0.75rem;
-		font-size: 0.875rem;
+	.eyebrow {
+		margin: 0 0 .5rem;
+		font-size: .75rem;
 		font-weight: 600;
-		color: var(--admin-accent);
-	}
-
-	.back {
-		letter-spacing: normal;
-		transition: color 200ms;
-	}
-
-	.back:hover {
-		color: var(--admin-text);
-	}
-
-	.title {
-		margin: 0;
-		font-size: clamp(2rem, 5vw, 3.5rem);
-		line-height: 1.05;
-		letter-spacing: -0.025em;
-	}
-
-	.identity {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.75rem 1.25rem;
-		font-size: 0.875rem;
-	}
-
-	.theme {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.theme select {
-		min-height: 2.75rem;
-		padding: 0.5rem 0.75rem;
-		font: inherit;
-		font-size: 1rem;
-		font-weight: normal;
-		color: var(--admin-text);
-		background: var(--admin-surface);
-		border: 1px solid var(--admin-border-strong);
-		border-radius: 0.35rem;
-	}
-
-	.email {
 		color: var(--admin-muted);
 	}
-
-	.signout {
-		min-height: 2.75rem;
-		padding: 0.55rem 1rem;
-		border: 1px solid var(--admin-border-strong);
-		border-radius: 0.35rem;
-		color: var(--admin-text);
-		transition: border-color 200ms, color 200ms;
+	.title {
+		margin: 0;
+		font-size: clamp(1.75rem, 3vw, 2.5rem);
+		line-height: 1.2;
+		letter-spacing: -.025em;
+		overflow-wrap: anywhere;
 	}
-
-	.signout:hover {
-		border-color: var(--admin-accent);
-		color: var(--admin-accent-hover);
+	.menu-button {
+		display: none;
+	}
+	.skip-link {
+		position: fixed;
+		top: .5rem;
+		left: .5rem;
+		z-index: 50;
+		padding: .75rem;
+		background: var(--admin-surface);
+		transform: translateY(-200%);
+	}
+	.skip-link:focus {
+		transform: none;
+	}
+	.mobile-navigation {
+		position: fixed;
+		inset: 0 auto 0 0;
+		margin: 0;
+		width: min(20rem, 90vw);
+		max-width: none;
+		max-height: none;
+		height: 100dvh;
+		padding: 1.5rem;
+		border: 0;
+		border-right: 1px solid var(--admin-border);
+		background: var(--admin-surface);
+		color: var(--admin-text);
+	}
+	.mobile-navigation::backdrop {
+		background: #0007;
+	}
+	.drawer-heading {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+		gap: 1rem;
+	}
+	.mobile-navigation .website {
+		display: block;
+		margin-top: 2rem;
+	}
+	@media (max-width: 1023px) {
+		.sidebar {
+			display: none;
+		}
+		.workspace {
+			margin-left: 0;
+		}
+		.menu-button {
+			display: block;
+		}
+		.breadcrumb a, .breadcrumb > span[aria-hidden] {
+			display: none;
+		}
+		.topbar {
+			gap: .65rem;
+		}
 	}
 </style>
-
 <script>
-	document.querySelector('[data-sign-out]')?.addEventListener('click', async () => {
-		const response = await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-		if (response.ok) location.assign('/');
-		else alert('Sign out failed. Please try again.');
+	const drawer = document.querySelector<HTMLDialogElement>('#mobile-navigation');
+	const opener = document.querySelector<HTMLButtonElement>('[data-open-navigation]');
+	opener?.addEventListener('click', () => {
+		drawer?.showModal();
+		document.body.style.overflow = 'hidden';
+	});
+	document.querySelector('[data-close-navigation]')?.addEventListener('click', () => drawer?.close());
+	drawer?.addEventListener('click', event => { if (event.target === drawer && event.clientX > drawer.getBoundingClientRect().right) drawer.close(); });
+	drawer?.addEventListener('keydown', event => {
+		if (event.key !== 'Tab') return;
+		const controls = Array.from(drawer.querySelectorAll<HTMLElement>('button, a[href]'));
+		const first = controls[0];
+		const last = controls.at(-1);
+		if (event.shiftKey && document.activeElement === first) {
+			event.preventDefault();
+			last?.focus();
+		} else if (!event.shiftKey && document.activeElement === last) {
+			event.preventDefault();
+			first?.focus();
+		}
+	});
+	drawer?.addEventListener('close', () => { document.body.style.overflow = ''; opener?.focus(); });
+	window.matchMedia('(min-width: 1024px)').addEventListener('change', event => { if (event.matches) drawer?.close(); });
+	const account = document.querySelector<HTMLDetailsElement>('.account');
+	document.addEventListener('keydown', event => { if (event.key === 'Escape' && account?.open) { account.open = false; account.querySelector('summary')?.focus(); } });
+	document.addEventListener('click', event => { if (event.target instanceof Node && account?.open && !account.contains(event.target)) account.open = false; });
+	document.querySelector<HTMLButtonElement>('[data-sign-out]')?.addEventListener('click', async event => {
+		const button = event.currentTarget as HTMLButtonElement;
+		const error = document.querySelector<HTMLElement>('.account-error');
+		button.disabled = true;
+		if (error) error.hidden = true;
+		try {
+			const response = await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+			if (!response.ok) throw new Error('Sign out failed');
+			location.assign('/');
+		} catch {
+			if (error) { error.textContent = 'Sign out failed. Please try again.'; error.hidden = false; }
+			button.disabled = false;
+		}
 	});
 </script>
