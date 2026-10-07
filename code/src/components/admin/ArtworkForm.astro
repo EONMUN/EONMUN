@@ -395,8 +395,10 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 	.image-list :global(.artwork-image-preview) {
 		display: block;
 		width: 100%;
-		height: min(75vh, 48rem);
+		height: auto;
+		max-height: min(75vh, 48rem);
 		object-fit: contain;
+		object-position: center top;
 		background: var(--admin-surface);
 	}
 

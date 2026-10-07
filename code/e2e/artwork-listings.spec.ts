@@ -38,7 +38,12 @@ test('artwork editor shows review status, issues, links, and refreshes without s
 	const images = page.getByRole('group', { name: 'Images', exact: true });
 	await expect(images.locator('[data-image-list] img')).not.toHaveCount(0);
 	const preview = images.locator('[data-image-list] img').first();
+	await expect(preview).toHaveJSProperty('complete', true);
+	await expect.poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 	const previewBox = await preview.boundingBox();
+	const detailsBox = await images.locator('.artwork-image-details').first().boundingBox();
+	expect(Math.abs(previewBox!.y - detailsBox!.y)).toBeLessThan(1);
+	await expect(preview).toHaveCSS('object-position', '50% 0%');
 	expect(previewBox!.width).toBeGreaterThan(600);
 	expect(previewBox!.height).toBeGreaterThan(400);
 	await expect(images.getByText('Alt text', { exact: true }).first()).toBeVisible();
