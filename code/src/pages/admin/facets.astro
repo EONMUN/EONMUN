@@ -1,0 +1,345 @@
+---
+import ConsoleShell from "../../components/admin/ConsoleShell.astro";
+import { getFacetDirectory } from "../../db/facet-admin";
+import { artworkAttributes } from "../../lib/artwork-facets";
+import { requireAdminPage } from "../../lib/admin-guard";
+import { getRuntimeEnv } from "../../lib/runtime-env";
+export const prerender = false;
+const env = getRuntimeEnv();
+const access = await requireAdminPage(Astro.request, env, "/admin/facets");
+if ("response" in access) return access.response;
+Astro.response.headers.set("cache-control", "no-store");
+const facets = await getFacetDirectory(env);
+const categories = [{ key: "tag", label: "Tags" }, ...artworkAttributes];
+const namespaces = [...new Set(facets.map((facet) => facet.namespace))];
+const keys = [...new Set(facets.map((facet) => facet.key))];
+const label = (key: string) =>
+	categories.find((category) => category.key === key)?.label ?? key;
+---
+<ConsoleShell title="Facets — EONMUN admin" heading="Facets" email={access.session.user.email}>
+ <p class="intro">Manage the vocabulary used to describe artwork. Renaming updates every linked piece; merging combines their memberships.</p>
+ <p role="status" id="facet-status" aria-live="polite">
+	</p>
+ <form id="create-facet" class="create-panel">
+  <h2>Add a value</h2>
+  <label>Category<select class="admin-input" name="key">{categories.map(category => <option value={category.key}>{category.label}</option>)}</select>
+	</label>
+  <label>Value<input class="admin-input" name="value" required maxlength="80" />
+	</label>
+  <button class="primary-button" type="submit">Add value</button>
+ </form>
+ <div class="filters">
+  <label>Search<input class="admin-input" id="facet-search" type="search" placeholder="Search values" />
+	</label>
+  <label>Namespace<select class="admin-input" id="facet-namespace">
+	<option value="">All namespaces</option>{namespaces.map(namespace => <option>{namespace}</option>)}</select>
+	</label>
+  <label>Category<select class="admin-input" id="facet-key">
+	<option value="">All categories</option>{keys.map(key => <option value={key}>{label(key)}</option>)}</select>
+	</label>
+ </div>
+ <p class="hint" id="facet-count">{facets.length} values</p>
+ <div class="facet-list">
+  {facets.map(facet => <article class="facet-card" data-facet-id={facet.id} data-value={facet.value} data-namespace={facet.namespace} data-key={facet.key} data-count={facet.artworks.length}>
+   <div class="facet-heading">
+	<div>
+	<p class="hint">{facet.namespace} · {label(facet.key)}</p>
+	<h2>{facet.value}</h2>
+	</div>
+	<span class="hint">{facet.artworks.length} artwork{facet.artworks.length === 1 ? '' : 's'}</span>
+	</div>
+   {facet.artworks.length > 0 && <details>
+	<summary>View artwork</summary>
+	<ul>{facet.artworks.map(artwork => <li>
+	<a href={`/admin/artworks/${encodeURIComponent(artwork.slug)}`}>{artwork.title}</a>
+	</li>)}</ul>
+	</details>}
+   {facet.editable ? <div class="facet-actions">
+	<button class="secondary-button" type="button" data-action="rename">Rename</button>
+	<button class="secondary-button" type="button" data-action="merge">Merge</button>
+	<button class="link-button" type="button" data-action="delete" disabled={facet.artworks.length > 0} title={facet.artworks.length ? 'Merge linked values instead' : undefined}>Delete unused</button>
+	</div> : <p class="hint">{facet.namespace === 'artwork' && facet.key === 'orientation' ? 'Derived from dimensions · Read-only' : 'Read-only category'}</p>}
+  </article>)}
+ </div>
+ <p id="facet-empty" hidden={facets.length > 0}>No values found. Add a value or change the filters.</p>
+ <dialog id="facet-dialog" aria-labelledby="facet-dialog-title">
+  <form id="facet-edit">
+   <h2 id="facet-dialog-title">
+	</h2>
+	<p id="facet-explanation">
+	</p>
+   <label id="rename-field">Value<input class="admin-input" name="value" required maxlength="80" />
+	</label>
+   <label id="merge-field">Destination<select class="admin-input" name="targetId">
+	</select>
+	</label>
+   <p id="facet-error" class="error-banner" role="alert" hidden>
+	</p>
+   <div class="facet-actions">
+	<button class="primary-button" type="submit" id="facet-confirm">Save</button>
+	<button class="secondary-button" type="button" id="facet-cancel">Cancel</button>
+	</div>
+  </form>
+ </dialog>
+</ConsoleShell>
+<style>
+	.intro {
+		max-width: 48rem;
+		color: var(--admin-muted);
+		margin-bottom: 1.5rem;
+	}
+	.create-panel {
+		display: grid;
+		grid-template-columns: 1fr 2fr auto;
+		gap: 1rem;
+		align-items: end;
+		padding: 1.5rem;
+		border: 1px solid var(--admin-border);
+		background: var(--admin-surface);
+		margin-bottom: 2rem;
+	}
+	.create-panel h2 {
+		grid-column: 1 / -1;
+		font-size: 1.1rem;
+		margin: 0;
+	}
+	.filters {
+		display: grid;
+		grid-template-columns: 2fr 1fr 1fr;
+		gap: 1rem;
+	}
+	.facet-list {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+	.facet-card {
+		min-width: 0;
+		padding: 1.25rem;
+		border: 1px solid var(--admin-border);
+		background: var(--admin-surface);
+		border-radius: 0.5rem;
+	}
+	.facet-card[hidden] {
+		display: none;
+	}
+	.facet-heading {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: start;
+	}
+	h2 {
+		overflow-wrap: anywhere;
+		font-size: 1.15rem;
+		margin: 0.35rem 0 1rem;
+	}
+	.facet-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		margin-top: 1rem;
+	}
+	details ul {
+		padding-left: 1.25rem;
+		margin-top: 0.75rem;
+	}
+	details a {
+		text-decoration: underline;
+	}
+	button:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	dialog {
+		margin: auto;
+		width: min(32rem, calc(100vw - 2rem));
+		padding: 1.5rem;
+		border: 1px solid var(--admin-border);
+		border-radius: 0.5rem;
+		background: var(--admin-surface);
+		color: var(--admin-text);
+	}
+	dialog::backdrop {
+		background: #0007;
+	}
+	#facet-explanation {
+		margin-bottom: 1rem;
+	}
+	#facet-error {
+		margin-top: 1rem;
+	}
+	@media (max-width: 700px) {
+		.create-panel,
+		.filters,
+		.facet-list {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
+<script>
+	const cards = Array.from(
+		document.querySelectorAll<HTMLElement>("[data-facet-id]"),
+	);
+	const search = document.querySelector<HTMLInputElement>("#facet-search")!;
+	const namespace =
+		document.querySelector<HTMLSelectElement>("#facet-namespace")!;
+	const key = document.querySelector<HTMLSelectElement>("#facet-key")!;
+	const status = document.querySelector<HTMLElement>("#facet-status")!;
+	const filter = () => {
+		let count = 0;
+		for (const card of cards) {
+			card.hidden = !(
+				card.dataset
+					.value!.toLowerCase()
+					.includes(search.value.trim().toLowerCase()) &&
+				(!namespace.value || namespace.value === card.dataset.namespace) &&
+				(!key.value || key.value === card.dataset.key)
+			);
+			if (!card.hidden) count++;
+		}
+		document.querySelector("#facet-count")!.textContent = `${count} values`;
+		document.querySelector<HTMLElement>("#facet-empty")!.hidden = count > 0;
+	};
+	for (const input of [search, namespace, key])
+		input.addEventListener("input", filter);
+	const dialog = document.querySelector<HTMLDialogElement>("#facet-dialog")!;
+	const form = document.querySelector<HTMLFormElement>("#facet-edit")!;
+	const value = form.querySelector<HTMLInputElement>("[name=value]")!;
+	const destination = form.querySelector<HTMLSelectElement>("[name=targetId]")!;
+	const error = document.querySelector<HTMLElement>("#facet-error")!;
+	let selected: HTMLElement | null = null;
+	let action = "";
+	let busy = false;
+	const save = async (payload: unknown) => {
+		const response = await fetch("/api/admin/facets", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(payload),
+		});
+		const result = await response.json();
+		if (!response.ok) throw new Error(result.error || "Could not save value");
+		try {
+			sessionStorage.setItem("eonmun.facets.saved", "Vocabulary saved.");
+		} catch {}
+		location.reload();
+	};
+	let saved: string | null = null;
+	try {
+		saved = sessionStorage.getItem("eonmun.facets.saved");
+	} catch {}
+	if (saved) {
+		status.textContent = saved;
+		try {
+			sessionStorage.removeItem("eonmun.facets.saved");
+		} catch {}
+	}
+	for (const card of cards)
+		card.querySelectorAll<HTMLButtonElement>("[data-action]").forEach((button) =>
+			button.addEventListener("click", () => {
+				selected = card;
+				action = button.dataset.action!;
+				error.hidden = true;
+				const merging = action === "merge";
+				const renaming = action === "rename";
+				document.querySelector<HTMLElement>("#rename-field")!.hidden = !renaming;
+				document.querySelector<HTMLElement>("#merge-field")!.hidden = !merging;
+				value.disabled = !renaming;
+				destination.disabled = !merging;
+				value.value = card.dataset.value!;
+				value.maxLength = card.dataset.key === "tag" ? 40 : 80;
+				destination.replaceChildren();
+				for (const candidate of cards.filter(
+					(candidate) =>
+						candidate !== card &&
+						candidate.dataset.namespace === card.dataset.namespace &&
+						candidate.dataset.key === card.dataset.key &&
+						candidate.querySelector("[data-action]"),
+				))
+					destination.add(
+						new Option(
+							`${candidate.dataset.value} (${candidate.dataset.count} artwork)`,
+							candidate.dataset.facetId,
+						),
+					);
+				document.querySelector("#facet-dialog-title")!.textContent =
+					`${renaming ? "Rename" : merging ? "Merge" : "Delete"} “${card.dataset.value}”`;
+				document.querySelector("#facet-explanation")!.textContent = renaming
+					? `This updates ${card.dataset.count} linked artwork.`
+					: merging
+						? `Move ${card.dataset.count} artwork memberships to the destination, keeping existing memberships. The source value will be deleted.`
+						: "This unused value will be permanently deleted. It affects 0 artwork.";
+				const confirm =
+					document.querySelector<HTMLButtonElement>("#facet-confirm")!;
+				confirm.textContent = renaming
+					? "Save name"
+					: merging
+						? "Confirm merge"
+						: "Confirm deletion";
+				confirm.disabled = merging && destination.options.length === 0;
+				if (merging && !destination.options.length) {
+					error.textContent =
+						"Add another value in this category before merging.";
+					error.hidden = false;
+				}
+				dialog.showModal();
+			}),
+		);
+	document.querySelector("#facet-cancel")!.addEventListener("click", () => {
+		if (!busy) dialog.close();
+	});
+	dialog.addEventListener("cancel", (event) => {
+		if (busy) event.preventDefault();
+	});
+	form.addEventListener("submit", async (event) => {
+		event.preventDefault();
+		if (!selected || busy) return;
+		busy = true;
+		error.hidden = true;
+		const buttons = Array.from(
+			form.querySelectorAll<HTMLButtonElement>("button"),
+		);
+		buttons.forEach((button) => (button.disabled = true));
+		try {
+			await save({
+				action,
+				id: Number(selected.dataset.facetId),
+				value: value.value,
+				targetId: Number(destination.value),
+			});
+		} catch (failure) {
+			error.textContent =
+				failure instanceof Error ? failure.message : "Save failed";
+			error.hidden = false;
+			busy = false;
+			buttons.forEach((button) => (button.disabled = false));
+		}
+	});
+	const create = document.querySelector<HTMLFormElement>("#create-facet")!;
+	const createValue = create.querySelector<HTMLInputElement>("[name=value]")!;
+	const createKey = create.querySelector<HTMLSelectElement>("[name=key]")!;
+	createKey.addEventListener("change", () => {
+		createValue.maxLength = createKey.value === "tag" ? 40 : 80;
+	});
+	createValue.maxLength = 40;
+	create.addEventListener("submit", async (event) => {
+		event.preventDefault();
+		if (busy) return;
+		busy = true;
+		const button = create.querySelector<HTMLButtonElement>("button")!;
+		button.disabled = true;
+		try {
+			await save({
+				action: "create",
+				key: createKey.value,
+				value: createValue.value,
+			});
+		} catch (failure) {
+			status.textContent =
+				failure instanceof Error ? failure.message : "Save failed";
+			busy = false;
+			button.disabled = false;
+		}
+	});
+</script>
