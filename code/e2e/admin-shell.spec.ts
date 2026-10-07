@@ -45,3 +45,18 @@ test('mobile navigation traps focus, closes with Escape, and navigates', async (
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 	await page.screenshot({ path: testInfo.outputPath('mobile.png') });
 });
+
+
+test('sidebar remains navigable on a short desktop viewport', async ({ page }) => {
+	await page.setViewportSize({ width: 1280, height: 400 });
+	await page.goto('/admin');
+	const sidebar = page.getByRole('complementary', { name: 'Studio sidebar' });
+	const website = sidebar.getByRole('link', { name: 'View website' });
+	await website.scrollIntoViewIfNeeded();
+	const bounds = await website.boundingBox();
+	expect(bounds).not.toBeNull();
+	expect(bounds!.y).toBeGreaterThanOrEqual(0);
+	expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(400);
+	await sidebar.getByRole('link', { name: 'Settings', exact: true }).click();
+	await expect(page).toHaveURL('/admin/settings');
+});
