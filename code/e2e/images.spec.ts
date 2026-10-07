@@ -179,3 +179,72 @@ test('artwork and post cards prefetch the exact detail image for visible cards',
  await expect(page.locator('[data-hero-carousel] .slide').first()).toHaveAttribute('data-tint', '#223344');
  await context.close();
 });
+
+for (const width of [1280, 390]) {
+    test(`home arrows navigate both ways and wrap at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.route(/\/_image\?/, async route => route.fulfill(await imageResponse(route.request().url())));
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        const slides = page.locator('[data-hero-carousel] .slide');
+        const previous = page.getByRole('button', { name: 'Previous artwork' });
+        const next = page.getByRole('button', { name: 'Next artwork' });
+        await expect(next).toBeEnabled();
+        await previous.click();
+        await expect(slides.last()).toHaveClass(/is-current/);
+        await next.click();
+        await expect(slides.first()).toHaveClass(/is-current/);
+        await next.click();
+        await expect(slides.nth(1)).toHaveClass(/is-current/);
+        await previous.click();
+        await expect(slides.first()).toHaveClass(/is-current/);
+        await expect(page.locator('.slide:not([inert])')).toHaveCount(1);
+    });
+}
+
+test('artwork images open full screen and return focus on close', async ({ page }) => {
+    await page.route(/\/_image\?/, async route => route.fulfill(await imageResponse(route.request().url())));
+    await page.route(/^https:\/\//, async route => {
+        if (route.request().resourceType() === 'image') await route.fulfill(await imageResponse(route.request().url()));
+        else await route.continue();
+    });
+    await page.goto('/artworks/limones-del-cobre', { waitUntil: 'domcontentloaded' });
+    const links = page.locator('[data-artwork-fullscreen]');
+    const dialog = page.getByRole('dialog', { name: 'Artwork full screen' });
+    for (const link of [links.first(), links.last()]) {
+        await link.focus();
+        await page.keyboard.press('Enter');
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator('img')).toHaveAttribute('src', (await link.getAttribute('href'))!);
+        await expect.poll(() => dialog.locator('img').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+        const viewport = page.viewportSize()!;
+        const bounds = (await dialog.boundingBox())!;
+        expect(bounds.width).toBe(viewport.width);
+        expect(bounds.height).toBe(viewport.height);
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(link).toBeFocused();
+    }
+    await links.first().click();
+    await page.getByRole('button', { name: 'Close full screen artwork' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
+});
+
+test('manual navigation interrupts an automatic fade without a stale transition', async ({ page }) => {
+    await page.route(/\/_image\?/, async route => route.fulfill(await imageResponse(route.request().url())));
+    await page.clock.install();
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.clock.runFor(1_300);
+    const slides = page.locator('[data-hero-carousel] .slide');
+    const previous = page.getByRole('button', { name: 'Previous artwork' });
+    await expect(previous).toBeEnabled();
+    await page.clock.runFor(8_000);
+    await expect(slides.nth(1)).toHaveClass(/is-entering/);
+    await previous.click();
+    await expect(slides.first()).toHaveClass(/is-current/);
+    await page.clock.runFor(1_600);
+    await expect(slides.first()).toHaveClass(/is-current/);
+    await expect(page.locator('.slide.is-current')).toHaveCount(1);
+    await expect(page.locator('.slide:not([inert])')).toHaveCount(1);
+});
