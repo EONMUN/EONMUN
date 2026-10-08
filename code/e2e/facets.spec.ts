@@ -26,6 +26,40 @@ test("facet table links to editing and reviews a multi-source merge without chan
 	await page
 		.getByRole("checkbox", { name: `Select ${names[0]}`, exact: true })
 		.check();
+
+	const categories = page.getByRole("group", { name: "Categories" });
+	await page.getByLabel("Search categories", { exact: true }).fill("mater");
+	await expect(
+		categories.getByRole("button", { name: "Materials", exact: true }),
+	).toBeVisible();
+	await categories
+		.getByRole("button", { name: "Materials", exact: true })
+		.click();
+	await expect(
+		page.locator('tbody tr:visible:not([data-key="material"])'),
+	).toHaveCount(0);
+	await page
+		.getByLabel("Search categories", { exact: true })
+		.fill("orientation");
+	await expect(
+		categories.getByRole("button", { name: "Materials", exact: true }),
+	).toBeVisible();
+	await page.getByLabel("Search categories", { exact: true }).fill("");
+	await expect(
+		categories.getByRole("button", { name: "Materials", exact: true }),
+	).toHaveAttribute("aria-pressed", "true");
+	await page.getByLabel("Namespace", { exact: true }).selectOption("artwork");
+	await expect(
+		page.getByRole("checkbox", { name: `Select ${names[0]}`, exact: true }),
+	).toBeChecked();
+	await categories
+		.getByRole("button", { name: "All categories", exact: true })
+		.click();
+	await expect(
+		categories.getByRole("button", { name: "All categories", exact: true }),
+	).toHaveAttribute("aria-pressed", "true");
+	await expect(page.locator("tbody tr:visible")).toHaveCount(1);
+	await page.getByLabel("Namespace", { exact: true }).selectOption("");
 	await page.getByLabel("Search", { exact: true }).fill("");
 	for (const name of names.slice(1))
 		await page

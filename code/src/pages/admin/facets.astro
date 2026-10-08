@@ -37,21 +37,22 @@ const label = (key: string) =>
  <div class="filters">
   <label>Search<input class="admin-input" id="facet-search" type="search" placeholder="Search values" />
 	</label>
-  <label>Namespace<select class="admin-input" id="facet-namespace">
+  <div><label for="facet-namespace">Namespace</label>
+	<select class="admin-input" id="facet-namespace">
 	<option value="">All namespaces</option>
 	{namespaces.map(namespace => (
 		<option>{namespace}</option>
 	))}
 	</select>
-	</label>
-  <label>Category<select class="admin-input" id="facet-key">
-	<option value="">All categories</option>
-	{keys.map(key => (
-		<option value={key}>{label(key)}</option>
-	))}
-	</select>
-	</label>
+	</div>
  </div>
+ <section class="category-filter">
+  <label>Search categories<input class="admin-input" id="category-search" type="search" placeholder="Find a category" /></label>
+  <div class="category-chips" role="group" aria-label="Categories">
+   <button type="button" data-category="" aria-pressed="true">All categories</button>
+   {keys.map(key => <button type="button" data-category={key} aria-pressed="false">{label(key)}</button>)}
+  </div>
+ </section>
  <div class="selection" aria-live="polite">
 	<p id="selection-label">No values selected</p>
 	<a id="review-merge" class="primary-button" hidden>Review merge</a>
@@ -89,6 +90,41 @@ const label = (key: string) =>
  <p id="facet-empty" hidden={facets.length > 0}>No values found. Add a value or change the filters.</p>
 </ConsoleShell>
 <style>
+	.category-filter {
+		margin-top: 1rem;
+	}
+	.category-filter label {
+		max-width: 24rem;
+	}
+	.category-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+	}
+	.category-chips button {
+		min-height: 2.75rem;
+		max-width: 100%;
+		overflow-wrap: anywhere;
+		padding: 0.55rem 0.9rem;
+		border: 1px solid var(--admin-border-strong);
+		border-radius: 2rem;
+		background: var(--admin-surface);
+		color: var(--admin-text);
+		font: inherit;
+		font-size: 0.875rem;
+		cursor: pointer;
+	}
+	.category-chips button:hover {
+		border-color: var(--admin-accent);
+	}
+	.category-chips button[aria-pressed="true"] {
+		background: var(--admin-accent-soft);
+		color: var(--admin-accent);
+		border-color: var(--admin-accent);
+		font-weight: 600;
+	}
+
 	.intro {
 		color: var(--admin-muted);
 		max-width: 48rem;
@@ -113,7 +149,7 @@ const label = (key: string) =>
 	}
 	.filters {
 		display: grid;
-		grid-template-columns: 2fr 1fr 1fr;
+		grid-template-columns: 2fr 1fr;
 		gap: 1rem;
 	}
 	.selection {
@@ -186,7 +222,24 @@ const label = (key: string) =>
 	const search = document.querySelector<HTMLInputElement>("#facet-search")!;
 	const namespace =
 		document.querySelector<HTMLSelectElement>("#facet-namespace")!;
-	const key = document.querySelector<HTMLSelectElement>("#facet-key")!;
+	const categorySearch =
+		document.querySelector<HTMLInputElement>("#category-search")!;
+	const chips = Array.from(
+		document.querySelectorAll<HTMLButtonElement>("[data-category]"),
+	);
+	let selectedCategory = "";
+	const filterChips = () => {
+		const query = categorySearch.value.trim().toLowerCase();
+		chips.forEach((chip) => {
+			chip.hidden =
+				!!chip.dataset.category &&
+				chip.dataset.category !== selectedCategory &&
+				!`${chip.textContent} ${chip.dataset.category}`
+					.toLowerCase()
+					.includes(query);
+		});
+	};
+	categorySearch.addEventListener("input", filterChips);
 	const status = document.querySelector<HTMLElement>("#facet-status")!;
 	const selected: HTMLTableRowElement[] = [];
 	const review = document.querySelector<HTMLAnchorElement>("#review-merge")!;
@@ -247,16 +300,24 @@ const label = (key: string) =>
 					.value!.toLowerCase()
 					.includes(search.value.trim().toLowerCase()) &&
 				(!namespace.value || namespace.value === row.dataset.namespace) &&
-				(!key.value || key.value === row.dataset.key)
+				(!selectedCategory || selectedCategory === row.dataset.key)
 			);
 			if (!row.hidden) count++;
 		});
 		document.querySelector("#facet-count")!.textContent = `${count} values`;
 		document.querySelector<HTMLElement>("#facet-empty")!.hidden = count > 0;
 	};
-	[search, namespace, key].forEach((input) =>
-		input.addEventListener("input", filter),
+	chips.forEach((chip) =>
+		chip.addEventListener("click", () => {
+			selectedCategory = chip.dataset.category!;
+			chips.forEach((candidate) =>
+				candidate.setAttribute("aria-pressed", String(candidate === chip)),
+			);
+			filterChips();
+			filter();
+		}),
 	);
+	[search, namespace].forEach((input) => input.addEventListener("input", filter));
 	const form = document.querySelector<HTMLFormElement>("#create-facet")!;
 	const category = form.querySelector<HTMLSelectElement>("[name=key]")!;
 	const value = form.querySelector<HTMLInputElement>("[name=value]")!;
