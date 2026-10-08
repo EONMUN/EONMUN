@@ -95,9 +95,9 @@ const { slug, pinterestBatchId, pinterestDeletion } = Astro.props;
 </script>
 
 <style>
-	.artwork-listings { max-width: 56rem; }
+	.artwork-listings { max-width: none; }
 	.listing-actions, .listing-links { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
-	.listing-providers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1.5rem; }
+	.listing-providers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
 	section { padding: 1rem; background: var(--admin-surface); border: 1px solid var(--admin-border); }
 	h2 { font-size: 1rem; font-weight: 600; }
 	.listing-label { margin: .5rem 0; font-weight: 600; }

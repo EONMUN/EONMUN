@@ -12,7 +12,7 @@ test('notifications settings are admin-only and degrade when push is not configu
 	const origin = `http://127.0.0.1:${process.env.EONMUN_E2E_PORT}`;
 	await context.addCookies(await adminCookies(origin));
 	await page.goto('/admin');
-	await page.getByRole('link', { name: /Settings/ }).click();
+	await page.getByRole('navigation', { name: 'Admin navigation', exact: true }).getByRole('link', { name: 'Settings', exact: true }).click();
 	await expect(page).toHaveURL(/\/admin\/settings$/);
 	await expect(page.locator('[data-push-status]')).toHaveText('Push notifications are not configured on the server yet.');
 	await expect(page.getByRole('button', { name: 'Enable notifications' })).toBeHidden();
