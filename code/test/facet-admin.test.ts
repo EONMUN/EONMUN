@@ -6,7 +6,10 @@ import { eq } from "drizzle-orm";
 import * as schema from "../src/db/schema";
 import { createCatalogSchema } from "./schema-fixture";
 import { getFacetDirectory, mutateFacet } from "../src/db/facet-admin";
-import { parseFacetMutation } from "../src/lib/facet-input";
+import {
+	parseFacetMutation,
+	parseFacetMergeQuery,
+} from "../src/lib/facet-input";
 let client: Client;
 let db: ReturnType<typeof drizzle<typeof schema>>;
 let path: string;
@@ -134,4 +137,60 @@ test("validation rejects malformed IDs and editor-incompatible values", () => {
 			value: " Canvas ",
 		}),
 	).toEqual({ action: "create", key: "material", value: "Canvas" });
+});
+
+test("multi-source merge validates all sources before mutation and preserves union", async () => {
+	const target = await facet("material", "Target");
+	const first = await facet("material", "First");
+	const second = await facet("material", "Second");
+	const incompatible = await facet("medium", "Oil");
+	await artwork("first-only", [first.id]);
+	await artwork("overlap", [first.id, second.id, target.id]);
+	await expect(
+		mutateFacet(
+			{},
+			{
+				action: "mergeMany",
+				id: target.id,
+				sourceIds: [first.id, incompatible.id],
+			},
+			db,
+		),
+	).rejects.toThrow("same namespace");
+	expect(
+		(await getFacetDirectory({}, db)).find((value) => value.id === first.id)
+			?.artworks,
+	).toHaveLength(2);
+	const affected = await mutateFacet(
+		{},
+		{
+			action: "mergeMany",
+			id: target.id,
+			sourceIds: [first.id, second.id, first.id],
+		},
+		db,
+	);
+	expect(affected).toHaveLength(2);
+	const directory = await getFacetDirectory({}, db);
+	expect(
+		directory.some((value) => value.id === first.id || value.id === second.id),
+	).toBe(false);
+	expect(
+		directory.find((value) => value.id === target.id)?.artworks,
+	).toHaveLength(2);
+});
+
+test("merge query strictly validates and deduplicates source IDs", () => {
+	expect(
+		parseFacetMergeQuery(new URLSearchParams("merge=2&merge=3&merge=2")),
+	).toEqual([2, 3]);
+	for (const query of [
+		"merge=",
+		"merge=0",
+		"merge=1.5",
+		"merge=1e2",
+		"merge=9007199254740992",
+		Array.from({ length: 21 }, (_, i) => `merge=${i + 1}`).join("&"),
+	])
+		expect(() => parseFacetMergeQuery(new URLSearchParams(query))).toThrow();
 });

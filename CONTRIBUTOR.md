@@ -88,7 +88,7 @@ The Google OAuth web client used by Better Auth must belong to the same Cloud pr
 
 The artwork editor groups content, images, and attributes beside sale settings, collections, and listing status. Select an image thumbnail to edit its alt text or caption and choose the cover. Publication and Save share the sticky action bar; new artwork is saved as a draft first. Leaving with unsaved changes prompts before navigation.
 
-Materials, surface, medium, subjects, styles, colors, and tags use searchable selections. Select an existing value or explicitly add a new one, then save the artwork. Use `/admin/facets` to inspect usage, rename values, merge duplicates within the same category, or delete unused values. Merges preserve artwork memberships. Derived orientation and unrecognized categories are read-only. These changes use the existing facet schema; no migration is required.
+Materials, surface, medium, subjects, styles, colors, and tags use searchable selections. Select an existing value or explicitly add a new one, then save the artwork. Use the searchable table at `/admin/facets` to inspect usage, then open a value to rename it or delete it when unused. For a merge, select the retained value first and up to 20 source values in the same category, then review the merge on the retained value’s edit page. Repeated `merge` query parameters only prepare that review; explicit confirmation commits all source merges in one transaction and preserves artwork memberships. Derived orientation and unrecognized categories are read-only. These changes use the existing facet schema; no migration is required.
 
 ### Add a post
 
