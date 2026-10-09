@@ -1,7 +1,8 @@
 ---
+import { getCollectionEditorArtworks } from '../../../lib/admin-collection-artworks';
 import CollectionForm from '../../../components/admin/CollectionForm.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
-import { getAdminArtworks } from '../../../db/admin';
+
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
@@ -11,7 +12,7 @@ const env = getRuntimeEnv();
 const access = await requireAdminPage(Astro.request, env, '/admin/collections/new');
 if ('response' in access) return access.response;
 const { session } = access;
-const artworks = await getAdminArtworks(env);
+const artworks = await getCollectionEditorArtworks(env);
 ---
 <ConsoleShell
 	title="New collection — EONMUN admin"
