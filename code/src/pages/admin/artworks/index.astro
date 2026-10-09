@@ -1,11 +1,9 @@
 ---
-import ActionBar from '../../../components/admin/ActionBar.astro';
-import CardGrid from '../../../components/admin/CardGrid.astro';
 import ConsoleSection from '../../../components/admin/ConsoleSection.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
-import CreateAction from '../../../components/admin/CreateAction.astro';
 import EmptyState from '../../../components/admin/EmptyState.astro';
 import MediaCard from '../../../components/admin/MediaCard.astro';
+import { artworkSaleLabels as saleLabels, artworkSaleStatus as saleStatus } from '../../../lib/admin-artwork-status';
 import { getAdminArtworkCards } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
@@ -19,33 +17,44 @@ const { session } = access;
 
 const artworks = await getAdminArtworkCards(env);
 const published = artworks.filter((artwork) => artwork.publishedAt !== null).length;
+const query = (Astro.url.searchParams.get('q') ?? '').trim();
+const publication = ['published', 'draft'].includes(Astro.url.searchParams.get('publication') ?? '') ? Astro.url.searchParams.get('publication')! : '';
+const sale = ['available', 'sold', 'not-for-sale'].includes(Astro.url.searchParams.get('sale') ?? '') ? Astro.url.searchParams.get('sale')! : '';
+const filtered = artworks.filter(artwork => artwork.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()) && (!publication || (artwork.publishedAt ? 'published' : 'draft') === publication) && (!sale || saleStatus(artwork) === sale));
+const priceFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const tally = `${artworks.length} total · ${published} published · ${artworks.length - published} draft`;
 ---
 <ConsoleShell
+	privateData
 	title="Artwork — EONMUN admin"
 	heading="Artwork"
 	email={session.user.email}
 	backHref="/admin"
 	backLabel="Console"
 >
-	<ActionBar>
-		<CreateAction
-			href="/admin/artworks/new"
-			title="New artwork"
-			note="Images, dimensions, collections, private price."
-		/>
-	</ActionBar>
-	<ConsoleSection title="Every piece" tally={tally} links={[{ href: '/admin/collections', label: 'Collections →' }]}>
+	<ConsoleSection title="Every piece" tally={tally} links={[{ href: '/admin/artworks/new', label: 'New artwork' }]}>
+		<form class="filters" method="get" role="search" aria-label="Find artwork">
+			<label>Search titles<input class="admin-input" type="search" name="q" value={query} /></label>
+			<label>Publication<select class="admin-input" name="publication"><option value="">All publication states</option><option value="published" selected={publication === 'published'}>Published</option><option value="draft" selected={publication === 'draft'}>Draft</option></select></label>
+			<label>Sale status<select class="admin-input" name="sale"><option value="">All sale states</option>{Object.entries(saleLabels).map(([value, label]) => <option value={value} selected={sale === value}>{label}</option>)}</select></label>
+			<button class="primary-button" type="submit">Apply filters</button>
+			<a href="/admin/artworks">Clear filters</a>
+		</form>
+		<p class="result-count">{filtered.length} {filtered.length === 1 ? 'piece' : 'pieces'} shown</p>
 		{artworks.length === 0 ? (
 			<EmptyState href="/admin/artworks/new" label="No artwork yet. Add the first piece →" />
+		) : filtered.length === 0 ? (
+			<EmptyState label="No artwork matches these filters." />
 		) : (
-			<CardGrid>
-				{artworks.map((artwork) => (
-					<li>
+			<ul class="artwork-list">
+				{filtered.map((artwork) => (
+					<li data-artwork-row>
 						<MediaCard
 							href={`/admin/artworks/${artwork.slug}`}
 							title={artwork.title}
-							meta={artwork.year ? String(artwork.year) : 'Year unset'}
+							compact
+							meta={artwork.priceCents === null ? 'Price unset' : priceFormatter.format(artwork.priceCents / 100)}
+							saleLabel={saleLabels[saleStatus(artwork)]}
 							imageUrl={artwork.imageUrl}
 							status={{
 								label: artwork.publishedAt ? 'Published' : 'Draft',
@@ -54,7 +63,17 @@ const tally = `${artworks.length} total · ${published} published · ${artworks.
 						/>
 					</li>
 				))}
-			</CardGrid>
+			</ul>
 		)}
 	</ConsoleSection>
 </ConsoleShell>
+
+<style>
+	.filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; padding: 1.25rem 0; }
+	.filters label { flex: 1 1 10rem; }
+	.filters label:first-child { flex-grow: 2; }
+	.filters a { padding: .75rem 0; font-size: .875rem; }
+	.result-count { color: var(--admin-muted); font-size: .875rem; }
+	.artwork-list { list-style: none; padding: 0; margin: 0; }
+	.artwork-list li { border-bottom: 1px solid var(--admin-border); }
+</style>
