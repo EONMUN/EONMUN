@@ -1,29 +1,26 @@
 ---
 import ErrorBanner from './ErrorBanner.astro';
 import RequiredMark from './RequiredMark.astro';
-import RequiredNote from './RequiredNote.astro';
 import FormFieldset from './FormFieldset.astro';
-import SubmitButton from './SubmitButton.astro';
 import type { SelectArtwork, SelectCollection } from '../../db';
 
 interface Props {
 	action: string;
 	collection?: SelectCollection & { artworkIds: number[]; defaultArtworkId: number | null };
-	artworks: SelectArtwork[];
+	artworks: (SelectArtwork & { thumbnailUrl?: string | null })[];
 }
 
 const { action, collection, artworks } = Astro.props;
 ---
-<form data-admin-collection-form data-action={action}>
+<form id="collection-editor" data-admin-collection-form data-action={action}>
 	<ErrorBanner />
-	<RequiredNote />
 
 	<FormFieldset legend="Collection" layout="columns">
-		<label>Name <RequiredMark /> <input class="admin-input" name="name" required value={collection?.name ?? ''} /></label>
+		<label>Name <RequiredMark /> <input class="admin-input" name="name" aria-label="Name" required value={collection?.name ?? ''} /></label>
 		<label>Slug <RequiredMark />
 			<input
 				class="admin-input"
-				name="slug"
+				name="slug" aria-label="Slug"
 				required
 				pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
 				title="Lowercase letters, numbers, and single hyphens between them."
@@ -36,62 +33,95 @@ const { action, collection, artworks } = Astro.props;
 	</FormFieldset>
 
 	<FormFieldset legend="Artwork membership and cover">
-		{artworks.length === 0 ? (
-			<p class="hint">No artwork yet. Add a piece before grouping one.</p>
-		) : (
-			artworks.map((artwork) => (
-				<div class="member">
-					<label><input type="checkbox" name="artworkIds" value={artwork.id} checked={collection?.artworkIds.includes(artwork.id)} /> {artwork.title}</label>
-					<label><input type="radio" name="defaultArtworkId" value={artwork.id} checked={collection?.defaultArtworkId === artwork.id} /> Cover</label>
-				</div>
-			))
-		)}
+		<label>Search artwork <input class="admin-input" type="search" data-membership-search placeholder="Search by title" /></label>
+		<p class="hint" data-selected-count role="status" aria-live="polite"></p>
+		<p class="hint">Choose artwork for this collection, then choose one selected piece as its cover.</p>
+		<label class="inline-label"><input type="radio" name="defaultArtworkId" value="" checked={collection?.defaultArtworkId == null} /> No cover</label>
+		{artworks.length === 0 ? <p class="hint">No artwork yet. Add a piece before grouping one.</p> : artworks.map(artwork => (
+			<div class="member" data-member data-title={artwork.title.toLocaleLowerCase()}>
+				<label class="membership-label"><input type="checkbox" name="artworkIds" value={artwork.id} checked={collection?.artworkIds.includes(artwork.id)} />
+					{artwork.thumbnailUrl ? <img src={artwork.thumbnailUrl} alt="" loading="lazy" width="64" height="64" /> : <span class="thumbnail-placeholder" aria-hidden="true">—</span>}
+					<span>{artwork.title}</span>
+				</label>
+				<label class="cover-label"><input type="radio" name="defaultArtworkId" value={artwork.id} checked={collection?.defaultArtworkId === artwork.id && collection?.artworkIds.includes(artwork.id)} disabled={!collection?.artworkIds.includes(artwork.id)} aria-label={`Use ${artwork.title} as cover`} /> Cover</label>
+			</div>
+		))}
+		<p class="hint" data-membership-empty hidden>No artwork matches your search.</p>
 	</FormFieldset>
-
-	{collection ? (
-		<label class="inline-label"><input type="checkbox" name="published" checked={collection.publishedAt !== null} /> Published</label>
-	) : (
-		<p class="hint">A new collection is saved as a draft.</p>
-	)}
-
-	<SubmitButton label="Save collection" />
 </form>
+<div class="editor-actions">
+	<p class="hint" data-collection-dirty role="status"></p>
+	<p class="hint" data-collection-save role="status" aria-live="polite"></p>
+	{collection ? <label>Publication <select class="admin-input" name="published" form="collection-editor"><option value="draft" selected={collection.publishedAt === null}>Draft</option><option value="published" selected={collection.publishedAt !== null}>Published</option></select></label> : <p class="hint">A new collection is saved as a draft.</p>}
+	<button type="submit" form="collection-editor" class="primary-button">{collection ? 'Save collection' : 'Save draft'}</button>
+</div>
 
 <script>
-	import { attachAdminFormSave, postAdminJson } from '../../lib/admin-form-save';
+	import { attachAdminFormSave, attachUnsavedChanges, postAdminJson } from '../../lib/admin-form-save';
 
 	const form = document.querySelector<HTMLFormElement>('[data-admin-collection-form]');
-	if (form) attachAdminFormSave(form, {
+	if (form) {
+		const dirty = attachUnsavedChanges(form, document.querySelector<HTMLElement>('[data-collection-dirty]')!);
+		const search = form.querySelector<HTMLInputElement>('[data-membership-search]')!;
+		// Search changes the view without changing the collection.
+		search.addEventListener('input', event => event.stopPropagation());
+		search.addEventListener('change', event => event.stopPropagation());
+		const rows = Array.from(form.querySelectorAll<HTMLElement>('[data-member]'));
+		const syncMembership = () => {
+			let selected = 0;
+			for (const row of rows) {
+				const member = row.querySelector<HTMLInputElement>('[name="artworkIds"]')!;
+				const cover = row.querySelector<HTMLInputElement>('[name="defaultArtworkId"]')!;
+				if (member.checked) selected++;
+				cover.disabled = !member.checked;
+				if (!member.checked && cover.checked) {
+					cover.checked = false;
+					form.querySelector<HTMLInputElement>('[name="defaultArtworkId"][value=""]')!.checked = true;
+				}
+			}
+			form.querySelector<HTMLElement>('[data-selected-count]')!.textContent = `${selected} selected`;
+		};
+		form.addEventListener('change', syncMembership);
+		search.addEventListener('input', () => {
+			const term = search.value.trim().toLocaleLowerCase();
+			for (const row of rows) row.hidden = !row.dataset.title!.includes(term);
+			form.querySelector<HTMLElement>('[data-membership-empty]')!.hidden = rows.length === 0 || rows.some(row => !row.hidden);
+		});
+		syncMembership();
+		attachAdminFormSave(form, {
+		statusElement: document.querySelector<HTMLElement>('[data-collection-save]')!,
+		onFailure: syncMembership,
 		save: async (data) => {
 			const payload: Record<string, unknown> = Object.fromEntries(data);
-			payload.published = data.has('published'); payload.artworkIds = data.getAll('artworkIds').map(Number);
+			payload.published = data.get('published') === 'published'; payload.artworkIds = data.getAll('artworkIds').map(Number);
 			payload.defaultArtworkId = data.get('defaultArtworkId') ? Number(data.get('defaultArtworkId')) : null;
 			const { redirect } = await postAdminJson<{ redirect: string }>(form.dataset.action!, payload);
+			dirty.clear();
 			return { redirect };
 		},
 	});
+	}
 </script>
 
 <style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: 1.75rem;
-		margin-top: 2.5rem;
-	}
-
-	.member {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 1rem;
-		padding: 0.35rem 0;
-	}
-
-	.member + .member {
-		border-top: 1px solid var(--admin-border);
-	}
-
-	.span-all {
-		grid-column: 1 / -1;
-	}
+form { display:grid; gap:1.5rem; margin-top:1.5rem; }
+.member { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1rem; padding:.75rem 0; border-bottom:1px solid var(--admin-border); }
+.member[hidden] { display:none; }
+.membership-label { display:flex; align-items:center; gap:.75rem; min-width:0; }
+.membership-label span:last-child { overflow-wrap:anywhere; }
+.member img, .thumbnail-placeholder { width:64px; height:64px; object-fit:cover; border-radius:.25rem; background:var(--admin-surface); }
+.thumbnail-placeholder { display:grid; place-items:center; }
+.cover-label { display:flex; align-items:center; gap:.5rem; }
+.span-all { grid-column:1 / -1; }
+form [data-selected-count] { padding:0; border:0; background:none; color:var(--admin-muted); }
+.editor-actions { position:sticky; bottom:0; z-index:10; display:flex; justify-content:flex-end; align-items:center; gap:1rem; padding:1rem; margin-top:1.5rem; background:var(--admin-surface); border:1px solid var(--admin-border); border-radius:.5rem; }
+.editor-actions [role="status"] { margin:0; padding:0; border:0; background:none; }
+.editor-actions label { display:flex; align-items:center; gap:.75rem; }
+.editor-actions .admin-input { margin:0; width:auto; }
+@media(max-width:600px) {
+.editor-actions { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.5rem; padding:.75rem; }
+.editor-actions [role="status"]:not(:empty) { grid-column:1 / -1; }
+.editor-actions [role="status"]:empty { position:absolute; width:0; height:0; overflow:hidden; }
+.editor-actions label { display:grid; gap:.2rem; }
+}
 </style>

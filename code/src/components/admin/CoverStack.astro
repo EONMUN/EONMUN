@@ -48,8 +48,14 @@ const Card = href ? 'a' : 'div';
 	:global(.layer-1) { right: 0; width: 46%; z-index: 2; transform: translateX(18%); }
 	:global(.layer-2) { right: 0; width: 30%; z-index: 3; transform: translateX(36%); }
 
+	a.card:focus-visible :global(.layer-1),
+	a.card:focus-visible :global(.layer-2),
 	a.card:hover :global(.layer-1),
 	a.card:hover :global(.layer-2) { transform: translateX(0); }
+
+	@media (hover: none) {
+		:global(.layer-1), :global(.layer-2) { display: none; }
+	}
 
 	@media (prefers-reduced-motion: reduce) {
 		:global(.layer) { transition: none; }

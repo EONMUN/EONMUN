@@ -80,6 +80,16 @@ describe("admin dashboard", () => {
 		expect(card.imageUrl).toBeNull();
 	});
 
+	test("keeps publication and sale facts independent without duplicating artwork rows", async () => {
+		const id = await insertArtwork("Draft sale", "draft-sale", false);
+		await client.execute({ sql: "INSERT INTO products (type, artwork_id, name, slug, price, quantity, sold_at, listed_at, created_at, updated_at) VALUES ('artwork', ?, 'Draft sale', 'draft-sale', 12500, 1, ?, ?, ?, ?)", args: [id, STAMP, STAMP, STAMP, STAMP] });
+		await client.execute({ sql: "INSERT INTO products (type, artwork_id, name, slug, price, quantity, listed_at, created_at, updated_at) VALUES ('artwork', ?, 'Other record', 'other-record', 999, 1, ?, ?, ?)", args: [id, STAMP, STAMP, STAMP] });
+		const cards = await getAdminArtworkCards(env, db);
+		expect(cards).toHaveLength(1);
+		expect(cards[0]).toMatchObject({ publishedAt: null, priceCents: 12500, quantity: 1, soldAt: new Date(STAMP * 1000) });
+		expect((await getAdminDashboard(env, db)).artworks.recent).toEqual(cards);
+	});
+
 	test("returns empty lists to the list pages for a new catalog", async () => {
 		expect(await getAdminArtworkCards(env, db)).toEqual([]);
 		expect(await getAdminCollectionCards(env, db)).toEqual([]);

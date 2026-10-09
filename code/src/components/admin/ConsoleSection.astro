@@ -17,7 +17,7 @@ const { id, index, title, tally, links = [] } = Astro.props;
 		{tally && <p class="tally">{tally}</p>}
 		{links.length > 0 && (
 			<div class="entity-links">
-				{links.map((link) => <a class="ghost" href={link.href}>{link.label}</a>)}
+				{links.map((link) => <a class:list={['ghost', { create: link.href.endsWith('/new') }]} href={link.href}>{link.label}</a>)}
 			</div>
 		)}
 	</div>
@@ -69,6 +69,9 @@ const { id, index, title, tally, links = [] } = Astro.props;
 		color: var(--admin-muted);
 		transition: color 200ms;
 	}
+
+	.create { display: inline-flex; align-items: center; min-height: 2.75rem; padding: .6rem 1rem; border: 1px solid var(--admin-border-strong); border-radius: .4rem; color: var(--admin-text); background: var(--admin-surface); }
+	.create:hover { background: var(--admin-surface-muted); }
 
 	.ghost:hover {
 		color: var(--admin-gold);

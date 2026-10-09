@@ -1,14 +1,13 @@
 ---
 import { getCollection } from 'astro:content';
 import AnalyticsPanel from '../components/admin/AnalyticsPanel.astro';
-import ActionBar from '../components/admin/ActionBar.astro';
 import CardGrid from '../components/admin/CardGrid.astro';
 import ConsoleSection from '../components/admin/ConsoleSection.astro';
 import ConsoleShell from '../components/admin/ConsoleShell.astro';
 import CoverStack from '../components/admin/CoverStack.astro';
-import CreateAction from '../components/admin/CreateAction.astro';
 import EmptyState from '../components/admin/EmptyState.astro';
 import MediaCard from '../components/admin/MediaCard.astro';
+import { artworkSaleLabels, artworkSaleStatus } from '../lib/admin-artwork-status';
 import { getAdminDashboard } from '../db/admin';
 import { requireAdminPage } from '../lib/admin-guard';
 import { getPostPublishedDate, isPublishedPost } from '../lib/post-content';
@@ -47,9 +46,8 @@ const posts = postEntries
 const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const priceFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const formatDate = (value: Date | null) => (value ? dateFormatter.format(value) : null);
-const formatPrice = (cents: number) => priceFormatter.format(cents / 100);
 
-const { artworks, collections, store } = dashboard;
+const { artworks, collections } = dashboard;
 const postTypeLabels: Record<string, string> = {
 	announcement: 'Announcement',
 	educational: 'Educational',
@@ -60,30 +58,9 @@ const postTypeLabels: Record<string, string> = {
 const draftTally = (tally: { total: number; published: number }) =>
 	`${tally.total} total · ${tally.published} published · ${tally.total - tally.published} draft`;
 ---
-<ConsoleShell title="Admin — EONMUN" heading="Admin" email={session.user.email}>
+<ConsoleShell title="Admin — EONMUN" heading="Overview" email={session.user.email}>
 	<AnalyticsPanel />
-	<ActionBar>
-		<CreateAction
-			href="/admin/artworks/new"
-			title="New artwork"
-			note="Images, dimensions, collections, private price."
-		/>
-		<CreateAction
-			href="/admin/collections/new"
-			title="New collection"
-			note="Group artwork and choose the cover piece."
-		/>
-		<CreateAction
-			href="/admin/orders"
-			title="Orders"
-			note="Paid Stripe orders, buyers, and shipping addresses."
-		/>
-		<CreateAction
-			href="/admin/settings"
-			title="Settings"
-			note="Pinterest and Google Merchant sync, and paid-order notifications."
-		/>
-	</ActionBar>
+	<p class="orders-link"><a href="/admin/orders">View paid orders →</a></p>
 
 	<ConsoleSection
 		index="01"
@@ -100,7 +77,9 @@ const draftTally = (tally: { total: number; published: number }) =>
 						<MediaCard
 							href={`/admin/artworks/${artwork.slug}`}
 							title={artwork.title}
-							meta={artwork.year ? String(artwork.year) : 'Year unset'}
+							compact
+							meta={artwork.priceCents === null ? 'Price unset' : priceFormatter.format(artwork.priceCents / 100)}
+							saleLabel={artworkSaleLabels[artworkSaleStatus(artwork)]}
 							imageUrl={artwork.imageUrl}
 							status={{
 								label: artwork.publishedAt ? 'Published' : 'Draft',
@@ -143,37 +122,7 @@ const draftTally = (tally: { total: number; published: number }) =>
 
 	<ConsoleSection
 		index="03"
-		title="Private sales"
-		tally={`${store.tally.total} listed · ${store.tally.available} available · ${store.tally.sold} sold`}
-		links={[{ href: '/admin/artworks/new', label: 'New artwork' }, { href: '/admin/artworks', label: 'All artwork →' }]}
-	>
-		{store.recent.length === 0 ? (
-			<EmptyState href="/admin/artworks/new" label="Nothing listed. Give an artwork a price →" />
-		) : (
-			<CardGrid>
-				{store.recent.map((product) => (
-					<li>
-						<MediaCard
-							href={product.artworkSlug ? `/admin/artworks/${product.artworkSlug}` : '/admin/artworks'}
-							title={product.name}
-							meta={formatPrice(product.priceCents)}
-							metaTone="seal"
-							shape="landscape"
-							imageUrl={product.imageUrl}
-							status={{
-								label: product.soldAt ? 'Sold' : (product.quantity ?? 0) > 0 ? 'Available' : 'Not for sale',
-								tone: product.soldAt ? 'sold' : (product.quantity ?? 0) > 0 ? 'live' : 'draft',
-							}}
-						/>
-					</li>
-				))}
-			</CardGrid>
-		)}
-	</ConsoleSection>
-
-	<ConsoleSection
-		index="04"
-		title="Posts"
+		title="Repository posts"
 		tally={`${postEntries.length} written · edited in the repository`}
 		links={[{ href: '/posts', label: 'All posts →' }]}
 	>
@@ -198,3 +147,7 @@ const draftTally = (tally: { total: number; published: number }) =>
 		)}
 	</ConsoleSection>
 </ConsoleShell>
+
+<style>
+	.orders-link { margin: 1rem 0 2rem; font-size: .875rem; color: var(--admin-muted); }
+</style>

@@ -66,8 +66,11 @@ const connectionMessage = error === 'google_merchant_account_changed'
 	});
 </script>
 <style>
-	.google-merchant { max-width: 48rem; }
+	.google-merchant { max-width: 56rem; margin-top: 1.25rem; padding: clamp(1rem, 2.5vw, 1.75rem); border: 1px solid var(--admin-border); border-radius: .5rem; background: var(--admin-surface); line-height: 1.6; }
 	.google-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
 	button:disabled { cursor: wait; opacity: .6; }
 	[data-google-status], [role="alert"] { overflow-wrap: anywhere; }
+	p:first-child { margin-top: 0; }
+	p:last-child:empty, ul:empty { margin: 0; }
+	[role="status"] { overflow-wrap: anywhere; }
 </style>

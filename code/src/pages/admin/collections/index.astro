@@ -1,10 +1,8 @@
 ---
-import ActionBar from '../../../components/admin/ActionBar.astro';
 import CardGrid from '../../../components/admin/CardGrid.astro';
 import ConsoleSection from '../../../components/admin/ConsoleSection.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
 import CoverStack from '../../../components/admin/CoverStack.astro';
-import CreateAction from '../../../components/admin/CreateAction.astro';
 import EmptyState from '../../../components/admin/EmptyState.astro';
 import { getAdminCollectionCards } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
@@ -28,15 +26,7 @@ const tally = `${collections.length} total · ${published} published · ${collec
 	backHref="/admin"
 	backLabel="Console"
 >
-	<ActionBar>
-		<CreateAction
-			href="/admin/collections/new"
-			title="New collection"
-			note="Group artwork and choose the cover piece."
-		/>
-	</ActionBar>
-
-	<ConsoleSection title="Every collection" tally={tally} links={[{ href: '/admin/artworks', label: 'Artwork →' }]}>
+	<ConsoleSection title="Every collection" tally={tally} links={[{ href: '/admin/collections/new', label: 'New collection' }]}>
 		{collections.length === 0 ? (
 			<EmptyState href="/admin/collections/new" label="No collections yet. Group your first pieces →" />
 		) : (

@@ -14,10 +14,19 @@ test('notifications settings are admin-only and degrade when push is not configu
 	await page.goto('/admin');
 	await page.getByRole('navigation', { name: 'Admin navigation', exact: true }).getByRole('link', { name: 'Settings', exact: true }).click();
 	await expect(page).toHaveURL(/\/admin\/settings$/);
+	const sections = page.getByRole('navigation', { name: 'Settings sections' });
+	for (const [name, anchor] of [['Pinterest', '#pinterest'], ['Google Merchant', '#google'], ['Notifications', '#notifications']]) {
+		await expect(sections.getByRole('link', { name, exact: true })).toHaveAttribute('href', anchor);
+	}
+	await sections.getByRole('link', { name: 'Notifications', exact: true }).click();
+	await expect(page.getByRole('heading', { name: 'This device', exact: true })).toBeVisible();
 	await expect(page.locator('[data-push-status]')).toHaveText('Push notifications are not configured on the server yet.');
 	await expect(page.getByRole('button', { name: 'Enable notifications' })).toBeHidden();
 	await expect(page.getByText('No devices are enabled for your account.')).toBeVisible();
 	await expect(page.getByText('No paid-order alerts yet.')).toBeVisible();
+	await page.setViewportSize({ width: 390, height: 844 });
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+	await page.screenshot({ path: 'test-results/admin-settings-mobile.png', fullPage: true });
 	const unconfigured = await context.request.post('/api/admin/push/subscription', {
 		headers: { origin }, data: { endpoint: 'https://web.push.apple.com/x', keys: {} },
 	});
