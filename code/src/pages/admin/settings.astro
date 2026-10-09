@@ -12,19 +12,19 @@ export const prerender = false;
 const access = await requireAdminPage(Astro.request, getRuntimeEnv(), '/admin/settings');
 if ('response' in access) return access.response;
 ---
-<ConsoleShell title="Settings — EONMUN admin" heading="Settings" email={access.session.user.email} backHref="/admin" backLabel="Admin">
+<ConsoleShell title="Settings — EONMUN admin" heading="Settings" email={access.session.user.email} backHref="/admin" backLabel="Overview">
 	<nav class="settings-nav" aria-label="Settings sections">
 		<a href="#pinterest">Pinterest</a>
 		<a href="#google">Google Merchant</a>
 		<a href="#notifications">Notifications</a>
 	</nav>
-	<ConsoleSection id="pinterest" index="01" title="Pinterest">
+	<ConsoleSection id="pinterest" title="Pinterest">
 		<PinterestSettings />
 	</ConsoleSection>
-	<ConsoleSection id="google" index="02" title="Google Merchant">
+	<ConsoleSection id="google" title="Google Merchant">
 		<GoogleMerchantSettings />
 	</ConsoleSection>
-	<ConsoleSection id="notifications" index="03" title="Notifications">
+	<ConsoleSection id="notifications" title="Notifications">
 		<NotificationSettings ownerId={access.session.user.id ?? ''} />
 	</ConsoleSection>
 </ConsoleShell>
@@ -34,7 +34,11 @@ if ('response' in access) return access.response;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem 1.5rem;
-		margin: 2rem 0 3rem;
+		margin: 0 0 2rem;
+		padding: .5rem;
+		border: 1px solid var(--admin-border);
+		border-radius: .5rem;
+		background: var(--admin-surface);
 		font-size: 0.875rem;
 		font-weight: 600;
 	}
@@ -43,11 +47,15 @@ if ('response' in access) return access.response;
 		display: inline-flex;
 		align-items: center;
 		min-height: 2.75rem;
+		padding: .5rem .75rem;
+		border-radius: .35rem;
 		color: var(--admin-muted);
 		transition: color 200ms;
 	}
 
 	.settings-nav a:hover {
-		color: var(--admin-gold);
+		color: var(--admin-accent);
+		background: var(--admin-surface-muted);
 	}
+	:global(.console section[id]) { scroll-margin-top: 6rem; }
 </style>

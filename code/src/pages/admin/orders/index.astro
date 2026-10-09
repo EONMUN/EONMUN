@@ -28,7 +28,7 @@ const place = (order: (typeof orders)[number]) =>
 	email={session.user.email}
 	privateData
 	backHref="/admin"
-	backLabel="Console"
+	backLabel="Overview"
 >
 	<ConsoleSection title="Paid orders" tally={tally}>
 		{orders.length === 0 ? (
@@ -36,6 +36,7 @@ const place = (order: (typeof orders)[number]) =>
 		) : (
 			<div class="table-wrap">
 				<table class="orders">
+					<caption class="sr-only">Paid orders, including buyer, shipping destination, total, and fulfillment status</caption>
 					<thead>
 						<tr>
 							<th scope="col">Paid (UTC)</th>
@@ -76,16 +77,21 @@ const place = (order: (typeof orders)[number]) =>
 		overflow-x: auto;
 		border: 1px solid var(--admin-border);
 		background: var(--admin-surface);
+		border-radius: .5rem;
 	}
+
+	.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 	.orders {
 		width: 100%;
+		min-width: 46rem;
 		border-collapse: collapse;
 		font-size: 0.95rem;
 	}
 
 	th {
-		padding: 0.6rem 0.75rem;
+		padding: 0.8rem 1rem;
+		background: var(--admin-surface-muted);
 		font-size: 0.875rem;
 		font-weight: 700;
 		text-align: left;
@@ -94,7 +100,7 @@ const place = (order: (typeof orders)[number]) =>
 	}
 
 	td {
-		padding: 0.9rem 0.75rem;
+		padding: 1rem;
 		vertical-align: top;
 		border-bottom: 1px solid var(--admin-border);
 	}
@@ -109,6 +115,8 @@ const place = (order: (typeof orders)[number]) =>
 	td a:hover {
 		text-decoration-color: var(--admin-accent);
 	}
+
+	tbody tr:hover { background: var(--admin-surface-muted); }
 
 	.amount {
 		text-align: right;
@@ -127,6 +135,7 @@ const place = (order: (typeof orders)[number]) =>
 		display: inline-block;
 		margin-left: 0.5rem;
 		padding: 0.1rem 0.45rem;
+		border-radius: .25rem;
 		font-size: 0.875rem;
 		font-weight: 700;
 		color: var(--admin-muted);

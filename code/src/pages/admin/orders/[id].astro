@@ -1,7 +1,6 @@
 ---
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
 import ErrorBanner from '../../../components/admin/ErrorBanner.astro';
-import FormFieldset from '../../../components/admin/FormFieldset.astro';
 import SubmitButton from '../../../components/admin/SubmitButton.astro';
 import { FULFILLMENT_STATUSES } from '../../../db/schema/orders';
 import { getAdminOrder } from '../../../db/orders';
@@ -57,30 +56,25 @@ const totals = [
 	backLabel="Orders"
 >
 	<div class="order">
-		{attention && (
-			<p class="error-banner attention"><strong>{attention.label}.</strong> {attention.detail}</p>
-		)}
-		{!order.livemode && <p class="note">Stripe test-mode payment. No money was collected.</p>}
-
-		{/* The save status line is inserted after the form; the wrapper keeps that empty line out of the flex gap. */}
-		<div>
+		<div class="order-controls">
 			<form class="fulfillment" data-order-fulfillment-form data-action={`/api/admin/orders/${order.id}`}>
-				<FormFieldset legend="Fulfillment" layout="columns">
-					<label>
-						Status
+				<div class="fulfillment-actions">
+					<label>Fulfillment status
 						<select class="admin-input" name="fulfillmentStatus">
 							{FULFILLMENT_STATUSES.map((status) => (
 								<option value={status} selected={status === order.fulfillmentStatus}>{FULFILLMENT_LABELS[status]}</option>
 							))}
 						</select>
 					</label>
-					<div class="form-actions">
-						<SubmitButton label="Save status" />
-					</div>
-				</FormFieldset>
+					<SubmitButton label="Save status" />
+				</div>
 				<ErrorBanner />
 			</form>
 		</div>
+		{attention && (
+			<p class="error-banner attention" role="alert"><strong>{attention.label}.</strong> {attention.detail}</p>
+		)}
+		{!order.livemode && <p class="note">Stripe test-mode payment. No money was collected.</p>}
 
 		<div class="panels">
 			<section class="panel">
@@ -168,8 +162,7 @@ const totals = [
 	.order {
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
-		margin-top: 2rem;
+		gap: 1.5rem;
 	}
 
 	.note, .muted {
@@ -178,6 +171,9 @@ const totals = [
 
 	.note {
 		margin: 0;
+		padding: .75rem 1rem;
+		border-left: 3px solid var(--admin-warning);
+		background: var(--admin-warning-soft);
 		font-size: 0.875rem;
 	}
 
@@ -187,11 +183,16 @@ const totals = [
 		gap: 1rem;
 	}
 
-	.form-actions {
+	.fulfillment-actions {
 		display: flex;
 		align-items: flex-end;
+		flex-wrap: wrap;
 		gap: 1rem;
 	}
+
+	.order-controls { padding: 1rem; border: 1px solid var(--admin-border); border-radius: .5rem; background: var(--admin-surface); }
+	.fulfillment-actions label { flex: 1; min-width: min(100%, 14rem); }
+	.attention { margin: 0; }
 
 	.panels {
 		display: grid;
@@ -203,6 +204,7 @@ const totals = [
 		padding: clamp(1rem, 2.5vw, 1.75rem);
 		border: 1px solid var(--admin-border);
 		background: var(--admin-surface);
+		border-radius: .5rem;
 	}
 
 	.panel h2 {
@@ -262,6 +264,11 @@ const totals = [
 	}
 
 	.copy { margin-bottom: 1.25rem; }
+
+	@media (max-width: 479px) {
+		dl { grid-template-columns: 1fr; gap: .25rem; }
+		dd { margin-bottom: .75rem; }
+	}
 
 	code {
 		font-size: 0.875rem;
