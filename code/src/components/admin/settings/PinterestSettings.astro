@@ -67,9 +67,12 @@ const configured = isPinterestConfigured(getRuntimeEnv());
 </script>
 
 <style>
-	.pinterest-sync { max-width: 46rem; margin: 2rem 0; line-height: 1.6; }
+	.pinterest-sync { max-width: 56rem; margin: 1.25rem 0 0; padding: clamp(1rem, 2.5vw, 1.75rem); border: 1px solid var(--admin-border); border-radius: .5rem; background: var(--admin-surface); line-height: 1.6; }
 	button { min-height: 2.75rem; padding: .8rem 1.2rem; cursor: pointer; }
 	button:disabled { cursor: wait; opacity: .6; }
 	.hint { color: var(--admin-muted); }
 	[data-pinterest-items] { padding-left: 1.25rem; color: var(--admin-danger); }
+	p:first-child { margin-top: 0; }
+	p:last-child:empty, ul:empty { margin: 0; }
+	[role="status"] { overflow-wrap: anywhere; }
 </style>

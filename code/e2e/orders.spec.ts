@@ -61,9 +61,13 @@ test('a signed paid Checkout event becomes a private admin order', async ({ page
 	await expect(page.getByText(sessionId)).toBeVisible();
 	await expect(page.getByRole('link', { name: 'pi_test_paid' })).toHaveAttribute('href', 'https://dashboard.stripe.com/test/payments/pi_test_paid');
 
-	await page.getByLabel('Status').selectOption('shipped');
+	await page.getByRole('combobox', { name: 'Fulfillment status', exact: true }).selectOption('shipped');
 	await page.getByRole('button', { name: 'Save status' }).click();
 	await expect(page.getByText('Saved', { exact: true })).toBeVisible();
 	await page.reload();
-	await expect(page.getByLabel('Status')).toHaveValue('shipped');
+	await expect(page.getByRole('combobox', { name: 'Fulfillment status', exact: true })).toHaveValue('shipped');
+	await page.setViewportSize({ width: 390, height: 844 });
+	await expect(page.getByRole('button', { name: 'Save status' })).toBeVisible();
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+	await page.screenshot({ path: 'test-results/admin-order-mobile.png', fullPage: true });
 });
