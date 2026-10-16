@@ -84,6 +84,10 @@ To connect the Worker, create a Google Cloud service account with Merchant API e
 
 The Google OAuth web client used by Better Auth must belong to the same Cloud project as the service account. Keep its authorized redirect URI as `https://eonmun.com/api/auth/callback/google`. From the Google Merchant section of production `/admin/settings`, select **Connect Google Merchant**, use the same Google account as your admin session, and grant Merchant Center access. This registers the Cloud project using your Merchant Center Admin identity, adds the configured service account with Standard access if needed, and accepts its pending invitation through the API. The extra scope is requested only for this setup; the Google user token remains in memory for the callback and is not stored. If Google is still applying the registration, wait five minutes and select **Retry all artwork listings** to finish verification and backfill. Normal artwork saves, Stripe callbacks, and the weekly refresh continue using the service account.
 
+### Browse the studio
+
+The overview combines traffic, recent artwork with publication and sale state, collections, and repository-managed posts. Use `/admin/artworks` to search titles and combine independent publication and sale filters. New artwork and collection actions sit beside their section headings. Collection previews expand on hover or keyboard focus; touch devices show the cover and artwork count.
+
 ### Edit artwork and facets
 
 The artwork editor groups content, images, and attributes beside sale settings, collections, and listing status. Select an image thumbnail to edit its alt text or caption and choose the cover. Publication and Save share the sticky action bar; new artwork is saved as a draft first. Leaving with unsaved changes prompts before navigation.
@@ -123,7 +127,7 @@ Allowed `postType` values are `announcement`, `educational`, `behind_the_scenes`
 
 ### Add a collection
 
-Use `/admin/collections` to create collections, manage membership, and select the artwork whose default image is the collection cover.
+Use `/admin/collections` to create collections. In the editor, search artwork by title, select members, and choose a cover from that membership. Publication and Save share the action bar; new collections start as drafts. Leaving with unsaved edits prompts before navigation, and failed saves retain the entered values.
 
 Published collections have dedicated `/collections/[slug]` pages showing their published artwork. Artwork links from a collection carry `?collection=<slug>` for analytics attribution. Legacy `/artworks?collection=<slug>` links navigate to the dedicated page in the browser.
 

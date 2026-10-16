@@ -38,7 +38,8 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 }
 ---
 <div data-push-settings data-push-public-key={publicKey ?? ''} data-push-worker="/push-sw.js" data-push-scope="/admin/">
-	<section class="push-panel">
+	<section class="push-panel" aria-labelledby="this-device-heading">
+		<h3 id="this-device-heading">This device</h3>
 		<p>Get an alert on this device when an order is paid. Alerts show the artwork and amount only, never buyer details, and open the order in the admin console.</p>
 		<p class="push-state" role="status" aria-live="polite" data-push-status>Checking this device…</p>
 		<div class="push-actions">
@@ -143,14 +144,17 @@ function summarize(deliveries: (typeof alerts)[number]['deliveries']) {
 	});
 </script>
 <style>
-	.push-panel, .push-section { max-width: 48rem; margin: 2rem 0; }
+	.push-panel, .push-section { max-width: 56rem; margin: 1.25rem 0; padding: clamp(1rem, 2.5vw, 1.75rem); border: 1px solid var(--admin-border); border-radius: .5rem; background: var(--admin-surface); }
 	.push-state { font-size: 1.1rem; }
 	.push-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
 	button:disabled { cursor: wait; opacity: .6; }
 	.guide { padding: 1rem 1.25rem; border: 1px solid var(--admin-border); background: var(--admin-surface); }
 	.guide ol { margin: .5rem 0 0; padding-left: 1.25rem; }
-	h3 { font-size: 1.25rem; color: var(--admin-text); }
+	h3 { margin: 0 0 1rem; font-size: 1.15rem; color: var(--admin-text); }
 	.push-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--admin-border); }
-	.push-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1rem; padding: .9rem; border-bottom: 1px solid var(--admin-border); background: var(--admin-surface); overflow-wrap: anywhere; }
+	.push-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1rem; padding: .9rem 0; border-bottom: 1px solid var(--admin-border); background: var(--admin-surface); overflow-wrap: anywhere; }
 	.push-list .hint { flex-basis: 100%; }
+	.push-list a { color: var(--admin-text); text-decoration: underline; }
+	.push-list .link-button { margin-left: auto; }
+	[role="status"] { overflow-wrap: anywhere; }
 </style>

@@ -338,6 +338,9 @@ const artworkCardColumns = {
 	year: artworks.year,
 	publishedAt: artworks.publishedAt,
 	imageUrl: artworkImages.url,
+	priceCents: products.price,
+	quantity: products.quantity,
+	soldAt: products.soldAt,
 };
 
 export type AdminArtworkCard = {
@@ -346,6 +349,9 @@ export type AdminArtworkCard = {
 	year: number | null;
 	publishedAt: Date | null;
 	imageUrl: string | null;
+	priceCents: number | null;
+	quantity: number | null;
+	soldAt: Date | null;
 };
 
 type CollectionRow = typeof collections.$inferSelect;
@@ -398,6 +404,7 @@ export async function getAdminArtworkCards(env: Env, db = getDb(env)): Promise<A
 		.select(artworkCardColumns)
 		.from(artworks)
 		.leftJoin(artworkImages, onDefaultImage(artworks.id))
+		.leftJoin(products, and(eq(products.artworkId, artworks.id), eq(products.type, "artwork"), sql`${products.id} = (select min(sale.id) from products sale where sale.artwork_id = ${artworks.id} and sale.type = 'artwork')`))
 		.orderBy(artworks.title);
 }
 
@@ -415,6 +422,7 @@ export async function getAdminDashboard(env: Env, db = getDb(env)): Promise<Admi
 				.select(artworkCardColumns)
 				.from(artworks)
 				.leftJoin(artworkImages, onDefaultImage(artworks.id))
+				.leftJoin(products, and(eq(products.artworkId, artworks.id), eq(products.type, "artwork"), sql`${products.id} = (select min(sale.id) from products sale where sale.artwork_id = ${artworks.id} and sale.type = 'artwork')`))
 				.orderBy(desc(artworks.createdAt), desc(artworks.id))
 				.limit(DASHBOARD_LIMIT),
 			db.select().from(collections).orderBy(desc(collections.createdAt), desc(collections.id)).limit(DASHBOARD_LIMIT),
