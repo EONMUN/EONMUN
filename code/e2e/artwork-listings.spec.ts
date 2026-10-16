@@ -21,6 +21,7 @@ test('listing status requires an admin session and a same-origin request', async
 
 test('artwork editor shows review status, issues, links, and refreshes without saving', async ({ page, context }, testInfo) => {
 	await context.addCookies(await adminCookies(`http://127.0.0.1:${process.env.EONMUN_E2E_PORT}`));
+	await page.route('https://r2.eonmun.com/**', route => route.fulfill({contentType:'image/svg+xml', body:'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#e6d3b4"/></svg>'}));
 	let checks = 0;
 	let approved = false;
 	await page.route(`**${endpoint}`, async (route) => {
@@ -42,23 +43,34 @@ test('artwork editor shows review status, issues, links, and refreshes without s
 	await expect.poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 	const previewBox = await preview.boundingBox();
 	const detailsBox = await images.locator('.artwork-image-details').first().boundingBox();
-	expect(Math.abs(previewBox!.y - detailsBox!.y)).toBeLessThan(1);
-	await expect(preview).toHaveCSS('object-position', '50% 0%');
-	expect(previewBox!.width).toBeGreaterThan(600);
-	expect(previewBox!.height).toBeGreaterThan(400);
+	expect(detailsBox!.y).toBeGreaterThan(previewBox!.y);
+	await expect(preview).toHaveCSS('object-fit', 'contain');
+	expect(previewBox!.width).toBeLessThan(250);
+	expect(previewBox!.height).toBeGreaterThan(70);
 	await expect(images.getByText('Alt text', { exact: true }).first()).toBeVisible();
+	await images.getByRole('button', {name:'Edit image 1, cover',exact:true}).focus();
+	await images.getByRole('button', {name:'Edit image 1, cover',exact:true}).press('Enter');
+	await expect(images.getByRole('textbox', {name:'Image alt text'})).toBeFocused();
 	await preview.scrollIntoViewIfNeeded();
 	await page.screenshot({ path: testInfo.outputPath('artwork-desktop.png') });
 	const imagesBox = await images.boundingBox();
 	const pieceBox = await page.getByRole('group', { name: 'Piece', exact: true }).boundingBox();
 	const formBox = await page.locator('[data-admin-artwork-form]').boundingBox();
 	const listingsBox = await panel.boundingBox();
-	expect(imagesBox!.y + imagesBox!.height).toBeLessThanOrEqual(pieceBox!.y);
-	expect(formBox!.y + formBox!.height).toBeLessThanOrEqual(listingsBox!.y);
+	expect(pieceBox!.y + pieceBox!.height).toBeLessThanOrEqual(imagesBox!.y);
+	expect(listingsBox!.y).toBeGreaterThan(formBox!.y);
+	expect(listingsBox!.y + listingsBox!.height).toBeLessThan(formBox!.y + formBox!.height);
 	await expect(panel.locator('[data-listing-label]').first()).toHaveText('In review');
 	await expect(panel.locator('[data-listing-issues]')).toContainText(['Image <img src=x> is being reviewed', '']);
 	await expect(panel.locator('img')).toHaveCount(0);
 	await expect(panel.getByRole('link', { name: 'View Product Pin' })).toHaveAttribute('href', 'https://www.pinterest.com/pin/123456/');
+	await expect(page.locator('[data-editor-dirty]')).toBeEmpty();
+	await page.getByRole('textbox', {name:'Materials',exact:true}).fill('query only');
+	await page.getByRole('textbox', {name:'Title',exact:true}).focus();
+	await expect(page.locator('[data-editor-dirty]')).toBeEmpty();
+	await page.getByRole('textbox', {name:'Materials',exact:true}).fill('');
+	await images.getByRole('textbox', {name:'Image alt text'}).fill('A lemon painting');
+	await expect(page.locator('[data-editor-dirty]')).toHaveText('Unsaved changes');
 	await page.getByRole('textbox', { name: 'Title', exact: true }).fill('Unsaved title');
 	const initialChecks = checks;
 	approved = true;
@@ -67,12 +79,13 @@ test('artwork editor shows review status, issues, links, and refreshes without s
 	await expect(panel.locator('[data-listing-issues]').first()).toBeHidden();
 	await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue('Unsaved title');
 	expect(checks).toBe(initialChecks + 1);
-	await page.setViewportSize({ width: 390, height: 844 });
+	await page.setViewportSize({ width: 375, height: 844 });
 	const mobilePreview = await preview.boundingBox();
 	const mobileDetails = await images.locator('.artwork-image-details').first().boundingBox();
-	expect(mobilePreview!.width).toBeGreaterThan(280);
+	expect(mobilePreview!.width).toBeLessThan(200);
 	expect(mobileDetails!.y).toBeGreaterThanOrEqual(mobilePreview!.y + mobilePreview!.height);
-	await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
+	await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 375);
+	expect((await page.locator('.editor-actions').boundingBox())!.height).toBeLessThanOrEqual(140);
 	await preview.scrollIntoViewIfNeeded();
 	await page.screenshot({ path: testInfo.outputPath('artwork-mobile.png') });
 });

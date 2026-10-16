@@ -1,0 +1,355 @@
+---
+import ConsoleShell from "../../components/admin/ConsoleShell.astro";
+import { getFacetDirectory } from "../../db/facet-admin";
+import { artworkAttributes } from "../../lib/artwork-facets";
+import { requireAdminPage } from "../../lib/admin-guard";
+import { getRuntimeEnv } from "../../lib/runtime-env";
+export const prerender = false;
+const env = getRuntimeEnv();
+const access = await requireAdminPage(Astro.request, env, "/admin/facets");
+if ("response" in access) return access.response;
+Astro.response.headers.set("cache-control", "no-store");
+const facets = await getFacetDirectory(env);
+const categories = [{ key: "tag", label: "Tags" }, ...artworkAttributes];
+const namespaces = [...new Set(facets.map((facet) => facet.namespace))];
+const keys = [...new Set(facets.map((facet) => facet.key))];
+const label = (key: string) =>
+	categories.find((category) => category.key === key)?.label ?? key;
+---
+<ConsoleShell title="Facets — EONMUN admin" heading="Facets" email={access.session.user.email}>
+ <p class="intro">Select a value to edit it. To combine values, select the value to keep first, then select others in the same category.</p>
+ <details class="add">
+	<summary>Add a value</summary>
+  <form id="create-facet">
+   <label>Category<select class="admin-input" name="key">
+	{categories.map(category => (
+		<option value={category.key}>{category.label}</option>
+	))}
+	</select>
+	</label>
+   <label>Value<input class="admin-input" name="value" required maxlength="40" />
+	</label>
+   <button class="primary-button" type="submit">Add value</button>
+  </form>
+ </details>
+ <p id="facet-status" role="status" aria-live="polite">
+	</p>
+ <div class="filters">
+  <label>Search<input class="admin-input" id="facet-search" type="search" placeholder="Search values" />
+	</label>
+  <div><label for="facet-namespace">Namespace</label>
+	<select class="admin-input" id="facet-namespace">
+	<option value="">All namespaces</option>
+	{namespaces.map(namespace => (
+		<option>{namespace}</option>
+	))}
+	</select>
+	</div>
+ </div>
+ <section class="category-filter">
+  <label>Search categories<input class="admin-input" id="category-search" type="search" placeholder="Find a category" /></label>
+  <div class="category-chips" role="group" aria-label="Categories">
+   <button type="button" data-category="" aria-pressed="true">All categories</button>
+   {keys.map(key => <button type="button" data-category={key} aria-pressed="false">{label(key)}</button>)}
+  </div>
+ </section>
+ <div class="selection" aria-live="polite">
+	<p id="selection-label">No values selected</p>
+	<a id="review-merge" class="primary-button" hidden>Review merge</a>
+	<button id="clear-selection" class="secondary-button" type="button" hidden>Clear selection</button>
+	</div>
+ <p class="hint" id="facet-count">{facets.length} values</p>
+ <div class="table-scroll">
+	<table>
+	<caption class="sr-only">Artwork facet vocabulary</caption>
+  <thead>
+	<tr>
+	<th scope="col">Select</th>
+	<th scope="col">Value</th>
+	<th scope="col">Category</th>
+	<th scope="col">Namespace</th>
+	<th scope="col">Artwork</th>
+	<th scope="col">State</th>
+	</tr>
+	</thead>
+  <tbody>
+	{facets.map(facet => (
+		<tr data-facet-id={facet.id} data-value={facet.value} data-namespace={facet.namespace} data-key={facet.key}>
+   <td>{facet.editable && <input type="checkbox" aria-label={`Select ${facet.value}`} />}</td>
+   <th scope="row">
+	<a href={`/admin/facets/${facet.id}`}>{facet.value}</a>
+	</th>
+   <td>{label(facet.key)}</td>
+	<td>{facet.namespace}</td>
+	<td>{facet.artworks.length}</td>
+	<td>{facet.editable ? 'Editable' : 'Read-only'}</td>
+  </tr>
+	))}</tbody>
+ </table>
+	</div>
+ <p id="facet-empty" hidden={facets.length > 0}>No values found. Add a value or change the filters.</p>
+</ConsoleShell>
+<style>
+	.category-filter {
+		margin-top: 1rem;
+	}
+	.category-filter label {
+		max-width: 24rem;
+	}
+	.category-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+	}
+	.category-chips button {
+		min-height: 2.75rem;
+		max-width: 100%;
+		overflow-wrap: anywhere;
+		padding: 0.55rem 0.9rem;
+		border: 1px solid var(--admin-border-strong);
+		border-radius: 2rem;
+		background: var(--admin-surface);
+		color: var(--admin-text);
+		font: inherit;
+		font-size: 0.875rem;
+		cursor: pointer;
+	}
+	.category-chips button:hover {
+		border-color: var(--admin-accent);
+	}
+	.category-chips button[aria-pressed="true"] {
+		background: var(--admin-accent-soft);
+		color: var(--admin-accent);
+		border-color: var(--admin-accent);
+		font-weight: 600;
+	}
+
+	.intro {
+		color: var(--admin-muted);
+		max-width: 48rem;
+		margin-bottom: 1.5rem;
+	}
+	.add {
+		background: var(--admin-surface);
+		border: 1px solid var(--admin-border);
+		padding: 1rem;
+		margin-bottom: 1rem;
+	}
+	summary {
+		cursor: pointer;
+		font-weight: 600;
+	}
+	#create-facet {
+		display: grid;
+		grid-template-columns: 1fr 2fr auto;
+		gap: 1rem;
+		align-items: end;
+		margin-top: 1rem;
+	}
+	.filters {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 1rem;
+	}
+	.selection {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		align-items: center;
+		margin: 1.5rem 0 1rem;
+	}
+	.selection p {
+		flex: 1;
+		min-width: 12rem;
+	}
+	.table-scroll {
+		overflow-x: auto;
+		margin-top: 1rem;
+		border: 1px solid var(--admin-border);
+		border-radius: 0.5rem;
+	}
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		text-align: left;
+		background: var(--admin-surface);
+	}
+	th,
+	td {
+		padding: 0.9rem 1rem;
+		border-bottom: 1px solid var(--admin-border);
+	}
+	thead {
+		background: var(--admin-surface-muted);
+		font-size: 0.875rem;
+	}
+	tbody th {
+		font-weight: 500;
+		min-width: 10rem;
+	}
+	tbody a {
+		color: var(--admin-accent);
+		text-decoration: underline;
+	}
+	tbody tr[hidden] {
+		display: none;
+	}
+	td {
+		font-size: 0.875rem;
+	}
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	[hidden] {
+		display: none !important;
+	}
+	@media (max-width: 700px) {
+		.filters,
+		#create-facet {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
+<script>
+	const rows = Array.from(
+		document.querySelectorAll<HTMLTableRowElement>("[data-facet-id]"),
+	);
+	const search = document.querySelector<HTMLInputElement>("#facet-search")!;
+	const namespace =
+		document.querySelector<HTMLSelectElement>("#facet-namespace")!;
+	const categorySearch =
+		document.querySelector<HTMLInputElement>("#category-search")!;
+	const chips = Array.from(
+		document.querySelectorAll<HTMLButtonElement>("[data-category]"),
+	);
+	let selectedCategory = "";
+	const filterChips = () => {
+		const query = categorySearch.value.trim().toLowerCase();
+		chips.forEach((chip) => {
+			chip.hidden =
+				!!chip.dataset.category &&
+				chip.dataset.category !== selectedCategory &&
+				!`${chip.textContent} ${chip.dataset.category}`
+					.toLowerCase()
+					.includes(query);
+		});
+	};
+	categorySearch.addEventListener("input", filterChips);
+	const status = document.querySelector<HTMLElement>("#facet-status")!;
+	const selected: HTMLTableRowElement[] = [];
+	const review = document.querySelector<HTMLAnchorElement>("#review-merge")!;
+	const clear = document.querySelector<HTMLButtonElement>("#clear-selection")!;
+	const updateSelection = () => {
+		const target = selected[0];
+		document.querySelector("#selection-label")!.textContent = target
+			? `Keep “${target.dataset.value}” · ${selected.length - 1} source values selected`
+			: "No values selected";
+		review.hidden = selected.length < 2;
+		clear.hidden = !target;
+		if (target) {
+			const url = new URL(
+				`/admin/facets/${target.dataset.facetId}`,
+				location.origin,
+			);
+			selected
+				.slice(1)
+				.forEach((source) =>
+					url.searchParams.append("merge", source.dataset.facetId!),
+				);
+			review.href = url.pathname + url.search;
+		}
+		rows.forEach((row) => {
+			const checkbox = row.querySelector<HTMLInputElement>("input");
+			if (checkbox)
+				checkbox.disabled =
+					!!target &&
+					!selected.includes(row) &&
+					(selected.length >= 21 ||
+						target.dataset.namespace !== row.dataset.namespace ||
+						target.dataset.key !== row.dataset.key);
+		});
+	};
+	rows.forEach((row) =>
+		row
+			.querySelector<HTMLInputElement>("input")
+			?.addEventListener("change", (event) => {
+				const checked = (event.currentTarget as HTMLInputElement).checked;
+				if (checked) selected.push(row);
+				else selected.splice(selected.indexOf(row), 1);
+				updateSelection();
+			}),
+	);
+	clear.addEventListener("click", () => {
+		selected.length = 0;
+		rows.forEach((row) => {
+			const checkbox = row.querySelector<HTMLInputElement>("input");
+			if (checkbox) checkbox.checked = false;
+		});
+		updateSelection();
+	});
+	const filter = () => {
+		let count = 0;
+		rows.forEach((row) => {
+			row.hidden = !(
+				row.dataset
+					.value!.toLowerCase()
+					.includes(search.value.trim().toLowerCase()) &&
+				(!namespace.value || namespace.value === row.dataset.namespace) &&
+				(!selectedCategory || selectedCategory === row.dataset.key)
+			);
+			if (!row.hidden) count++;
+		});
+		document.querySelector("#facet-count")!.textContent = `${count} values`;
+		document.querySelector<HTMLElement>("#facet-empty")!.hidden = count > 0;
+	};
+	chips.forEach((chip) =>
+		chip.addEventListener("click", () => {
+			selectedCategory = chip.dataset.category!;
+			chips.forEach((candidate) =>
+				candidate.setAttribute("aria-pressed", String(candidate === chip)),
+			);
+			filterChips();
+			filter();
+		}),
+	);
+	[search, namespace].forEach((input) => input.addEventListener("input", filter));
+	const form = document.querySelector<HTMLFormElement>("#create-facet")!;
+	const category = form.querySelector<HTMLSelectElement>("[name=key]")!;
+	const value = form.querySelector<HTMLInputElement>("[name=value]")!;
+	category.addEventListener(
+		"change",
+		() => (value.maxLength = category.value === "tag" ? 40 : 80),
+	);
+	let busy = false;
+	form.addEventListener("submit", async (event) => {
+		event.preventDefault();
+		if (busy) return;
+		busy = true;
+		const button = form.querySelector<HTMLButtonElement>("button")!;
+		button.disabled = true;
+		try {
+			const response = await fetch("/api/admin/facets", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					action: "create",
+					key: category.value,
+					value: value.value,
+				}),
+			});
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.error || "Could not add value");
+			location.reload();
+		} catch (error) {
+			status.textContent =
+				error instanceof Error ? error.message : "Could not add value";
+			busy = false;
+			button.disabled = false;
+		}
+	});
+</script>

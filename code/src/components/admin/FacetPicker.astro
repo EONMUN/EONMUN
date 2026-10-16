@@ -1,0 +1,24 @@
+---
+interface Props {
+	name: string;
+	label: string;
+	values: string[];
+	options: string[];
+}
+const { name, label, values, options } = Astro.props;
+---
+<div class="facet-picker" data-facet-picker data-name={name} data-values={JSON.stringify(values)} data-options={JSON.stringify(options)}>
+ <label for={`facet-${name}`}>{label}</label>
+ <div class="facet-chips" data-facet-chips></div>
+ <input id={`facet-${name}`} class="admin-input" type="text" autocomplete="off" placeholder={`Search ${label.toLowerCase()}`} data-facet-search maxlength={name === 'tags' ? 40 : 80} aria-controls={`facet-options-${name}`} />
+ <div id={`facet-options-${name}`} class="facet-options" data-facet-options hidden></div>
+ <p class="hint" role="status" data-facet-status></p>
+</div>
+<style>
+.facet-picker { min-width:0; }
+.facet-chips { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.5rem; }
+.facet-chips :global(button) { font:inherit; font-size:.85rem; padding:.3rem .5rem; border:1px solid var(--admin-border); border-radius:1rem; color:var(--admin-text); background:var(--admin-surface); cursor:pointer; }
+.facet-options { max-height:12rem; overflow:auto; border:1px solid var(--admin-border); border-radius:.35rem; }
+.facet-options :global(button) { display:block; width:100%; text-align:left; padding:.6rem; background:var(--admin-surface); color:var(--admin-text); border:0; font:inherit; cursor:pointer; }
+.facet-options :global(button:hover), .facet-options :global(button:focus) { background:var(--admin-surface-muted); }
+</style>

@@ -1,10 +1,8 @@
 ---
 import { artworkAttributes, type ArtworkFacet } from '../../lib/artwork-facets';
 import ErrorBanner from './ErrorBanner.astro';
-import RequiredMark from './RequiredMark.astro';
-import RequiredNote from './RequiredNote.astro';
+import FacetPicker from './FacetPicker.astro';
 import FormFieldset from './FormFieldset.astro';
-import SubmitButton from './SubmitButton.astro';
 import type { SelectArtwork, SelectArtworkImage, SelectCollection, SelectFacet, SelectProduct } from '../../db';
 
 interface Props {
@@ -19,24 +17,17 @@ const values = (key: string) => artwork?.attributes.filter(f => f.namespace === 
 const options = (key: string) => [...new Set(facets.filter(f => f.namespace === 'artwork' && f.key === key).map(f => f.value))].sort();
 const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ url, caption, altText, isDefault })) ?? [];
 ---
-<form data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)} data-attributes={JSON.stringify(artworkAttributes.map(field => field.name))}>
+<form id="artwork-editor" data-admin-artwork-form data-action={action} data-images={JSON.stringify(images)} data-attributes={JSON.stringify(artworkAttributes.map(field => field.name))}>
 	<ErrorBanner />
-	<RequiredNote />
+	<div class="editor-columns"><div class="editor-main">
 
-	<FormFieldset legend="Images">
-		<div data-image-list class="image-list"></div>
-		<label class="upload">Add images
-			<input class="admin-input" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
-		</label>
-		<p class="hint">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each. The piece marked Default is the cover shown everywhere else.</p>
-	</FormFieldset>
 
 	<FormFieldset legend="Piece" layout="columns">
-		<label>Title <RequiredMark /> <input class="admin-input" name="title" required value={artwork?.title ?? ''} /></label>
-		<label>Slug {artwork && <RequiredMark />}
+		<label>Title <span class="hint">Required</span> <input class="admin-input" name="title" aria-label="Title" required value={artwork?.title ?? ''} /></label>
+		<label>Slug {artwork && <span class="hint">Required</span>}
 			<input
 				class="admin-input"
-				name="slug"
+				name="slug" aria-label="Slug"
 				required={Boolean(artwork)}
 				pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
 				title="Lowercase letters, numbers, and single hyphens between them."
@@ -48,8 +39,28 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		<label>Artist <input class="admin-input" name="artist" value={artwork?.artist ?? 'EONMUN'} /></label>
 		<label>Year <input class="admin-input" name="year" type="number" min="1000" max="9999" value={artwork?.year ?? ''} /></label>
 		<label class="span-all">Description <textarea class="admin-input" name="description">{artwork?.description ?? ''}</textarea></label>
-		<label class="span-all">Tags <input class="admin-input" name="tags" value={artwork?.tags.join(', ') ?? ''} aria-describedby="tags-hint" /></label>
-		<p class="hint span-all" id="tags-hint">Separate tags with commas.</p>
+
+	</FormFieldset>
+
+	<details class="writing-assistant"><summary>Suggest copy</summary><FormFieldset legend="Writing assistant">
+		<p class="hint">Add a cover image and title, then ask for a description, tags, and cover image alt text. Suggestions stay in this editor until you apply and save them.</p>
+		<label>What should the assistant focus on? <textarea class="admin-input" name="aiInstructions" placeholder="For example: emphasize the warm colors and quiet mood"></textarea></label>
+		<button type="button" class="add-collection" data-suggest>Suggest copy</button>
+		<p class="hint" data-suggest-status role="status" aria-live="polite"></p>
+		<div data-suggestion hidden>
+			<label>Suggested description <textarea class="admin-input" data-suggest-description></textarea></label>
+			<label>Suggested tags <input class="admin-input" data-suggest-tags /></label>
+			<label>Suggested cover image alt text <textarea class="admin-input" data-suggest-alt></textarea></label>
+			<button type="button" class="add-collection" data-apply-suggestion>Use these suggestions</button>
+		</div>
+	</FormFieldset></details>
+
+	<FormFieldset legend="Images">
+		<div data-image-list class="image-list"></div>
+		<label class="upload">Add images
+			<input class="admin-input" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple />
+		</label>
+		<p class="hint">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each. The image marked Cover is the cover shown everywhere else.</p>
 	</FormFieldset>
 
 
@@ -63,33 +74,14 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
         <p class="hint span-all" data-dimension-summary>Orientation is calculated when width and height are known.</p>
     </FormFieldset>
 
-    {['Materials and surface', 'Subject and style'].map(group => (
-        <FormFieldset legend={group} layout="columns">
-            {artworkAttributes.filter(field => field.group === group).map(({name,key,label}) => (
-                <fieldset class="attribute-field">
-                    <legend>{label}</legend>
-                    <div class="collection-list">
-                        {options(key).map(value => <label><input type="checkbox" name={name} value={value} checked={values(key).includes(value)} /> {value}</label>)}
-                    </div>
-                    <label>Add {label.toLowerCase()} <input class="admin-input" name={`${name}New`} placeholder="Separate new values with commas" /></label>
-                </fieldset>
-            ))}
-        </FormFieldset>
-    ))}
+    <FormFieldset legend="Attributes" layout="columns">
+        <a class="span-all" href="/admin/facets">Manage facets →</a>
+        {artworkAttributes.map(({name,key,label}) => <FacetPicker name={name} label={label} values={values(key)} options={options(key)} />)}
+        <FacetPicker name="tags" label="Tags" values={artwork?.tags ?? []} options={options('tag')} />
+    </FormFieldset>
 
-	<FormFieldset legend="Writing assistant">
-		<p class="hint">Add a cover image and title, then ask for a description, tags, and cover image alt text. Suggestions stay in this editor until you apply and save them.</p>
-		<label>What should the assistant focus on? <textarea class="admin-input" name="aiInstructions" placeholder="For example: emphasize the warm colors and quiet mood"></textarea></label>
-		<button type="button" class="add-collection" data-suggest>Suggest copy</button>
-		<p class="hint" data-suggest-status role="status" aria-live="polite"></p>
-		<div data-suggestion hidden>
-			<label>Suggested description <textarea class="admin-input" data-suggest-description></textarea></label>
-			<label>Suggested tags <input class="admin-input" data-suggest-tags /></label>
-			<label>Suggested cover image alt text <textarea class="admin-input" data-suggest-alt></textarea></label>
-			<button type="button" class="add-collection" data-apply-suggestion>Use these suggestions</button>
-		</div>
-	</FormFieldset>
 
+	</div><aside class="editor-sidebar">
 	<FormFieldset legend="Collections">
 		<div class="collection-list" data-collection-list>
 			{collections.length === 0 ? (
@@ -133,26 +125,32 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		<p id="price-note" class="hint">Required when the piece is available for purchase. The price appears publicly only while the piece is available.</p>
 	</FormFieldset>
 
-	{artwork ? (
-		<label class="inline-label"><input type="checkbox" name="published" checked={artwork.publishedAt !== null} /> Published</label>
-	) : (
-		<p class="hint">A new artwork is saved as a draft.</p>
-	)}
-
-	<SubmitButton label="Save artwork" />
+    <slot name="listings" />
+    </aside></div>
 </form>
+    <div class="editor-actions">
+        <p class="hint" data-editor-dirty role="status"></p>
+        <p class="hint" data-editor-save role="status" aria-live="polite"></p>
+        {artwork ? <label>Publication <select class="admin-input" name="published" form="artwork-editor"><option value="draft" selected={artwork.publishedAt === null}>Draft</option><option value="published" selected={artwork.publishedAt !== null}>Published</option></select></label> : <p class="hint">A new artwork is saved as a draft.</p>}
+        <button type="submit" form="artwork-editor" class="primary-button">{artwork ? 'Save artwork' : 'Save draft'}</button>
+    </div>
 
 <script>
 	// Bundled, not `is:inline`: an inline script cannot import, and the inline
 	// collection creator is covered by a test that imports the same module.
-	import { attachAdminFormSave, postAdminJson } from '../../lib/admin-form-save';
+	import { attachAdminFormSave, attachUnsavedChanges, postAdminJson } from '../../lib/admin-form-save';
 	import { attachInlineCollectionCreator } from '../../lib/inline-collection-creator';
 
+	import { attachFacetPickers, setFacetValues } from '../../lib/facet-picker';
 	type EditorImage = { url: string; caption: string | null; altText: string | null; isDefault: boolean };
 
 	const form = document.querySelector<HTMLFormElement>('[data-admin-artwork-form]');
 	if (form) {
 		const field = <T extends Element = HTMLInputElement>(name: string) => form.elements.namedItem(name) as unknown as T;
+		attachFacetPickers(form);
+		const dirty = attachUnsavedChanges(form, document.querySelector<HTMLElement>('[data-editor-dirty]')!);
+		new MutationObserver(() => dirty.mark()).observe(form.querySelector('[data-collection-list]')!, { childList: true });
+		let selectedImage = 0;
 		const images: EditorImage[] = JSON.parse(form.dataset.images || '[]');
 		const attributeNames: string[] = JSON.parse(form.dataset.attributes || '[]');
 		const list = form.querySelector<HTMLElement>('[data-image-list]')!;
@@ -167,28 +165,33 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		syncPriceRequirement();
 
 		const renderImages = () => {
+			selectedImage = Math.max(0, Math.min(selectedImage, images.length - 1));
 			list.replaceChildren();
+			let selectedDetails: HTMLElement | undefined;
 			images.map((image, index) => ({ image, index })).sort((a, b) => Number(b.image.isDefault) - Number(a.image.isDefault)).forEach(({ image, index }) => {
 				const row = document.createElement('div');
 				row.className = 'artwork-image-row';
+				const select = document.createElement('button'); select.type = 'button'; select.className = 'image-tile'; select.setAttribute('aria-label', `Edit image ${index + 1}${image.isDefault ? ', cover' : ''}`); select.setAttribute('aria-pressed', String(selectedImage === index));
+				select.addEventListener('click', () => { selectedImage = index; renderImages(); list.querySelector<HTMLTextAreaElement>('[aria-label="Image alt text"]')?.focus(); });
 				const preview = document.createElement('img'); preview.src = image.url; preview.alt = image.altText || ''; preview.className = 'artwork-image-preview';
 				const caption = document.createElement('input'); caption.className = 'admin-input'; caption.placeholder = 'Caption (optional)'; caption.value = image.caption || '';
-				caption.addEventListener('input', () => { image.caption = caption.value || null; });
+				caption.addEventListener('input', () => { image.caption = caption.value || null; dirty.mark(); });
 				const alt = document.createElement('textarea'); alt.rows = 4; alt.className = 'admin-input'; alt.placeholder = 'Describe this image for alt text'; alt.setAttribute('aria-label', 'Image alt text'); alt.value = image.altText || '';
-				alt.addEventListener('input', () => { image.altText = alt.value || null; preview.alt = alt.value; });
+				alt.addEventListener('input', () => { image.altText = alt.value || null; preview.alt = alt.value; dirty.mark(); });
 				const label = document.createElement('label'); const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'defaultImage'; radio.checked = image.isDefault;
-				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); renderImages(); });
-				label.append(radio, ' Default');
+				radio.addEventListener('change', () => { images.forEach((entry, i) => entry.isDefault = i === index); dirty.mark(); renderImages(); list.querySelector<HTMLInputElement>('[name="defaultImage"]')?.focus(); });
+				label.append(radio, ' Cover image');
 				const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.className = 'link-button';
-				remove.addEventListener('click', () => { images.splice(index, 1); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); });
+				remove.addEventListener('click', () => { images.splice(index, 1); selectedImage = Math.max(0, Math.min(selectedImage, images.length - 1)); dirty.mark(); if (images.length && !images.some((entry) => entry.isDefault)) images[0].isDefault = true; renderImages(); (list.querySelector<HTMLButtonElement>('.image-tile[aria-pressed="true"]') ?? fileInput).focus(); });
 				const details = document.createElement('div'); details.className = 'artwork-image-details';
 				const altLabel = document.createElement('label'); altLabel.append('Alt text', alt);
 				const altHint = document.createElement('p'); altHint.className = 'hint'; altHint.textContent = 'Describe the artwork for people using screen readers.';
 				const captionLabel = document.createElement('label'); captionLabel.append('Caption (optional)', caption);
 				const actions = document.createElement('div'); actions.className = 'artwork-image-actions'; actions.append(label, remove);
 				details.append(altLabel, altHint, captionLabel, actions);
-				row.append(preview, details); list.append(row);
+				details.hidden = index !== selectedImage; select.append(preview); if (image.isDefault) { const badge = document.createElement('span'); badge.textContent = 'Cover'; select.append(badge); } row.append(select); list.append(row); if (index === selectedImage) selectedDetails = details;
 			});
+			if (selectedDetails) list.append(selectedDetails);
 		};
 		// Adds uploaded files to the image list model and clears the picker, so a
 		// retry after a failed save does not upload the same files again.
@@ -234,7 +237,8 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 			const cover = images.find((image) => image.url === suggestedCoverUrl);
 			if (!cover) { status.textContent = 'The cover image changed. Generate fresh suggestions.'; return; }
 			field('description').value = suggested('description').value;
-			field('tags').value = suggested('tags').value;
+			setFacetValues(form, 'tags', suggested('tags').value.split(',').map(value => value.trim()).filter(Boolean));
+			dirty.mark();
 			cover.altText = suggested('alt').value || null;
 			renderImages(); suggestion.hidden = true; status.textContent = 'Suggestions applied. Review the fields and save when ready.';
 		});
@@ -244,6 +248,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 		// form; rows built while locked would be editable mid-save.
 		let imagesChanged = false;
 		attachAdminFormSave(form, {
+			statusElement: document.querySelector<HTMLElement>('[data-editor-save]')!,
 			// Suggestions and a new collection each finish by editing this form.
 			// Saving first would send a payload without that edit, then let it land
 			// on a locked form.
@@ -253,10 +258,10 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 			onFailure: () => { if (imagesChanged) renderImages(); imagesChanged = false; },
 			save: async (data) => {
 				const payload: Record<string, unknown> = Object.fromEntries(data);
-				payload.published = data.has('published'); payload.available = data.has('available');
+				payload.published = data.get('published') === 'published'; payload.available = data.has('available');
 				const priceDollars = String(data.get('priceDollars') ?? '');
 				payload.priceCents = priceDollars === '' ? '' : Math.round(Number(priceDollars) * 100);
-				payload.tags = String(data.get('tags') ?? '').split(',').map((tag) => tag.trim()).filter(Boolean);
+				payload.tags = data.getAll('tags');
 				payload.editorVersion = 2;
 				// Read from the control: a derived orientation disables the select,
 				// and FormData leaves disabled controls out.
@@ -272,6 +277,7 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 				if (await uploadFiles(files)) imagesChanged = true;
 				payload.images = images;
 				const { redirect } = await postAdminJson<{ redirect: string }>(form.dataset.action!, payload);
+				dirty.clear();
 				return { redirect };
 			},
 		});
@@ -299,138 +305,37 @@ const images = artwork?.images.map(({ url, caption, altText, isDefault }) => ({ 
 </script>
 
 <style>
-    .attribute-field { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: .75rem; background: transparent; }
-    .attribute-field legend { font-weight: 600; margin-bottom: .75rem; }
-
-	form[data-admin-artwork-form] {
-		max-width: none;
-		display: flex;
-		flex-direction: column;
-		gap: 1.75rem;
-		margin-top: 2.5rem;
-	}
-
-	form > :global(fieldset:not(:first-of-type)) {
-		width: 100%;
-		max-width: 56rem;
-	}
-
-	.span-all {
-		grid-column: 1 / -1;
-	}
-
-	/* Matches FormFieldset's `columns` layout. The checkboxes need a container of
-	   their own so the script has one insertion point on both the populated and
-	   the empty state. */
-	.collection-list {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-		gap: 1rem;
-	}
-
-	.new-collection-row {
-		display: flex;
-		align-items: stretch;
-		gap: 0.75rem;
-		margin-top: 0.5rem;
-	}
-
-	.new-collection-row .admin-input {
-		margin-top: 0;
-	}
-
-	.add-collection {
-		flex: none;
-		padding: 0 1.1rem;
-		font: inherit;
-		min-height: 2.75rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		white-space: nowrap;
-		color: var(--admin-text);
-		background: var(--admin-surface);
-		border: 1px solid var(--admin-border-strong);
-		border-radius: 0.35rem;
-		cursor: pointer;
-		transition: background 200ms, border-color 200ms, color 200ms;
-	}
-
-	.add-collection:hover:not([aria-disabled='true']) {
-		color: var(--admin-on-accent);
-		background: var(--admin-accent);
-		border-color: var(--admin-accent);
-	}
-
-	/* The in-flight state is `aria-disabled`, not `disabled`, so the button keeps
-	   its place in the focus order. The handler refuses the second activation. */
-	.add-collection[aria-disabled='true'] {
-		color: var(--admin-muted);
-		cursor: progress;
-	}
-
-	/* The live region stays in the layout at all times. A region that is hidden
-	   until it has text is not reliably announced when the text arrives. */
-	.new-collection .hint {
-		min-height: 1.2em;
-		margin-top: 0.5rem;
-	}
-
-	.new-collection .hint.is-error {
-		color: var(--admin-danger);
-	}
-
-	.image-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.image-list :global(.artwork-image-row) {
-		display: grid;
-		grid-template-columns: minmax(0, 3fr) minmax(15rem, 1fr);
-		align-items: start;
-		gap: 1.5rem;
-	}
-
-	.image-list :global(.artwork-image-preview) {
-		display: block;
-		width: 100%;
-		height: auto;
-		max-height: min(75vh, 48rem);
-		object-fit: contain;
-		object-position: center top;
-		background: var(--admin-surface);
-	}
-
-	.image-list :global(.artwork-image-details) {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		min-width: 0;
-	}
-
-	.image-list :global(.artwork-image-actions) {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-
-	@media (max-width: 48rem) {
-		.image-list :global(.artwork-image-row) { grid-template-columns: minmax(0, 1fr); }
-		.image-list :global(.artwork-image-preview) { height: auto; max-height: 75vh; }
-	}
-
-	.image-list:empty::after {
-		content: 'No images yet.';
-		font-size: 0.875rem;
-		color: var(--admin-muted);
-	}
-
-	.upload :global(.admin-input) {
-		padding: 0.6rem 0;
-		background: none;
-		border: 0;
-	}
+form[data-admin-artwork-form] { margin-top: 1.5rem; max-width: none; }
+.editor-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr); gap: 1.5rem; align-items: start; }
+.editor-main, .editor-sidebar { display:flex; flex-direction:column; gap:1.5rem; min-width:0; }
+.span-all { grid-column:1 / -1; }
+.editor-actions { position:sticky; bottom:0; z-index:10; display:flex; justify-content:flex-end; align-items:center; gap:1rem; padding:1rem; margin-top:1.5rem; background:var(--admin-surface); border:1px solid var(--admin-border); border-radius:.5rem; }
+.editor-actions [role="status"] { margin:0; padding:0; border:0; background:none; }
+.editor-actions [role="status"]:empty { flex:0; }
+.editor-actions label { display:flex; align-items:center; gap:.75rem; }
+.editor-actions .admin-input { margin:0; width:auto; }
+.collection-list { display:grid; gap:.75rem; }
+.new-collection-row { display:flex; gap:.5rem; margin-top:.5rem; }
+.add-collection { padding:.65rem 1rem; background:var(--admin-surface); border:1px solid var(--admin-border-strong); border-radius:.35rem; font:inherit; cursor:pointer; }
+.new-collection .hint { min-height:1.2em; }
+.writing-assistant summary { cursor:pointer; font-weight:600; margin-bottom:.75rem; }
+.image-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(7rem,1fr)); gap:.75rem; }
+.image-list :global(.image-tile) { position:relative; width:100%; padding:.35rem; border:2px solid var(--admin-border); background:var(--admin-surface); border-radius:.5rem; cursor:pointer; }
+.image-list :global(.image-tile[aria-pressed=true]) { border-color:var(--admin-accent); }
+.image-list :global(.image-tile span) { position:absolute; bottom:.5rem; left:.5rem; padding:.15rem .4rem; background:var(--admin-surface); border-radius:.25rem; font-size:.75rem; }
+.image-list :global(.artwork-image-preview) { width:100%; aspect-ratio:1; object-fit:contain; display:block; }
+.image-list :global(.artwork-image-details) { grid-column:1 / -1; display:flex; flex-direction:column; gap:.75rem; padding:1rem; background:var(--admin-surface); border:1px solid var(--admin-border); border-radius:.5rem; }
+.image-list :global(.artwork-image-details[hidden]) { display:none; }
+.image-list :global(.artwork-image-actions) { display:flex; justify-content:space-between; gap:1rem; }
+.image-list:empty::after { content:'No images yet.'; color:var(--admin-muted); }
+.upload :global(.admin-input) { padding:.6rem 0; border:0; background:none; }
+@media(max-width:64rem) { .editor-columns { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:30rem) {
+ .editor-actions { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:.5rem; padding:.75rem; }
+ .editor-actions [role="status"]:not(:empty) { grid-column:1 / -1; }
+ .editor-actions [role="status"]:empty { position:absolute; width:0; height:0; overflow:hidden; }
+ .editor-actions label { display:grid; gap:.2rem; }
+ .editor-actions .primary-button { padding:.75rem 1rem; }
+ .new-collection-row { flex-wrap:wrap; }
+}
 </style>

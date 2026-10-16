@@ -6,6 +6,8 @@
 export type AdminFormSaveOutcome = { redirect: string } | { message: string };
 
 export interface AdminFormSaveOptions {
+	/** Optional external live region near the editor actions. */
+	statusElement?: HTMLElement;
 	save: (data: FormData) => Promise<AdminFormSaveOutcome>;
 	/** Why the form cannot be saved yet, such as a request still running beside it. */
 	blockedReason?: () => string | null;
@@ -41,11 +43,11 @@ export function attachAdminFormSave(form: HTMLFormElement, options: AdminFormSav
 	// The status line follows the form rather than sitting inside it: assistive
 	// technology may hold back live updates inside an aria-busy subtree until it
 	// stops being busy, which would swallow the "Saving…" announcement.
-	const status = doc.createElement("p");
+	const status = options.statusElement ?? doc.createElement("p");
 	status.className = "form-status";
 	status.setAttribute("role", "status");
 	status.setAttribute("aria-live", "polite");
-	form.after(status);
+	if (!options.statusElement) form.after(status);
 
 	let release: ((afterEnable?: () => void) => void) | null = null;
 
@@ -142,4 +144,40 @@ export function attachAdminFormSave(form: HTMLFormElement, options: AdminFormSav
 		if (!event.persisted || !release) return;
 		window.location.reload();
 	});
+}
+
+/** Tracks editor changes outside named controls too, such as image metadata. */
+export function attachUnsavedChanges(form: HTMLFormElement, statusElement?: HTMLElement) {
+	let dirty = false;
+	const status = statusElement ?? form.ownerDocument.createElement('p');
+	status.className = 'form-status';
+	status.dataset.unsavedStatus = '';
+	status.setAttribute('role', 'status');
+	if (!statusElement) form.after(status);
+	const mark = () => {
+		dirty = true;
+		status.textContent = 'Unsaved changes';
+	};
+	const clear = () => {
+		dirty = false;
+		status.textContent = '';
+	};
+	const changed = (event: Event) => {
+		const target = event.target as HTMLElement;
+		if (target.closest('[data-suggestion]') || (target as HTMLInputElement).name === 'aiInstructions'
+			|| target.hasAttribute('data-facet-search') || target.hasAttribute('data-new-collection-name')) return;
+		mark();
+	};
+	form.addEventListener('input', changed);
+	form.addEventListener('change', changed);
+	for (const control of Array.from(form.elements)) {
+		if (!form.contains(control)) control.addEventListener('change', changed);
+	}
+	window.addEventListener('beforeunload', event => {
+		if (dirty) {
+			event.preventDefault();
+			event.returnValue = '';
+		}
+	});
+	return { mark, clear };
 }

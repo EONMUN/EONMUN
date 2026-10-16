@@ -84,6 +84,12 @@ To connect the Worker, create a Google Cloud service account with Merchant API e
 
 The Google OAuth web client used by Better Auth must belong to the same Cloud project as the service account. Keep its authorized redirect URI as `https://eonmun.com/api/auth/callback/google`. From the Google Merchant section of production `/admin/settings`, select **Connect Google Merchant**, use the same Google account as your admin session, and grant Merchant Center access. This registers the Cloud project using your Merchant Center Admin identity, adds the configured service account with Standard access if needed, and accepts its pending invitation through the API. The extra scope is requested only for this setup; the Google user token remains in memory for the callback and is not stored. If Google is still applying the registration, wait five minutes and select **Retry all artwork listings** to finish verification and backfill. Normal artwork saves, Stripe callbacks, and the weekly refresh continue using the service account.
 
+### Edit artwork and facets
+
+The artwork editor groups content, images, and attributes beside sale settings, collections, and listing status. Select an image thumbnail to edit its alt text or caption and choose the cover. Publication and Save share the sticky action bar; new artwork is saved as a draft first. Leaving with unsaved changes prompts before navigation.
+
+Materials, surface, medium, subjects, styles, colors, and tags use searchable selections. Select an existing value or explicitly add a new one, then save the artwork. Use the searchable table at `/admin/facets` to inspect usage, then open a value to rename it or delete it when unused. For a merge, select the retained value first and up to 20 source values in the same category, then review the merge on the retained value’s edit page. Repeated `merge` query parameters only prepare that review; explicit confirmation commits all source merges in one transaction and preserves artwork memberships. Derived orientation and unrecognized categories are read-only. These changes use the existing facet schema; no migration is required.
+
 ### Add a post
 
 1. Add the post entry to `fixtures/posts.json`.
