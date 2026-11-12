@@ -35,6 +35,7 @@ const pinterestDeletion = Astro.url.searchParams.get('pinterestDeletion') === `a
 	{googleState === 'submitted' && <p role="status">Artwork saved and submitted to Google Merchant Center for processing.</p>}
 	{googleState === 'removed' && <p role="status">Artwork saved and removed from the Google Merchant API source.</p>}
 	{pinterestState === 'failed' && <p role="alert">Artwork saved, but Pinterest sync failed. <a href="/admin/settings#pinterest">Retry the catalog sync →</a></p>}
-	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets} />
-	<ArtworkListings slug={artwork.slug} pinterestBatchId={pinterestBatchId} pinterestDeletion={Boolean(pinterestDeletion)} />
+	<ArtworkForm action={`/api/admin/artworks/${slug}`} artwork={artwork} collections={collections} facets={facets}>
+		<ArtworkListings slot="listings" slug={artwork.slug} pinterestBatchId={pinterestBatchId} pinterestDeletion={Boolean(pinterestDeletion)} />
+	</ArtworkForm>
 </ConsoleShell>

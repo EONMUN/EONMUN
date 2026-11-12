@@ -1,0 +1,36 @@
+---
+import Analytics from '../components/Analytics.astro';
+import PinterestTag from '../components/PinterestTag.astro';
+import BaseHead from '../components/BaseHead.astro';
+import AdminTheme from '../components/admin/AdminTheme.astro';
+
+interface Props {
+	title: string;
+	description: string;
+	privateData?: boolean;
+}
+
+const { title, description, privateData = false } = Astro.props;
+---
+<!doctype html>
+<html lang="en" class="admin-page">
+	<head>
+		<BaseHead title={title} description={description} themeColor="#f5f3ee" />
+		<AdminTheme />
+		{!privateData && <PinterestTag />}
+	</head>
+	<body>
+		<slot />
+		{!privateData && <Analytics />}
+		<script>
+			document.addEventListener('error', (event) => {
+				const image = event.target;
+				if (!(image instanceof HTMLImageElement) || image.closest('[data-hero-carousel]')) return;
+				const fallback = image.dataset.fallbackSrc;
+				if (!fallback || image.src === fallback) return;
+				image.removeAttribute('srcset');
+				image.src = fallback;
+			}, true);
+		</script>
+	</body>
+</html>

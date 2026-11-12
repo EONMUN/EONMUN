@@ -65,6 +65,18 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 				</figcaption>
 			</figure>
 		))}
+		{slides.length > 1 && <>
+			<button type="button" class="carousel-arrow previous" data-slide-direction="-1" aria-label="Previous artwork" disabled>
+				<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M15.5 5 8.5 12 15.5 19" />
+				</svg>
+			</button>
+			<button type="button" class="carousel-arrow next" data-slide-direction="1" aria-label="Next artwork" disabled>
+				<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m8.5 5 7 7-7 7" />
+				</svg>
+			</button>
+		</>}
 	</div>
 	<script is:inline>
 		requestAnimationFrame(() => {
@@ -91,6 +103,8 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		const fadeMs = Number(root.dataset.fadeMs);
 		let current = 0;
 		let timer: number | undefined;
+		let navigation = 0;
+		let finishTransition: (() => void) | undefined;
 		const pending = new Map<number, Promise<boolean>>();
 
 		const load = (index: number): Promise<boolean> => {
@@ -126,34 +140,59 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
 		};
 
-		const schedule = () => {
-			if (reducedMotion || document.hidden || slides.length < 2) return;
+		const navigate = async (direction: number, manual = false) => {
 			window.clearTimeout(timer);
-			timer = window.setTimeout(async () => {
-				for (let offset = 1; offset < slides.length; offset++) {
-					const next = (current + offset) % slides.length;
-					if (!(await load(next))) continue;
-					if (document.hidden) return;
-					const previous = slides[current];
-					const incoming = slides[next];
-					applySlideTint(next, true);
+			const request = ++navigation;
+			finishTransition?.();
+			for (let offset = 1; offset < slides.length; offset++) {
+				const next = (current + direction * offset + slides.length) % slides.length;
+				const ready = await load(next);
+				if (request !== navigation || (!manual && document.hidden)) return;
+				if (!ready) continue;
+				const previous = slides[current];
+				const incoming = slides[next];
+				applySlideTint(next, !reducedMotion);
+				incoming.removeAttribute('inert');
+				incoming.removeAttribute('aria-hidden');
+				current = next;
+				const finish = () => {
+					previous.classList.remove('is-current');
+					previous.setAttribute('inert', '');
+					previous.setAttribute('aria-hidden', 'true');
+					incoming.classList.remove('is-entering');
+					incoming.classList.add('is-current');
+				};
+				if (manual || reducedMotion) {
+					root.classList.add('is-manual');
+					finish();
+				} else {
+					root.classList.remove('is-manual');
 					incoming.classList.add('is-entering');
-					incoming.removeAttribute('inert');
-					incoming.removeAttribute('aria-hidden');
-					window.setTimeout(() => {
-						previous.classList.remove('is-current');
-						previous.setAttribute('inert', '');
-						previous.setAttribute('aria-hidden', 'true');
-						incoming.classList.remove('is-entering');
-						incoming.classList.add('is-current');
+					const transitionTimer = window.setTimeout(() => {
+						finish();
+						finishTransition = undefined;
 					}, fadeMs);
-					current = next;
-					void load((next + 1) % slides.length);
-					schedule();
-					return;
+					finishTransition = () => {
+						window.clearTimeout(transitionTimer);
+						finish();
+						finishTransition = undefined;
+					};
 				}
-			}, slideMs);
+				void load((next + direction + slides.length) % slides.length);
+				break;
+			}
+			schedule();
 		};
+
+		const schedule = () => {
+			window.clearTimeout(timer);
+			if (reducedMotion || document.hidden || slides.length < 2) return;
+			timer = window.setTimeout(() => void navigate(1), slideMs);
+		};
+
+		for (const button of root.querySelectorAll<HTMLButtonElement>('[data-slide-direction]')) {
+			button.addEventListener('click', () => void navigate(Number(button.dataset.slideDirection), true));
+		}
 
 		void load(0).then(async (ready) => {
 			if (ready && !reducedMotion && slides.length > 1) void load(1);
@@ -173,6 +212,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			// Keep the native browser bars ivory until the loading overlay finishes fading.
 			await Promise.all(loadingScreen?.getAnimations().map((animation) => animation.finished.catch(() => {})) ?? []);
 			applySlideTint(0);
+			for (const button of root.querySelectorAll<HTMLButtonElement>('[data-slide-direction]')) button.disabled = false;
 			if (reducedMotion) return;
 			schedule();
 			document.addEventListener('visibilitychange', () => {
@@ -235,6 +275,27 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		height: 100%;
 		z-index: 0;
 	}
+	.carousel-arrow {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 3;
+		width: 3rem;
+		height: 3rem;
+		border: 1px solid rgba(255, 255, 255, 0.5);
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.35);
+		color: white;
+		display: grid;
+		place-items: center;
+		padding: 0;
+		cursor: pointer;
+	}
+	.carousel-arrow.previous { left: calc(1rem + env(safe-area-inset-left)); }
+	.carousel-arrow.next { right: calc(1rem + env(safe-area-inset-right)); }
+	.carousel-arrow:hover { background: rgba(0, 0, 0, 0.6); }
+	.carousel-arrow:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+	.carousel-arrow:disabled { visibility: hidden; }
 	.slide {
 		position: absolute;
 		inset: 0;
@@ -252,6 +313,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 			background: linear-gradient(to bottom, var(--slide-tint, transparent), transparent 14%, transparent 86%, var(--slide-tint, transparent));
 		}
 	}
+	.hero-carousel.is-manual .slide { transition: none; }
 	.slide.is-current { opacity: 1; z-index: 1; }
 	.slide.is-entering { opacity: 1; z-index: 2; }
 	.slide img {
@@ -265,7 +327,7 @@ const images = await Promise.all(slides.map((slide) => getResponsiveImageSource(
 		position: absolute;
 		left: calc(1rem + env(safe-area-inset-left));
 		right: calc(1rem + env(safe-area-inset-right));
-		bottom: calc(1.25rem + env(safe-area-inset-bottom));
+		bottom: calc(2.5rem + env(safe-area-inset-bottom));
 		z-index: 50;
 		display: flex;
 		flex-direction: column;

@@ -17,6 +17,8 @@ interface Props {
 	placeholder?: string;
 	shape?: 'portrait' | 'landscape';
 	status?: { label: string; tone: StatusTone } | null;
+	compact?: boolean;
+	saleLabel?: string;
 }
 
 const {
@@ -29,25 +31,36 @@ const {
 	placeholder = 'No image',
 	shape = 'portrait',
 	status,
+	compact = false,
+	saleLabel,
 } = Astro.props;
 
 const Card = href ? 'a' : 'div';
 ---
-<Card class="card" href={href ?? undefined}>
+<Card class:list={['card', { compact }]} href={href ?? undefined}>
 	<span class:list={['frame', shape, { 'is-empty': !imageUrl }]}>
 		{imageUrl ? (
 			<Image data-fallback-src={imageUrl} format="webp" quality={75} fit="scale-down" src={imageUrl} alt={imageAlt} width={960} height={1200} widths={[480, 960]} sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 50vw" />
 		) : (
 			<span class="no-image">{placeholder}</span>
 		)}
-		{status && <StatusPill label={status.label} tone={status.tone} />}
+		{status && !compact && <StatusPill label={status.label} tone={status.tone} />}
 	</span>
-	<CardCaption title={title} meta={meta} metaTone={metaTone} />
+	<span class="caption"><CardCaption title={title} meta={meta} metaTone={metaTone} />
+		{compact && <span class="item-states"><span>{status?.label}</span><span>{saleLabel}</span></span>}
+	</span>
 </Card>
 
 <style>
 	.card { display: block; }
 
+	.caption { display: block; min-width: 0; }
+	.compact { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 1rem; align-items: center; padding: .9rem 0; }
+	.compact .frame { height: 5rem; aspect-ratio: 1; }
+	.compact :global(.card-body) { padding-top: 0; }
+	.compact :global(.card-title) { overflow-wrap: anywhere; }
+	.item-states { display: flex; gap: .6rem 1rem; flex-wrap: wrap; margin-top: .4rem; font-size: .875rem; color: var(--admin-muted); }
+	@media (max-width: 480px) { .compact :global(.card-body) { align-items: start; flex-direction: column; gap: .3rem; } }
 	.portrait { aspect-ratio: 4 / 5; }
 	.landscape { aspect-ratio: 3 / 2; }
 

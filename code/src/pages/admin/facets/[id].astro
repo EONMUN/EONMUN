@@ -1,0 +1,209 @@
+---
+import ConsoleShell from "../../../components/admin/ConsoleShell.astro";
+import { getFacetDirectory } from "../../../db/facet-admin";
+import { artworkAttributes } from "../../../lib/artwork-facets";
+import { parseFacetMergeQuery } from "../../../lib/facet-input";
+import { requireAdminPage } from "../../../lib/admin-guard";
+import { getRuntimeEnv } from "../../../lib/runtime-env";
+export const prerender = false;
+const env = getRuntimeEnv();
+const access = await requireAdminPage(
+	Astro.request,
+	env,
+	Astro.url.pathname + Astro.url.search,
+);
+if ("response" in access) return access.response;
+Astro.response.headers.set("cache-control", "no-store");
+const directory = await getFacetDirectory(env);
+const id = /^[1-9]\d*$/.test(Astro.params.id ?? "")
+	? Number(Astro.params.id)
+	: NaN;
+const facet = directory.find((value) => value.id === id);
+if (!facet) return new Response("Facet not found", { status: 404 });
+let mergeError = "";
+let sourceIds: number[] = [];
+let sources: typeof directory = [];
+const merging = Astro.url.searchParams.has("merge");
+try {
+	sourceIds = parseFacetMergeQuery(Astro.url.searchParams);
+	for (const sourceId of sourceIds) {
+		const source = directory.find((value) => value.id === sourceId);
+		if (!source) throw new Error(`Source facet ${sourceId} no longer exists.`);
+		if (source.id === facet.id)
+			throw new Error("The retained value cannot also be a source.");
+		if (!facet.editable || !source.editable)
+			throw new Error("Read-only values cannot be merged.");
+		if (source.namespace !== facet.namespace || source.key !== facet.key)
+			throw new Error("All values must use the same namespace and category.");
+		sources.push(source);
+	}
+} catch (error) {
+	mergeError =
+		error instanceof Error ? error.message : "Invalid merge selection";
+}
+const category =
+	artworkAttributes.find((value) => value.key === facet.key)?.label ??
+	facet.key;
+const affectedCount = new Set(
+	sources.flatMap((source) => source.artworks.map((artwork) => artwork.slug)),
+).size;
+---
+<ConsoleShell title={`${facet.value} — Facets — EONMUN admin`} heading={facet.value} email={access.session.user.email} backHref="/admin/facets" backLabel="Facets">
+ <p class="hint">{facet.namespace} · {category} · {facet.artworks.length} linked artwork</p>
+ <p id="facet-status" class="error-banner" role="alert" hidden>
+	</p>
+ {merging && <section class="panel">
+  <h2>Review merge</h2>
+  <p>Keep <strong>{facet.value}</strong>. Its name and ID remain unchanged.</p>
+  {mergeError ? <p class="error-banner" role="alert">{mergeError}</p> : <>
+	<p>Move memberships from {sources.length} source values affecting {affectedCount} artwork. Existing memberships are preserved. These source values will be permanently deleted:</p>
+	<ul>
+	{sources.map(source => (
+		<li>
+	<a href={`/admin/facets/${source.id}`}>{source.value}</a> · {source.artworks.length} artwork</li>
+	))}
+	</ul>
+	</>}
+  <form data-mutation="mergeMany" data-id={facet.id} data-sources={JSON.stringify(sourceIds)}>
+   <button class="primary-button" type="submit" disabled={!!mergeError || !sourceIds.length}>Confirm merge into {facet.value}</button>
+   <a class="secondary-button" href={`/admin/facets/${facet.id}`}>Cancel merge</a>
+  </form>
+ </section>}
+ <section class="panel">
+	<h2>Value details</h2>
+  {facet.editable ? <form data-mutation="rename" data-id={facet.id}>
+	<label>Value<input class="admin-input" name="value" value={facet.value} maxlength={facet.key === 'tag' ? 40 : 80} required />
+	</label>
+	<button class="primary-button" type="submit">Save name</button>
+	</form> : <p>{facet.namespace === 'artwork' && facet.key === 'orientation' ? 'Orientation is derived from artwork dimensions.' : 'This category is read-only.'}</p>}
+  {facet.editable && <p>
+	<a href="/admin/facets">Select values to merge →</a>
+	</p>}
+ </section>
+ <section class="panel">
+	<h2>Linked artwork</h2>{facet.artworks.length ? <ul>
+	{facet.artworks.map(artwork => (
+		<li>
+	<a href={`/admin/artworks/${encodeURIComponent(artwork.slug)}`}>{artwork.title}</a>
+	</li>
+	))}
+	</ul> : <p>No artwork uses this value.</p>}</section>
+ {facet.editable && <section class="panel">
+	<h2>Delete unused value</h2>
+	<p>{facet.artworks.length ? 'This value is in use. Merge it into another value to preserve the artwork memberships.' : 'This value affects 0 artwork. Deletion is permanent.'}</p>
+	<button class="secondary-button" type="button" id="open-delete" disabled={facet.artworks.length > 0}>Delete unused value</button>
+	</section>}
+ <dialog id="delete-dialog" aria-labelledby="delete-title">
+	<h2 id="delete-title">Delete {facet.value}?</h2>
+	<p>This permanently deletes the unused value. It affects 0 artwork.</p>
+	<form data-mutation="delete" data-id={facet.id}>
+	<button class="primary-button" type="submit">Confirm deletion</button>
+	<button class="secondary-button" type="button" id="cancel-delete">Cancel</button>
+	</form>
+	</dialog>
+</ConsoleShell>
+<style>
+	.panel {
+		background: var(--admin-surface);
+		border: 1px solid var(--admin-border);
+		border-radius: 0.5rem;
+		padding: 1.5rem;
+		margin-top: 1.5rem;
+		max-width: 56rem;
+	}
+	h2 {
+		font-size: 1.2rem;
+		font-weight: 600;
+		margin-bottom: 1rem;
+		overflow-wrap: anywhere;
+	}
+	p {
+		margin-bottom: 1rem;
+	}
+	ul {
+		padding-left: 1.25rem;
+		margin: 1rem 0;
+	}
+	a:not(.secondary-button) {
+		color: var(--admin-accent);
+		text-decoration: underline;
+	}
+	form {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: end;
+		gap: 1rem;
+	}
+	label {
+		flex: 1;
+		min-width: min(16rem, 100%);
+	}
+	dialog {
+		margin: auto;
+		width: min(32rem, calc(100vw - 2rem));
+		padding: 1.5rem;
+		background: var(--admin-surface);
+		color: var(--admin-text);
+		border: 1px solid var(--admin-border);
+		border-radius: 0.5rem;
+	}
+	dialog::backdrop {
+		background: #0007;
+	}
+	[hidden] {
+		display: none !important;
+	}
+</style>
+<script>
+	const status = document.querySelector<HTMLElement>("#facet-status")!;
+	const dialog = document.querySelector<HTMLDialogElement>("#delete-dialog")!;
+	let busy = false;
+	document
+		.querySelector("#open-delete")
+		?.addEventListener("click", () => dialog.showModal());
+	document.querySelector("#cancel-delete")?.addEventListener("click", () => {
+		if (!busy) dialog.close();
+	});
+	dialog.addEventListener("cancel", (event) => {
+		if (busy) event.preventDefault();
+	});
+	document.querySelectorAll<HTMLFormElement>("[data-mutation]").forEach((form) =>
+		form.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			if (busy) return;
+			const action = form.dataset.mutation!;
+			const id = Number(form.dataset.id);
+			const value = form.querySelector<HTMLInputElement>("[name=value]")?.value;
+			const sourceIds = JSON.parse(form.dataset.sources || "[]");
+			busy = true;
+			status.hidden = true;
+			const controls = Array.from(
+				document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
+					"button,input",
+				),
+			);
+			const states = controls.map((control) => control.disabled);
+			controls.forEach((control) => (control.disabled = true));
+			try {
+				const response = await fetch("/api/admin/facets", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ action, id, value, sourceIds }),
+				});
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error || "Could not save value");
+				location.assign(
+					action === "delete" ? "/admin/facets" : `/admin/facets/${id}`,
+				);
+			} catch (error) {
+				if (dialog.open) dialog.close();
+				status.textContent =
+					error instanceof Error ? error.message : "Could not save value";
+				status.hidden = false;
+				status.scrollIntoView({ block: "nearest" });
+				busy = false;
+				controls.forEach((control, index) => (control.disabled = states[index]));
+			}
+		}),
+	);
+</script>

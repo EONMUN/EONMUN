@@ -14,27 +14,29 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
 	await page.getByRole('textbox', { name: 'Slug' }).fill(slug);
 	await page.getByRole('textbox', { name: 'Artist' }).fill('EONMUN');
 	await page.getByRole('spinbutton', { name: 'Price (USD)' }).fill('1250');
-	await page.getByRole('textbox', { name: 'Tags' }).fill('bird, watercolor');
+	for (const value of ['bird', 'watercolor']) { await page.getByRole('textbox', { name: 'Tags', exact:true }).fill(value); await page.getByRole('textbox', { name:'Tags', exact:true }).press('Enter'); }
     await expect(page.getByRole('group',{name:'Dimensions',exact:true})).toBeVisible();
-    await expect(page.getByRole('group',{name:'Materials and surface',exact:true})).toBeVisible();
+    await expect(page.getByRole('group',{name:'Attributes',exact:true})).toBeVisible();
     await expect(page.getByRole('textbox',{name:'Facet value'})).toHaveCount(0);
     await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('12');
     await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('16');
     await page.getByRole('combobox',{name:'Unit',exact:true}).selectOption('in');
-    await page.getByRole('textbox',{name:'Add materials',exact:true}).fill('Ink wash');
+    await page.getByRole('textbox',{name:'Materials',exact:true}).fill('Ink wash');
+    await page.getByRole('textbox',{name:'Materials',exact:true}).press('ArrowDown');
+    await page.getByRole('button',{name:'Add “Ink wash”',exact:true}).press('Enter');
     await expect(page.getByRole('combobox',{name:'Size',exact:true})).toHaveCount(0);
     await expect(page.getByRole('combobox',{name:'Orientation',exact:true})).toBeDisabled();
-	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
+	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save draft' }).click()]);
 	await expect(page).toHaveURL(`/admin/artworks/${slug}`);
 
 	await visit(page, '/admin/artworks');
 	await expect(page.locator(`a[href="/admin/artworks/${slug}"]`)).toBeVisible();
 	await page.locator(`a[href="/admin/artworks/${slug}"]`).click();
 	await expect(page.getByRole('spinbutton', { name: 'Price (USD)' })).toHaveValue('1250.00');
-	await expect(page.getByRole('checkbox',{name:'Ink wash',exact:true})).toBeChecked();
+	await expect(page.getByRole('button',{name:'Remove Ink wash',exact:true})).toBeVisible();
     await expect(page.getByRole('spinbutton',{name:'Width',exact:true})).toHaveValue('12');
     await page.getByRole('textbox', { name: 'Title' }).fill('Playwright artwork edited');
-	await page.getByRole('checkbox', { name: 'Published' }).check();
+	await page.getByRole('combobox', { name: 'Publication' }).selectOption('published');
 	await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
 	await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Playwright artwork edited');
     await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('0');
@@ -46,7 +48,7 @@ test('admin creates, lists, edits, and publishes an artwork', async ({ page, con
     await page.getByRole('spinbutton',{name:'Width',exact:true}).fill('12');
     await page.getByRole('spinbutton',{name:'Height',exact:true}).fill('16');
     await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}), page.getByRole('button', { name: 'Save artwork' }).click()]);
-	await expect(page.getByRole('checkbox', { name: 'Published' })).toBeChecked();
+	await expect(page.getByRole('combobox', { name: 'Publication' })).toHaveValue('published');
     const staleSaves = await page.evaluate(async () => Promise.all(['/api/admin/artworks/suggest', '/api/admin/artworks'].map(async endpoint => {
         const response = await fetch(endpoint, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Stale edit',slug:'suggest',width:12,height:16,tags:[],facetIds:[],newFacets:[]})});
         return response.status;

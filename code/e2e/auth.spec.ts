@@ -14,6 +14,7 @@ test('admin sign-in starts Google through production and sign-out clears access'
 	expect(redirectURI).toBe('https://eonmun.com/api/auth/callback/google');
 	await context.addCookies(await adminCookies(`http://127.0.0.1:${process.env.EONMUN_E2E_PORT}`));
 	await page.goto('/admin');
+	await page.getByText('Account', { exact: true }).click();
 	await page.getByRole('button', { name: 'Sign out', exact: true }).click();
 	await expect(page).toHaveURL('/');
 	await page.goto('/admin');

@@ -1,7 +1,8 @@
 ---
+import { getCollectionEditorArtworks } from '../../../lib/admin-collection-artworks';
 import CollectionForm from '../../../components/admin/CollectionForm.astro';
 import ConsoleShell from '../../../components/admin/ConsoleShell.astro';
-import { getAdminArtworks, getAdminCollection } from '../../../db/admin';
+import { getAdminCollection } from '../../../db/admin';
 import { requireAdminPage } from '../../../lib/admin-guard';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
@@ -13,7 +14,7 @@ if ('response' in access) return access.response;
 const { session } = access;
 const slug = Astro.params.slug;
 if (!slug) return new Response('Not found', { status: 404 });
-const [collection, artworks] = await Promise.all([getAdminCollection(env, slug), getAdminArtworks(env)]);
+const [collection, artworks] = await Promise.all([getAdminCollection(env, slug), getCollectionEditorArtworks(env)]);
 if (!collection) return new Response('Not found', { status: 404 });
 ---
 <ConsoleShell

@@ -1,0 +1,62 @@
+<dialog data-artwork-lightbox aria-label="Artwork full screen" class="artwork-lightbox">
+    <button type="button" data-close-lightbox aria-label="Close full screen artwork" autofocus>×</button>
+    <img data-lightbox-image alt="" />
+</dialog>
+
+<script>
+    const dialog = document.querySelector<HTMLDialogElement>('[data-artwork-lightbox]');
+    if (dialog) {
+        const image = dialog.querySelector<HTMLImageElement>('[data-lightbox-image]')!;
+        let previousOverflow = '';
+        for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-artwork-fullscreen]')) {
+            link.addEventListener('click', (event) => {
+                if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                image.src = link.href;
+                image.alt = link.querySelector('img')?.alt ?? '';
+                previousOverflow = document.documentElement.style.overflow;
+                dialog.showModal();
+                document.documentElement.style.overflow = 'hidden';
+            });
+        }
+        dialog.querySelector('[data-close-lightbox]')!.addEventListener('click', () => dialog.close());
+        dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+        dialog.addEventListener('close', () => {
+            document.documentElement.style.overflow = previousOverflow;
+            image.removeAttribute('src');
+        });
+    }
+</script>
+
+<style>
+    .artwork-lightbox {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        margin: 0;
+        padding: calc(4rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left));
+        border: 0;
+        background: rgba(0, 0, 0, 0.95);
+        color: white;
+    }
+    .artwork-lightbox[open] { display: flex; align-items: center; justify-content: center; }
+    .artwork-lightbox::backdrop { background: black; }
+    .artwork-lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .artwork-lightbox button {
+        position: absolute;
+        top: calc(0.5rem + env(safe-area-inset-top));
+        right: calc(0.5rem + env(safe-area-inset-right));
+        width: 3rem;
+        height: 3rem;
+        border: 1px solid white;
+        border-radius: 50%;
+        background: transparent;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+    }
+    .artwork-lightbox button:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+</style>
