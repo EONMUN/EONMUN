@@ -1,3 +1,4 @@
+import { backfillPinterestBoard } from "./pinterest-board";
 import { getArtworkCatalogIds, getAvailableArtworkCatalog } from "../db/catalog";
 import type { Env } from "../db";
 import { isGoogleMerchantConfigured, syncGoogleCatalog } from "./google-merchant";
@@ -27,6 +28,10 @@ export async function runScheduled(
 	jobs = { googleMerchant: refreshGoogleCatalog, adminPush: dispatchQueuedAdminPush },
 ) {
 	if (cron === GOOGLE_MERCHANT_CRON) await jobs.googleMerchant(env);
-	else if (cron === ADMIN_PUSH_CRON) await jobs.adminPush(env);
+	else if (cron === ADMIN_PUSH_CRON) {
+		await Promise.allSettled([jobs.adminPush(env), backfillPinterestBoard(env)]).then(results => {
+			for (const result of results) if (result.status === "rejected") console.error("Scheduled delivery failed", result.reason instanceof Error ? result.reason.message : "Unknown error");
+		});
+	}
 	else console.warn(JSON.stringify({ message: "Unknown cron trigger", cron }));
 }

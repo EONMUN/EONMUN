@@ -1,11 +1,21 @@
 ---
 // Rendered only by the admin settings page, after its admin guard.
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+import { isPinterestBoardConfigured } from "../../../lib/pinterest-board";
+import { getDb } from "../../../db";
+import { sql } from "drizzle-orm";
 import { isPinterestConfigured } from '../../../lib/pinterest-sync';
 
+const boardConfigured = isPinterestBoardConfigured(getRuntimeEnv());
+const boardPins = boardConfigured ? await getDb(getRuntimeEnv()).all<{ state: string; count: number }>(sql`SELECT state, count(*) AS count FROM pinterest_artwork_pins GROUP BY state`) : [];
 const configured = isPinterestConfigured(getRuntimeEnv());
 ---
 <div class="pinterest-sync">
+ <h3>Board posting</h3>
+ <p>Recommended board: EONMUN — Original Art. Published artwork available for sale is posted once, with a link to its artwork page. Existing saleable artworks are backfilled automatically, one per minute.</p>
+ {boardConfigured ? <><p>Automatic board posting is configured.</p>{boardPins.map(row => <p>{row.state === 'published' ? 'Published' : 'Needs review before retrying'}: {row.count}</p>)}</> : <p>Board posting needs a Pinterest board ID and a user-authorized access token with boards:read, pins:read, and pins:write. Catalog access alone does not enable posting.</p>}
+ <p>Uncertain posting attempts pause to prevent duplicates. Review the board before clearing a paused record. Pins remain as portfolio posts when artwork sells; the linked site shows current availability.</p>
+ <h3>Shopping catalog</h3>
 	<p>When Pinterest is connected, saving a published artwork marked available for sale submits it to the catalog automatically. Prices are sent in USD. When an artwork sells, its listing is submitted for removal.</p>
 	<p>Website collections are not yet mirrored to Pinterest product groups. No extra step is needed to list their saleable artworks.</p>
 	{configured ? (
