@@ -10,6 +10,7 @@ import * as schema from "./schema";
 export * from "./schema";
 
 export type Env = {
+	AUTH_SECRET?: string;
 	TURSO_DATABASE_URL?: string;
 	TURSO_AUTH_TOKEN?: string;
 	R2_BUCKET?: R2Bucket;
@@ -17,6 +18,8 @@ export type Env = {
 	PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
 	STRIPE_SECRET_KEY?: string;
 	STRIPE_WEBHOOK_SECRET?: string;
+	PINTEREST_BOARD_ID?: string;
+	PINTEREST_BOARD_ACCESS_TOKEN?: string;
 	PINTEREST_APP_ID?: string;
 	PINTEREST_APP_SECRET?: string;
 	PINTEREST_CATALOG_ID?: string;

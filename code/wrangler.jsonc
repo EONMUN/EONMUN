@@ -15,11 +15,12 @@
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 //
 // AUTH_GOOGLE_ID is a public OAuth client ID and is configured in `vars` below.
+// Organic posting uses the admin Connect Pinterest flow; tokens and the chosen board are stored encrypted in Turso.
 // PINTEREST_AD_ACCOUNT_ID is an optional public var for a catalog owned by an ad account.
 // GOOGLE_MERCHANT_ACCOUNT_ID and GOOGLE_MERCHANT_DATA_SOURCE_ID are public vars
 // for the primary API product data source.
 // VAPID_PUBLIC_KEY and the optional VAPID_SUBJECT are public vars for admin order alerts.
-// Crons: "0 9 * * 1" refreshes Google Merchant; "* * * * *" delivers queued admin alerts.
+// Crons: "0 9 * * 1" refreshes Google Merchant; "* * * * *" delivers queued admin alerts and backfills Pinterest board posts.
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	// Keep preview URLs on the same Worker as the production Astro site.

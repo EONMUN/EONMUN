@@ -1,3 +1,4 @@
+import { publishPinterestArtwork } from "../../../../lib/pinterest-board";
 import type { APIRoute } from "astro";
 import { getAdminArtwork, updateArtworkAdmin } from "../../../../db/admin";
 import { mutationError, requireAdminMutation } from "../../../../lib/admin-guard";
@@ -26,6 +27,10 @@ export const POST: APIRoute = async (context) => {
 			await refreshPublicContent(context, {
 				kind: "artwork", oldSlug: params.slug, slug: artwork.slug, published: artwork.publishedAt !== null,
 			});
+		}
+		if (env.PINTEREST_APP_ID && env.PINTEREST_APP_SECRET) {
+			try { await publishPinterestArtwork(env, artwork.id); }
+			catch { console.error("Pinterest board posting needs attention", { artworkId: artwork.id }); }
 		}
 		const redirect = new URL(`/admin/artworks/${artwork.slug}`, request.url);
 		if ((input.available && input.published) || (before?.publishedAt && (before.product?.quantity ?? 0) > 0)) {
