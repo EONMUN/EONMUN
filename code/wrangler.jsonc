@@ -8,7 +8,6 @@
 //   AUTH_GOOGLE_SECRET   — Google OAuth client secret for `/api/auth`
 //   STRIPE_SECRET_KEY    — Stripe Checkout API secret
 //   STRIPE_WEBHOOK_SECRET — Stripe Checkout webhook signing secret
-//   PINTEREST_BOARD_ACCESS_TOKEN — user-authorized token for organic board posting (boards:read, pins:read, pins:write)
 //   PINTEREST_APP_SECRET — Pinterest app client secret for catalog sync
 //   PINTEREST_CATALOG_ACCESS_TOKEN — optional user-authorized token for catalog status and Product Pin lookup
 //   GOOGLE_MERCHANT_SERVICE_ACCOUNT_JSON — Google Merchant API service account JSON key
@@ -16,7 +15,7 @@
 //   CONTACT_EMAIL        — only when `/api/contact` email-sending is wired (later PR)
 //
 // AUTH_GOOGLE_ID is a public OAuth client ID and is configured in `vars` below.
-// PINTEREST_BOARD_ID is an optional public board ID; configure it with the board access token to enable posting.
+// Organic posting uses the admin Connect Pinterest flow; tokens and the chosen board are stored encrypted in Turso.
 // PINTEREST_AD_ACCOUNT_ID is an optional public var for a catalog owned by an ad account.
 // GOOGLE_MERCHANT_ACCOUNT_ID and GOOGLE_MERCHANT_DATA_SOURCE_ID are public vars
 // for the primary API product data source.

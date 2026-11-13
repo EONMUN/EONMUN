@@ -1,3 +1,4 @@
+import { resolvePinterestBoardEnv } from "./pinterest-connection";
 import { sql } from "drizzle-orm";
 import { getDb, type Env } from "../db";
 import { getAvailableArtworkById, getAvailableArtworkCatalog } from "../db/catalog";
@@ -25,6 +26,7 @@ export function sameArtworkLink(link: string | undefined, expected: string) {
 }
 
 export async function publishPinterestArtwork(env: Env, artworkId: number, apiFetch: typeof fetch = fetch, db = getDb(env), loadArtwork = getAvailableArtworkById) {
+ env = await resolvePinterestBoardEnv(env, apiFetch);
  if (!isPinterestBoardConfigured(env)) return "not-connected";
  const artwork = await loadArtwork(env, artworkId);
  if (!artwork) return "unavailable";
@@ -71,6 +73,7 @@ export async function publishPinterestArtwork(env: Env, artworkId: number, apiFe
 }
 
 export async function backfillPinterestBoard(env: Env) {
+ env = await resolvePinterestBoardEnv(env);
  if (!isPinterestBoardConfigured(env)) return;
  const db = getDb(env);
  const recorded = await db.all<{ artwork_id: number }>(sql`SELECT artwork_id FROM pinterest_artwork_pins`);

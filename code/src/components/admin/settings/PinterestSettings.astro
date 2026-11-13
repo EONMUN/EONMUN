@@ -1,19 +1,24 @@
 ---
 // Rendered only by the admin settings page, after its admin guard.
 import { getRuntimeEnv } from '../../../lib/runtime-env';
-import { isPinterestBoardConfigured } from "../../../lib/pinterest-board";
+import { readPinterestConnection } from "../../../lib/pinterest-connection";
 import { getDb } from "../../../db";
 import { sql } from "drizzle-orm";
 import { isPinterestConfigured } from '../../../lib/pinterest-sync';
 
-const boardConfigured = isPinterestBoardConfigured(getRuntimeEnv());
+const connection = await readPinterestConnection(getRuntimeEnv());
+const boardConfigured = Boolean(connection?.board_id);
 const boardPins = boardConfigured ? await getDb(getRuntimeEnv()).all<{ state: string; count: number }>(sql`SELECT state, count(*) AS count FROM pinterest_artwork_pins GROUP BY state`) : [];
 const configured = isPinterestConfigured(getRuntimeEnv());
 ---
 <div class="pinterest-sync">
  <h3>Board posting</h3>
  <p>Recommended board: EONMUN — Original Art. Published artwork available for sale is posted once, with a link to its artwork page. Existing saleable artworks are backfilled automatically, one per minute.</p>
- {boardConfigured ? <><p>Automatic board posting is configured.</p>{boardPins.map(row => <p>{row.state === 'published' ? 'Published' : 'Needs review before retrying'}: {row.count}</p>)}</> : <p>Board posting needs a Pinterest board ID and a user-authorized access token with boards:read, pins:read, and pins:write. Catalog access alone does not enable posting.</p>}
+ <button type="button" class="primary-button" data-pinterest-connect>{connection ? 'Reconnect Pinterest' : 'Connect Pinterest'}</button>
+ {Astro.url.searchParams.get('pinterestConnection') === 'failed' && <p role="alert">Pinterest connection failed or was cancelled. Try connecting again.</p>}
+ {connection && <div data-board-picker><label>Pinterest board <select class="admin-input" data-pinterest-board><option value="">Load your public boards…</option></select></label><button type="button" class="primary-button" data-save-board>Use this board</button><button type="button" data-disconnect-pinterest>Disconnect Pinterest</button></div>}
+ <p role="status" data-board-status>{connection?.board_name ? `Posting to ${connection.board_name}.` : connection ? 'Choose a public board to enable posting and automatic backfill.' : 'Connect Pinterest to authorize posting, then choose a public board.'}</p>
+ {boardConfigured ? <><p>Automatic board posting is configured.</p>{boardPins.map(row => <p>{row.state === 'published' ? 'Published' : 'Needs review before retrying'}: {row.count}</p>)}</> : null}
  <p>Uncertain posting attempts pause to prevent duplicates. Review the board before clearing a paused record. Pins remain as portfolio posts when artwork sells; the linked site shows current availability.</p>
  <h3>Shopping catalog</h3>
 	<p>When Pinterest is connected, saving a published artwork marked available for sale submits it to the catalog automatically. Prices are sent in USD. When an artwork sells, its listing is submitted for removal.</p>
@@ -31,6 +36,37 @@ const configured = isPinterestConfigured(getRuntimeEnv());
 </div>
 
 <script>
+ const connectionStatus = document.querySelector<HTMLElement>('[data-board-status]')!;
+ const boardSelect = document.querySelector<HTMLSelectElement>('[data-pinterest-board]');
+ const connectionCall = async (body: unknown) => {
+  const response = await fetch('/api/admin/pinterest-connect', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+  const result = await response.json(); if (!response.ok) throw new Error(result.error ?? 'Pinterest connection failed'); return result;
+ };
+ document.querySelector('[data-pinterest-connect]')?.addEventListener('click', async () => {
+  try { const result = await connectionCall({action: 'connect'}); location.assign(result.url); }
+  catch (error) { connectionStatus.textContent = error instanceof Error ? error.message : 'Connection failed'; }
+ });
+ document.querySelector('[data-disconnect-pinterest]')?.addEventListener('click', async () => {
+  try { await connectionCall({action: 'disconnect'}); location.reload(); }
+  catch { connectionStatus.textContent = 'Could not disconnect Pinterest.'; }
+ });
+ if (boardSelect) {
+  (async () => {
+   try {
+    const response = await fetch('/api/admin/pinterest-connect'); const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    boardSelect.replaceChildren(new Option('Choose a public board', ''));
+    for (const board of result.boards) boardSelect.add(new Option(board.name, board.id));
+    boardSelect.value = result.selectedBoardId ?? "";
+    if (!result.boards.length) connectionStatus.textContent = "Create a public board in Pinterest, then reload this page to select it.";
+   } catch { connectionStatus.textContent = 'Could not load boards. Reconnect Pinterest or try again.'; }
+  })();
+  document.querySelector('[data-save-board]')?.addEventListener('click', async () => {
+   try { await connectionCall({action: 'select', boardId: boardSelect.value}); location.reload(); }
+   catch (error) { connectionStatus.textContent = error instanceof Error ? error.message : 'Could not save board'; }
+  });
+ }
+
 	const button = document.querySelector<HTMLButtonElement>('[data-pinterest-sync]');
 	const status = document.querySelector<HTMLElement>('[data-pinterest-status]');
 	const items = document.querySelector<HTMLUListElement>('[data-pinterest-items]');

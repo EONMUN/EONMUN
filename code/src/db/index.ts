@@ -10,6 +10,7 @@ import * as schema from "./schema";
 export * from "./schema";
 
 export type Env = {
+	AUTH_SECRET?: string;
 	TURSO_DATABASE_URL?: string;
 	TURSO_AUTH_TOKEN?: string;
 	R2_BUCKET?: R2Bucket;
