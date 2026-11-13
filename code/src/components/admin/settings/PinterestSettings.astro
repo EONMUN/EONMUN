@@ -6,7 +6,10 @@ import { getDb } from "../../../db";
 import { sql } from "drizzle-orm";
 import { isPinterestConfigured } from '../../../lib/pinterest-sync';
 
-const connection = await readPinterestConnection(getRuntimeEnv());
+let connection: Awaited<ReturnType<typeof readPinterestConnection>> = null;
+let connectionAvailable = true;
+try { connection = await readPinterestConnection(getRuntimeEnv()); }
+catch { connectionAvailable = false; }
 const boardConfigured = Boolean(connection?.board_id);
 const boardPins = boardConfigured ? await getDb(getRuntimeEnv()).all<{ state: string; count: number }>(sql`SELECT state, count(*) AS count FROM pinterest_artwork_pins GROUP BY state`) : [];
 const configured = isPinterestConfigured(getRuntimeEnv());
@@ -14,7 +17,8 @@ const configured = isPinterestConfigured(getRuntimeEnv());
 <div class="pinterest-sync">
  <h3>Board posting</h3>
  <p>Recommended board: EONMUN — Original Art. Published artwork available for sale is posted once, with a link to its artwork page. Existing saleable artworks are backfilled automatically, one per minute.</p>
- <button type="button" class="primary-button" data-pinterest-connect>{connection ? 'Reconnect Pinterest' : 'Connect Pinterest'}</button>
+ <button type="button" class="primary-button" data-pinterest-connect disabled={!connectionAvailable}>{connection ? 'Reconnect Pinterest' : 'Connect Pinterest'}</button>
+ {!connectionAvailable && <p role="alert">Pinterest connection settings are unavailable. New connection setup becomes available after deployment; if already deployed, try again later.</p>}
  {Astro.url.searchParams.get('pinterestConnection') === 'failed' && <p role="alert">Pinterest connection failed or was cancelled. Try connecting again.</p>}
  {connection && <div data-board-picker><label>Pinterest board <select class="admin-input" data-pinterest-board><option value="">Load your public boards…</option></select></label><button type="button" class="primary-button" data-save-board>Use this board</button><button type="button" data-disconnect-pinterest>Disconnect Pinterest</button></div>}
  <p role="status" data-board-status>{connection?.board_name ? `Posting to ${connection.board_name}.` : connection ? 'Choose a public board to enable posting and automatic backfill.' : 'Connect Pinterest to authorize posting, then choose a public board.'}</p>
